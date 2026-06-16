@@ -9,9 +9,12 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly XboxDeviceService _xboxService;
 
+    private static readonly string[] TabNames = ["Browse", "Installed", "Settings", "Logs"];
+
     public MainViewModel(XboxDeviceService xboxService)
     {
         _xboxService = xboxService;
+        Logger.Debug("MainViewModel initialized");
         UpdateConnectionStatus();
     }
 
@@ -29,6 +32,9 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnSelectedTabChanged(int value)
     {
+        var tabName = value >= 0 && value < TabNames.Length ? TabNames[value] : $"?{value}";
+        Logger.Info($"Tab switched to {tabName} ({value})");
+        Logger.Trace($"Previous: {_selectedTab}, New: {value}");
         OnPropertyChanged(nameof(IsBrowseActive));
         OnPropertyChanged(nameof(IsInstalledActive));
         OnPropertyChanged(nameof(IsSettingsActive));
@@ -55,6 +61,7 @@ public partial class MainViewModel : ObservableObject
     {
         IsXboxConnected = _xboxService.IsConfigured;
         ConnectionStatusText = _xboxService.IsConfigured ? "Connected" : "Not configured";
+        Logger.Debug($"Connection status updated: {ConnectionStatusText}");
     }
 
     private void UpdateActiveView()
@@ -65,13 +72,19 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void OpenAbout()
     {
+        Logger.Info("About dialog opened");
         ShowAboutAction?.Invoke();
     }
 
     [RelayCommand]
     private async Task ConnectAsync()
     {
-        if (ShowConnectAction is null) return;
+        Logger.Info("Connect button clicked — opening connection dialog");
+        if (ShowConnectAction is null)
+        {
+            Logger.Warn("ShowConnectAction not set, cannot connect");
+            return;
+        }
 
         var result = await ShowConnectAction();
 
@@ -79,6 +92,11 @@ public partial class MainViewModel : ObservableObject
         {
             IsXboxConnected = true;
             ConnectionStatusText = "Connected";
+            Logger.Info("Xbox connection established from MainViewModel");
+        }
+        else
+        {
+            Logger.Info("Xbox connection failed or cancelled");
         }
     }
 }

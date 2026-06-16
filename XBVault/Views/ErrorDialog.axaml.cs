@@ -5,6 +5,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using System;
 using System.Diagnostics;
+using XBVault.Services;
 
 namespace XBVault.Views;
 
@@ -38,15 +39,15 @@ public partial class ErrorDialog : Window
         }
         catch
         {
-            // icon not found — continue without
         }
 
-        // Show restart button only for Error level
         RestartBtn.IsVisible = type == ErrorDialogType.Error;
+        Logger.Debug($"ErrorDialog shown: type={type} title='{title}'");
     }
 
     private void OnCloseClick(object? sender, RoutedEventArgs e)
     {
+        Logger.Trace("ErrorDialog closed by user");
         Close();
     }
 
@@ -58,6 +59,7 @@ public partial class ErrorDialog : Window
 
     private async void OnCopyClick(object? sender, RoutedEventArgs e)
     {
+        Logger.Trace("ErrorDialog copy button clicked");
         var text = $"{TitleText.Text}\n\n{DescriptionText.Text}\n\n--- Details ---\n{DetailsText.Text}";
         try
         {
@@ -69,6 +71,7 @@ public partial class ErrorDialog : Window
 
     private void OnRestartClick(object? sender, RoutedEventArgs e)
     {
+        Logger.Info("ErrorDialog restart clicked — launching new process");
         try
         {
             var exe = Environment.ProcessPath;

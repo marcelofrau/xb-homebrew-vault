@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using System.Collections.Specialized;
+using XBVault.Services;
 using XBVault.ViewModels;
 
 namespace XBVault.Views;
@@ -27,7 +28,7 @@ public partial class RefreshWindow : Window
 
     private void OnOpened(object? sender, EventArgs e)
     {
-        // Auto-start refresh after window opens
+        Logger.Debug("RefreshWindow opened — auto-starting refresh");
         if (DataContext is RefreshViewModel vm && vm.IsRunning is false)
         {
             vm.RefreshCommand.Execute(null);
@@ -44,7 +45,7 @@ public partial class RefreshWindow : Window
 
     private void OnRefreshCompleted(bool success)
     {
-        // Give user time to see final state, then close
+        Logger.Info($"Catalog refresh window completed: success={success}");
         Dispatcher.UIThread.Post(async () =>
         {
             await Task.Delay(1500);
@@ -54,6 +55,7 @@ public partial class RefreshWindow : Window
 
     private void OnCloseClick(object? sender, RoutedEventArgs e)
     {
+        Logger.Trace("RefreshWindow closed by user");
         Close();
     }
 

@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using System.Collections.Specialized;
+using XBVault.Services;
 using XBVault.ViewModels;
 
 namespace XBVault.Views;
@@ -12,6 +13,7 @@ public partial class ConnectionWindow : Window
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        Opened += (_, _) => Logger.Debug("ConnectionWindow opened");
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -19,6 +21,7 @@ public partial class ConnectionWindow : Window
         if (DataContext is ConnectionViewModel vm)
         {
             vm.OutputLines.CollectionChanged += OnOutputLinesChanged;
+            vm.Completed += OnConnectionCompleted;
         }
     }
 
@@ -30,8 +33,14 @@ public partial class ConnectionWindow : Window
         }
     }
 
+    private void OnConnectionCompleted(bool success)
+    {
+        Logger.Info($"Connection dialog completed: success={success}");
+    }
+
     private void OnCloseClick(object? sender, RoutedEventArgs e)
     {
+        Logger.Trace("ConnectionWindow closed by user");
         Close();
     }
 

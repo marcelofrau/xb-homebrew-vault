@@ -14,6 +14,7 @@ public partial class ConnectionViewModel : ObservableObject
     public ConnectionViewModel(XboxDeviceService xboxService)
     {
         _xboxService = xboxService;
+        Logger.Debug("ConnectionViewModel initialized");
     }
 
     public ObservableCollection<string> OutputLines { get; } = new ObservableCollection<string>();

@@ -40,6 +40,10 @@
                          Foreground="{StaticResource TextMutedBrush}"/>
               <TextBox Watermark="11443"
                        Text="{Binding Port}"/>
+              <TextBlock Text="{Binding PortError}"
+                         Foreground="{StaticResource DangerBrush}"
+                         FontSize="11"
+                         IsVisible="{Binding PortError, Converter={StaticResource StringNotEmpty}}"/>
             </StackPanel>
 
             <!-- HTTPS toggle -->

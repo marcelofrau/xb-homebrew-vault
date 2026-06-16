@@ -10,7 +10,7 @@
     <ApplicationIcon>Assets\Icons\app.ico</ApplicationIcon>
     <AssemblyName>XBVault</AssemblyName>
     <RootNamespace>XBVault</RootNamespace>
-    <Version>0.2.0</Version>
+    <Version>0.5.0</Version>
     <Authors>Marcelo Frau</Authors>
     <Description>XB Homebrew Vault — Desktop manager for Xbox Dev Mode homebrew</Description>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>

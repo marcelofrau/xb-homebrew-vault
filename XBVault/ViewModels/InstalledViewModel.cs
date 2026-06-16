@@ -18,6 +18,7 @@ public partial class InstalledViewModel : ObservableObject
     public InstalledViewModel(XboxDeviceService xboxService)
     {
         _xboxService = xboxService;
+        Logger.Debug("InstalledViewModel initialized");
     }
 
     public ObservableCollection<InstalledPackage> Packages { get; } = [];

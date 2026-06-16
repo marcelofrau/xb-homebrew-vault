@@ -27,7 +27,15 @@ public partial class SettingsViewModel : ObservableObject
     private string _address = string.Empty;
 
     [ObservableProperty]
-    private int _port = 11443;
+    private string _port = "11443";
+
+    partial void OnPortChanged(string value)
+    {
+        ValidatePort();
+    }
+
+    [ObservableProperty]
+    private string _portError = string.Empty;
 
     [ObservableProperty]
     private string _username = string.Empty;
@@ -83,7 +91,7 @@ public partial class SettingsViewModel : ObservableObject
         var conn = settings.XboxConnection;
 
         Address = conn.Address;
-        Port = conn.Port;
+        Port = conn.Port.ToString();
         Username = conn.Username;
         UseHttps = conn.UseHttps;
         SelectedLogLevel = settings.MinLogLevel;
@@ -98,6 +106,37 @@ public partial class SettingsViewModel : ObservableObject
                 CryptoService.Deobfuscate(conn.EncryptedPassword));
             ConnectionStatus = "Configured";
         }
+    }
+
+    private void ValidatePort()
+    {
+        if (string.IsNullOrWhiteSpace(Port))
+        {
+            PortError = "Port is required";
+            return;
+        }
+
+        if (!int.TryParse(Port, out var portVal))
+        {
+            PortError = "A number is expected";
+            return;
+        }
+
+        if (portVal < 1 || portVal > 65535)
+        {
+            PortError = "Port must be 1-65535";
+            return;
+        }
+
+        PortError = string.Empty;
+    }
+
+    private bool TryGetPort(out int portVal)
+    {
+        portVal = 0;
+        return !string.IsNullOrWhiteSpace(Port)
+            && int.TryParse(Port, out portVal)
+            && portVal >= 1 && portVal <= 65535;
     }
 
     private void UpdateCacheInfo()
@@ -137,10 +176,11 @@ public partial class SettingsViewModel : ObservableObject
             return;
         }
 
-        if (Port < 1 || Port > 65535)
+        if (!TryGetPort(out var portVal))
         {
-            ConnectionStatus = "Port must be 1-65535";
-            Logger.Warn($"Save aborted: invalid port {Port}");
+            if (string.IsNullOrWhiteSpace(PortError))
+                ConnectionStatus = "Port must be 1-65535";
+            Logger.Warn("Save aborted: invalid port");
             return;
         }
 
@@ -148,7 +188,7 @@ public partial class SettingsViewModel : ObservableObject
 
         var settings = SettingsService.Current;
         settings.XboxConnection.Address = Address;
-        settings.XboxConnection.Port = Port;
+        settings.XboxConnection.Port = portVal;
         settings.XboxConnection.Username = Username;
         settings.XboxConnection.EncryptedPassword = obfuscated;
         settings.XboxConnection.UseHttps = UseHttps;
@@ -183,6 +223,13 @@ public partial class SettingsViewModel : ObservableObject
             return;
         }
 
+        if (!TryGetPort(out var portVal))
+        {
+            ConnectionStatus = "Enter a valid port";
+            Logger.Warn("Test aborted: invalid port");
+            return;
+        }
+
         if (ShowConnectDialogAsync is null)
         {
             Logger.Warn("ShowConnectDialogAsync not set — falling back to simple test");
@@ -202,7 +249,7 @@ public partial class SettingsViewModel : ObservableObject
         var obfuscated = CryptoService.Obfuscate(Password);
         var settings = SettingsService.Current;
         settings.XboxConnection.Address = Address;
-        settings.XboxConnection.Port = Port;
+        settings.XboxConnection.Port = portVal;
         settings.XboxConnection.Username = Username;
         settings.XboxConnection.EncryptedPassword = obfuscated;
         settings.XboxConnection.UseHttps = UseHttps;

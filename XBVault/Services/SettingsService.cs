@@ -36,11 +36,17 @@ public static class SettingsService
             {
                 var json = File.ReadAllText(SettingsPath);
                 _current = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                Logger.Debug($"Settings loaded from {SettingsPath} ({json.Length} bytes)");
                 return;
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Error(ex, $"Failed to deserialize settings from {SettingsPath}, falling back to defaults");
             }
+        }
+        else
+        {
+            Logger.Debug($"No settings file at {SettingsPath}, using defaults");
         }
 
         _current = new AppSettings();
@@ -57,5 +63,6 @@ public static class SettingsService
         });
 
         File.WriteAllText(SettingsPath, json);
+        Logger.Info($"Settings saved to {SettingsPath} ({json.Length} bytes)");
     }
 }

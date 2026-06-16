@@ -16,6 +16,7 @@ public partial class RefreshViewModel : ObservableObject
     {
         _erService = erService;
         _onCatalogRefreshed = onCatalogRefreshed;
+        Logger.Debug("RefreshViewModel initialized");
     }
 
     public ObservableCollection<string> OutputLines { get; } = [];

@@ -9,6 +9,6 @@ public partial class LogsViewModel
 
     public LogsViewModel()
     {
-        // nothing else; UI binds directly to Logger.Entries
+        Logger.Debug("LogsViewModel initialized (binding to Logger.Entries)");
     }
 }

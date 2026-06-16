@@ -20,6 +20,9 @@
     <Color x:Key="BladesBorder">#2A2D33</Color>
     <Color x:Key="BladesCardBg">#1E2128</Color>
     <Color x:Key="BladesSidebarBg">#0F1F10</Color>
+    <Color x:Key="BladesInputBg">#0F1F0F</Color>
+    <Color x:Key="BladesInputBorder">#4A7A20</Color>
+    <Color x:Key="BladesInputBorderHover">#6B8F2A</Color>
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BladesBg}"/>
@@ -39,6 +42,9 @@
     <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource BladesCardBg}"/>
     <SolidColorBrush x:Key="SidebarBgBrush" Color="{StaticResource BladesSidebarBg}"/>
     <SolidColorBrush x:Key="SurfaceHoverBrush" Color="{StaticResource BladesSurfaceHover}"/>
+    <SolidColorBrush x:Key="InputBgBrush" Color="{StaticResource BladesInputBg}"/>
+    <SolidColorBrush x:Key="InputBorderBrush" Color="{StaticResource BladesInputBorder}"/>
+    <SolidColorBrush x:Key="InputBorderHoverBrush" Color="{StaticResource BladesInputBorderHover}"/>
 
     <!-- Fonts -->
     <FontFamily x:Key="TitleFont">avares://XBVault/Assets/Fonts/Oxanium-700.ttf#Oxanium</FontFamily>
@@ -71,32 +77,44 @@
 
   <!-- Button -->
   <Style Selector="Button">
-    <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+    <Style.Resources>
+      <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F0F0F0"/>
+      <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#F0F0F0"/>
+      <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#2F333A"/>
+      <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#44681A"/>
+      <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#6B8F2A"/>
+      <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#9ACA3C"/>
+    </Style.Resources>
+    <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
     <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
     <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="CornerRadius" Value="4"/>
     <Setter Property="Padding" Value="12,6"/>
     <Setter Property="FontSize" Value="13"/>
+    <Setter Property="FontWeight" Value="Bold"/>
     <Setter Property="Cursor" Value="Hand"/>
   </Style>
 
-  <Style Selector="Button:pointerover">
-    <Setter Property="Background" Value="{StaticResource AccentHoverDarkBrush}"/>
-    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
-  </Style>
-
   <Style Selector="Button.Accent">
+    <Style.Resources>
+      <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#44681A"/>
+      <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#F0F0F0"/>
+      <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#B5E665"/>
+      <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#6B8F2A"/>
+    </Style.Resources>
     <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
-    <Setter Property="Foreground" Value="#0D1117"/>
+    <Setter Property="Foreground" Value="{StaticResource AccentHoverDarkBrush}"/>
     <Setter Property="BorderThickness" Value="0"/>
   </Style>
 
-  <Style Selector="Button.Accent:pointerover">
-    <Setter Property="Background" Value="{StaticResource AccentGlowBrush}"/>
-  </Style>
-
   <Style Selector="Button.Danger">
+    <Style.Resources>
+      <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
+      <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
+      <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#E74C3C"/>
+      <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#C0392B"/>
+    </Style.Resources>
     <Setter Property="Background" Value="{StaticResource DangerBrush}"/>
     <Setter Property="Foreground" Value="White"/>
     <Setter Property="BorderThickness" Value="0"/>
@@ -104,17 +122,37 @@
 
   <!-- TextBox -->
   <Style Selector="TextBox">
+    <Style.Resources>
+      <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#0F1F0F"/>
+      <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#2A2D33"/>
+      <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#F0F0F0"/>
+      <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#0F1F0F"/>
+      <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#B5E665"/>
+      <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#B5E665"/>
+      <Thickness x:Key="TextControlBorderThemeThicknessFocused">1</Thickness>
+      <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#8B8D91"/>
+    </Style.Resources>
     <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
     <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
     <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="CornerRadius" Value="4"/>
-    <Setter Property="Padding" Value="8,4"/>
-    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="Padding" Value="10,5"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="CaretBrush" Value="{StaticResource AccentBrush}"/>
   </Style>
 
-  <Style Selector="TextBox:focus">
-    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+  <Style Selector="TextBox /template/ TextBlock#PART_Placeholder">
+    <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+  </Style>
+
+  <Style Selector="TextBox /template/ TextBlock#PART_FloatingPlaceholder">
+    <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+  </Style>
+
+  <Style Selector="TextBox:error /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}"/>
+    <Setter Property="BorderThickness" Value="1.5"/>
   </Style>
 
   <!-- ListBox -->
