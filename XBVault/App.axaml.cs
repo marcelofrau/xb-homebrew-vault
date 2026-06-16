@@ -26,7 +26,7 @@ public partial class App : Application
             var mainViewModel = new MainViewModel(xboxService);
             var browseViewModel = new BrowseViewModel(erService, installService);
             var installedViewModel = new InstalledViewModel(xboxService);
-            var settingsViewModel = new SettingsViewModel(xboxService);
+            var settingsViewModel = new SettingsViewModel(xboxService, cacheService);
 
             var splash = new SplashWindow();
             splash.Show();

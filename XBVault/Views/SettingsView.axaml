@@ -107,6 +107,37 @@
           </Grid>
         </Border>
 
+        <!-- Cache Section -->
+        <Border Classes="Card" Padding="24">
+          <StackPanel Spacing="12">
+            <TextBlock Text="CACHE"
+                       Classes="SectionHeader"/>
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Local package cache"
+                           FontSize="13"/>
+                <TextBlock Text="{Binding CacheSizeText}"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding ClearCacheCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <TextBlock Text="Clear cache"
+                           FontSize="12"/>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Version -->
+        <TextBlock Text="XB Homebrew Vault v0.1.0"
+                   FontSize="11"
+                   Foreground="{StaticResource TextDimBrush}"
+                   HorizontalAlignment="Center"
+                   Margin="0,8,0,24"/>
+
       </StackPanel>
     </ScrollViewer>
 
