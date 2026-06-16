@@ -5,7 +5,6 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\Icons\app.ico</ApplicationIcon>
     <AssemblyName>XBVault</AssemblyName>
     <RootNamespace>XBVault</RootNamespace>

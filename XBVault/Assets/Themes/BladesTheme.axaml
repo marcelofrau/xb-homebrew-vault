@@ -36,6 +36,7 @@
     <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BladesBorder}"/>
     <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource BladesCardBg}"/>
     <SolidColorBrush x:Key="SidebarBgBrush" Color="{StaticResource BladesSidebarBg}"/>
+    <SolidColorBrush x:Key="SurfaceHoverBrush" Color="{StaticResource BladesSurfaceHover}"/>
   </Styles.Resources>
 
   <!-- Window -->
@@ -120,7 +121,7 @@
   </Style>
 
   <Style Selector="ListBoxItem:pointerover">
-    <Setter Property="Background" Value="{StaticResource SurfaceHover}"/>
+    <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
   </Style>
 
   <Style Selector="ListBoxItem:selected">

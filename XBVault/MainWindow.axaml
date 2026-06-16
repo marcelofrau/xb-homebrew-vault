@@ -93,7 +93,7 @@
         <StackPanel Grid.Row="2" Spacing="4" Margin="16,0,16,16">
           <Grid ColumnDefinitions="8,*" ColumnSpacing="6">
             <Ellipse Width="8" Height="8"
-                     Fill="{StaticResource BladesDanger}"
+                     Fill="{StaticResource DangerBrush}"
                      Margin="0,4,0,4"/>
             <TextBlock Grid.Column="1"
                        Text="{Binding ConnectionStatusText}"
