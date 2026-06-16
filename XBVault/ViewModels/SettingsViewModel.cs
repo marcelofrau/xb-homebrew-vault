@@ -8,11 +8,14 @@ namespace XBVault.ViewModels;
 public partial class SettingsViewModel : ObservableObject
 {
     private readonly XboxDeviceService _xboxService;
+    private readonly CacheService _cacheService;
 
-    public SettingsViewModel(XboxDeviceService xboxService)
+    public SettingsViewModel(XboxDeviceService xboxService, CacheService cacheService)
     {
         _xboxService = xboxService;
+        _cacheService = cacheService;
         LoadSettings();
+        UpdateCacheInfo();
     }
 
     [ObservableProperty]
@@ -39,6 +42,12 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isConnected;
 
+    [ObservableProperty]
+    private long _cacheSizeBytes;
+
+    [ObservableProperty]
+    private string _cacheSizeText = "0 B";
+
     private void LoadSettings()
     {
         var settings = SettingsService.Current;
@@ -60,9 +69,44 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
+    private void UpdateCacheInfo()
+    {
+        CacheSizeBytes = _cacheService.GetCacheSizeBytes();
+        CacheSizeText = FormatBytes(CacheSizeBytes);
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        return bytes switch
+        {
+            < 1024 => $"{bytes} B",
+            < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
+            < 1024 * 1024 * 1024 => $"{bytes / (1024.0 * 1024):F1} MB",
+            _ => $"{bytes / (1024.0 * 1024 * 1024):F2} GB"
+        };
+    }
+
     [RelayCommand]
     private void SaveSettings()
     {
+        if (string.IsNullOrWhiteSpace(Address))
+        {
+            ConnectionStatus = "Address is required";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Username))
+        {
+            ConnectionStatus = "Username is required";
+            return;
+        }
+
+        if (Port < 1 || Port > 65535)
+        {
+            ConnectionStatus = "Port must be 1-65535";
+            return;
+        }
+
         var obfuscated = CryptoService.Obfuscate(Password);
 
         var settings = SettingsService.Current;
@@ -78,12 +122,24 @@ public partial class SettingsViewModel : ObservableObject
             $"{(UseHttps ? "https" : "http")}://{Address}:{Port}",
             Username, Password);
 
-        ConnectionStatus = "Saved";
+        ConnectionStatus = "Settings saved";
     }
 
     [RelayCommand]
     private async Task TestConnectionAsync()
     {
+        if (string.IsNullOrWhiteSpace(Address))
+        {
+            ConnectionStatus = "Enter an address first";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Username))
+        {
+            ConnectionStatus = "Enter a username first";
+            return;
+        }
+
         IsTestingConnection = true;
         ConnectionStatus = "Testing...";
 
@@ -94,7 +150,15 @@ public partial class SettingsViewModel : ObservableObject
         var result = await _xboxService.TestConnectionAsync();
 
         IsConnected = result;
-        ConnectionStatus = result ? "Connected" : "Failed";
+        ConnectionStatus = result ? "Connected" : "Connection failed — check address and credentials";
         IsTestingConnection = false;
+    }
+
+    [RelayCommand]
+    private void ClearCache()
+    {
+        _cacheService.ClearCache();
+        UpdateCacheInfo();
+        ConnectionStatus = "Cache cleared";
     }
 }
