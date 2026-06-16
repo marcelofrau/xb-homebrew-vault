@@ -22,12 +22,13 @@
       <Button Command="{Binding RefreshPackagesCommand}"
               Padding="12,8">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-          <Image Source="avares://XBVault/Assets/Icons/refresh.ico"
-                 Width="16" Height="16"
-                 Stretch="Uniform"/>
+<Image Source="avares://XBVault/Assets/Views/InstalledView/installed-refresh-20.png"
+                  Width="20" Height="20"
+                  Stretch="Uniform"/>
           <TextBlock Grid.Column="1"
                      Text="Refresh"
-                     FontSize="13"/>
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
         </Grid>
       </Button>
 
@@ -36,12 +37,13 @@
               Padding="12,8"
               IsEnabled="{Binding IsPackageSelected}">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-          <Image Source="avares://XBVault/Assets/Icons/trash.ico"
-                 Width="16" Height="16"
-                 Stretch="Uniform"/>
+<Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
+                  Width="20" Height="20"
+                  Stretch="Uniform"/>
           <TextBlock Grid.Column="1"
                      Text="Uninstall"
-                     FontSize="13"/>
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
         </Grid>
       </Button>
     </StackPanel>
@@ -53,7 +55,7 @@
                 VerticalAlignment="Center"
                 Spacing="12">
       <Image x:Name="SpinnerImage"
-             Source="avares://XBVault/Assets/Images/cd.png"
+             Source="avares://XBVault/Assets/Views/InstalledView/installed-spinner-48.png"
              Width="48" Height="48"
              Stretch="Uniform"
              HorizontalAlignment="Center"

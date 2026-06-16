@@ -38,8 +38,8 @@
               Padding="0" BorderThickness="0"
               Click="OnCloseClick" Cursor="Hand"
               ToolTip.Tip="Close">
-        <Image Source="avares://XBVault/Assets/Icons/close.ico"
-               Width="16" Height="16" Stretch="Uniform"/>
+        <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-close-20.png"
+               Width="20" Height="20" Stretch="Uniform"/>
         <Button.Styles>
           <Style Selector="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -95,18 +95,33 @@
                   Padding="12,6"
                   Click="OnCopyClick"
                   ToolTip.Tip="Copy error details to clipboard">
-            <TextBlock Text="Copy Error" FontWeight="SemiBold"/>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+              <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-copy-20.png"
+Width="20" Height="20"
+                      Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Copy Error" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </Grid>
           </Button>
           <Button x:Name="RestartBtn"
                   Padding="12,6"
                   Click="OnRestartClick"
                   ToolTip.Tip="Restart the application">
-            <TextBlock Text="Restart" FontWeight="SemiBold"/>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+              <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-restart-20.png"
+Width="20" Height="20"
+                      Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Restart" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </Grid>
           </Button>
           <Button Padding="12,6"
                   Click="OnCloseClick"
                   ToolTip.Tip="Close this dialog">
-            <TextBlock Text="Close" FontWeight="SemiBold"/>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+<Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-closebtn-20.png"
+ Width="20" Height="20"
+                      Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Close" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </Grid>
           </Button>
         </StackPanel>
       </Grid>

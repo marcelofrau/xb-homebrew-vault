@@ -4,7 +4,7 @@
         Title="XB Homebrew Vault — Setup"
         Width="480" Height="400"
         WindowStartupLocation="CenterScreen"
-        Icon="avares://XBVault/Assets/Icons/app.ico"
+        Icon="avares://XBVault/Assets/Views/SetupWindow/setup-app.png"
         Background="{StaticResource BgBrush}"
         CanResize="False"
         ShowInTaskbar="False">
@@ -15,7 +15,7 @@
                 VerticalAlignment="Center"
                 Spacing="16">
 
-      <Image Source="avares://XBVault/Assets/Icons/xbox.ico"
+      <Image Source="avares://XBVault/Assets/Views/SetupWindow/setup-xbox.png"
              Width="48" Height="48"
              Stretch="Uniform"
              HorizontalAlignment="Center"
@@ -76,14 +76,25 @@
         <Button Command="{Binding TestConnectionCommand}"
                 IsEnabled="{Binding IsTestingConnection, Converter={StaticResource BoolInverse}}"
                 Padding="16,8">
-          <TextBlock Text="Test Connection"/>
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+            <Image Source="avares://XBVault/Assets/Views/SetupWindow/setup-test-20.png"
+Width="20" Height="20"
+                    Stretch="Uniform"/>
+            <TextBlock Grid.Column="1" Text="Test Connection" VerticalAlignment="Center"/>
+          </Grid>
         </Button>
         <Button x:Name="SaveBtn"
                 Classes="Accent"
                 IsEnabled="False"
                 Padding="16,8">
-          <TextBlock Text="Save &amp; Continue"
-                     FontWeight="SemiBold"/>
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+<Image Source="avares://XBVault/Assets/Views/SetupWindow/setup-save-20.png"
+ Width="20" Height="20"
+                    Stretch="Uniform"/>
+            <TextBlock Grid.Column="1" Text="Save &amp; Continue"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+          </Grid>
         </Button>
       </StackPanel>
     </Border>

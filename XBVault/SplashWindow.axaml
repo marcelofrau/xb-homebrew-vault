@@ -9,7 +9,7 @@
         Topmost="True">
 
   <Window.Background>
-    <ImageBrush Source="avares://XBVault/Assets/Images/splash-bg.png"
+    <ImageBrush Source="avares://XBVault/Assets/Views/SplashWindow/splash-bg.png"
                 Stretch="UniformToFill"/>
   </Window.Background>
 
@@ -18,7 +18,7 @@
       <StackPanel VerticalAlignment="Center"
                   HorizontalAlignment="Center"
                   Spacing="2">
-        <Image Source="avares://XBVault/Assets/Images/app-icon.png"
+        <Image Source="avares://XBVault/Assets/Views/SplashWindow/splash-appicon-80.png"
                Width="80" Height="80"
                Stretch="Uniform"
                HorizontalAlignment="Center"

@@ -79,15 +79,25 @@
           <Button Command="{Binding TestConnectionCommand}"
                   IsEnabled="{Binding IsTestingConnection, Converter={StaticResource BoolInverse}}"
                   Padding="16,8">
-            <TextBlock Text="Test Connection"
-                       VerticalAlignment="Center"/>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+              <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-test-20.png"
+                     Width="20" Height="20"
+                     Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Test Connection"
+                         VerticalAlignment="Center"/>
+            </Grid>
           </Button>
 
           <Button Classes="Accent"
                   Command="{Binding SaveSettingsCommand}"
                   Padding="16,8">
-            <TextBlock Text="Save"
-                       VerticalAlignment="Center"/>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+              <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-save-20.png"
+                     Width="20" Height="20"
+                     Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Save"
+                         VerticalAlignment="Center"/>
+            </Grid>
           </Button>
         </StackPanel>
 
@@ -124,8 +134,14 @@
                       Command="{Binding ClearCacheCommand}"
                       Padding="12,6"
                       VerticalAlignment="Center">
-                <TextBlock Text="Clear cache"
-                           FontSize="12"/>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+<Image Source="avares://XBVault/Assets/Views/SettingsView/settings-clear-20.png"
+                          Width="20" Height="20"
+                          Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Clear cache"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
               </Button>
             </Grid>
           </StackPanel>

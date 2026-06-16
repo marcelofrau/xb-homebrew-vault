@@ -25,15 +25,15 @@ public partial class ErrorDialog : Window
 
         var iconName = type switch
         {
-            ErrorDialogType.Info  => "app_info.ico",
-            ErrorDialogType.Warn  => "app_warn.ico",
-            ErrorDialogType.Error => "app_error.ico",
-            _                     => "app_error.ico"
+            ErrorDialogType.Info  => "errordialog-info-48.png",
+            ErrorDialogType.Warn  => "errordialog-warn-48.png",
+            ErrorDialogType.Error => "errordialog-error-48.png",
+            _                     => "errordialog-error-48.png"
         };
 
         try
         {
-            var uri = new Uri($"avares://XBVault/Assets/Icons/{iconName}");
+            var uri = new Uri($"avares://XBVault/Assets/Views/ErrorDialog/{iconName}");
             IconImage.Source = new Bitmap(AssetLoader.Open(uri));
         }
         catch

@@ -39,9 +39,9 @@
               Click="OnCloseClick"
               Cursor="Hand"
               ToolTip.Tip="Close">
-        <Image Source="avares://XBVault/Assets/Icons/close.ico"
-               Width="16" Height="16"
-               Stretch="Uniform"/>
+        <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-close-20.png"
+Width="20" Height="20"
+                        Stretch="Uniform"/>
         <Button.Styles>
           <Style Selector="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -187,22 +187,40 @@
                     Padding="20,10"
                     Command="{Binding InstallSelectedCommand}"
                     IsEnabled="{Binding IsInstalling, Converter={StaticResource BoolInverse}}">
-              <TextBlock Text="Install"
-                         FontSize="13"
-                         FontWeight="SemiBold"/>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
+                       Width="20" Height="20"
+                       Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Install"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Grid>
             </Button>
 
             <Button Padding="20,10"
                     IsEnabled="{Binding SelectedItem.DownloadUrl, Converter={StaticResource StringNotEmpty}}">
-              <TextBlock Text="Download"
-                         FontSize="13"/>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-download-20.png"
+                       Width="20" Height="20"
+                       Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Download"
+                           FontSize="13"
+                           VerticalAlignment="Center"/>
+              </Grid>
             </Button>
 
             <Button Padding="16,10"
                     Command="{Binding CheckInstalledCommand}"
                     IsEnabled="{Binding IsCheckingInstalled, Converter={StaticResource BoolInverse}}">
-              <TextBlock Text="Check Installed"
-                         FontSize="12"/>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
+                       Width="20" Height="20"
+                       Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Check Installed"
+                           FontSize="12"
+                           VerticalAlignment="Center"/>
+              </Grid>
             </Button>
           </StackPanel>
 

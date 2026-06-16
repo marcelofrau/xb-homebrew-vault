@@ -30,10 +30,10 @@
                 HorizontalAlignment="Right"
                 ToolTip.Tip="Force re-download catalog">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-            <Image Source="avares://XBVault/Assets/Icons/refresh.ico"
-                   Width="16" Height="16"
+            <Image Source="avares://XBVault/Assets/Views/BrowseView/browse-refresh-20.png"
+                   Width="20" Height="20"
                    Stretch="Uniform"/>
-            <TextBlock Grid.Column="1" Text="Refresh" FontSize="13"/>
+            <TextBlock Grid.Column="1" Text="Refresh" FontSize="13" VerticalAlignment="Center"/>
           </Grid>
         </Button>
       </StackPanel>
@@ -61,7 +61,7 @@
                 VerticalAlignment="Center"
                 Spacing="12">
       <Image x:Name="SpinnerImage"
-             Source="avares://XBVault/Assets/Images/cd.png"
+             Source="avares://XBVault/Assets/Views/BrowseView/browse-spinner-48.png"
              Width="48" Height="48"
              Stretch="Uniform"
              HorizontalAlignment="Center"

@@ -40,9 +40,9 @@
                 Click="OnCloseClick"
                 Cursor="Hand"
                 ToolTip.Tip="Close">
-          <Image Source="avares://XBVault/Assets/Icons/close.ico"
-                 Width="16" Height="16"
-                 Stretch="Uniform"/>
+          <Image Source="avares://XBVault/Assets/Views/RefreshWindow/refresh-close-20.png"
+Width="20" Height="20"
+                      Stretch="Uniform"/>
           <Button.Styles>
             <Style Selector="Button">
               <Setter Property="Background" Value="Transparent"/>
@@ -63,7 +63,7 @@
         <StackPanel Margin="12" Spacing="8">
 
           <!-- Banner -->
-          <Image Source="avares://XBVault/Assets/Images/fetch.png"
+          <Image Source="avares://XBVault/Assets/Views/RefreshWindow/refresh-fetch.png"
                  Stretch="None"
                  HorizontalAlignment="Center"/>
 
@@ -117,10 +117,16 @@
                        Foreground="{StaticResource AccentBrush}"/>
 
           <!-- Close button (always available) -->
-          <Button Content="Close"
-                  Click="OnCloseClick"
+          <Button Click="OnCloseClick"
                   Padding="10,6"
-                  HorizontalAlignment="Right"/>
+                  HorizontalAlignment="Right">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+              <Image Source="avares://XBVault/Assets/Views/RefreshWindow/refresh-closebtn-20.png"
+                     Width="20" Height="20"
+                     Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Close" VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
 
         </StackPanel>
       </Border>

@@ -8,7 +8,7 @@
         SystemDecorations="BorderOnly">
 
   <Window.Background>
-    <ImageBrush Source="avares://XBVault/Assets/Images/splash-bg.png"
+    <ImageBrush Source="avares://XBVault/Assets/Views/AboutWindow/about-bg.png"
                 Stretch="UniformToFill"/>
   </Window.Background>
 
@@ -17,7 +17,7 @@
       <StackPanel VerticalAlignment="Center"
                   HorizontalAlignment="Center"
                   Spacing="2">
-        <Image Source="avares://XBVault/Assets/Images/app-icon.png"
+        <Image Source="avares://XBVault/Assets/Views/AboutWindow/about-appicon-80.png"
                Width="80" Height="80"
                Stretch="Uniform"
                HorizontalAlignment="Center"
@@ -63,7 +63,7 @@
                  Margin="0,8"
                  HorizontalAlignment="Center"/>
 
-      <Image Source="avares://XBVault/Assets/Images/emulation-revival.png"
+      <Image Source="avares://XBVault/Assets/Views/AboutWindow/about-erlogo.png"
              Width="140" Height="40"
              Stretch="Uniform"
              HorizontalAlignment="Center"/>
@@ -83,10 +83,15 @@
             Margin="0,0,0,20"
             Padding="0,8"
             Click="OnCloseClick">
-      <TextBlock Text="CLOSE"
-                 FontSize="12"
-                 FontWeight="SemiBold"
-                 HorizontalAlignment="Center"/>
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" HorizontalAlignment="Center">
+<Image Source="avares://XBVault/Assets/Views/AboutWindow/about-close-20.png"
+ Width="20" Height="20"
+                Stretch="Uniform"/>
+        <TextBlock Grid.Column="1" Text="CLOSE"
+                   FontSize="12"
+                   FontWeight="SemiBold"
+                   VerticalAlignment="Center"/>
+      </Grid>
     </Button>
   </Grid>
   </Border>

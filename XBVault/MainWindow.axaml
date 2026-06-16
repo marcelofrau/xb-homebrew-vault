@@ -7,7 +7,7 @@
         Title="XB Homebrew Vault"
         Width="1140" Height="720"
         WindowStartupLocation="CenterScreen"
-        Icon="avares://XBVault/Assets/Icons/app.ico"
+        Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         Background="{StaticResource BgBrush}"
         SystemDecorations="None">
 
@@ -41,9 +41,9 @@
               BorderThickness="0" Click="OnCloseClick"
               Cursor="Hand"
               ToolTip.Tip="Close">
-        <Image Source="avares://XBVault/Assets/Icons/close.ico"
-               Width="16" Height="16"
-               Stretch="Uniform"/>
+        <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-close-20.png"
+Width="20" Height="20"
+                Stretch="Uniform"/>
         <Button.Styles>
           <Style Selector="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -61,7 +61,7 @@
     <!-- Sidebar -->
     <Border Grid.Row="1" Grid.Column="0">
       <Border.Background>
-        <ImageBrush Source="avares://XBVault/Assets/Images/splash-bg.png"
+        <ImageBrush Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-sidebarbg.png"
                     Stretch="UniformToFill"/>
       </Border.Background>
       <Grid RowDefinitions="Auto,*,Auto,Auto">
@@ -70,7 +70,7 @@
         <Border Padding="16,20,16,16"
                 Grid.Row="0">
           <StackPanel HorizontalAlignment="Center">
-            <Image Source="avares://XBVault/Assets/Images/xbox.png"
+            <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-xbox-80.png"
                    Width="80" Height="80"
                    Stretch="Uniform"
                    Margin="0,0,0,8"
@@ -101,9 +101,9 @@
                  SelectedIndex="{Binding SelectedTab}"
                  SelectionMode="Single">
           <ListBoxItem Tag="Browse" Padding="16,12">
-            <Grid ColumnDefinitions="28,*">
-              <Image Source="avares://XBVault/Assets/Icons/game-controller.ico"
-                     Width="22" Height="22"
+             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-browse-32.png"
+                     Width="32" Height="32"
                      Stretch="Uniform"/>
               <TextBlock Text="BROWSE"
                          Grid.Column="1"
@@ -115,9 +115,9 @@
             </Grid>
           </ListBoxItem>
           <ListBoxItem Tag="Installed" Padding="16,12">
-            <Grid ColumnDefinitions="28,*">
-              <Image Source="avares://XBVault/Assets/Icons/installed.ico"
-                     Width="22" Height="22"
+             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-installed-32.png"
+                     Width="32" Height="32"
                      Stretch="Uniform"/>
               <TextBlock Text="INSTALLED"
                          Grid.Column="1"
@@ -129,9 +129,9 @@
             </Grid>
           </ListBoxItem>
           <ListBoxItem Tag="Settings" Padding="16,12">
-            <Grid ColumnDefinitions="28,*">
-              <Image Source="avares://XBVault/Assets/Icons/settings.ico"
-                     Width="22" Height="22"
+             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-settings-32.png"
+                     Width="32" Height="32"
                      Stretch="Uniform"/>
               <TextBlock Text="SETTINGS"
                          Grid.Column="1"
@@ -143,9 +143,9 @@
             </Grid>
           </ListBoxItem>
           <ListBoxItem Tag="Logs" Padding="16,12">
-            <Grid ColumnDefinitions="28,*">
-              <Image Source="avares://XBVault/Assets/Icons/console.ico"
-                     Width="22" Height="22"
+             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-logs-32.png"
+                     Width="32" Height="32"
                      Stretch="Uniform"/>
               <TextBlock Text="LOGS"
                          Grid.Column="1"
@@ -159,7 +159,7 @@
         </ListBox>
 
         <!-- ER Logo -->
-        <Image Source="avares://XBVault/Assets/Images/emulation-revival.png"
+        <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-erlogo.png"
                Grid.Row="2"
                Width="140"
                Height="40"
@@ -181,9 +181,9 @@
                   FontWeight="SemiBold"
                   Cursor="Hand"
                   Command="{Binding ConnectCommand}">
-            <Grid ColumnDefinitions="24,*" ColumnSpacing="6">
-              <Image Source="avares://XBVault/Assets/Icons/xbox-connect.ico"
-                     Width="20" Height="20"
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-connect-32.png"
+                     Width="32" Height="32"
                      Stretch="Uniform"
                      VerticalAlignment="Center"/>
               <TextBlock Grid.Column="1"
@@ -208,9 +208,9 @@
                   FontWeight="SemiBold"
                   Cursor="Hand"
                   Command="{Binding OpenAboutCommand}">
-            <Grid ColumnDefinitions="24,*" ColumnSpacing="6">
-              <Image Source="avares://XBVault/Assets/Icons/info.ico"
-                     Width="16" Height="16"
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-about-32.png"
+                     Width="32" Height="32"
                      Stretch="Uniform"
                      VerticalAlignment="Center"/>
               <TextBlock Grid.Column="1"
