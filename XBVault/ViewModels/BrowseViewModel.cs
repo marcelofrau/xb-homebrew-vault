@@ -12,11 +12,13 @@ namespace XBVault.ViewModels;
 public partial class BrowseViewModel : ObservableObject
 {
     private readonly EmulationRevivalService _erService;
+    private readonly PackageInstallService _installService;
     private List<CatalogItem> _allItems = [];
 
-    public BrowseViewModel(EmulationRevivalService erService)
+    public BrowseViewModel(EmulationRevivalService erService, PackageInstallService installService)
     {
         _erService = erService;
+        _installService = installService;
         Categories =
         [
             "All",
@@ -43,6 +45,15 @@ public partial class BrowseViewModel : ObservableObject
     private bool _isLoading;
 
     [ObservableProperty]
+    private bool _isInstalling;
+
+    [ObservableProperty]
+    private double _installProgress;
+
+    [ObservableProperty]
+    private string? _installStatus;
+
+    [ObservableProperty]
     private bool _showExperimental = true;
 
     [ObservableProperty]
@@ -61,6 +72,8 @@ public partial class BrowseViewModel : ObservableObject
     partial void OnSelectedItemChanged(CatalogItem? value)
     {
         IsDetailVisible = value is not null;
+        InstallProgress = 0;
+        InstallStatus = null;
     }
 
     [RelayCommand]
@@ -89,6 +102,37 @@ public partial class BrowseViewModel : ObservableObject
     private void BackToGrid()
     {
         SelectedItem = null;
+    }
+
+    [RelayCommand]
+    private async Task InstallSelectedAsync()
+    {
+        if (SelectedItem is null || IsInstalling) return;
+
+        IsInstalling = true;
+        InstallProgress = 0;
+        InstallStatus = "Downloading...";
+
+        var progress = new Progress<double>(p =>
+        {
+            InstallProgress = p;
+            if (p < 0.5)
+                InstallStatus = "Downloading...";
+            else if (p < 0.6)
+                InstallStatus = "Analyzing package...";
+            else if (p < 1.0)
+                InstallStatus = "Installing on Xbox...";
+            else
+                InstallStatus = "Complete!";
+        });
+
+        var result = await _installService.DownloadAndInstallAsync(SelectedItem, progress);
+
+        if (!result)
+            InstallStatus = "Install failed";
+
+        InstallProgress = result ? 1.0 : 0;
+        IsInstalling = false;
     }
 
     private void ApplyFilters()

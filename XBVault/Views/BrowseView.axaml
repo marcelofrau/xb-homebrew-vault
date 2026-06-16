@@ -242,10 +242,24 @@
               </ItemsControl>
             </StackPanel>
 
+            <!-- Install progress -->
+            <StackPanel Spacing="6"
+                        IsVisible="{Binding IsInstalling}">
+              <ProgressBar Value="{Binding InstallProgress}"
+                           Maximum="1"
+                           Height="4"
+                           Foreground="{StaticResource AccentBrush}"/>
+              <TextBlock Text="{Binding InstallStatus}"
+                         FontSize="11"
+                         Foreground="{StaticResource TextMutedBrush}"/>
+            </StackPanel>
+
             <!-- Actions -->
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Button Classes="Accent"
-                      Padding="20,10">
+                      Padding="20,10"
+                      Command="{Binding InstallSelectedCommand}"
+                      IsEnabled="{Binding IsInstalling, Converter={StaticResource BoolInverse}}">
                 <TextBlock Text="Install"
                            FontSize="13"
                            FontWeight="SemiBold"/>

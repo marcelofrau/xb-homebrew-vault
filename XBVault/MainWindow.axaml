@@ -117,7 +117,8 @@
       <Grid>
         <v:BrowseView x:Name="BrowseViewCtrl"
                         IsVisible="{Binding IsBrowseActive}"/>
-        <v:InstalledView IsVisible="{Binding IsInstalledActive}"/>
+        <v:InstalledView x:Name="InstalledViewCtrl"
+                          IsVisible="{Binding IsInstalledActive}"/>
         <v:SettingsView x:Name="SettingsViewCtrl"
                         IsVisible="{Binding IsSettingsActive}"/>
       </Grid>

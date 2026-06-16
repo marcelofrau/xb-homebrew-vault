@@ -20,9 +20,12 @@ public partial class App : Application
         {
             var xboxService = new XboxDeviceService();
             var erService = new EmulationRevivalService();
+            var cacheService = new CacheService();
+            var installService = new PackageInstallService(cacheService, xboxService);
 
             var mainViewModel = new MainViewModel(xboxService);
-            var browseViewModel = new BrowseViewModel(erService);
+            var browseViewModel = new BrowseViewModel(erService, installService);
+            var installedViewModel = new InstalledViewModel(xboxService);
             var settingsViewModel = new SettingsViewModel(xboxService);
 
             var splash = new SplashWindow();
@@ -34,12 +37,14 @@ public partial class App : Application
             };
 
             main.BrowseViewCtrl.DataContext = browseViewModel;
+            main.InstalledViewCtrl.DataContext = installedViewModel;
             main.SettingsViewCtrl.DataContext = settingsViewModel;
 
             splash.Closed += (_, _) =>
             {
                 main.Show();
                 _ = browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
+                _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
             };
 
             splash.CloseAfterDelay();

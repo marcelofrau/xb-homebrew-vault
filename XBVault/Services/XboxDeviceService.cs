@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -67,6 +68,50 @@ public class XboxDeviceService
         catch
         {
             return [];
+        }
+    }
+
+    public async Task<bool> UninstallPackageAsync(string packageFullName)
+    {
+        if (!_configured) return false;
+
+        try
+        {
+            var encoded = Uri.EscapeDataString(packageFullName);
+            var response = await _http.DeleteAsync(
+                $"/api/app/packagemanager/package?package={encoded}");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> InstallPackageAsync(string filePath, IProgress<double>? progress = null)
+    {
+        if (!_configured || !File.Exists(filePath)) return false;
+
+        try
+        {
+            progress?.Report(0);
+
+            var fileBytes = await File.ReadAllBytesAsync(filePath);
+            var fileName = Path.GetFileName(filePath);
+
+            using var content = new MultipartFormDataContent();
+            content.Add(new ByteArrayContent(fileBytes), "package", fileName);
+
+            progress?.Report(0.5);
+
+            var response = await _http.PostAsync("/api/app/packagemanager/package", content);
+
+            progress?.Report(1.0);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
         }
     }
 }
