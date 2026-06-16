@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:XBVault.ViewModels"
+             x:Class="XBVault.Views.LogsView">
+
+  <Grid Margin="16">
+    <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="6" Padding="12">
+      <ScrollViewer>
+        <ItemsControl ItemsSource="{Binding Logs}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="12" Foreground="{StaticResource TextMutedBrush}" TextWrapping="NoWrap"/>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Border>
+  </Grid>
+
+</UserControl>
