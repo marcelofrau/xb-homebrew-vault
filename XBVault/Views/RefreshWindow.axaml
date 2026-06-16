@@ -1,12 +1,16 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        xmlns:sys="using:System"
         x:Class="XBVault.Views.RefreshWindow"
+        x:DataType="vm:RefreshViewModel"
         Title="Refresh Catalog"
         WindowStartupLocation="CenterOwner"
-        SizeToContent="WidthAndHeight"
+        Width="420"
+        SizeToContent="Height"
         CanResize="False"
         ShowInTaskbar="False"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="{StaticResource SurfaceBrush}">
 
   <Window.Styles>
@@ -97,13 +101,13 @@ Width="20" Height="20"
                   MinHeight="180">
             <ScrollViewer x:Name="OutputScroll">
               <ItemsControl ItemsSource="{Binding OutputLines}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="sys:String">
                     <TextBlock Text="{Binding}"
                                FontFamily="{StaticResource MonoFont}"
                                FontSize="13"
-                               Foreground="#2ECC71"
-                               TextWrapping="NoWrap"/>
+                  Foreground="{StaticResource AccentGlowBrush}"
+                                TextWrapping="Wrap"/>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>

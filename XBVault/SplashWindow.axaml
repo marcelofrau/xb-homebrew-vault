@@ -4,7 +4,7 @@
         Title="XB Homebrew Vault"
         Width="500" Height="380"
         WindowStartupLocation="CenterScreen"
-        SystemDecorations="None"
+        WindowDecorations="None"
         CanResize="False"
         Topmost="True">
 

@@ -1,11 +1,14 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        xmlns:sys="using:System"
         x:Class="XBVault.Views.ItemDetailWindow"
+        x:DataType="vm:BrowseViewModel"
         Title="Item Details"
         Width="540" Height="600"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="{StaticResource SurfaceBrush}">
 
   <Window.Styles>
@@ -139,7 +142,7 @@ Width="20" Height="20"
                          FontWeight="SemiBold"/>
               <ItemsControl ItemsSource="{Binding SelectedItem.Requirements}">
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate>
+                  <DataTemplate x:DataType="sys:String">
                     <TextBlock Text="{Binding}"
                                FontSize="12"
                                Foreground="{StaticResource TextMutedBrush}"
@@ -156,7 +159,7 @@ Width="20" Height="20"
                          FontWeight="SemiBold"/>
               <ItemsControl ItemsSource="{Binding SelectedItem.Features}">
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate>
+                  <DataTemplate x:DataType="sys:String">
                     <TextBlock Text="{Binding}"
                                FontSize="12"
                                Foreground="{StaticResource TextMutedBrush}"

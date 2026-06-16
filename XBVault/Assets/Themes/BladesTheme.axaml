@@ -53,6 +53,15 @@
 
     <!-- Fluent theme overrides -->
     <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="{StaticResource BladesAccent}"/>
+    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#3A6B2E"/>
+    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#45803E"/>
+    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#3A6B2E"/>
+    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#6B8F2A"/>
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#6B8F2A"/>
+    <SolidColorBrush x:Key="ButtonForeground" Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#5A5C60"/>
   </Styles.Resources>
 
   <!-- Window -->
@@ -78,10 +87,12 @@
   <!-- Button -->
   <Style Selector="Button">
     <Style.Resources>
+      <SolidColorBrush x:Key="ButtonForeground" Color="#F0F0F0"/>
       <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F0F0F0"/>
       <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#F0F0F0"/>
+      <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#5A5C60"/>
       <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#2F333A"/>
-      <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#44681A"/>
+      <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#45803E"/>
       <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#6B8F2A"/>
       <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#9ACA3C"/>
     </Style.Resources>
@@ -98,14 +109,63 @@
 
   <Style Selector="Button.Accent">
     <Style.Resources>
-      <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#44681A"/>
+      <SolidColorBrush x:Key="ButtonForeground" Color="#1A1A1A"/>
+      <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F0F0F0"/>
       <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#F0F0F0"/>
-      <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#B5E665"/>
-      <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#6B8F2A"/>
+      <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#5A5C60"/>
+      <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#45803E"/>
+      <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#3A6B2E"/>
+      <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#6B8F2A"/>
+      <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#3A6B2E"/>
     </Style.Resources>
     <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
     <Setter Property="Foreground" Value="{StaticResource AccentHoverDarkBrush}"/>
-    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="BorderBrush" Value="{StaticResource AccentDimBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="4"/>
+  </Style>
+
+  <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#45803E"/>
+  </Style>
+
+  <Style Selector="Button.Accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#45803E"/>
+  </Style>
+
+  <Style Selector="Button.Accent:pointerover /template/ Border">
+    <Setter Property="BorderBrush" Value="#9ACA3C"/>
+  </Style>
+
+  <Style Selector="Button.Accent:pressed /template/ Border">
+    <Setter Property="BorderBrush" Value="#3A6B2E"/>
+  </Style>
+
+  <Style Selector="Button.Accent /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="#1A1A1A"/>
+  </Style>
+  <Style Selector="Button.Accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="#F0F0F0"/>
+  </Style>
+  <Style Selector="Button.Accent:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="#5A5C60"/>
+  </Style>
+
+  <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="#5A5C60"/>
+  </Style>
+
+  <Style Selector="Button.Accent TextBlock">
+    <Setter Property="Foreground" Value="#1A1A1A"/>
+  </Style>
+  <Style Selector="Button.Accent:pointerover TextBlock">
+    <Setter Property="Foreground" Value="#F0F0F0"/>
+  </Style>
+  <Style Selector="Button.Accent:disabled TextBlock">
+    <Setter Property="Foreground" Value="#5A5C60"/>
+  </Style>
+  <Style Selector="Button:disabled TextBlock">
+    <Setter Property="Foreground" Value="#5A5C60"/>
   </Style>
 
   <Style Selector="Button.Danger">

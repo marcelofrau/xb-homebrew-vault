@@ -1,6 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="XBVault.Views.InstalledView">
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:XBVault.ViewModels"
+              xmlns:models="using:XBVault.Models"
+              x:Class="XBVault.Views.InstalledView"
+              x:DataType="vm:InstalledViewModel">
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="32">
 
@@ -90,7 +93,7 @@
              Background="Transparent"
              IsVisible="{Binding HasPackages}">
       <ListBox.ItemTemplate>
-        <DataTemplate>
+        <DataTemplate x:DataType="models:InstalledPackage">
           <Border Classes="Card"
                   Padding="16"
                   Margin="0,0,0,8"

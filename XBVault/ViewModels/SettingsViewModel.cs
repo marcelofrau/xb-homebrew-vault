@@ -56,6 +56,24 @@ public partial class SettingsViewModel : ObservableObject
     private bool _isConnected;
 
     [ObservableProperty]
+    private bool _showSavedNotification;
+
+    [ObservableProperty]
+    private string _savedNotificationText = string.Empty;
+
+    partial void OnShowSavedNotificationChanged(bool value)
+    {
+        if (value)
+            _ = AutoHideSavedNotification();
+    }
+
+    private async Task AutoHideSavedNotification()
+    {
+        await Task.Delay(3000);
+        ShowSavedNotification = false;
+    }
+
+    [ObservableProperty]
     private long _cacheSizeBytes;
 
     [ObservableProperty]
@@ -158,6 +176,12 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void DismissSavedNotification()
+    {
+        ShowSavedNotification = false;
+    }
+
+    [RelayCommand]
     private void SaveSettings()
     {
         Logger.Debug("SaveSettings called");
@@ -201,7 +225,9 @@ public partial class SettingsViewModel : ObservableObject
         _xboxService.Configure(baseUrl, Username, Password);
         Logger.Debug("XboxDeviceService reconfigured with new settings");
 
-        ConnectionStatus = "Settings saved";
+        SavedNotificationText = "Settings saved successfully!";
+        ShowSavedNotification = true;
+        ConnectionStatus = string.Empty;
     }
 
     [RelayCommand]

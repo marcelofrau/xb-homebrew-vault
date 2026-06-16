@@ -6,7 +6,7 @@
         WindowStartupLocation="CenterOwner"
         CanResize="False"
         ShowInTaskbar="False"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="{StaticResource SurfaceBrush}">
 
   <Window.Styles>

@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="XBVault.Views.SettingsView">
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:XBVault.ViewModels"
+              x:Class="XBVault.Views.SettingsView"
+              x:DataType="vm:SettingsViewModel">
 
   <Grid RowDefinitions="Auto,*" Margin="32">
 
@@ -29,7 +31,7 @@
               <TextBlock Text="Address"
                          FontSize="12"
                          Foreground="{StaticResource TextMutedBrush}"/>
-              <TextBox Watermark="192.168.1.100"
+              <TextBox PlaceholderText="192.168.1.100"
                        Text="{Binding Address}"/>
             </StackPanel>
 
@@ -38,7 +40,7 @@
               <TextBlock Text="Port"
                          FontSize="12"
                          Foreground="{StaticResource TextMutedBrush}"/>
-              <TextBox Watermark="11443"
+              <TextBox PlaceholderText="11443"
                        Text="{Binding Port}"/>
               <TextBlock Text="{Binding PortError}"
                          Foreground="{StaticResource DangerBrush}"
@@ -58,7 +60,7 @@
               <TextBlock Text="Username"
                          FontSize="12"
                          Foreground="{StaticResource TextMutedBrush}"/>
-              <TextBox Watermark="Dev Mode username"
+              <TextBox PlaceholderText="Dev Mode username"
                        Text="{Binding Username}"/>
             </StackPanel>
 
@@ -67,7 +69,7 @@
               <TextBlock Text="Password"
                          FontSize="12"
                          Foreground="{StaticResource TextMutedBrush}"/>
-              <TextBox Watermark="Dev Mode password"
+              <TextBox PlaceholderText="Dev Mode password"
                        Text="{Binding Password}"
                        PasswordChar="●"/>
             </StackPanel>
@@ -105,18 +107,26 @@
           </Button>
         </StackPanel>
 
-        <!-- Status -->
-        <Border Classes="Card"
-                Padding="16"
-                IsVisible="{Binding ConnectionStatus, Converter={StaticResource StringNotEmpty}}">
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-            <Ellipse Width="10"
-                     Height="10"
-                     Margin="0,6,0,6"/>
+        <!-- Saved notification -->
+        <Border IsVisible="{Binding ShowSavedNotification}"
+                Background="#1A3A1E"
+                BorderBrush="{StaticResource AccentBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="14,10">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <Path Data="M10,18 L16,24 L26,12"
+                  Stroke="{StaticResource AccentBrush}"
+                  StrokeThickness="2"
+                  StrokeLineCap="Round"
+                  StrokeJoin="Round"
+                  Width="20" Height="20"
+                  Stretch="Uniform"/>
             <TextBlock Grid.Column="1"
-                       Text="{Binding ConnectionStatus}"
-                       Foreground="{StaticResource TextMutedBrush}"
+                       Text="{Binding SavedNotificationText}"
+                       Foreground="{StaticResource AccentGlowBrush}"
                        FontSize="13"
+                       FontWeight="SemiBold"
                        VerticalAlignment="Center"/>
           </Grid>
         </Border>

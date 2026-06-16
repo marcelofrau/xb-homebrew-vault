@@ -1,6 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="XBVault.Views.BrowseView">
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:XBVault.ViewModels"
+              xmlns:models="using:XBVault.Models"
+              x:Class="XBVault.Views.BrowseView"
+              x:DataType="vm:BrowseViewModel">
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="32">
 
@@ -44,14 +47,27 @@
           ColumnDefinitions="5*,*"
           ColumnSpacing="12"
           Margin="0,0,0,16">
-      <TextBox Watermark="Search catalog..."
+      <TextBox PlaceholderText="Search catalog..."
                Text="{Binding SearchText}"
                Padding="12,8"/>
       <ComboBox Grid.Column="1"
                 ItemsSource="{Binding Categories}"
                 SelectedItem="{Binding SelectedCategory}"
                 HorizontalAlignment="Stretch"
-                Padding="8,6"/>
+                Padding="12,8"
+                Background="#45803E"
+                Foreground="#2A2A2A">
+        <ComboBox.Styles>
+          <Style Selector="ComboBox">
+            <Style.Resources>
+              <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#45803E"/>
+              <SolidColorBrush x:Key="ComboBoxBackground" Color="#45803E"/>
+              <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#4D8F45"/>
+              <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#3A6B34"/>
+            </Style.Resources>
+          </Style>
+        </ComboBox.Styles>
+      </ComboBox>
     </Grid>
 
     <!-- Loading -->
@@ -109,7 +125,7 @@
         </ItemsPanelTemplate>
       </ListBox.ItemsPanel>
       <ListBox.ItemTemplate>
-        <DataTemplate>
+        <DataTemplate x:DataType="models:CatalogItem">
           <Border Classes="Card"
                   Padding="0"
                   Width="240"

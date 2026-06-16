@@ -64,7 +64,13 @@ public partial class ErrorDialog : Window
         try
         {
             if (Clipboard is { } cb)
-                await cb.SetTextAsync(text);
+            {
+                var item = new DataTransferItem();
+                item.Set(DataFormat.Text, text);
+                var transfer = new DataTransfer();
+                transfer.Add(item);
+                await cb.SetDataAsync(transfer);
+            }
         }
         catch { }
     }

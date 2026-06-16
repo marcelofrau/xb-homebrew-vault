@@ -1,6 +1,8 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
         x:Class="XBVault.Views.SetupWindow"
+        x:DataType="vm:SettingsViewModel"
         Title="XB Homebrew Vault — Setup"
         Width="480" Height="400"
         WindowStartupLocation="CenterScreen"
@@ -43,7 +45,7 @@
                      FontSize="12"
                      Foreground="{StaticResource TextMutedBrush}"/>
           <TextBox x:Name="AddressBox"
-                   Watermark="192.168.1.100"
+                   PlaceholderText="192.168.1.100"
                    Text="{Binding Address}"/>
         </StackPanel>
 
@@ -52,7 +54,7 @@
                      FontSize="12"
                      Foreground="{StaticResource TextMutedBrush}"/>
           <TextBox x:Name="UsernameBox"
-                   Watermark="Dev Mode username"
+                   PlaceholderText="Dev Mode username"
                    Text="{Binding Username}"/>
         </StackPanel>
 
@@ -61,7 +63,7 @@
                      FontSize="12"
                      Foreground="{StaticResource TextMutedBrush}"/>
           <TextBox x:Name="PasswordBox"
-                   Watermark="Dev Mode password"
+                   PlaceholderText="Dev Mode password"
                    Text="{Binding Password}"
                    PasswordChar="●"/>
         </StackPanel>

@@ -5,7 +5,7 @@
         Width="500" Height="420"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
-        SystemDecorations="BorderOnly">
+        WindowDecorations="BorderOnly">
 
   <Window.Background>
     <ImageBrush Source="avares://XBVault/Assets/Views/AboutWindow/about-bg.png"

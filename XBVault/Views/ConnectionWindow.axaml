@@ -1,12 +1,16 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        xmlns:sys="using:System"
         x:Class="XBVault.Views.ConnectionWindow"
+        x:DataType="vm:ConnectionViewModel"
         Title="Xbox Connection"
         WindowStartupLocation="CenterOwner"
-        SizeToContent="WidthAndHeight"
+        Width="420"
+        SizeToContent="Height"
         CanResize="False"
         ShowInTaskbar="False"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="{StaticResource SurfaceBrush}">
 
   <Window.Styles>
@@ -98,12 +102,12 @@ Width="20" Height="20"
           <ScrollViewer x:Name="OutputScroll">
             <ItemsControl ItemsSource="{Binding OutputLines}">
               <ItemsControl.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="sys:String">
                   <TextBlock Text="{Binding}"
                              FontFamily="{StaticResource MonoFont}"
                              FontSize="13"
-                             Foreground="#2ECC71"
-                             TextWrapping="NoWrap"/>
+                  Foreground="{StaticResource AccentGlowBrush}"
+                                TextWrapping="Wrap"/>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>

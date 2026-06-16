@@ -1,8 +1,10 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:XBVault.ViewModels"
-             xmlns:converters="using:XBVault.Converters"
-             x:Class="XBVault.Views.LogsView">
+              xmlns:converters="using:XBVault.Converters"
+              xmlns:svc="using:XBVault.Services"
+              x:Class="XBVault.Views.LogsView"
+              x:DataType="vm:LogsViewModel">
 
   <UserControl.Resources>
     <converters:LogLevelToBrushConverter x:Key="LevelToBrush"/>
@@ -13,7 +15,7 @@
       <ScrollViewer>
         <ItemsControl ItemsSource="{Binding Logs}">
           <ItemsControl.ItemTemplate>
-            <DataTemplate>
+            <DataTemplate x:DataType="svc:LogEntry">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="4" Margin="0,1">
                 <TextBlock Text="{Binding Marker}"
                            FontSize="13"

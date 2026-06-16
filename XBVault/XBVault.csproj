@@ -7,27 +7,27 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BuiltInComInteropSupport Condition="$([MSBuild]::IsOSPlatform('windows'))">true</BuiltInComInteropSupport>
-    <ApplicationIcon>Assets\Icons\app.ico</ApplicationIcon>
+    <ApplicationIcon>Assets/Icons/app.ico</ApplicationIcon>
     <AssemblyName>XBVault</AssemblyName>
     <RootNamespace>XBVault</RootNamespace>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <Authors>Marcelo Frau</Authors>
     <Description>XB Homebrew Vault — Desktop manager for Xbox Dev Mode homebrew</Description>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <Copyright>Copyright (c) 2026 Marcelo Frau</Copyright>
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishReadyToRun Condition="$([MSBuild]::IsOSPlatform('windows'))">true</PublishReadyToRun>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.3.12" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.3.12" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.12" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.12" />
+    <PackageReference Include="Avalonia" Version="12.0.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.0.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.0" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.12.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <AvaloniaResource Include="Assets\**" />
+    <AvaloniaResource Include="Assets/**" />
   </ItemGroup>
 </Project>

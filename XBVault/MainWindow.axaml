@@ -2,18 +2,33 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:XBVault.ViewModels"
         xmlns:v="using:XBVault.Views"
-        x:Class="XBVault.MainWindow"
-        x:Name="Root"
+         x:Class="XBVault.MainWindow"
+         x:DataType="vm:MainViewModel"
+         x:Name="Root"
         Title="XB Homebrew Vault"
         Width="1140" Height="720"
         WindowStartupLocation="CenterScreen"
         Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         Background="{StaticResource BgBrush}"
-        SystemDecorations="None">
+        WindowDecorations="None">
 
   <Window.Styles>
     <Style Selector="Window">
       <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+
+    <Style Selector="Button.SidebarBtn">
+      <Style.Resources>
+        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#332F333A"/>
+        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#552F333A"/>
+      </Style.Resources>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="0"/>
+      <Setter Property="Padding" Value="0,12"/>
+      <Setter Property="Foreground" Value="#CCC"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Cursor" Value="Hand"/>
     </Style>
   </Window.Styles>
 
@@ -171,15 +186,9 @@ Width="20" Height="20"
         <StackPanel Grid.Row="3" Spacing="4" Margin="16,0,16,16">
 
           <!-- Connect button -->
-          <Button HorizontalAlignment="Stretch"
-                  Background="Transparent"
-                  Foreground="#CCC"
-                  BorderThickness="0"
-                  CornerRadius="0"
-                  Padding="0,12"
-                  FontSize="11"
+          <Button Classes="SidebarBtn"
+                  HorizontalAlignment="Stretch"
                   FontWeight="SemiBold"
-                  Cursor="Hand"
                   Command="{Binding ConnectCommand}">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-connect-32.png"
@@ -187,26 +196,15 @@ Width="20" Height="20"
                      Stretch="Uniform"
                      VerticalAlignment="Center"/>
               <TextBlock Grid.Column="1"
-                         Text="CONNECT"
-                         VerticalAlignment="Center"/>
+                          Text="CONNECT"
+                          VerticalAlignment="Center"/>
             </Grid>
-            <Button.Styles>
-              <Style Selector="Button:pointerover">
-                <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
-              </Style>
-            </Button.Styles>
           </Button>
 
           <!-- About button -->
-          <Button HorizontalAlignment="Stretch"
-                  Background="Transparent"
-                  Foreground="#CCC"
-                  BorderThickness="0"
-                  CornerRadius="0"
-                  Padding="0,12"
-                  FontSize="11"
+          <Button Classes="SidebarBtn"
+                  HorizontalAlignment="Stretch"
                   FontWeight="SemiBold"
-                  Cursor="Hand"
                   Command="{Binding OpenAboutCommand}">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-about-32.png"
@@ -214,14 +212,9 @@ Width="20" Height="20"
                      Stretch="Uniform"
                      VerticalAlignment="Center"/>
               <TextBlock Grid.Column="1"
-                         Text="ABOUT"
-                         VerticalAlignment="Center"/>
+                          Text="ABOUT"
+                          VerticalAlignment="Center"/>
             </Grid>
-            <Button.Styles>
-              <Style Selector="Button:pointerover">
-                <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
-              </Style>
-            </Button.Styles>
           </Button>
 
           <!-- Connection indicator -->
