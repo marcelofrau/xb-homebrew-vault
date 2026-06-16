@@ -1,0 +1,130 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="XBVault.Views.RefreshWindow"
+        Title="Refresh Catalog"
+        WindowStartupLocation="CenterOwner"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        ShowInTaskbar="False"
+        SystemDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
+
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
+
+  <Border BorderBrush="#447F3E" BorderThickness="2">
+    <Grid RowDefinitions="Auto,*">
+      <!-- Title Bar -->
+      <Grid Height="32"
+            PointerPressed="OnTitleBarPointerPressed">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#447F3E" Offset="0"/>
+            <GradientStop Color="#9ACA3C" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="Refresh Catalog"
+                   Foreground="#1A1A1A"
+                   FontSize="14"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"
+                   Margin="12,0"/>
+        <Button Grid.Column="1"
+                Width="32" Height="32"
+                Padding="0"
+                BorderThickness="0"
+                Click="OnCloseClick"
+                Cursor="Hand"
+                ToolTip.Tip="Close">
+          <Image Source="avares://XBVault/Assets/Icons/close.ico"
+                 Width="16" Height="16"
+                 Stretch="Uniform"/>
+          <Button.Styles>
+            <Style Selector="Button">
+              <Setter Property="Background" Value="Transparent"/>
+            </Style>
+            <Style Selector="Button:pointerover">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+          </Button.Styles>
+        </Button>
+      </Grid>
+
+      <!-- Content -->
+      <Border Grid.Row="1"
+              BorderThickness="0">
+        <StackPanel Margin="12" Spacing="8">
+
+          <!-- Banner -->
+          <Image Source="avares://XBVault/Assets/Images/fetch.png"
+                 Stretch="None"
+                 HorizontalAlignment="Center"/>
+
+          <TextBlock Text="Forcing catalog re-download"
+                     FontSize="14"
+                     FontWeight="Bold"
+                     Foreground="{StaticResource AccentBrush}"
+                     HorizontalAlignment="Center"/>
+
+          <!-- Details -->
+          <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+            <TextBlock Text="Fetching latest from Emulation Revival"
+                       FontSize="12"
+                       Foreground="{StaticResource TextMutedBrush}"/>
+            <TextBlock Grid.Row="1"
+                       Text="Progress:"
+                       FontSize="12"
+                       Foreground="{StaticResource TextDimBrush}"/>
+            <TextBlock Grid.Row="1" Grid.Column="1"
+                       Text="{Binding Progress, StringFormat={}{0:P0}}"
+                       FontSize="12"
+                       HorizontalAlignment="Right"/>
+          </Grid>
+
+          <!-- Terminal output -->
+          <Border Background="{StaticResource SurfaceAltBrush}"
+                  CornerRadius="6"
+                  Padding="8,6"
+                  Height="180"
+                  MaxHeight="180"
+                  MinHeight="180">
+            <ScrollViewer x:Name="OutputScroll">
+              <ItemsControl ItemsSource="{Binding OutputLines}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding}"
+                               FontFamily="{StaticResource MonoFont}"
+                               FontSize="13"
+                               Foreground="#2ECC71"
+                               TextWrapping="NoWrap"/>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Border>
+
+          <!-- Progress bar -->
+          <ProgressBar IsIndeterminate="True"
+                       Height="4"
+                       IsVisible="{Binding IsRunning}"
+                       Foreground="{StaticResource AccentBrush}"/>
+
+          <!-- Close button (always available) -->
+          <Button Content="Close"
+                  Click="OnCloseClick"
+                  Padding="10,6"
+                  HorizontalAlignment="Right"/>
+
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Border>
+
+</Window>

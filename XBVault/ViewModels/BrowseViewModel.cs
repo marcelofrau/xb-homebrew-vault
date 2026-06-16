@@ -21,6 +21,7 @@ public partial class BrowseViewModel : ObservableObject
     private List<CatalogItem> _allItems = [];
 
     public Action<CatalogItem>? ShowDetailAction;
+    public Func<Task>? ShowRefreshDialogAsync;
 
     private static readonly HttpClient ImageHttp = new();
 
@@ -40,6 +41,7 @@ public partial class BrowseViewModel : ObservableObject
             "Media",
             "Utility"
         ];
+        Logger.Debug($"BrowseViewModel created, {Categories.Count} categories");
     }
 
     public ObservableCollection<CatalogItem> Items { get; } = [];
@@ -82,32 +84,49 @@ public partial class BrowseViewModel : ObservableObject
     private async Task CheckInstalledAsync()
     {
         var item = SelectedItem;
-        if (item is null) return;
+        if (item is null)
+        {
+            Logger.Warn("CheckInstalled called with no selected item");
+            return;
+        }
 
         IsCheckingInstalled = true;
         InstalledVersion = null;
+        Logger.Info($"Checking install status for [{item.Category}] {item.Name}");
 
+        Logger.Debug($"XboxDeviceService.IsConfigured={_xboxService.IsConfigured}");
         if (!_xboxService.IsConfigured)
         {
             InstalledVersion = "Not connected";
+            Logger.Info("Xbox not configured — skipping installed check");
             IsCheckingInstalled = false;
             return;
         }
 
         try
         {
+            Logger.Debug("Fetching installed packages from Xbox...");
             var packages = await _xboxService.GetInstalledPackagesAsync();
+            Logger.Debug($"Got {packages.Count} installed packages from Xbox");
+
             var match = packages.FirstOrDefault(p =>
                 p.Name.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
             InstalledVersion = match?.Version ?? "Not installed";
+
+            if (match is not null)
+                Logger.Info($"Found installed: {item.Name} v{match.Version} ({match.InstalledSizeBytes} bytes)");
+            else
+                Logger.Info($"Not installed: {item.Name}");
         }
-        catch
+        catch (Exception ex)
         {
             InstalledVersion = "Check failed";
+            Logger.Error(ex, $"Check installed failed for {item.Name}");
         }
         finally
         {
             IsCheckingInstalled = false;
+            Logger.Debug("CheckInstalled completed");
         }
     }
 
@@ -121,6 +140,7 @@ public partial class BrowseViewModel : ObservableObject
         {
             InstallProgress = 0;
             InstallStatus = null;
+            Logger.Debug($"Item selected: [{value.Category}] {value.Name} v{value.Version}");
             ShowDetailAction?.Invoke(value);
         }
     }
@@ -129,16 +149,55 @@ public partial class BrowseViewModel : ObservableObject
     private async Task LoadCatalogAsync()
     {
         IsLoading = true;
+        Logger.Info("Loading catalog from Emulation Revival...");
 
         try
         {
-            _allItems = await _erService.FetchCatalogAsync();
+            Logger.Debug("FetchCatalogAsync start");
+            _allItems = await _erService.FetchCatalogAsync(forceRefresh: false);
+            Logger.Info($"Catalog loaded: {_allItems.Count} items total");
+
+            var byCategory = _allItems.GroupBy(i => i.Category)
+                .Select(g => $"{g.Key}={g.Count()}");
+            Logger.Debug($"Per category: {string.Join(", ", byCategory)}");
+
             ApplyFilters();
             _ = LoadThumbnailsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Catalog load failed");
         }
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task RefreshCatalogAsync()
+    {
+        Logger.Info("RefreshCatalog command triggered — opening refresh dialog");
+
+        if (ShowRefreshDialogAsync is not null)
+        {
+            await ShowRefreshDialogAsync();
+        }
+        else
+        {
+            Logger.Warn("ShowRefreshDialogAsync not set — falling back to direct refresh");
+            // Fallback: do inline if delegate not wired
+            try
+            {
+                _allItems = await _erService.FetchCatalogAsync(forceRefresh: true);
+                Logger.Info($"Catalog refreshed: {_allItems.Count} items total");
+                ApplyFilters();
+                _ = LoadThumbnailsAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Catalog refresh failed (fallback)");
+            }
         }
     }
 
@@ -151,11 +210,21 @@ public partial class BrowseViewModel : ObservableObject
     [RelayCommand]
     private async Task InstallSelectedAsync()
     {
-        if (SelectedItem is null || IsInstalling) return;
+        if (SelectedItem is null)
+        {
+            Logger.Warn("InstallSelected called with no item");
+            return;
+        }
+        if (IsInstalling)
+        {
+            Logger.Warn($"Install already in progress for {SelectedItem.Name}");
+            return;
+        }
 
         IsInstalling = true;
         InstallProgress = 0;
         InstallStatus = "Downloading...";
+        Logger.Info($"Install starting: {SelectedItem.Name} from {SelectedItem.DownloadUrl}");
 
         var progress = new Progress<double>(p =>
         {
@@ -170,13 +239,23 @@ public partial class BrowseViewModel : ObservableObject
                 InstallStatus = "Complete!";
         });
 
+        Logger.Debug("Calling DownloadAndInstallAsync");
         var result = await _installService.DownloadAndInstallAsync(SelectedItem, progress);
 
-        if (!result)
+        if (result)
+        {
+            InstallStatus = "Complete!";
+            Logger.Info($"Install complete: {SelectedItem.Name}");
+        }
+        else
+        {
             InstallStatus = "Install failed";
+            Logger.Error($"Install failed: {SelectedItem.Name}");
+        }
 
         InstallProgress = result ? 1.0 : 0;
         IsInstalling = false;
+        Logger.Debug("Install flow finished");
     }
 
     private void ApplyFilters()
@@ -204,10 +283,15 @@ public partial class BrowseViewModel : ObservableObject
             Items.Add(item);
 
         HasItems = Items.Count > 0;
+        Logger.Debug($"Filters applied: cat={SelectedCategory} search='{SearchText}' → {Items.Count} items");
     }
 
     private async Task LoadThumbnailsAsync()
     {
+        var total = _allItems.Count(i => !string.IsNullOrEmpty(i.ImageUrl) && i.Thumbnail is null);
+        Logger.Debug($"Loading {total} thumbnails");
+
+        int loaded = 0;
         foreach (var item in _allItems)
         {
             if (string.IsNullOrEmpty(item.ImageUrl) || item.Thumbnail is not null)
@@ -215,9 +299,11 @@ public partial class BrowseViewModel : ObservableObject
 
             try
             {
+                Logger.Trace($"Fetching thumbnail: {item.ImageUrl}");
                 var bytes = await ImageHttp.GetByteArrayAsync(item.ImageUrl);
                 using var ms = new MemoryStream(bytes);
                 item.Thumbnail = new Bitmap(ms);
+                loaded++;
 
                 var idx = Items.IndexOf(item);
                 if (idx >= 0)
@@ -226,9 +312,12 @@ public partial class BrowseViewModel : ObservableObject
                     Items.Insert(idx, item);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Trace($"Thumbnail failed for {item.Name}: {ex.Message}");
             }
         }
+
+        Logger.Debug($"Thumbnails loaded: {loaded}/{total}");
     }
 }

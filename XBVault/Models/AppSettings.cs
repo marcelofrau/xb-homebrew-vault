@@ -8,4 +8,5 @@ public class AppSettings
     public string LastSelectedTab { get; set; } = "Browse";
     public int CacheExpiryHours { get; set; } = 24;
     public bool CheckForUpdatesOnStartup { get; set; } = true;
+    public string MinLogLevel { get; set; } = "Info";
 }

@@ -4,49 +4,80 @@
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="32">
 
-    <!-- Header -->
-    <StackPanel Grid.Row="0" Margin="0,24,0,16">
-      <TextBlock Text="BROWSE"
-                 Classes="PageTitle"/>
-      <TextBlock Text="Discover homebrew apps and emulators from Emulation Revival"
-                 Classes="Muted"
-                 FontSize="14"
-                 Margin="0,4,0,0"/>
-    </StackPanel>
+    <!-- Header Row: title left, checkbox + refresh right -->
+    <Grid Grid.Row="0"
+          ColumnDefinitions="*,Auto"
+          Margin="0,24,0,16">
+      <StackPanel>
+        <TextBlock Text="BROWSE"
+                   Classes="PageTitle"/>
+        <TextBlock Text="Discover homebrew apps and emulators from Emulation Revival"
+                   Classes="Muted"
+                   FontSize="14"
+                   Margin="0,4,0,0"/>
+      </StackPanel>
+      <StackPanel Grid.Column="1"
+                  Spacing="8"
+                  VerticalAlignment="Center">
+        <CheckBox IsChecked="{Binding ShowExperimental}"
+                  Foreground="{StaticResource TextMutedBrush}"
+                  FontSize="12"
+                  HorizontalAlignment="Right">
+          <TextBlock Text="Show experimental"/>
+        </CheckBox>
+        <Button Command="{Binding RefreshCatalogCommand}"
+                Padding="10,6"
+                HorizontalAlignment="Right"
+                ToolTip.Tip="Force re-download catalog">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+            <Image Source="avares://XBVault/Assets/Icons/refresh.ico"
+                   Width="16" Height="16"
+                   Stretch="Uniform"/>
+            <TextBlock Grid.Column="1" Text="Refresh" FontSize="13"/>
+          </Grid>
+        </Button>
+      </StackPanel>
+    </Grid>
 
-    <!-- Search + Filters -->
+    <!-- Search + Category -->
     <Grid Grid.Row="1"
-          ColumnDefinitions="*,Auto,Auto"
+          ColumnDefinitions="5*,*"
           ColumnSpacing="12"
           Margin="0,0,0,16">
-
       <TextBox Watermark="Search catalog..."
                Text="{Binding SearchText}"
                Padding="12,8"/>
-
       <ComboBox Grid.Column="1"
                 ItemsSource="{Binding Categories}"
                 SelectedItem="{Binding SelectedCategory}"
-                Width="140"
+                HorizontalAlignment="Stretch"
                 Padding="8,6"/>
-
-      <CheckBox Grid.Column="2"
-                IsChecked="{Binding ShowExperimental}"
-                Foreground="{StaticResource TextMutedBrush}"
-                FontSize="12"
-                VerticalAlignment="Center">
-        <TextBlock Text="Show experimental"/>
-      </CheckBox>
     </Grid>
 
     <!-- Loading -->
-    <TextBlock Grid.Row="2"
-               Text="Loading catalog..."
-               IsVisible="{Binding IsLoading}"
-               Foreground="{StaticResource TextMutedBrush}"
-               FontSize="14"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Center"/>
+    <StackPanel Grid.Row="2"
+                IsVisible="{Binding IsLoading}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12">
+      <Image x:Name="SpinnerImage"
+             Source="avares://XBVault/Assets/Images/cd.png"
+             Width="48" Height="48"
+             Stretch="Uniform"
+             HorizontalAlignment="Center"
+             RenderTransformOrigin="50% 50%">
+        <Image.RenderTransform>
+          <RotateTransform Angle="0"/>
+        </Image.RenderTransform>
+      </Image>
+      <ProgressBar IsIndeterminate="True"
+                   Width="200"
+                   Foreground="{StaticResource AccentBrush}"/>
+      <TextBlock Text="Loading catalog..."
+                 Foreground="{StaticResource TextMutedBrush}"
+                 FontSize="13"
+                 HorizontalAlignment="Center"/>
+    </StackPanel>
 
     <!-- Empty state -->
     <StackPanel Grid.Row="2"

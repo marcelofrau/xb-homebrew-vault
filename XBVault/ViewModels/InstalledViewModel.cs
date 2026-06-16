@@ -47,8 +47,16 @@ public partial class InstalledViewModel : ObservableObject
     [RelayCommand]
     private async Task RefreshPackagesAsync()
     {
+        if (!_xboxService.IsConfigured)
+        {
+            Logger.Info("Xbox not configured — skipping package refresh");
+            StatusMessage = "Not connected. Configure Xbox in Settings.";
+            return;
+        }
+
         IsLoading = true;
         StatusMessage = null;
+        Logger.Info("Refreshing installed packages...");
 
         try
         {
@@ -59,13 +67,15 @@ public partial class InstalledViewModel : ObservableObject
                 Packages.Add(pkg);
 
             HasPackages = Packages.Count > 0;
+            Logger.Info($"Installed packages: {Packages.Count}");
 
             if (!HasPackages)
                 StatusMessage = "No packages installed or Xbox not connected";
         }
-        catch
+        catch (Exception ex)
         {
             StatusMessage = "Failed to load packages";
+            Logger.Error(ex, "Refresh packages failed");
         }
         finally
         {
@@ -80,6 +90,7 @@ public partial class InstalledViewModel : ObservableObject
 
         IsUninstalling = true;
         StatusMessage = $"Uninstalling {SelectedPackage.Name}...";
+        Logger.Info($"Uninstalling: {SelectedPackage.Name}");
 
         try
         {
@@ -88,11 +99,17 @@ public partial class InstalledViewModel : ObservableObject
                 ? $"{SelectedPackage.Name} uninstalled"
                 : $"Failed to uninstall {SelectedPackage.Name}";
 
+            if (result)
+                Logger.Info($"Uninstall complete: {SelectedPackage.Name}");
+            else
+                Logger.Error($"Uninstall failed: {SelectedPackage.Name}");
+
             await RefreshPackagesAsync();
         }
-        catch
+        catch (Exception ex)
         {
             StatusMessage = "Uninstall failed";
+            Logger.Error(ex, $"Uninstall error: {SelectedPackage.Name}");
         }
         finally
         {
@@ -107,17 +124,24 @@ public partial class InstalledViewModel : ObservableObject
 
         IsLoading = true;
         StatusMessage = $"Installing {Path.GetFileName(filePath)}...";
+        Logger.Info($"Installing package: {filePath}");
 
         try
         {
             var result = await _xboxService.InstallPackageAsync(filePath);
             StatusMessage = result ? "Install complete" : "Install failed";
 
+            if (result)
+                Logger.Info("Install via file complete");
+            else
+                Logger.Error("Install via file failed");
+
             await RefreshPackagesAsync();
         }
-        catch
+        catch (Exception ex)
         {
             StatusMessage = "Install failed";
+            Logger.Error(ex, "Install via file error");
         }
         finally
         {

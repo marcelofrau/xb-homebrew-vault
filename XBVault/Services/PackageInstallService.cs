@@ -26,16 +26,26 @@ public class PackageInstallService
         IProgress<double>? progress = null)
     {
         if (string.IsNullOrWhiteSpace(item.DownloadUrl))
+        {
+            Logger.Error($"No download URL for {item.Name}");
             return false;
+        }
 
         progress?.Report(0);
+        Logger.Info($"DownloadAndInstall: {item.Name} from {item.DownloadUrl}");
 
         var fileName = GetFileNameFromUrl(item.DownloadUrl);
         var localPath = _cache.GetDownloadPath(item.Id, fileName);
+        Logger.Debug($"Target local path: {localPath}");
 
         // Download if not cached
-        if (!_cache.IsCached(item.Id, fileName))
+        if (_cache.IsCached(item.Id, fileName))
         {
+            Logger.Debug($"Cache hit for {item.Id}/{fileName}");
+        }
+        else
+        {
+            Logger.Debug($"Cache miss — downloading {fileName}");
             progress?.Report(0.1);
 
             try
@@ -45,6 +55,7 @@ public class PackageInstallService
                 response.EnsureSuccessStatusCode();
 
                 var total = response.Content.Headers.ContentLength ?? -1;
+                Logger.Debug($"Download size: {(total > 0 ? $"{total} bytes" : "unknown")}");
                 using var stream = await response.Content.ReadAsStreamAsync();
                 using var fileStream = File.Create(localPath);
 
@@ -62,9 +73,12 @@ public class PackageInstallService
                         progress?.Report(0.1 + (0.4 * (double)read / total));
                     }
                 }
+
+                Logger.Info($"Downloaded {read} bytes to {localPath}");
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Error(ex, $"Download failed for {item.DownloadUrl}");
                 if (File.Exists(localPath))
                     File.Delete(localPath);
                 return false;
@@ -74,14 +88,18 @@ public class PackageInstallService
         progress?.Report(0.5);
 
         // Analyze package for dependencies
+        Logger.Trace("Analyzing package dependencies (stub)");
         var dependencies = AnalyzePackage(localPath);
+        Logger.Debug($"Dependencies found: {dependencies.Length}");
         progress?.Report(0.6);
 
         // Install via Xbox
+        Logger.Debug("Sending package to Xbox for install");
         var result = await _xbox.InstallPackageAsync(localPath,
             new Progress<double>(p => progress?.Report(0.6 + (0.4 * p))));
 
         progress?.Report(1.0);
+        Logger.Info($"Install result for {item.Name}: {(result ? "success" : "failed")}");
         return result;
     }
 

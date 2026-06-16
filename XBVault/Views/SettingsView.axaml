@@ -131,6 +131,26 @@
           </StackPanel>
         </Border>
 
+        <!-- Logging Section -->
+        <Border Classes="Card" Padding="24">
+          <StackPanel Spacing="12">
+            <TextBlock Text="LOGGING"
+                       Classes="SectionHeader"/>
+            <StackPanel Spacing="4">
+              <TextBlock Text="Minimum log level"
+                         FontSize="12"
+                         Foreground="{StaticResource TextMutedBrush}"/>
+              <ComboBox ItemsSource="{Binding LogLevels}"
+                        SelectedItem="{Binding SelectedLogLevel}"
+                        Width="200"/>
+            </StackPanel>
+            <TextBlock Text="Changes take effect immediately. Restart to capture startup logs."
+                       FontSize="11"
+                       Foreground="{StaticResource TextDimBrush}"
+                       TextWrapping="Wrap"/>
+          </StackPanel>
+        </Border>
+
         <!-- Version -->
         <TextBlock x:Name="VersionText"
                    FontSize="11"

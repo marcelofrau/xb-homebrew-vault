@@ -18,6 +18,21 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         SetupGlobalExceptionHandling();
+
+        // Apply saved log level from settings
+        var savedLevel = SettingsService.Current.MinLogLevel;
+        Logger.MinLevel = savedLevel switch
+        {
+            "Trace" => LogLevel.Trace,
+            "Debug" => LogLevel.Debug,
+            "Info"  => LogLevel.Info,
+            "Warn"  => LogLevel.Warn,
+            "Error" => LogLevel.Error,
+            "Fatal" => LogLevel.Fatal,
+            _       => LogLevel.Info
+        };
+        Logger.Debug($"Log level initialized to {savedLevel}");
+
         Logger.Info("Application initialized");
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -37,7 +52,7 @@ public partial class App : Application
             splash.Show();
 
             _ = InitAfterSplashAsync(desktop, splash, mainViewModel, browseViewModel,
-                installedViewModel, settingsViewModel, xboxService);
+                installedViewModel, settingsViewModel, xboxService, erService);
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -97,7 +112,8 @@ public partial class App : Application
         BrowseViewModel browseViewModel,
         InstalledViewModel installedViewModel,
         SettingsViewModel settingsViewModel,
-        XboxDeviceService xboxService)
+        XboxDeviceService xboxService,
+        EmulationRevivalService erService)
     {
         Logger.Debug("Splash delay starting (2s)");
         await Task.Delay(2000);
@@ -152,8 +168,29 @@ public partial class App : Application
                 return connVm.IsSuccess;
             };
 
+            browseViewModel.ShowRefreshDialogAsync = async () =>
+            {
+                var refreshVm = new RefreshViewModel(erService, async () =>
+                {
+                    await Dispatcher.UIThread.InvokeAsync(async () =>
+                    {
+                        await browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
+                    });
+                });
+                var refreshWindow = new Views.RefreshWindow { DataContext = refreshVm };
+                await refreshWindow.ShowDialog(main);
+            };
+
             var browseView = new Views.BrowseView { DataContext = browseViewModel };
             var installedView = new Views.InstalledView { DataContext = installedViewModel };
+            settingsViewModel.ShowConnectDialogAsync = async () =>
+            {
+                var connVm = new ConnectionViewModel(xboxService);
+                var connWindow = new Views.ConnectionWindow { DataContext = connVm };
+                await connWindow.ShowDialog(main);
+                return connVm.IsSuccess;
+            };
+
             var settingsView = new Views.SettingsView { DataContext = settingsViewModel };
             var logsView = new Views.LogsView { DataContext = new LogsViewModel() };
 
@@ -164,7 +201,7 @@ public partial class App : Application
 
             // kick off background loads
             _ = browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
-            _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
+            // Installed packages loaded only on explicit refresh (manual connect)
 
             Logger.Info("Main window loaded, splash closed");
 

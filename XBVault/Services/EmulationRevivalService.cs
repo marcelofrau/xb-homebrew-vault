@@ -38,34 +38,65 @@ public partial class EmulationRevivalService
         _http.DefaultRequestHeaders.Add("User-Agent", $"XB Homebrew Vault/{BuildInfo.Version}");
     }
 
-    public async Task<List<CatalogItem>> FetchCatalogAsync(bool forceRefresh = false)
+    public async Task<List<CatalogItem>> FetchCatalogAsync(
+        bool forceRefresh = false,
+        IProgress<(string Status, double Progress)>? progress = null)
     {
+        Logger.Debug($"FetchCatalogAsync(forceRefresh={forceRefresh})");
+
         if (!forceRefresh)
         {
             var cached = LoadFromCache();
             if (cached.Count > 0)
+            {
+                progress?.Report(("Loaded from cache", 1.0));
+                Logger.Info($"Catalog loaded from cache: {cached.Count} items");
+                Logger.Debug($"Cache file: {CacheDir}");
                 return cached;
+            }
+            Logger.Debug("Cache empty or missing — fetching from web");
         }
 
+        progress?.Report(("Downloading catalog...", 0.0));
         var items = new List<CatalogItem>();
+        var pageIndex = 0;
+        var totalPages = Pages.Length;
 
         foreach (var (path, category) in Pages)
         {
             try
             {
+                var status = $"Scraping {category}...";
+                var pct = (double)pageIndex / totalPages;
+                progress?.Report((status, pct));
+                Logger.Debug($"Scraping {category} from {path}");
+
                 var pageItems = await ScrapePageAsync(path, category);
+                Logger.Debug($"  → {pageItems.Count} items from {category}");
                 items.AddRange(pageItems);
+                pageIndex++;
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Error(ex, $"Failed to scrape {category} at {path}");
+                pageIndex++;
             }
         }
 
+        progress?.Report(("Deduplicating...", 0.9));
+        var beforeDedup = items.Count;
         items = items.GroupBy(i => i.Name.ToLowerInvariant())
                      .Select(g => g.First())
                      .ToList();
+        var dupes = beforeDedup - items.Count;
+        if (dupes > 0)
+            Logger.Debug($"Removed {dupes} duplicate items");
 
+        progress?.Report(($"Saving {items.Count} items...", 0.95));
         SaveToCache(items);
+
+        progress?.Report(($"Complete: {items.Count} items", 1.0));
+        Logger.Info($"Catalog fetched: {items.Count} items across {Pages.Length} categories");
         return items;
     }
 
@@ -86,13 +117,18 @@ public partial class EmulationRevivalService
             {
                 var item = ParseCard(card, category);
                 if (item is not null)
+                {
                     items.Add(item);
+                    Logger.Trace($"Parsed: [{item.Category}] {item.Name} v{item.Version}");
+                }
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Trace($"ParseCard failed: {ex.Message}");
             }
         }
 
+        Logger.Debug($"{path}: {items.Count} items parsed");
         return items;
     }
 

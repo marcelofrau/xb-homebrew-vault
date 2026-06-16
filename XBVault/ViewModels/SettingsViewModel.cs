@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using XBVault.Services;
 
@@ -10,12 +11,16 @@ public partial class SettingsViewModel : ObservableObject
     private readonly XboxDeviceService _xboxService;
     private readonly CacheService _cacheService;
 
+    // Called to show the full ConnectionWindow dialog for testing
+    public Func<Task<bool>>? ShowConnectDialogAsync { get; set; }
+
     public SettingsViewModel(XboxDeviceService xboxService, CacheService cacheService)
     {
         _xboxService = xboxService;
         _cacheService = cacheService;
         LoadSettings();
         UpdateCacheInfo();
+        Logger.Debug("SettingsViewModel initialized");
     }
 
     [ObservableProperty]
@@ -48,8 +53,32 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _cacheSizeText = "0 B";
 
+    [ObservableProperty]
+    private string _selectedLogLevel = "Info";
+
+    public List<string> LogLevels { get; } = ["Trace", "Debug", "Info", "Warn", "Error", "Fatal"];
+
+    partial void OnSelectedLogLevelChanged(string value)
+    {
+        Logger.Debug($"Log level changed to {value}");
+        Logger.MinLevel = value switch
+        {
+            "Trace" => LogLevel.Trace,
+            "Debug" => LogLevel.Debug,
+            "Info"  => LogLevel.Info,
+            "Warn"  => LogLevel.Warn,
+            "Error" => LogLevel.Error,
+            "Fatal" => LogLevel.Fatal,
+            _       => LogLevel.Info
+        };
+        SettingsService.Current.MinLogLevel = value;
+        SettingsService.Save();
+        Logger.Info($"Log level set to {value}");
+    }
+
     private void LoadSettings()
     {
+        Logger.Debug("Loading settings from disk");
         var settings = SettingsService.Current;
         var conn = settings.XboxConnection;
 
@@ -57,12 +86,14 @@ public partial class SettingsViewModel : ObservableObject
         Port = conn.Port;
         Username = conn.Username;
         UseHttps = conn.UseHttps;
+        SelectedLogLevel = settings.MinLogLevel;
 
         if (!string.IsNullOrEmpty(conn.EncryptedPassword))
             Password = CryptoService.Deobfuscate(conn.EncryptedPassword);
 
         if (conn.IsConfigured)
         {
+            Logger.Debug("Connection already configured, applying");
             _xboxService.Configure(conn.BaseUrl, conn.Username,
                 CryptoService.Deobfuscate(conn.EncryptedPassword));
             ConnectionStatus = "Configured";
@@ -73,6 +104,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         CacheSizeBytes = _cacheService.GetCacheSizeBytes();
         CacheSizeText = FormatBytes(CacheSizeBytes);
+        Logger.Debug($"Cache size: {CacheSizeText}");
     }
 
     private static string FormatBytes(long bytes)
@@ -89,21 +121,26 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void SaveSettings()
     {
+        Logger.Debug("SaveSettings called");
+
         if (string.IsNullOrWhiteSpace(Address))
         {
             ConnectionStatus = "Address is required";
+            Logger.Warn("Save aborted: address empty");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(Username))
         {
             ConnectionStatus = "Username is required";
+            Logger.Warn("Save aborted: username empty");
             return;
         }
 
         if (Port < 1 || Port > 65535)
         {
             ConnectionStatus = "Port must be 1-65535";
+            Logger.Warn($"Save aborted: invalid port {Port}");
             return;
         }
 
@@ -115,12 +152,14 @@ public partial class SettingsViewModel : ObservableObject
         settings.XboxConnection.Username = Username;
         settings.XboxConnection.EncryptedPassword = obfuscated;
         settings.XboxConnection.UseHttps = UseHttps;
+        settings.MinLogLevel = SelectedLogLevel;
 
         SettingsService.Save();
+        Logger.Info($"Settings saved: {Address}:{Port} (HTTPS={UseHttps})");
 
-        _xboxService.Configure(
-            $"{(UseHttps ? "https" : "http")}://{Address}:{Port}",
-            Username, Password);
+        var baseUrl = $"{(UseHttps ? "https" : "http")}://{Address}:{Port}";
+        _xboxService.Configure(baseUrl, Username, Password);
+        Logger.Debug("XboxDeviceService reconfigured with new settings");
 
         ConnectionStatus = "Settings saved";
     }
@@ -128,37 +167,71 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task TestConnectionAsync()
     {
+        Logger.Debug("TestConnectionAsync started");
+
         if (string.IsNullOrWhiteSpace(Address))
         {
             ConnectionStatus = "Enter an address first";
+            Logger.Warn("Test aborted: no address");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(Username))
         {
             ConnectionStatus = "Enter a username first";
+            Logger.Warn("Test aborted: no username");
             return;
         }
 
-        IsTestingConnection = true;
-        ConnectionStatus = "Testing...";
+        if (ShowConnectDialogAsync is null)
+        {
+            Logger.Warn("ShowConnectDialogAsync not set — falling back to simple test");
+            IsTestingConnection = true;
+            ConnectionStatus = "Testing...";
+            var baseUrl = $"{(UseHttps ? "https" : "http")}://{Address}:{Port}";
+            _xboxService.Configure(baseUrl, Username, Password);
+            var result = await _xboxService.TestConnectionAsync();
+            IsConnected = result;
+            ConnectionStatus = result ? "Connected" : "Connection failed";
+            IsTestingConnection = false;
+            return;
+        }
 
-        _xboxService.Configure(
-            $"{(UseHttps ? "https" : "http")}://{Address}:{Port}",
-            Username, Password);
+        // Save current form values to settings in-memory, then open full connect dialog
+        Logger.Info($"Opening connect dialog for {Address}:{Port}");
+        var obfuscated = CryptoService.Obfuscate(Password);
+        var settings = SettingsService.Current;
+        settings.XboxConnection.Address = Address;
+        settings.XboxConnection.Port = Port;
+        settings.XboxConnection.Username = Username;
+        settings.XboxConnection.EncryptedPassword = obfuscated;
+        settings.XboxConnection.UseHttps = UseHttps;
 
-        var result = await _xboxService.TestConnectionAsync();
+        var result2 = await ShowConnectDialogAsync();
 
-        IsConnected = result;
-        ConnectionStatus = result ? "Connected" : "Connection failed — check address and credentials";
+        IsConnected = result2;
         IsTestingConnection = false;
+
+        if (result2)
+        {
+            ConnectionStatus = "Connected";
+            Logger.Info("Connection via dialog succeeded");
+        }
+        else
+        {
+            ConnectionStatus = "Connection failed — check address and credentials";
+            Logger.Warn("Connection via dialog failed");
+        }
     }
 
     [RelayCommand]
     private void ClearCache()
     {
+        Logger.Debug("ClearCache called");
+        var oldSize = CacheSizeText;
         _cacheService.ClearCache();
         UpdateCacheInfo();
+        Logger.Info($"Cache cleared (was {oldSize})");
         ConnectionStatus = "Cache cleared";
     }
 }

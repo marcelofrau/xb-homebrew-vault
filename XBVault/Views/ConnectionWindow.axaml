@@ -4,7 +4,6 @@
         Title="Xbox Connection"
         WindowStartupLocation="CenterOwner"
         SizeToContent="WidthAndHeight"
-        MinWidth="460"
         CanResize="False"
         ShowInTaskbar="False"
         SystemDecorations="None"
@@ -65,8 +64,7 @@
 
         <!-- Banner -->
         <Image Source="avares://XBVault/Assets/Images/connection-banner.png"
-               MaxWidth="400"
-               Stretch="Uniform"
+               Stretch="None"
                HorizontalAlignment="Center"/>
 
         <TextBlock Text="Establish Xbox connection"
@@ -94,10 +92,10 @@
         <Border Background="{StaticResource SurfaceAltBrush}"
                 CornerRadius="6"
                 Padding="8,6"
-                Height="110"
-                MaxHeight="110"
-                MinHeight="110">
-          <ScrollViewer>
+                Height="135"
+                MaxHeight="135"
+                MinHeight="135">
+          <ScrollViewer x:Name="OutputScroll">
             <ItemsControl ItemsSource="{Binding OutputLines}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>

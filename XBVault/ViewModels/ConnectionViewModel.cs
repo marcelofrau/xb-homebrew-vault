@@ -32,7 +32,11 @@ public partial class ConnectionViewModel : ObservableObject
 
     public event Action<bool>? Completed;
 
-    private void AddLine(string text) => OutputLines.Add(text);
+    private void AddLine(string text)
+    {
+        OutputLines.Add(text);
+        Logger.Info(text);
+    }
 
     private async Task Delay(int ms) => await Task.Delay(ms);
 
