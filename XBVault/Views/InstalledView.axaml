@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="XBVault.Views.InstalledView">
+
+  <Grid RowDefinitions="Auto,*" Margin="32">
+
+    <!-- Header -->
+    <StackPanel Grid.Row="0" Margin="0,24,0,16">
+      <TextBlock Text="INSTALLED"
+                 Classes="PageTitle"/>
+      <TextBlock Text="Manage apps and emulators installed on your Xbox"
+                 Classes="Muted"
+                 FontSize="14"
+                 Margin="0,4,0,0"/>
+    </StackPanel>
+
+    <!-- Placeholder -->
+    <Border Grid.Row="1"
+            Classes="Card"
+            Padding="32"
+            VerticalAlignment="Center"
+            HorizontalAlignment="Center">
+      <StackPanel HorizontalAlignment="Center">
+        <Image Source="avares://XBVault/Assets/Icons/installed.ico"
+               Width="48" Height="48"
+               Stretch="Uniform"
+               Margin="0,0,0,12"/>
+        <TextBlock Text="Installed packages view coming in Phase 3"
+                   FontSize="14"
+                   HorizontalAlignment="Center"
+                   Foreground="{StaticResource TextMutedBrush}"/>
+      </StackPanel>
+    </Border>
+
+  </Grid>
+
+</UserControl>

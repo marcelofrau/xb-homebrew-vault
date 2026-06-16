@@ -1,0 +1,115 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="XBVault.Views.SettingsView">
+
+  <Grid RowDefinitions="Auto,*" Margin="32">
+
+    <!-- Header -->
+    <StackPanel Grid.Row="0" Margin="0,24,0,16">
+      <TextBlock Text="SETTINGS"
+                 Classes="PageTitle"/>
+      <TextBlock Text="Configure Xbox Dev Mode connection"
+                 Classes="Muted"
+                 FontSize="14"
+                 Margin="0,4,0,0"/>
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Spacing="16" MaxWidth="500">
+
+        <!-- Connection Section -->
+        <Border Classes="Card" Padding="24">
+          <StackPanel Spacing="12">
+
+            <TextBlock Text="XBOX CONNECTION"
+                       Classes="SectionHeader"/>
+
+            <!-- Address -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="Address"
+                         FontSize="12"
+                         Foreground="{StaticResource TextMutedBrush}"/>
+              <TextBox Watermark="192.168.1.100"
+                       Text="{Binding Address}"/>
+            </StackPanel>
+
+            <!-- Port -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="Port"
+                         FontSize="12"
+                         Foreground="{StaticResource TextMutedBrush}"/>
+              <TextBox Watermark="11443"
+                       Text="{Binding Port}"/>
+            </StackPanel>
+
+            <!-- HTTPS toggle -->
+            <CheckBox IsChecked="{Binding UseHttps}"
+                      Foreground="{StaticResource TextMutedBrush}"
+                      FontSize="13">
+              <TextBlock Text="Use HTTPS (recommended)"/>
+            </CheckBox>
+
+            <!-- Username -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="Username"
+                         FontSize="12"
+                         Foreground="{StaticResource TextMutedBrush}"/>
+              <TextBox Watermark="Dev Mode username"
+                       Text="{Binding Username}"/>
+            </StackPanel>
+
+            <!-- Password -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="Password"
+                         FontSize="12"
+                         Foreground="{StaticResource TextMutedBrush}"/>
+              <TextBox Watermark="Dev Mode password"
+                       Text="{Binding Password}"
+                       PasswordChar="●"/>
+            </StackPanel>
+
+          </StackPanel>
+        </Border>
+
+        <!-- Actions -->
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="8">
+
+          <Button Command="{Binding TestConnectionCommand}"
+                  IsEnabled="{Binding IsTestingConnection, Converter={StaticResource BoolInverse}}"
+                  Padding="16,8">
+            <TextBlock Text="Test Connection"
+                       VerticalAlignment="Center"/>
+          </Button>
+
+          <Button Classes="Accent"
+                  Command="{Binding SaveSettingsCommand}"
+                  Padding="16,8">
+            <TextBlock Text="Save"
+                       VerticalAlignment="Center"/>
+          </Button>
+        </StackPanel>
+
+        <!-- Status -->
+        <Border Classes="Card"
+                Padding="16"
+                IsVisible="{Binding ConnectionStatus, Converter={StaticResource StringNotEmpty}}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <Ellipse Width="10"
+                     Height="10"
+                     Margin="0,6,0,6"/>
+            <TextBlock Grid.Column="1"
+                       Text="{Binding ConnectionStatus}"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       FontSize="13"
+                       VerticalAlignment="Center"/>
+          </Grid>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Grid>
+
+</UserControl>

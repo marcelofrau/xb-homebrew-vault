@@ -1,0 +1,17 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:XBVault.Converters"
+             x:Class="XBVault.App">
+
+  <Application.Resources>
+    <conv:BoolInverseConverter x:Key="BoolInverse"/>
+    <conv:StringNotEmptyConverter x:Key="StringNotEmpty"/>
+    <conv:IntToBoolConverter x:Key="IntToBool"/>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme/>
+    <StyleInclude Source="avares://XBVault/Assets/Themes/BladesTheme.axaml"/>
+  </Application.Styles>
+
+</Application>

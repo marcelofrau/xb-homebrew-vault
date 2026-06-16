@@ -1,0 +1,160 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Styles.Resources>
+    <!-- Xbox 360 Blades Palette -->
+    <Color x:Key="BladesBg">#0D1117</Color>
+    <Color x:Key="BladesSurface">#1A1D23</Color>
+    <Color x:Key="BladesSurfaceAlt">#252830</Color>
+    <Color x:Key="BladesSurfaceHover">#2F333A</Color>
+    <Color x:Key="BladesAccent">#9ACA3C</Color>
+    <Color x:Key="BladesAccentDim">#6B8F2A</Color>
+    <Color x:Key="BladesAccentGlow">#B5E665</Color>
+    <Color x:Key="BladesText">#F0F0F0</Color>
+    <Color x:Key="BladesTextMuted">#8B8D91</Color>
+    <Color x:Key="BladesTextDim">#5A5C60</Color>
+    <Color x:Key="BladesDanger">#E74C3C</Color>
+    <Color x:Key="BladesSuccess">#2ECC71</Color>
+    <Color x:Key="BladesWarning">#F39C12</Color>
+    <Color x:Key="BladesBorder">#2A2D33</Color>
+    <Color x:Key="BladesCardBg">#1E2128</Color>
+    <Color x:Key="BladesSidebarBg">#0A0C0F</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BladesBg}"/>
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource BladesSurface}"/>
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="{StaticResource BladesSurfaceAlt}"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource BladesAccent}"/>
+    <SolidColorBrush x:Key="AccentDimBrush" Color="{StaticResource BladesAccentDim}"/>
+    <SolidColorBrush x:Key="AccentGlowBrush" Color="{StaticResource BladesAccentGlow}"/>
+    <SolidColorBrush x:Key="TextBrush" Color="{StaticResource BladesText}"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource BladesTextMuted}"/>
+    <SolidColorBrush x:Key="TextDimBrush" Color="{StaticResource BladesTextDim}"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource BladesDanger}"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource BladesSuccess}"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource BladesWarning}"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BladesBorder}"/>
+    <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource BladesCardBg}"/>
+    <SolidColorBrush x:Key="SidebarBgBrush" Color="{StaticResource BladesSidebarBg}"/>
+  </Styles.Resources>
+
+  <!-- Window -->
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{StaticResource BgBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    <Setter Property="FontFamily" Value="Inter, Segoe UI, sans-serif"/>
+  </Style>
+
+  <!-- Text -->
+  <Style Selector="TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+  </Style>
+
+  <Style Selector="TextBlock.Muted">
+    <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+  </Style>
+
+  <Style Selector="TextBlock.Accent">
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+  </Style>
+
+  <!-- Button -->
+  <Style Selector="Button">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="Padding" Value="12,6"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="Cursor" Value="Hand"/>
+  </Style>
+
+  <Style Selector="Button:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource AccentDimBrush}"/>
+  </Style>
+
+  <Style Selector="Button.Accent">
+    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+    <Setter Property="Foreground" Value="#0D1117"/>
+    <Setter Property="BorderThickness" Value="0"/>
+  </Style>
+
+  <Style Selector="Button.Accent:pointerover">
+    <Setter Property="Background" Value="{StaticResource AccentGlowBrush}"/>
+  </Style>
+
+  <Style Selector="Button.Danger">
+    <Setter Property="Background" Value="{StaticResource DangerBrush}"/>
+    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="BorderThickness" Value="0"/>
+  </Style>
+
+  <!-- TextBox -->
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="Padding" Value="8,4"/>
+    <Setter Property="FontSize" Value="13"/>
+  </Style>
+
+  <Style Selector="TextBox:focus">
+    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+  </Style>
+
+  <!-- ListBox -->
+  <Style Selector="ListBox">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="4"/>
+  </Style>
+
+  <Style Selector="ListBoxItem">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+  </Style>
+
+  <Style Selector="ListBoxItem:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}"/>
+  </Style>
+
+  <Style Selector="ListBoxItem:selected">
+    <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
+  </Style>
+
+  <!-- ScrollBar -->
+  <Style Selector="ScrollBar">
+    <Setter Property="Background" Value="{StaticResource SidebarBgBrush}"/>
+  </Style>
+
+  <Style Selector="ScrollBar Thumb">
+    <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
+  </Style>
+
+  <!-- Card style -->
+  <Style Selector="Border.Card">
+    <Setter Property="Background" Value="{StaticResource CardBgBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+  </Style>
+
+  <!-- Section headers -->
+  <Style Selector="TextBlock.PageTitle">
+    <Setter Property="FontSize" Value="28"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+  </Style>
+
+  <Style Selector="TextBlock.SectionHeader">
+    <Setter Property="FontSize" Value="16"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+  </Style>
+
+</Styles>

@@ -1,0 +1,129 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        xmlns:v="using:XBVault.Views"
+        x:Class="XBVault.MainWindow"
+        x:Name="Root"
+        Title="XB Homebrew Vault"
+        Width="1100" Height="720"
+        WindowStartupLocation="CenterScreen"
+        Icon="avares://XBVault/Assets/Icons/app.ico"
+        Background="{StaticResource BgBrush}">
+
+  <Grid ColumnDefinitions="220,*">
+
+    <!-- Sidebar -->
+    <Border Background="{StaticResource SidebarBgBrush}"
+            Grid.Column="0">
+
+      <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Brand -->
+        <Border Padding="16,20,16,16"
+                Grid.Row="0">
+          <StackPanel>
+            <Image Source="avares://XBVault/Assets/Icons/xbox.ico"
+                   Width="40" Height="40"
+                   Stretch="Uniform"
+                   Margin="0,0,0,8"/>
+            <TextBlock Text="XB HOMEBREW"
+                       FontSize="14"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource AccentBrush}"
+                       LetterSpacing="2"/>
+            <TextBlock Text="VAULT"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource TextBrush}"
+                       LetterSpacing="3"/>
+          </StackPanel>
+        </Border>
+
+        <!-- Nav Items (Blades) -->
+        <ListBox Grid.Row="1"
+                 BorderThickness="0"
+                 Background="Transparent"
+                 SelectedIndex="{Binding SelectedTab}"
+                 SelectionMode="Single">
+          <ListBoxItem Tag="Browse" Padding="16,12">
+            <Grid ColumnDefinitions="28,*">
+              <Image Source="avares://XBVault/Assets/Icons/browse.ico"
+                     Width="22" Height="22"
+                     Stretch="Uniform"/>
+              <TextBlock Text="BROWSE"
+                         Grid.Column="1"
+                         VerticalAlignment="Center"
+                         FontSize="13"
+                         FontWeight="SemiBold"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         LetterSpacing="1"/>
+            </Grid>
+          </ListBoxItem>
+          <ListBoxItem Tag="Installed" Padding="16,12">
+            <Grid ColumnDefinitions="28,*">
+              <Image Source="avares://XBVault/Assets/Icons/installed.ico"
+                     Width="22" Height="22"
+                     Stretch="Uniform"/>
+              <TextBlock Text="INSTALLED"
+                         Grid.Column="1"
+                         VerticalAlignment="Center"
+                         FontSize="13"
+                         FontWeight="SemiBold"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         LetterSpacing="1"/>
+            </Grid>
+          </ListBoxItem>
+          <ListBoxItem Tag="Settings" Padding="16,12">
+            <Grid ColumnDefinitions="28,*">
+              <Image Source="avares://XBVault/Assets/Icons/settings.ico"
+                     Width="22" Height="22"
+                     Stretch="Uniform"/>
+              <TextBlock Text="SETTINGS"
+                         Grid.Column="1"
+                         VerticalAlignment="Center"
+                         FontSize="13"
+                         FontWeight="SemiBold"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         LetterSpacing="1"/>
+            </Grid>
+          </ListBoxItem>
+        </ListBox>
+
+        <!-- Connection status + Version -->
+        <StackPanel Grid.Row="2" Spacing="4" Margin="16,0,16,16">
+          <Grid ColumnDefinitions="8,*" ColumnSpacing="6">
+            <Ellipse Width="8" Height="8"
+                     Fill="{StaticResource BladesDanger}"
+                     Margin="0,4,0,4"/>
+            <TextBlock Grid.Column="1"
+                       Text="{Binding ConnectionStatusText}"
+                       Foreground="{StaticResource TextDimBrush}"
+                       FontSize="11"
+                       VerticalAlignment="Center"/>
+          </Grid>
+          <TextBlock Text="v0.1.0"
+                     Foreground="{StaticResource TextDimBrush}"
+                     FontSize="11"/>
+        </StackPanel>
+
+      </Grid>
+    </Border>
+
+    <!-- Content Area -->
+    <Border Background="{StaticResource SurfaceBrush}"
+            Grid.Column="1"
+            Padding="0">
+
+      <Grid>
+        <v:BrowseView x:Name="BrowseViewCtrl"
+                        IsVisible="{Binding IsBrowseActive}"/>
+        <v:InstalledView IsVisible="{Binding IsInstalledActive}"/>
+        <v:SettingsView x:Name="SettingsViewCtrl"
+                        IsVisible="{Binding IsSettingsActive}"/>
+      </Grid>
+
+    </Border>
+
+  </Grid>
+
+</Window>

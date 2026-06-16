@@ -1,0 +1,61 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore
+      run: dotnet restore XBVault/XBVault.csproj
+
+    - name: Build
+      run: dotnet build XBVault/XBVault.csproj -c Release --no-restore
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: XBVault-build
+        path: XBVault/bin/Release/net8.0/
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Publish x64
+      run: |
+        $ver = "${{ github.ref_name }}" -replace '^v', ''
+        dotnet publish XBVault/XBVault.csproj -c Release -r win-x64 --self-contained true -p:PublishReadyToRun=true -p:Version=$ver -o publish
+
+    - name: Create ZIP
+      run: |
+        $ver = "${{ github.ref_name }}" -replace '^v', ''
+        Compress-Archive -Path publish/* -DestinationPath "XBVault-$ver-win-x64.zip"
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: XBVault-*.zip
+        generate_release_notes: true

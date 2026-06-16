@@ -1,0 +1,29 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="XBVault.SplashWindow"
+        Title="XB Homebrew Vault"
+        Width="500" Height="320"
+        WindowStartupLocation="CenterScreen"
+        SystemDecorations="None"
+        Background="{StaticResource BgBrush}"
+        CanResize="False"
+        Topmost="True">
+
+  <Grid>
+    <Image Source="avares://XBVault/Assets/splash-placeholder.png"
+           Stretch="Uniform"
+           VerticalAlignment="Center"
+           HorizontalAlignment="Center"/>
+
+    <StackPanel VerticalAlignment="Bottom"
+                HorizontalAlignment="Center"
+                Margin="0,0,0,16">
+      <ProgressBar IsIndeterminate="True"
+                   Height="2"
+                   Width="200"
+                   Foreground="{StaticResource AccentBrush}"
+                   Background="Transparent"/>
+    </StackPanel>
+  </Grid>
+
+</Window>
