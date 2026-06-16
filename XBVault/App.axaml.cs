@@ -24,7 +24,7 @@ public partial class App : Application
             var installService = new PackageInstallService(cacheService, xboxService);
 
             var mainViewModel = new MainViewModel(xboxService);
-            var browseViewModel = new BrowseViewModel(erService, installService);
+            var browseViewModel = new BrowseViewModel(erService, installService, xboxService);
             var installedViewModel = new InstalledViewModel(xboxService);
             var settingsViewModel = new SettingsViewModel(xboxService, cacheService);
 
@@ -36,10 +36,32 @@ public partial class App : Application
                 DataContext = mainViewModel
             };
 
+            browseViewModel.ShowDetailAction = item =>
+            {
+                var detail = new Views.ItemDetailWindow { DataContext = browseViewModel };
+                detail.Closed += (_, _) => browseViewModel.SelectedItem = null;
+                detail.ShowDialog(main);
+            };
+
             mainViewModel.ShowAboutAction = () =>
             {
                 var about = new Views.AboutWindow();
                 about.ShowDialog(main);
+            };
+
+            mainViewModel.ShowConnectAction = async () =>
+            {
+                var connVm = new ConnectionViewModel(xboxService);
+                var connWindow = new Views.ConnectionWindow
+                {
+                    DataContext = connVm
+                };
+                _ = connWindow.ShowDialog(main);
+                await connVm.ConnectCommand.ExecuteAsync(null);
+                var result = connVm.IsSuccess;
+                if (result)
+                    connWindow.Close();
+                return result;
             };
 
             var browseView = new Views.BrowseView { DataContext = browseViewModel };

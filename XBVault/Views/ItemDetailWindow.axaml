@@ -1,0 +1,192 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="XBVault.Views.ItemDetailWindow"
+        Title="Item Details"
+        Width="540" Height="600"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        SystemDecorations="BorderOnly">
+
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+      <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
+
+  <Border BorderBrush="#9ACA3C" BorderThickness="2">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="24,16">
+
+      <!-- Fixed header -->
+      <Grid ColumnDefinitions="*,Auto" Grid.Row="0">
+        <TextBlock Text="{Binding SelectedItem.Name}"
+                   FontSize="20"
+                   FontWeight="Bold"
+                   TextWrapping="Wrap"
+                   VerticalAlignment="Center"/>
+        <Button Grid.Column="1"
+                Width="28" Height="28"
+                Padding="0"
+                Background="Transparent"
+                BorderThickness="0"
+                Click="OnCloseClick"
+                Cursor="Hand">
+          <Image Source="avares://XBVault/Assets/Icons/close.ico"
+                 Width="16" Height="16"
+                 Stretch="Uniform"/>
+        </Button>
+      </Grid>
+
+      <!-- Scrollable content -->
+      <ScrollViewer Grid.Row="1" Margin="0,16,0,16">
+        <StackPanel Spacing="16">
+
+          <TextBlock Text="{Binding SelectedItem.Category}"
+                     FontSize="12"
+                     Foreground="{StaticResource AccentBrush}"/>
+
+          <Border CornerRadius="8"
+                  Background="{StaticResource SurfaceAltBrush}"
+                  Height="200"
+                  HorizontalAlignment="Stretch">
+            <Image Source="{Binding SelectedItem.Thumbnail}"
+                   Stretch="UniformToFill"/>
+          </Border>
+
+          <TextBlock Text="{Binding SelectedItem.Description}"
+                     FontSize="13"
+                     Foreground="{StaticResource TextMutedBrush}"
+                     TextWrapping="Wrap"/>
+
+          <Separator Background="{StaticResource BorderBrush}"
+                     Height="1"/>
+
+          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                RowSpacing="8">
+            <TextBlock Text="Version"
+                       Foreground="{StaticResource TextDimBrush}"
+                       FontSize="12"
+                       Grid.Row="0"/>
+            <TextBlock Grid.Column="1"
+                       Text="{Binding SelectedItem.Version}"
+                       FontSize="12"
+                       Grid.Row="0"/>
+
+            <TextBlock Text="Developer"
+                       Foreground="{StaticResource TextDimBrush}"
+                       FontSize="12"
+                       Grid.Row="1"/>
+            <TextBlock Grid.Column="1"
+                       Text="{Binding SelectedItem.Developer}"
+                       FontSize="12"
+                       Grid.Row="1"/>
+
+            <TextBlock Text="Release date"
+                       Foreground="{StaticResource TextDimBrush}"
+                       FontSize="12"
+                       Grid.Row="2"/>
+            <TextBlock Grid.Column="1"
+                       Text="{Binding SelectedItem.ReleaseDate}"
+                       FontSize="12"
+                       Grid.Row="2"/>
+
+            <TextBlock Text="Compatibility"
+                       Foreground="{StaticResource TextDimBrush}"
+                       FontSize="12"
+                       Grid.Row="3"/>
+            <TextBlock Grid.Column="1"
+                       Text="{Binding SelectedItem.Compatibility}"
+                       FontSize="12"
+                       Grid.Row="3"/>
+          </Grid>
+
+          <StackPanel Spacing="4"
+                      IsVisible="{Binding SelectedItem.Requirements.Count, Converter={StaticResource IntToBool}}">
+            <TextBlock Text="Requirements"
+                       FontSize="12"
+                       FontWeight="SemiBold"/>
+            <ItemsControl ItemsSource="{Binding SelectedItem.Requirements}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding}"
+                             FontSize="12"
+                             Foreground="{StaticResource TextMutedBrush}"
+                             Margin="12,2,0,2"/>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <StackPanel Spacing="4"
+                      IsVisible="{Binding SelectedItem.Features.Count, Converter={StaticResource IntToBool}}">
+            <TextBlock Text="Features"
+                       FontSize="12"
+                       FontWeight="SemiBold"/>
+            <ItemsControl ItemsSource="{Binding SelectedItem.Features}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding}"
+                             FontSize="12"
+                             Foreground="{StaticResource TextMutedBrush}"
+                             Margin="12,2,0,2"/>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <StackPanel Spacing="6"
+                      IsVisible="{Binding IsInstalling}">
+            <ProgressBar Value="{Binding InstallProgress}"
+                         Maximum="1"
+                         Height="4"
+                         Foreground="{StaticResource AccentBrush}"/>
+            <TextBlock Text="{Binding InstallStatus}"
+                       FontSize="11"
+                       Foreground="{StaticResource TextMutedBrush}"/>
+          </StackPanel>
+
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Fixed footer -->
+      <StackPanel Grid.Row="2" Spacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Classes="Accent"
+                  Padding="20,10"
+                  Command="{Binding InstallSelectedCommand}"
+                  IsEnabled="{Binding IsInstalling, Converter={StaticResource BoolInverse}}">
+            <TextBlock Text="Install"
+                       FontSize="13"
+                       FontWeight="SemiBold"/>
+          </Button>
+
+          <Button Padding="20,10"
+                  IsEnabled="{Binding SelectedItem.DownloadUrl, Converter={StaticResource StringNotEmpty}}">
+            <TextBlock Text="Download"
+                       FontSize="13"/>
+          </Button>
+
+          <Button Padding="16,10"
+                  Command="{Binding CheckInstalledCommand}"
+                  IsEnabled="{Binding IsCheckingInstalled, Converter={StaticResource BoolInverse}}">
+            <TextBlock Text="Check Installed"
+                       FontSize="12"/>
+          </Button>
+        </StackPanel>
+
+        <Border Padding="10,8"
+                CornerRadius="4"
+                Background="{StaticResource SurfaceAltBrush}"
+                IsVisible="{Binding InstalledVersion, Converter={StaticResource StringNotEmpty}}">
+          <TextBlock FontSize="12">
+            <Run Text="Status:" FontWeight="SemiBold"/>
+            <Run Text="{Binding InstalledVersion}"/>
+          </TextBlock>
+        </Border>
+      </StackPanel>
+
+    </Grid>
+  </Border>
+
+</Window>

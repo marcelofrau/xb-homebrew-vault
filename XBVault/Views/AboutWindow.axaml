@@ -12,20 +12,29 @@
                 Stretch="UniformToFill"/>
   </Window.Background>
 
-  <Grid RowDefinitions="*,Auto">
-    <StackPanel VerticalAlignment="Center"
-                HorizontalAlignment="Center"
-                Spacing="8">
-      <Image Source="avares://XBVault/Assets/Images/app-icon.png"
-             Width="80" Height="80"
-             Stretch="Uniform"
-             HorizontalAlignment="Center"/>
-      <TextBlock Text="XB HOMEBREW VAULT"
-                 FontSize="22"
-                 FontWeight="Bold"
-                 Foreground="White"
-                 HorizontalAlignment="Center"
-                 LetterSpacing="2"/>
+  <Border BorderBrush="#9ACA3C" BorderThickness="2">
+    <Grid RowDefinitions="*,Auto">
+      <StackPanel VerticalAlignment="Center"
+                  HorizontalAlignment="Center"
+                  Spacing="2">
+        <Image Source="avares://XBVault/Assets/Images/app-icon.png"
+               Width="80" Height="80"
+               Stretch="Uniform"
+               HorizontalAlignment="Center"
+               Margin="0,0,0,6"/>
+        <TextBlock Text="XB HOMEBREW"
+                   FontSize="14"
+                   FontWeight="Bold"
+                   Foreground="{StaticResource AccentBrush}"
+                   HorizontalAlignment="Center"
+                   LetterSpacing="2"/>
+        <TextBlock Text="VAULT"
+                   FontSize="30"
+                   FontWeight="Bold"
+                   Foreground="{StaticResource TextBrush}"
+                   HorizontalAlignment="Center"
+                   LetterSpacing="3"
+                   Margin="0,-4,0,0"/>
       <TextBlock Text="Desktop manager for Xbox Dev Mode homebrew"
                  FontSize="12"
                  Foreground="#B0B0B0"
@@ -80,5 +89,6 @@
                  HorizontalAlignment="Center"/>
     </Button>
   </Grid>
+  </Border>
 
 </Window>

@@ -107,8 +107,37 @@
                HorizontalAlignment="Center"
                Margin="0,0,0,8"/>
 
-        <!-- Connection status + About -->
+        <!-- Connection status + Connect + About -->
         <StackPanel Grid.Row="3" Spacing="4" Margin="16,0,16,16">
+
+          <!-- Connect button -->
+          <Button HorizontalAlignment="Stretch"
+                  Background="Transparent"
+                  Foreground="#CCC"
+                  BorderThickness="0"
+                  CornerRadius="0"
+                  Padding="0,12"
+                  FontSize="11"
+                  FontWeight="SemiBold"
+                  Cursor="Hand"
+                  Command="{Binding ConnectCommand}">
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="6">
+              <Image Source="avares://XBVault/Assets/Icons/xbox-connect.ico"
+                     Width="20" Height="20"
+                     Stretch="Uniform"
+                     VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1"
+                         Text="CONNECT"
+                         VerticalAlignment="Center"/>
+            </Grid>
+            <Button.Styles>
+              <Style Selector="Button:pointerover">
+                <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+              </Style>
+            </Button.Styles>
+          </Button>
+
+          <!-- About button -->
           <Button HorizontalAlignment="Stretch"
                   Background="Transparent"
                   Foreground="#CCC"
@@ -134,9 +163,16 @@
               </Style>
             </Button.Styles>
           </Button>
+
+          <!-- Connection indicator -->
           <Grid ColumnDefinitions="8,*" ColumnSpacing="6">
             <Ellipse Width="8" Height="8"
                      Fill="{StaticResource DangerBrush}"
+                     IsVisible="{Binding IsXboxConnected, Converter={StaticResource BoolInverse}}"
+                     Margin="0,4,0,4"/>
+            <Ellipse Width="8" Height="8"
+                     Fill="{StaticResource AccentBrush}"
+                     IsVisible="{Binding IsXboxConnected}"
                      Margin="0,4,0,4"/>
             <TextBlock Grid.Column="1"
                         Text="{Binding ConnectionStatusText}"
@@ -157,7 +193,11 @@
             Grid.Column="1"
             Padding="0">
       <Carousel x:Name="ViewCarousel"
-                SelectedIndex="{Binding SelectedTab}"/>
+                SelectedIndex="{Binding SelectedTab}">
+        <Carousel.PageTransition>
+          <CrossFade Duration="0:0:0.3"/>
+        </Carousel.PageTransition>
+      </Carousel>
     </Border>
 
   </Grid>

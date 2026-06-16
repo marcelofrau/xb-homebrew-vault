@@ -14,12 +14,11 @@
                  Margin="0,4,0,0"/>
     </StackPanel>
 
-    <!-- Search + Filters (hidden in detail view) -->
+    <!-- Search + Filters -->
     <Grid Grid.Row="1"
           ColumnDefinitions="*,Auto,Auto"
           ColumnSpacing="12"
-          Margin="0,0,0,16"
-          IsVisible="{Binding IsDetailVisible, Converter={StaticResource BoolInverse}}">
+          Margin="0,0,0,16">
 
       <TextBox Watermark="Search catalog..."
                Text="{Binding SearchText}"
@@ -119,170 +118,6 @@
         </DataTemplate>
       </ListBox.ItemTemplate>
     </ListBox>
-
-    <!-- Detail View -->
-    <ScrollViewer Grid.Row="2"
-                  IsVisible="{Binding IsDetailVisible}">
-      <StackPanel Spacing="16" MaxWidth="600">
-
-        <!-- Back button -->
-        <Button Command="{Binding BackToGridCommand}"
-                Padding="8,4"
-                HorizontalAlignment="Left"
-                BorderThickness="0"
-                Background="Transparent">
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-            <TextBlock Text="←"
-                       FontSize="16"
-                       Foreground="{StaticResource AccentBrush}"/>
-            <TextBlock Grid.Column="1"
-                       Text="Back to catalog"
-                       Foreground="{StaticResource AccentBrush}"
-                       FontSize="13"/>
-          </Grid>
-        </Button>
-
-        <!-- Item detail card -->
-        <Border Classes="Card" Padding="24">
-          <StackPanel Spacing="16">
-
-            <StackPanel Spacing="8">
-              <TextBlock Text="{Binding SelectedItem.Name}"
-                         FontSize="24"
-                         FontWeight="Bold"
-                         TextWrapping="Wrap"/>
-              <TextBlock Text="{Binding SelectedItem.Category}"
-                         FontSize="12"
-                         Foreground="{StaticResource AccentBrush}"/>
-            </StackPanel>
-
-            <Border CornerRadius="8"
-                    Background="{StaticResource SurfaceAltBrush}"
-                    Height="200"
-                    HorizontalAlignment="Stretch">
-              <Image Source="{Binding SelectedItem.Thumbnail}"
-                     Stretch="UniformToFill"/>
-            </Border>
-
-            <TextBlock Text="{Binding SelectedItem.Description}"
-                       FontSize="13"
-                       Foreground="{StaticResource TextMutedBrush}"
-                       TextWrapping="Wrap"/>
-
-            <Separator Background="{StaticResource BorderBrush}"
-                       Height="1"
-                       Margin="0,4"/>
-
-            <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
-                  RowSpacing="8">
-              <TextBlock Text="Version"
-                         Foreground="{StaticResource TextDimBrush}"
-                         FontSize="12"
-                         Grid.Row="0"/>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding SelectedItem.Version}"
-                         FontSize="12"
-                         Grid.Row="0"/>
-
-              <TextBlock Text="Developer"
-                         Foreground="{StaticResource TextDimBrush}"
-                         FontSize="12"
-                         Grid.Row="1"/>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding SelectedItem.Developer}"
-                         FontSize="12"
-                         Grid.Row="1"/>
-
-              <TextBlock Text="Release date"
-                         Foreground="{StaticResource TextDimBrush}"
-                         FontSize="12"
-                         Grid.Row="2"/>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding SelectedItem.ReleaseDate}"
-                         FontSize="12"
-                         Grid.Row="2"/>
-
-              <TextBlock Text="Compatibility"
-                         Foreground="{StaticResource TextDimBrush}"
-                         FontSize="12"
-                         Grid.Row="3"/>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding SelectedItem.Compatibility}"
-                         FontSize="12"
-                         Grid.Row="3"/>
-            </Grid>
-
-            <!-- Requirements -->
-            <StackPanel Spacing="4"
-                        IsVisible="{Binding SelectedItem.Requirements.Count, Converter={StaticResource IntToBool}}">
-              <TextBlock Text="Requirements"
-                         FontSize="12"
-                         FontWeight="SemiBold"/>
-              <ItemsControl ItemsSource="{Binding SelectedItem.Requirements}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding}"
-                               FontSize="12"
-                               Foreground="{StaticResource TextMutedBrush}"
-                               Margin="12,2,0,2"/>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </StackPanel>
-
-            <!-- Features -->
-            <StackPanel Spacing="4"
-                        IsVisible="{Binding SelectedItem.Features.Count, Converter={StaticResource IntToBool}}">
-              <TextBlock Text="Features"
-                         FontSize="12"
-                         FontWeight="SemiBold"/>
-              <ItemsControl ItemsSource="{Binding SelectedItem.Features}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding}"
-                               FontSize="12"
-                               Foreground="{StaticResource TextMutedBrush}"
-                               Margin="12,2,0,2"/>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </StackPanel>
-
-            <!-- Install progress -->
-            <StackPanel Spacing="6"
-                        IsVisible="{Binding IsInstalling}">
-              <ProgressBar Value="{Binding InstallProgress}"
-                           Maximum="1"
-                           Height="4"
-                           Foreground="{StaticResource AccentBrush}"/>
-              <TextBlock Text="{Binding InstallStatus}"
-                         FontSize="11"
-                         Foreground="{StaticResource TextMutedBrush}"/>
-            </StackPanel>
-
-            <!-- Actions -->
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Classes="Accent"
-                      Padding="20,10"
-                      Command="{Binding InstallSelectedCommand}"
-                      IsEnabled="{Binding IsInstalling, Converter={StaticResource BoolInverse}}">
-                <TextBlock Text="Install"
-                           FontSize="13"
-                           FontWeight="SemiBold"/>
-              </Button>
-
-              <Button Padding="20,10"
-                      IsEnabled="{Binding SelectedItem.DownloadUrl, Converter={StaticResource StringNotEmpty}}">
-                <TextBlock Text="Download"
-                           FontSize="13"/>
-              </Button>
-            </StackPanel>
-
-          </StackPanel>
-        </Border>
-
-      </StackPanel>
-    </ScrollViewer>
 
   </Grid>
 

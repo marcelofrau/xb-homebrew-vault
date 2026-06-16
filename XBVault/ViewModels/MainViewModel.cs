@@ -16,6 +16,7 @@ public partial class MainViewModel : ObservableObject
     }
 
     public Action? ShowAboutAction { get; set; }
+    public Func<Task<bool>>? ShowConnectAction { get; set; }
 
     [ObservableProperty]
     private int _selectedTab;
@@ -63,5 +64,19 @@ public partial class MainViewModel : ObservableObject
     private void OpenAbout()
     {
         ShowAboutAction?.Invoke();
+    }
+
+    [RelayCommand]
+    private async Task ConnectAsync()
+    {
+        if (ShowConnectAction is null) return;
+
+        var result = await ShowConnectAction();
+
+        if (result)
+        {
+            IsXboxConnected = true;
+            ConnectionStatusText = "Connected";
+        }
     }
 }

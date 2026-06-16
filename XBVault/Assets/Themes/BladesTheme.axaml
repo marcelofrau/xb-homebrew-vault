@@ -41,6 +41,9 @@
     <!-- Fonts -->
     <FontFamily x:Key="TitleFont">avares://XBVault/Assets/Fonts/Oxanium-700.ttf#Oxanium</FontFamily>
     <FontFamily x:Key="BodyFont">avares://XBVault/Assets/Fonts/Oxanium-400.ttf#Oxanium</FontFamily>
+
+    <!-- Fluent theme overrides -->
+    <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="{StaticResource BladesAccent}"/>
   </Styles.Resources>
 
   <!-- Window -->
@@ -157,6 +160,29 @@
   <Style Selector="TextBlock.BrandTitle">
     <Setter Property="FontFamily" Value="{StaticResource TitleFont}"/>
     <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+  </Style>
+
+  <!-- ComboBox -->
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+    <Setter Property="Foreground" Value="#0D1117"/>
+  </Style>
+
+  <Style Selector="ComboBox ScrollViewer">
+    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+  </Style>
+
+  <Style Selector="ComboBoxItem">
+    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+    <Setter Property="Foreground" Value="#0D1117"/>
+  </Style>
+
+  <Style Selector="ComboBoxItem:pointerover">
+    <Setter Property="Background" Value="#7AA82E"/>
+  </Style>
+
+  <Style Selector="ComboBoxItem:selected">
+    <Setter Property="Background" Value="{StaticResource AccentGlowBrush}"/>
   </Style>
 
 </Styles>

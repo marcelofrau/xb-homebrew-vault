@@ -17,14 +17,18 @@ public partial class BrowseViewModel : ObservableObject
 {
     private readonly EmulationRevivalService _erService;
     private readonly PackageInstallService _installService;
+    private readonly XboxDeviceService _xboxService;
     private List<CatalogItem> _allItems = [];
+
+    public Action<CatalogItem>? ShowDetailAction;
 
     private static readonly HttpClient ImageHttp = new();
 
-    public BrowseViewModel(EmulationRevivalService erService, PackageInstallService installService)
+    public BrowseViewModel(EmulationRevivalService erService, PackageInstallService installService, XboxDeviceService xboxService)
     {
         _erService = erService;
         _installService = installService;
+        _xboxService = xboxService;
         Categories =
         [
             "All",
@@ -69,7 +73,43 @@ public partial class BrowseViewModel : ObservableObject
     private CatalogItem? _selectedItem;
 
     [ObservableProperty]
-    private bool _isDetailVisible;
+    private string? _installedVersion;
+
+    [ObservableProperty]
+    private bool _isCheckingInstalled;
+
+    [RelayCommand]
+    private async Task CheckInstalledAsync()
+    {
+        var item = SelectedItem;
+        if (item is null) return;
+
+        IsCheckingInstalled = true;
+        InstalledVersion = null;
+
+        if (!_xboxService.IsConfigured)
+        {
+            InstalledVersion = "Not connected";
+            IsCheckingInstalled = false;
+            return;
+        }
+
+        try
+        {
+            var packages = await _xboxService.GetInstalledPackagesAsync();
+            var match = packages.FirstOrDefault(p =>
+                p.Name.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+            InstalledVersion = match?.Version ?? "Not installed";
+        }
+        catch
+        {
+            InstalledVersion = "Check failed";
+        }
+        finally
+        {
+            IsCheckingInstalled = false;
+        }
+    }
 
     partial void OnSearchTextChanged(string value) => ApplyFilters();
     partial void OnSelectedCategoryChanged(string value) => ApplyFilters();
@@ -77,9 +117,12 @@ public partial class BrowseViewModel : ObservableObject
 
     partial void OnSelectedItemChanged(CatalogItem? value)
     {
-        IsDetailVisible = value is not null;
-        InstallProgress = 0;
-        InstallStatus = null;
+        if (value is not null)
+        {
+            InstallProgress = 0;
+            InstallStatus = null;
+            ShowDetailAction?.Invoke(value);
+        }
     }
 
     [RelayCommand]
@@ -103,12 +146,6 @@ public partial class BrowseViewModel : ObservableObject
     private void SelectItem(CatalogItem? item)
     {
         SelectedItem = item;
-    }
-
-    [RelayCommand]
-    private void BackToGrid()
-    {
-        SelectedItem = null;
     }
 
     [RelayCommand]

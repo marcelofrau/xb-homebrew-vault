@@ -1,0 +1,65 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="XBVault.Views.ConnectionWindow"
+        Title="Xbox Connection"
+        Width="480" Height="400"
+        WindowStartupLocation="CenterOwner"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        Background="#0D0D0D">
+  <Border BorderBrush="#9ACA3C" BorderThickness="2">
+  <Grid RowDefinitions="*,Auto,Auto" Margin="16">
+    <!-- Terminal output -->
+    <Border Background="#1A1A1A"
+            CornerRadius="6"
+            Padding="12,8">
+      <ScrollViewer>
+        <ItemsControl ItemsSource="{Binding OutputLines}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding}"
+                         FontFamily="Consolas"
+                         FontSize="13"
+                         Foreground="#33FF33"
+                         TextWrapping="NoWrap"/>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Border>
+
+    <!-- Progress bar -->
+    <ProgressBar Grid.Row="1"
+                 Value="{Binding Progress}"
+                 Maximum="1.0"
+                 Foreground="{StaticResource AccentBrush}"
+                 Background="#333"
+                 Height="6"
+                 Margin="0,10,0,0"
+                 IsIndeterminate="{Binding IsRunning}"/>
+
+    <!-- Bottom buttons -->
+    <StackPanel Grid.Row="2"
+                HorizontalAlignment="Right"
+                Orientation="Horizontal"
+                Spacing="8"
+                Margin="0,12,0,0">
+      <Button x:Name="RetryBtn"
+              Content="Retry"
+              Command="{Binding ConnectCommand}"
+              IsVisible="{Binding IsFailed}"
+              Padding="16,8"/>
+      <Button x:Name="CloseBtn"
+              Content="Close"
+              IsVisible="{Binding IsSuccess}"
+              Click="OnCloseClick"
+              Classes="Accent"
+              Padding="16,8"/>
+    </StackPanel>
+  </Grid>
+  </Border>
+</Window>
