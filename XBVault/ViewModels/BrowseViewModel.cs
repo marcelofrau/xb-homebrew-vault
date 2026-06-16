@@ -1,7 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
@@ -14,6 +18,8 @@ public partial class BrowseViewModel : ObservableObject
     private readonly EmulationRevivalService _erService;
     private readonly PackageInstallService _installService;
     private List<CatalogItem> _allItems = [];
+
+    private static readonly HttpClient ImageHttp = new();
 
     public BrowseViewModel(EmulationRevivalService erService, PackageInstallService installService)
     {
@@ -85,6 +91,7 @@ public partial class BrowseViewModel : ObservableObject
         {
             _allItems = await _erService.FetchCatalogAsync();
             ApplyFilters();
+            _ = LoadThumbnailsAsync();
         }
         finally
         {
@@ -160,5 +167,31 @@ public partial class BrowseViewModel : ObservableObject
             Items.Add(item);
 
         HasItems = Items.Count > 0;
+    }
+
+    private async Task LoadThumbnailsAsync()
+    {
+        foreach (var item in _allItems)
+        {
+            if (string.IsNullOrEmpty(item.ImageUrl) || item.Thumbnail is not null)
+                continue;
+
+            try
+            {
+                var bytes = await ImageHttp.GetByteArrayAsync(item.ImageUrl);
+                using var ms = new MemoryStream(bytes);
+                item.Thumbnail = new Bitmap(ms);
+
+                var idx = Items.IndexOf(item);
+                if (idx >= 0)
+                {
+                    Items.RemoveAt(idx);
+                    Items.Insert(idx, item);
+                }
+            }
+            catch
+            {
+            }
+        }
     }
 }

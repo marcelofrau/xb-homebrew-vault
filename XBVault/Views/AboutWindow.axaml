@@ -1,12 +1,11 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="XBVault.SplashWindow"
-        Title="XB Homebrew Vault"
-        Width="500" Height="380"
-        WindowStartupLocation="CenterScreen"
-        SystemDecorations="None"
+        x:Class="XBVault.Views.AboutWindow"
+        Title="About XB Homebrew Vault"
+        Width="500" Height="420"
+        WindowStartupLocation="CenterOwner"
         CanResize="False"
-        Topmost="True">
+        SystemDecorations="BorderOnly">
 
   <Window.Background>
     <ImageBrush Source="avares://XBVault/Assets/Images/splash-bg.png"
@@ -27,7 +26,7 @@
                  Foreground="White"
                  HorizontalAlignment="Center"
                  LetterSpacing="2"/>
-      <TextBlock Text="Desk top manager for Xbox Dev Mode homebrew"
+      <TextBlock Text="Desktop manager for Xbox Dev Mode homebrew"
                  FontSize="12"
                  Foreground="#B0B0B0"
                  HorizontalAlignment="Center"/>
@@ -49,15 +48,37 @@
                    Foreground="#888"
                    HorizontalAlignment="Center"/>
       </StackPanel>
+
+      <Separator Width="120" Height="1"
+                 Background="#555"
+                 Margin="0,8"
+                 HorizontalAlignment="Center"/>
+
+      <Image Source="avares://XBVault/Assets/Images/emulation-revival.png"
+             Width="140" Height="40"
+             Stretch="Uniform"
+             HorizontalAlignment="Center"/>
+      <TextBlock Text="Catalog powered by Emulation Revival"
+                 FontSize="11"
+                 Foreground="#777"
+                 HorizontalAlignment="Center"/>
+      <TextBlock Text="github.com/marcelofrau/xb-homebrew-vault"
+                 FontSize="11"
+                 Foreground="#999"
+                 HorizontalAlignment="Center"/>
     </StackPanel>
 
-    <ProgressBar Grid.Row="1"
-                 IsIndeterminate="True"
-                 Height="2"
-                 HorizontalAlignment="Stretch"
-                 Foreground="{StaticResource AccentBrush}"
-                 Background="Transparent"
-                 Margin="32,0,32,24"/>
+    <Button Grid.Row="1"
+            HorizontalAlignment="Center"
+            Width="120"
+            Margin="0,0,0,20"
+            Padding="0,8"
+            Click="OnCloseClick">
+      <TextBlock Text="CLOSE"
+                 FontSize="12"
+                 FontWeight="SemiBold"
+                 HorizontalAlignment="Center"/>
+    </Button>
   </Grid>
 
 </Window>

@@ -1,4 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using System;
 using XBVault.Services;
 
 namespace XBVault.ViewModels;
@@ -13,6 +15,8 @@ public partial class MainViewModel : ObservableObject
         UpdateConnectionStatus();
     }
 
+    public Action? ShowAboutAction { get; set; }
+
     [ObservableProperty]
     private int _selectedTab;
 
@@ -22,20 +26,42 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isXboxConnected;
 
-    public bool IsBrowseActive => SelectedTab == 0;
-    public bool IsInstalledActive => SelectedTab == 1;
-    public bool IsSettingsActive => SelectedTab == 2;
-
     partial void OnSelectedTabChanged(int value)
     {
         OnPropertyChanged(nameof(IsBrowseActive));
         OnPropertyChanged(nameof(IsInstalledActive));
         OnPropertyChanged(nameof(IsSettingsActive));
+        UpdateActiveView();
+    }
+
+    public bool IsBrowseActive => SelectedTab == 0;
+    public bool IsInstalledActive => SelectedTab == 1;
+    public bool IsSettingsActive => SelectedTab == 2;
+
+    public int ActiveViewIndex
+    {
+        get => SelectedTab;
+        set
+        {
+            if (value >= 0 && value <= 2)
+                SelectedTab = value;
+        }
     }
 
     public void UpdateConnectionStatus()
     {
         IsXboxConnected = _xboxService.IsConfigured;
         ConnectionStatusText = _xboxService.IsConfigured ? "Connected" : "Not configured";
+    }
+
+    private void UpdateActiveView()
+    {
+        OnPropertyChanged(nameof(ActiveViewIndex));
+    }
+
+    [RelayCommand]
+    private void OpenAbout()
+    {
+        ShowAboutAction?.Invoke();
     }
 }

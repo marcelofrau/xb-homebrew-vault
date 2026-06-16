@@ -36,9 +36,19 @@ public partial class App : Application
                 DataContext = mainViewModel
             };
 
-            main.BrowseViewCtrl.DataContext = browseViewModel;
-            main.InstalledViewCtrl.DataContext = installedViewModel;
-            main.SettingsViewCtrl.DataContext = settingsViewModel;
+            mainViewModel.ShowAboutAction = () =>
+            {
+                var about = new Views.AboutWindow();
+                about.ShowDialog(main);
+            };
+
+            var browseView = new Views.BrowseView { DataContext = browseViewModel };
+            var installedView = new Views.InstalledView { DataContext = installedViewModel };
+            var settingsView = new Views.SettingsView { DataContext = settingsViewModel };
+
+            main.ViewCarousel.Items.Add(browseView);
+            main.ViewCarousel.Items.Add(installedView);
+            main.ViewCarousel.Items.Add(settingsView);
 
             splash.Closed += (_, _) =>
             {

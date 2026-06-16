@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using Avalonia.Media.Imaging;
 
 namespace XBVault.Models;
 
@@ -18,4 +20,7 @@ public class CatalogItem
     public List<string> Requirements { get; set; } = [];
     public List<string> Features { get; set; } = [];
     public bool IsExperimental { get; set; }
+
+    [JsonIgnore]
+    public Bitmap? Thumbnail { get; set; }
 }

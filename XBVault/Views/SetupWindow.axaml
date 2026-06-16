@@ -1,0 +1,93 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="XBVault.Views.SetupWindow"
+        Title="XB Homebrew Vault — Setup"
+        Width="480" Height="400"
+        WindowStartupLocation="CenterScreen"
+        Icon="avares://XBVault/Assets/Icons/app.ico"
+        Background="{StaticResource BgBrush}"
+        CanResize="False"
+        ShowInTaskbar="False">
+
+  <Grid RowDefinitions="*,Auto" Margin="32">
+
+    <StackPanel Grid.Row="0"
+                VerticalAlignment="Center"
+                Spacing="16">
+
+      <Image Source="avares://XBVault/Assets/Icons/xbox.ico"
+             Width="48" Height="48"
+             Stretch="Uniform"
+             HorizontalAlignment="Center"
+             Margin="0,0,0,8"/>
+
+      <TextBlock Text="Welcome to XB Homebrew Vault"
+                 FontSize="18"
+                 FontWeight="Bold"
+                 Foreground="{StaticResource TextBrush}"
+                 HorizontalAlignment="Center"/>
+
+      <TextBlock Text="Configure your Xbox Developer Mode connection to get started."
+                 FontSize="13"
+                 Foreground="{StaticResource TextMutedBrush}"
+                 TextWrapping="Wrap"
+                 HorizontalAlignment="Center"
+                 TextAlignment="Center"/>
+
+      <Separator Background="{StaticResource BorderBrush}"
+                 Height="1"/>
+
+      <StackPanel Spacing="12">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Xbox IP Address"
+                     FontSize="12"
+                     Foreground="{StaticResource TextMutedBrush}"/>
+          <TextBox x:Name="AddressBox"
+                   Watermark="192.168.1.100"
+                   Text="{Binding Address}"/>
+        </StackPanel>
+
+        <StackPanel Spacing="4">
+          <TextBlock Text="Username"
+                     FontSize="12"
+                     Foreground="{StaticResource TextMutedBrush}"/>
+          <TextBox x:Name="UsernameBox"
+                   Watermark="Dev Mode username"
+                   Text="{Binding Username}"/>
+        </StackPanel>
+
+        <StackPanel Spacing="4">
+          <TextBlock Text="Password"
+                     FontSize="12"
+                     Foreground="{StaticResource TextMutedBrush}"/>
+          <TextBox x:Name="PasswordBox"
+                   Watermark="Dev Mode password"
+                   Text="{Binding Password}"
+                   PasswordChar="●"/>
+        </StackPanel>
+      </StackPanel>
+    </StackPanel>
+
+    <Border Grid.Row="1"
+            Padding="0,16,0,0">
+      <StackPanel Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  Spacing="8">
+        <Button Command="{Binding TestConnectionCommand}"
+                IsEnabled="{Binding IsTestingConnection, Converter={StaticResource BoolInverse}}"
+                Padding="16,8">
+          <TextBlock Text="Test Connection"/>
+        </Button>
+        <Button x:Name="SaveBtn"
+                Classes="Accent"
+                IsEnabled="False"
+                Padding="16,8">
+          <TextBlock Text="Save &amp; Continue"
+                     FontWeight="SemiBold"/>
+        </Button>
+      </StackPanel>
+    </Border>
+
+  </Grid>
+
+</Window>

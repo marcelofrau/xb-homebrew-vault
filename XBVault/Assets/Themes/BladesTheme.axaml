@@ -18,7 +18,7 @@
     <Color x:Key="BladesWarning">#F39C12</Color>
     <Color x:Key="BladesBorder">#2A2D33</Color>
     <Color x:Key="BladesCardBg">#1E2128</Color>
-    <Color x:Key="BladesSidebarBg">#0A0C0F</Color>
+    <Color x:Key="BladesSidebarBg">#0F1F10</Color>
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BladesBg}"/>
@@ -37,13 +37,17 @@
     <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource BladesCardBg}"/>
     <SolidColorBrush x:Key="SidebarBgBrush" Color="{StaticResource BladesSidebarBg}"/>
     <SolidColorBrush x:Key="SurfaceHoverBrush" Color="{StaticResource BladesSurfaceHover}"/>
+
+    <!-- Fonts -->
+    <FontFamily x:Key="TitleFont">avares://XBVault/Assets/Fonts/Oxanium-700.ttf#Oxanium</FontFamily>
+    <FontFamily x:Key="BodyFont">avares://XBVault/Assets/Fonts/Oxanium-400.ttf#Oxanium</FontFamily>
   </Styles.Resources>
 
   <!-- Window -->
   <Style Selector="Window">
     <Setter Property="Background" Value="{StaticResource BgBrush}"/>
     <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-    <Setter Property="FontFamily" Value="Inter, Segoe UI, sans-serif"/>
+    <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
   </Style>
 
   <!-- Text -->
@@ -128,15 +132,6 @@
     <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
   </Style>
 
-  <!-- ScrollBar -->
-  <Style Selector="ScrollBar">
-    <Setter Property="Background" Value="{StaticResource SidebarBgBrush}"/>
-  </Style>
-
-  <Style Selector="ScrollBar Thumb">
-    <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
-  </Style>
-
   <!-- Card style -->
   <Style Selector="Border.Card">
     <Setter Property="Background" Value="{StaticResource CardBgBrush}"/>
@@ -149,6 +144,7 @@
   <Style Selector="TextBlock.PageTitle">
     <Setter Property="FontSize" Value="28"/>
     <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="FontFamily" Value="{StaticResource TitleFont}"/>
     <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
   </Style>
 
@@ -156,6 +152,11 @@
     <Setter Property="FontSize" Value="16"/>
     <Setter Property="FontWeight" Value="SemiBold"/>
     <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+  </Style>
+
+  <Style Selector="TextBlock.BrandTitle">
+    <Setter Property="FontFamily" Value="{StaticResource TitleFont}"/>
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
   </Style>
 
 </Styles>

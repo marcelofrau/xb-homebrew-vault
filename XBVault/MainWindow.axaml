@@ -5,7 +5,7 @@
         x:Class="XBVault.MainWindow"
         x:Name="Root"
         Title="XB Homebrew Vault"
-        Width="1100" Height="720"
+        Width="1140" Height="720"
         WindowStartupLocation="CenterScreen"
         Icon="avares://XBVault/Assets/Icons/app.ico"
         Background="{StaticResource BgBrush}">
@@ -13,29 +13,38 @@
   <Grid ColumnDefinitions="220,*">
 
     <!-- Sidebar -->
-    <Border Background="{StaticResource SidebarBgBrush}"
-            Grid.Column="0">
-
-      <Grid RowDefinitions="Auto,*,Auto">
+    <Border Grid.Column="0">
+      <Border.Background>
+        <ImageBrush Source="avares://XBVault/Assets/Images/splash-bg.png"
+                    Stretch="UniformToFill"/>
+      </Border.Background>
+      <Grid RowDefinitions="Auto,*,Auto,Auto">
 
         <!-- Brand -->
         <Border Padding="16,20,16,16"
                 Grid.Row="0">
-          <StackPanel>
-            <Image Source="avares://XBVault/Assets/Icons/xbox.ico"
-                   Width="40" Height="40"
+          <StackPanel HorizontalAlignment="Center">
+            <Image Source="avares://XBVault/Assets/Images/xbox.png"
+                   Width="80" Height="80"
                    Stretch="Uniform"
-                   Margin="0,0,0,8"/>
+                   Margin="0,0,0,8"
+                   HorizontalAlignment="Center"/>
             <TextBlock Text="XB HOMEBREW"
+                       Classes="BrandTitle"
                        FontSize="14"
                        FontWeight="Bold"
                        Foreground="{StaticResource AccentBrush}"
-                       LetterSpacing="2"/>
+                       LetterSpacing="2"
+                       TextAlignment="Center"
+                       HorizontalAlignment="Center"/>
             <TextBlock Text="VAULT"
-                       FontSize="22"
+                       Classes="BrandTitle"
+                       FontSize="30"
                        FontWeight="Bold"
                        Foreground="{StaticResource TextBrush}"
-                       LetterSpacing="3"/>
+                       LetterSpacing="3"
+                       TextAlignment="Center"
+                       HorizontalAlignment="Center"/>
           </StackPanel>
         </Border>
 
@@ -47,7 +56,7 @@
                  SelectionMode="Single">
           <ListBoxItem Tag="Browse" Padding="16,12">
             <Grid ColumnDefinitions="28,*">
-              <Image Source="avares://XBVault/Assets/Icons/browse.ico"
+              <Image Source="avares://XBVault/Assets/Icons/game-controller.ico"
                      Width="22" Height="22"
                      Stretch="Uniform"/>
               <TextBlock Text="BROWSE"
@@ -89,20 +98,54 @@
           </ListBoxItem>
         </ListBox>
 
-        <!-- Connection status + Version -->
-        <StackPanel Grid.Row="2" Spacing="4" Margin="16,0,16,16">
+        <!-- ER Logo -->
+        <Image Source="avares://XBVault/Assets/Images/emulation-revival.png"
+               Grid.Row="2"
+               Width="140"
+               Height="40"
+               Stretch="Uniform"
+               HorizontalAlignment="Center"
+               Margin="0,0,0,8"/>
+
+        <!-- Connection status + About -->
+        <StackPanel Grid.Row="3" Spacing="4" Margin="16,0,16,16">
+          <Button HorizontalAlignment="Stretch"
+                  Background="Transparent"
+                  Foreground="#CCC"
+                  BorderThickness="0"
+                  CornerRadius="0"
+                  Padding="0,12"
+                  FontSize="11"
+                  FontWeight="SemiBold"
+                  Cursor="Hand"
+                  Command="{Binding OpenAboutCommand}">
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="6">
+              <Image Source="avares://XBVault/Assets/Icons/info.ico"
+                     Width="16" Height="16"
+                     Stretch="Uniform"
+                     VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1"
+                         Text="ABOUT"
+                         VerticalAlignment="Center"/>
+            </Grid>
+            <Button.Styles>
+              <Style Selector="Button:pointerover">
+                <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+              </Style>
+            </Button.Styles>
+          </Button>
           <Grid ColumnDefinitions="8,*" ColumnSpacing="6">
             <Ellipse Width="8" Height="8"
                      Fill="{StaticResource DangerBrush}"
                      Margin="0,4,0,4"/>
             <TextBlock Grid.Column="1"
-                       Text="{Binding ConnectionStatusText}"
-                       Foreground="{StaticResource TextDimBrush}"
-                       FontSize="11"
-                       VerticalAlignment="Center"/>
+                        Text="{Binding ConnectionStatusText}"
+                        Foreground="#AAA"
+                        FontSize="11"
+                        VerticalAlignment="Center"/>
           </Grid>
           <TextBlock Text="v0.1.0"
-                     Foreground="{StaticResource TextDimBrush}"
+                     Foreground="#AAA"
                      FontSize="11"/>
         </StackPanel>
 
@@ -113,16 +156,8 @@
     <Border Background="{StaticResource SurfaceBrush}"
             Grid.Column="1"
             Padding="0">
-
-      <Grid>
-        <v:BrowseView x:Name="BrowseViewCtrl"
-                        IsVisible="{Binding IsBrowseActive}"/>
-        <v:InstalledView x:Name="InstalledViewCtrl"
-                          IsVisible="{Binding IsInstalledActive}"/>
-        <v:SettingsView x:Name="SettingsViewCtrl"
-                        IsVisible="{Binding IsSettingsActive}"/>
-      </Grid>
-
+      <Carousel x:Name="ViewCarousel"
+                SelectedIndex="{Binding SelectedTab}"/>
     </Border>
 
   </Grid>

@@ -60,6 +60,10 @@ public partial class EmulationRevivalService
             }
         }
 
+        items = items.GroupBy(i => i.Name.ToLowerInvariant())
+                     .Select(g => g.First())
+                     .ToList();
+
         SaveToCache(items);
         return items;
     }
