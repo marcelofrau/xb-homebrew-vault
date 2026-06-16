@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using XBVault.Services;
 using XBVault.ViewModels;
 using XBVault.Views;
@@ -16,6 +17,9 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        SetupGlobalExceptionHandling();
+        Logger.Info("Application initialized");
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var xboxService = new XboxDeviceService();
@@ -28,13 +32,86 @@ public partial class App : Application
             var installedViewModel = new InstalledViewModel(xboxService);
             var settingsViewModel = new SettingsViewModel(xboxService, cacheService);
 
+            // splash first, main after delay
             var splash = new SplashWindow();
             splash.Show();
 
+            _ = InitAfterSplashAsync(desktop, splash, mainViewModel, browseViewModel,
+                installedViewModel, settingsViewModel, xboxService);
+        }
+
+        base.OnFrameworkInitializationCompleted();
+    }
+
+    private static void SetupGlobalExceptionHandling()
+    {
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            var ex = e.ExceptionObject as Exception;
+            Logger.Fatal(ex ?? new Exception("Unknown"), "AppDomain unhandled exception");
+            ShowErrorDialogSafe("Fatal Error", "An unrecoverable error occurred.", ex?.ToString() ?? "Unknown error", ErrorDialogType.Error);
+        };
+
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            Logger.Error(e.Exception, "Unobserved task exception");
+            e.SetObserved();
+        };
+
+        if (Dispatcher.UIThread is { } dispatcher)
+        {
+            dispatcher.UnhandledException += (_, e) =>
+            {
+                Logger.Error(e.Exception, "Dispatcher unhandled exception");
+                ShowErrorDialogSafe("Error", "An unexpected error occurred in the UI.", e.Exception.ToString(), ErrorDialogType.Error);
+                e.Handled = true;
+            };
+        }
+    }
+
+    private static void ShowErrorDialogSafe(string title, string description, string details, ErrorDialogType type)
+    {
+        try
+        {
+            Dispatcher.UIThread.Post(async () =>
+            {
+                try
+                {
+                    var owner = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+                    var dlg = new ErrorDialog(title, description, details, type);
+                    if (owner is not null)
+                        await dlg.ShowDialog(owner);
+                    else
+                        dlg.Show();
+                }
+                catch { }
+            }, DispatcherPriority.Send);
+        }
+        catch { }
+    }
+
+    private static async Task InitAfterSplashAsync(
+        IClassicDesktopStyleApplicationLifetime desktop,
+        SplashWindow splash,
+        MainViewModel mainViewModel,
+        BrowseViewModel browseViewModel,
+        InstalledViewModel installedViewModel,
+        SettingsViewModel settingsViewModel,
+        XboxDeviceService xboxService)
+    {
+        Logger.Debug("Splash delay starting (2s)");
+        await Task.Delay(2000);
+        Logger.Debug("Splash delay complete, building main window");
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
             var main = new MainWindow
             {
                 DataContext = mainViewModel
             };
+
+            desktop.MainWindow = main;
+            main.Show();
 
             browseViewModel.ShowDetailAction = item =>
             {
@@ -56,32 +133,42 @@ public partial class App : Application
                 {
                     DataContext = connVm
                 };
-                _ = connWindow.ShowDialog(main);
-                await connVm.ConnectCommand.ExecuteAsync(null);
-                var result = connVm.IsSuccess;
-                if (result)
-                    connWindow.Close();
-                return result;
+                await connWindow.ShowDialog(main);
+
+                if (!connVm.IsSuccess)
+                {
+                    var errDlg = new ErrorDialog(
+                        "Connection Failed",
+                        "Could not establish a connection to the Xbox. Verify the address and credentials in Settings.",
+                        "Check your Xbox Developer Mode settings:\n" +
+                        "- Ensure Xbox is in Developer Mode\n" +
+                        "- Verify the IP address is correct\n" +
+                        "- Confirm the username and password are correct\n" +
+                        "- Make sure both devices are on the same network",
+                        ErrorDialogType.Warn);
+                    await errDlg.ShowDialog(main);
+                }
+
+                return connVm.IsSuccess;
             };
 
             var browseView = new Views.BrowseView { DataContext = browseViewModel };
             var installedView = new Views.InstalledView { DataContext = installedViewModel };
             var settingsView = new Views.SettingsView { DataContext = settingsViewModel };
+            var logsView = new Views.LogsView { DataContext = new LogsViewModel() };
 
             main.ViewCarousel.Items.Add(browseView);
             main.ViewCarousel.Items.Add(installedView);
             main.ViewCarousel.Items.Add(settingsView);
+            main.ViewCarousel.Items.Add(logsView);
 
-            splash.Closed += (_, _) =>
-            {
-                main.Show();
-                _ = browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
-                _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
-            };
+            // kick off background loads
+            _ = browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
+            _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
 
-            splash.CloseAfterDelay();
-        }
+            Logger.Info("Main window loaded, splash closed");
 
-        base.OnFrameworkInitializationCompleted();
+            splash.Close();
+        });
     }
 }

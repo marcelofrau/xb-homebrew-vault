@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
+using XBVault.Helpers;
 using XBVault.Models;
 
 namespace XBVault.Services;
@@ -17,7 +18,7 @@ public class PackageInstallService
         _cache = cache;
         _xbox = xbox;
         _http = new HttpClient();
-        _http.DefaultRequestHeaders.Add("User-Agent", "XB Homebrew Vault/0.1.0");
+        _http.DefaultRequestHeaders.Add("User-Agent", $"XB Homebrew Vault/{BuildInfo.Version}");
     }
 
     public async Task<bool> DownloadAndInstallAsync(

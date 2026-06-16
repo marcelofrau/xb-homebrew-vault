@@ -10,7 +10,7 @@ namespace XBVault.Services;
 
 public class XboxDeviceService
 {
-    private readonly HttpClient _http;
+    private HttpClient _http;
     private bool _configured;
 
     public XboxDeviceService()
@@ -27,10 +27,19 @@ public class XboxDeviceService
         var auth = Convert.ToBase64String(
             System.Text.Encoding.UTF8.GetBytes($"{username}:{password}"));
 
-        _http.DefaultRequestHeaders.Authorization =
+        // Fresh client each call — BaseAddress freezes after first request
+        var handler = new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+        };
+        var http = new HttpClient(handler);
+        http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", auth);
+        http.BaseAddress = new Uri(baseUrl);
 
-        _http.BaseAddress = new Uri(baseUrl);
+        var old = _http;
+        _http = http;
+        old.Dispose();
         _configured = true;
     }
 

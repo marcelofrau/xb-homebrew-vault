@@ -52,6 +52,16 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="12">
+      <Image x:Name="SpinnerImage"
+             Source="avares://XBVault/Assets/Images/cd.png"
+             Width="48" Height="48"
+             Stretch="Uniform"
+             HorizontalAlignment="Center"
+             RenderTransformOrigin="50% 50%">
+        <Image.RenderTransform>
+          <RotateTransform Angle="0"/>
+        </Image.RenderTransform>
+      </Image>
       <ProgressBar IsIndeterminate="True"
                    Width="200"
                    Foreground="{StaticResource AccentBrush}"/>

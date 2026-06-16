@@ -1,7 +1,12 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:XBVault.ViewModels"
+             xmlns:converters="using:XBVault.Converters"
              x:Class="XBVault.Views.LogsView">
+
+  <UserControl.Resources>
+    <converters:LogLevelToBrushConverter x:Key="LevelToBrush"/>
+  </UserControl.Resources>
 
   <Grid Margin="16">
     <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="6" Padding="12">
@@ -9,7 +14,18 @@
         <ItemsControl ItemsSource="{Binding Logs}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="12" Foreground="{StaticResource TextMutedBrush}" TextWrapping="NoWrap"/>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="4" Margin="0,1">
+                <TextBlock Text="{Binding Marker}"
+                           FontSize="13"
+                           VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding Message}"
+                           FontFamily="{StaticResource MonoFont}"
+                           FontSize="12"
+                           TextWrapping="NoWrap"
+                           VerticalAlignment="Center"
+                           Foreground="{Binding Level, Converter={StaticResource LevelToBrush}}"/>
+              </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>

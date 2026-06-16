@@ -10,6 +10,7 @@
     <Color x:Key="BladesAccent">#9ACA3C</Color>
     <Color x:Key="BladesAccentDim">#6B8F2A</Color>
     <Color x:Key="BladesAccentGlow">#B5E665</Color>
+    <Color x:Key="BladesAccentHoverDark">#44681A</Color>
     <Color x:Key="BladesText">#F0F0F0</Color>
     <Color x:Key="BladesTextMuted">#8B8D91</Color>
     <Color x:Key="BladesTextDim">#5A5C60</Color>
@@ -27,6 +28,7 @@
     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource BladesAccent}"/>
     <SolidColorBrush x:Key="AccentDimBrush" Color="{StaticResource BladesAccentDim}"/>
     <SolidColorBrush x:Key="AccentGlowBrush" Color="{StaticResource BladesAccentGlow}"/>
+    <SolidColorBrush x:Key="AccentHoverDarkBrush" Color="{StaticResource BladesAccentHoverDark}"/>
     <SolidColorBrush x:Key="TextBrush" Color="{StaticResource BladesText}"/>
     <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource BladesTextMuted}"/>
     <SolidColorBrush x:Key="TextDimBrush" Color="{StaticResource BladesTextDim}"/>
@@ -41,6 +43,7 @@
     <!-- Fonts -->
     <FontFamily x:Key="TitleFont">avares://XBVault/Assets/Fonts/Oxanium-700.ttf#Oxanium</FontFamily>
     <FontFamily x:Key="BodyFont">avares://XBVault/Assets/Fonts/Oxanium-400.ttf#Oxanium</FontFamily>
+    <FontFamily x:Key="MonoFont">avares://XBVault/Assets/Fonts/ProFontWindowsNerdFont-Regular.ttf#ProFontWindows Nerd Font, Consolas, Courier New, Courier, monospace</FontFamily>
 
     <!-- Fluent theme overrides -->
     <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="{StaticResource BladesAccent}"/>
@@ -79,8 +82,8 @@
   </Style>
 
   <Style Selector="Button:pointerover">
-    <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
-    <Setter Property="BorderBrush" Value="{StaticResource AccentDimBrush}"/>
+    <Setter Property="Background" Value="{StaticResource AccentHoverDarkBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
   </Style>
 
   <Style Selector="Button.Accent">

@@ -1,65 +1,144 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d"
         x:Class="XBVault.Views.ConnectionWindow"
         Title="Xbox Connection"
-        Width="480" Height="400"
         WindowStartupLocation="CenterOwner"
-        SizeToContent="Height"
+        SizeToContent="WidthAndHeight"
+        MinWidth="460"
         CanResize="False"
         ShowInTaskbar="False"
-        Background="#0D0D0D">
-  <Border BorderBrush="#9ACA3C" BorderThickness="2">
-  <Grid RowDefinitions="*,Auto,Auto" Margin="16">
-    <!-- Terminal output -->
-    <Border Background="#1A1A1A"
-            CornerRadius="6"
-            Padding="12,8">
-      <ScrollViewer>
-        <ItemsControl ItemsSource="{Binding OutputLines}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <TextBlock Text="{Binding}"
-                         FontFamily="Consolas"
-                         FontSize="13"
-                         Foreground="#33FF33"
-                         TextWrapping="NoWrap"/>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </ScrollViewer>
-    </Border>
+        SystemDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
 
-    <!-- Progress bar -->
-    <ProgressBar Grid.Row="1"
-                 Value="{Binding Progress}"
-                 Maximum="1.0"
-                 Foreground="{StaticResource AccentBrush}"
-                 Background="#333"
-                 Height="6"
-                 Margin="0,10,0,0"
-                 IsIndeterminate="{Binding IsRunning}"/>
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
 
-    <!-- Bottom buttons -->
-    <StackPanel Grid.Row="2"
-                HorizontalAlignment="Right"
-                Orientation="Horizontal"
-                Spacing="8"
-                Margin="0,12,0,0">
-      <Button x:Name="RetryBtn"
-              Content="Retry"
-              Command="{Binding ConnectCommand}"
-              IsVisible="{Binding IsFailed}"
-              Padding="16,8"/>
-      <Button x:Name="CloseBtn"
-              Content="Close"
-              IsVisible="{Binding IsSuccess}"
+  <Border BorderBrush="#447F3E" BorderThickness="2">
+    <Grid RowDefinitions="Auto,*">
+    <!-- Title Bar -->
+    <Grid Height="32"
+          PointerPressed="OnTitleBarPointerPressed">
+      <Grid.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+          <GradientStop Color="#447F3E" Offset="0"/>
+          <GradientStop Color="#9ACA3C" Offset="1"/>
+        </LinearGradientBrush>
+      </Grid.Background>
+      <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+      <TextBlock Text="Xbox Connection"
+                 Foreground="#1A1A1A"
+                 FontSize="14"
+                 FontWeight="Bold"
+                 VerticalAlignment="Center"
+                 Margin="12,0"/>
+      <Button Grid.Column="1"
+              Width="32" Height="32"
+              Padding="0"
+              BorderThickness="0"
               Click="OnCloseClick"
-              Classes="Accent"
-              Padding="16,8"/>
-    </StackPanel>
-  </Grid>
+              Cursor="Hand"
+              ToolTip.Tip="Close">
+        <Image Source="avares://XBVault/Assets/Icons/close.ico"
+               Width="16" Height="16"
+               Stretch="Uniform"/>
+        <Button.Styles>
+          <Style Selector="Button">
+            <Setter Property="Background" Value="Transparent"/>
+          </Style>
+          <Style Selector="Button:pointerover">
+            <Setter Property="Background" Value="#CC3333"/>
+          </Style>
+          <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#CC3333"/>
+          </Style>
+        </Button.Styles>
+      </Button>
+    </Grid>
+
+    <!-- Content -->
+    <Border Grid.Row="1"
+            BorderThickness="0">
+      <StackPanel Margin="12" Spacing="8">
+
+        <!-- Banner -->
+        <Image Source="avares://XBVault/Assets/Images/connection-banner.png"
+               MaxWidth="400"
+               Stretch="Uniform"
+               HorizontalAlignment="Center"/>
+
+        <TextBlock Text="Establish Xbox connection"
+                   FontSize="14"
+                   FontWeight="Bold"
+                   Foreground="{StaticResource AccentBrush}"
+                   HorizontalAlignment="Center"/>
+
+        <!-- Details -->
+        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+          <TextBlock Text="Connect to Xbox Developer Mode via Device Portal"
+                     FontSize="12"
+                     Foreground="{StaticResource TextMutedBrush}"/>
+          <TextBlock Grid.Row="1"
+                     Text="Status:"
+                     FontSize="12"
+                     Foreground="{StaticResource TextDimBrush}"/>
+          <TextBlock Grid.Row="1" Grid.Column="1"
+                     Text="{Binding Progress, StringFormat={}{0:P0}}"
+                     FontSize="12"
+                     HorizontalAlignment="Right"/>
+        </Grid>
+
+        <!-- Terminal output -->
+        <Border Background="{StaticResource SurfaceAltBrush}"
+                CornerRadius="6"
+                Padding="8,6"
+                Height="110"
+                MaxHeight="110"
+                MinHeight="110">
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding OutputLines}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding}"
+                             FontFamily="{StaticResource MonoFont}"
+                             FontSize="13"
+                             Foreground="#2ECC71"
+                             TextWrapping="NoWrap"/>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Border>
+
+        <!-- Buttons + Progress -->
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <ProgressBar Grid.Column="0"
+                       IsIndeterminate="True"
+                       Height="4"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding IsRunning}"
+                       Foreground="{StaticResource AccentBrush}"
+                       Margin="0,0,8,0"/>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Content="Cancel" Click="OnCloseClick" Padding="10,6" MaxWidth="100"/>
+            <Button x:Name="ConnectBtn"
+                    Classes="Accent"
+                    Content="Connect"
+                    Command="{Binding ConnectCommand}"
+                    IsEnabled="{Binding IsRunning, Converter={StaticResource BoolInverse}}"
+                    Padding="10,6" MaxWidth="120"/>
+          </StackPanel>
+        </Grid>
+
+      </StackPanel>
+    </Border>
+    </Grid>
   </Border>
+
 </Window>

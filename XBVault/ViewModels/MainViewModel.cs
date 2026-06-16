@@ -32,19 +32,21 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsBrowseActive));
         OnPropertyChanged(nameof(IsInstalledActive));
         OnPropertyChanged(nameof(IsSettingsActive));
+        OnPropertyChanged(nameof(IsLogsActive));
         UpdateActiveView();
     }
 
     public bool IsBrowseActive => SelectedTab == 0;
     public bool IsInstalledActive => SelectedTab == 1;
     public bool IsSettingsActive => SelectedTab == 2;
+    public bool IsLogsActive => SelectedTab == 3;
 
     public int ActiveViewIndex
     {
         get => SelectedTab;
         set
         {
-            if (value >= 0 && value <= 2)
+            if (value >= 0 && value <= 3)
                 SelectedTab = value;
         }
     }

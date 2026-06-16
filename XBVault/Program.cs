@@ -1,14 +1,29 @@
 using Avalonia;
-using System;
 using XBVault;
+using XBVault.Services;
 
 class Program
 {
     [STAThread]
     static void Main(string[] args)
     {
-        BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
+        Logger.AttachConsole();
+        Logger.Info("Application starting");
+
+        try
+        {
+            BuildAvaloniaApp()
+                .StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception ex)
+        {
+            Logger.Fatal(ex, "Unhandled exception in Main");
+            throw;
+        }
+        finally
+        {
+            Logger.Info("Application exited");
+        }
     }
 
     static AppBuilder BuildAvaloniaApp()

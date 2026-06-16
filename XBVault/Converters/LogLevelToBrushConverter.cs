@@ -14,11 +14,13 @@ namespace XBVault.Converters
             {
                 return lvl switch
                 {
-                    LogLevel.Debug => Brushes.Gray,
-                    LogLevel.Info => (IBrush)Avalonia.Media.Brushes.LightGreen,
-                    LogLevel.Warn => (IBrush)Avalonia.Media.Brushes.Orange,
-                    LogLevel.Error => (IBrush)Avalonia.Media.Brushes.Red,
-                    _ => Avalonia.Media.Brushes.White
+                    LogLevel.Trace => new SolidColorBrush(Color.Parse("#8B8D91")),
+                    LogLevel.Debug => new SolidColorBrush(Color.Parse("#5A5C60")),
+                    LogLevel.Info  => new SolidColorBrush(Color.Parse("#2ECC71")),
+                    LogLevel.Warn  => new SolidColorBrush(Color.Parse("#F39C12")),
+                    LogLevel.Error => new SolidColorBrush(Color.Parse("#E74C3C")),
+                    LogLevel.Fatal => new SolidColorBrush(Color.Parse("#E74C3C")),
+                    _             => new SolidColorBrush(Color.Parse("#F0F0F0"))
                 };
             }
             return Avalonia.Media.Brushes.White;

@@ -1,14 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType Condition="$([MSBuild]::IsOSPlatform('windows'))">WinExe</OutputType>
+    <OutputType Condition="!$([MSBuild]::IsOSPlatform('windows'))">Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
+    <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <BuiltInComInteropSupport Condition="$([MSBuild]::IsOSPlatform('windows'))">true</BuiltInComInteropSupport>
     <ApplicationIcon>Assets\Icons\app.ico</ApplicationIcon>
     <AssemblyName>XBVault</AssemblyName>
     <RootNamespace>XBVault</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>Marcelo Frau</Authors>
     <Description>XB Homebrew Vault — Desktop manager for Xbox Dev Mode homebrew</Description>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>

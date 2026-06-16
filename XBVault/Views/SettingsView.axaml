@@ -132,7 +132,7 @@
         </Border>
 
         <!-- Version -->
-        <TextBlock Text="XB Homebrew Vault v0.1.0"
+        <TextBlock x:Name="VersionText"
                    FontSize="11"
                    Foreground="{StaticResource TextDimBrush}"
                    HorizontalAlignment="Center"

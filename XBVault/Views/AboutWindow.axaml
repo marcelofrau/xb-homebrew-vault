@@ -44,9 +44,9 @@
                  Margin="0,4"
                  HorizontalAlignment="Center"/>
       <StackPanel Spacing="2" Margin="0,4,0,0">
-        <TextBlock Text="v0.1.0"
+        <TextBlock x:Name="VersionText"
                    FontSize="11"
-                   Foreground="#888"
+                   Foreground="{StaticResource AccentBrush}"
                    HorizontalAlignment="Center"/>
         <TextBlock Text="Marcelo Frau"
                    FontSize="11"

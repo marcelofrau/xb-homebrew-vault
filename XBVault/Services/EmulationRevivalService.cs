@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using XBVault.Helpers;
 using XBVault.Models;
 
 namespace XBVault.Services;
@@ -34,7 +35,7 @@ public partial class EmulationRevivalService
     public EmulationRevivalService()
     {
         _http = new HttpClient();
-        _http.DefaultRequestHeaders.Add("User-Agent", "XB Homebrew Vault/0.1.0");
+        _http.DefaultRequestHeaders.Add("User-Agent", $"XB Homebrew Vault/{BuildInfo.Version}");
     }
 
     public async Task<List<CatalogItem>> FetchCatalogAsync(bool forceRefresh = false)

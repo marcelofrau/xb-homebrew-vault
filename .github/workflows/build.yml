@@ -9,7 +9,10 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
@@ -28,7 +31,7 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: XBVault-build
+        name: XBVault-build-${{ matrix.os }}
         path: XBVault/bin/Release/net8.0/
 
   release:
@@ -44,18 +47,34 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
-    - name: Publish x64
+    - name: Publish win-x64
+      shell: pwsh
       run: |
         $ver = "${{ github.ref_name }}" -replace '^v', ''
-        dotnet publish XBVault/XBVault.csproj -c Release -r win-x64 --self-contained true -p:PublishReadyToRun=true -p:Version=$ver -o publish
+        dotnet publish XBVault/XBVault.csproj -c Release -r win-x64 --self-contained true -p:PublishReadyToRun=true -p:Version=$ver -o publish-win
 
-    - name: Create ZIP
+    - name: Package win-x64
+      shell: pwsh
       run: |
         $ver = "${{ github.ref_name }}" -replace '^v', ''
-        Compress-Archive -Path publish/* -DestinationPath "XBVault-$ver-win-x64.zip"
+        Compress-Archive -Path publish-win/* -DestinationPath "XBVault-$ver-win-x64.zip"
+
+    - name: Publish linux-x64
+      shell: pwsh
+      run: |
+        $ver = "${{ github.ref_name }}" -replace '^v', ''
+        dotnet publish XBVault/XBVault.csproj -c Release -r linux-x64 --self-contained true -p:PublishReadyToRun=true -p:Version=$ver -o publish-linux
+
+    - name: Package linux-x64
+      shell: pwsh
+      run: |
+        $ver = "${{ github.ref_name }}" -replace '^v', ''
+        Compress-Archive -Path publish-linux/* -DestinationPath "XBVault-$ver-linux-x64.zip"
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
-        files: XBVault-*.zip
+        files: |
+          XBVault-*-win-x64.zip
+          XBVault-*-linux-x64.zip
         generate_release_notes: true

@@ -16,7 +16,7 @@ public partial class ConnectionViewModel : ObservableObject
         _xboxService = xboxService;
     }
 
-    public ObservableCollection<string> OutputLines { get; } = [];
+    public ObservableCollection<string> OutputLines { get; } = new ObservableCollection<string>();
 
     [ObservableProperty]
     private double _progress;
