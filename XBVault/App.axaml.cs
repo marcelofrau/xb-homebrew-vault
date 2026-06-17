@@ -45,6 +45,8 @@ public partial class App : Application
             var mainViewModel = new MainViewModel(xboxService);
             var browseViewModel = new BrowseViewModel(erService, installService, xboxService);
             var installedViewModel = new InstalledViewModel(xboxService);
+            var fileExplorerViewModel = new FileExplorerViewModel();
+            var toolsViewModel = new ToolsViewModel();
             var settingsViewModel = new SettingsViewModel(xboxService, cacheService);
 
             // splash first, main after delay
@@ -52,7 +54,8 @@ public partial class App : Application
             splash.Show();
 
             _ = InitAfterSplashAsync(desktop, splash, mainViewModel, browseViewModel,
-                installedViewModel, settingsViewModel, xboxService, erService);
+                installedViewModel, fileExplorerViewModel, toolsViewModel,
+                settingsViewModel, xboxService, erService);
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -111,6 +114,8 @@ public partial class App : Application
         MainViewModel mainViewModel,
         BrowseViewModel browseViewModel,
         InstalledViewModel installedViewModel,
+        FileExplorerViewModel fileExplorerViewModel,
+        ToolsViewModel toolsViewModel,
         SettingsViewModel settingsViewModel,
         XboxDeviceService xboxService,
         EmulationRevivalService erService)
@@ -191,11 +196,15 @@ public partial class App : Application
                 return connVm.IsSuccess;
             };
 
+            var fileExplorerView = new Views.FileExplorerView { DataContext = fileExplorerViewModel };
+            var toolsView = new Views.ToolsView { DataContext = toolsViewModel };
             var settingsView = new Views.SettingsView { DataContext = settingsViewModel };
             var logsView = new Views.LogsView { DataContext = new LogsViewModel() };
 
             main.ViewCarousel.Items.Add(browseView);
             main.ViewCarousel.Items.Add(installedView);
+            main.ViewCarousel.Items.Add(fileExplorerView);
+            main.ViewCarousel.Items.Add(toolsView);
             main.ViewCarousel.Items.Add(settingsView);
             main.ViewCarousel.Items.Add(logsView);
 

@@ -264,8 +264,8 @@ public partial class SettingsViewModel : ObservableObject
             var baseUrl = $"{(UseHttps ? "https" : "http")}://{Address}:{Port}";
             _xboxService.Configure(baseUrl, Username, Password);
             var result = await _xboxService.TestConnectionAsync();
-            IsConnected = result;
-            ConnectionStatus = result ? "Connected" : "Connection failed";
+            IsConnected = result.Success;
+            ConnectionStatus = result.Success ? "Connected" : "Connection failed";
             IsTestingConnection = false;
             return;
         }

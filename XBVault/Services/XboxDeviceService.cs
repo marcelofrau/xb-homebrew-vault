@@ -49,25 +49,58 @@ public class XboxDeviceService
 
     public bool IsConfigured => _configured;
 
-    public async Task<bool> TestConnectionAsync()
+    public async Task<ConnectionTestResult> TestConnectionAsync(CancellationToken ct = default)
     {
         if (!_configured)
         {
             Logger.Warn("TestConnection called but not configured");
-            return false;
+            return new ConnectionTestResult(false, null, null);
         }
 
         try
         {
             Logger.Debug("GET /api/os/info");
-            var response = await _http.GetAsync("/api/os/info");
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+            var response = await _http.GetAsync("/api/os/info", linkedCts.Token);
             Logger.Debug($"Connection test response: {(int)response.StatusCode} {response.ReasonPhrase}");
-            return response.IsSuccessStatusCode;
+            return new ConnectionTestResult(
+                response.IsSuccessStatusCode,
+                (int)response.StatusCode,
+                response.IsSuccessStatusCode ? null : $"HTTP {(int)response.StatusCode}");
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            Logger.Info("Connection test cancelled by user");
+            return new ConnectionTestResult(false, null, "User cancelled", isCancelled: true);
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.Error("Connection test timed out");
+            return new ConnectionTestResult(false, null, "Connection timed out");
+        }
+        catch (HttpRequestException ex) when (ex.InnerException is System.Net.Sockets.SocketException se)
+        {
+            Logger.Error(ex, "Connection test failed (socket)");
+            var detail = se.SocketErrorCode switch
+            {
+                System.Net.Sockets.SocketError.ConnectionRefused => "Connection refused",
+                System.Net.Sockets.SocketError.HostUnreachable => "Host unreachable",
+                System.Net.Sockets.SocketError.NetworkUnreachable => "Network unreachable",
+                System.Net.Sockets.SocketError.HostNotFound => "DNS resolution failed",
+                _ => $"Socket error {se.SocketErrorCode}"
+            };
+            return new ConnectionTestResult(false, null, detail);
+        }
+        catch (HttpRequestException ex)
+        {
+            Logger.Error(ex, "Connection test failed (HTTP)");
+            return new ConnectionTestResult(false, null, ex.Message);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Connection test failed");
-            return false;
+            return new ConnectionTestResult(false, null, ex.Message);
         }
     }
 
@@ -168,4 +201,20 @@ public class XboxDeviceService
 internal class PackagesResponse
 {
     public List<InstalledPackage> InstalledPackages { get; set; } = [];
+}
+
+public class ConnectionTestResult
+{
+    public bool Success { get; }
+    public int? StatusCode { get; }
+    public string? ErrorDetail { get; }
+    public bool IsCancelled { get; }
+
+    public ConnectionTestResult(bool success, int? statusCode, string? errorDetail, bool isCancelled = false)
+    {
+        Success = success;
+        StatusCode = statusCode;
+        ErrorDetail = errorDetail;
+        IsCancelled = isCancelled;
+    }
 }

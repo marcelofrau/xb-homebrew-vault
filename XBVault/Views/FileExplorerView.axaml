@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="XBVault.Views.FileExplorerView"
+             x:DataType="vm:FileExplorerViewModel"
+             xmlns:vm="using:XBVault.ViewModels">
+
+  <Grid Margin="32">
+    <Border Background="{StaticResource SurfaceAltBrush}"
+            CornerRadius="8"
+            Padding="32"
+            VerticalAlignment="Center"
+            HorizontalAlignment="Center">
+      <StackPanel Spacing="12" HorizontalAlignment="Center">
+        <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-fileexplorer-32.png"
+               Width="48" Height="48"
+               Stretch="Uniform"
+               HorizontalAlignment="Center"
+               Opacity="0.5"/>
+        <TextBlock Text="FILE EXPLORER"
+                   FontSize="20"
+                   FontWeight="Bold"
+                   Foreground="{StaticResource AccentBrush}"
+                   LetterSpacing="2"
+                   TextAlignment="Center"/>
+        <TextBlock Text="Browse and manage files on your Xbox"
+                   FontSize="13"
+                   Foreground="{StaticResource TextMutedBrush}"
+                   TextAlignment="Center"/>
+        <TextBlock Text="Coming soon"
+                   FontSize="11"
+                   Foreground="{StaticResource TextDimBrush}"
+                   TextAlignment="Center"
+                   FontStyle="Italic"/>
+      </StackPanel>
+    </Border>
+  </Grid>
+
+</UserControl>

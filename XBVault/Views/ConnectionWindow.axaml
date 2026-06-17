@@ -128,7 +128,7 @@ Width="20" Height="20"
                        Foreground="{StaticResource AccentBrush}"
                        Margin="0,0,8,0"/>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-            <Button Click="OnCloseClick" Padding="10,6" MaxWidth="100">
+            <Button Command="{Binding CancelCommand}" IsEnabled="{Binding IsRunning}" Padding="10,6" MaxWidth="100">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                 <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-cancel-20.png"
                        Width="20" Height="20"

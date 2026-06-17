@@ -14,6 +14,7 @@ public partial class ConnectionWindow : Window
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         Opened += (_, _) => Logger.Debug("ConnectionWindow opened");
+        Closing += OnClosing;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -33,9 +34,23 @@ public partial class ConnectionWindow : Window
         }
     }
 
-    private void OnConnectionCompleted(bool success)
+    private async void OnConnectionCompleted(bool success)
     {
         Logger.Info($"Connection dialog completed: success={success}");
+        if (success)
+            await Task.Delay(2000);
+        else
+            await Task.Delay(1500);
+        Close();
+    }
+
+    private void OnClosing(object? sender, WindowClosingEventArgs e)
+    {
+        if (DataContext is ConnectionViewModel vm && vm.IsRunning)
+        {
+            e.Cancel = true;
+            vm.CancelCommand.Execute(null);
+        }
     }
 
     private void OnCloseClick(object? sender, RoutedEventArgs e)

@@ -6,7 +6,7 @@
          x:DataType="vm:MainViewModel"
          x:Name="Root"
         Title="XB Homebrew Vault"
-        Width="1140" Height="720"
+        Width="1140" Height="780"
         WindowStartupLocation="CenterScreen"
         Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         Background="{StaticResource BgBrush}"
@@ -135,6 +135,34 @@ Width="20" Height="20"
                      Width="32" Height="32"
                      Stretch="Uniform"/>
               <TextBlock Text="INSTALLED"
+                         Grid.Column="1"
+                         VerticalAlignment="Center"
+                         FontSize="13"
+                         FontWeight="SemiBold"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         LetterSpacing="1"/>
+            </Grid>
+          </ListBoxItem>
+          <ListBoxItem Tag="FileExplorer" Padding="16,12">
+             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-fileexplorer-32.png"
+                     Width="32" Height="32"
+                     Stretch="Uniform"/>
+              <TextBlock Text="FILE EXPLORER"
+                         Grid.Column="1"
+                         VerticalAlignment="Center"
+                         FontSize="13"
+                         FontWeight="SemiBold"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         LetterSpacing="1"/>
+            </Grid>
+          </ListBoxItem>
+          <ListBoxItem Tag="Tools" Padding="16,12">
+             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-tools-32.png"
+                     Width="32" Height="32"
+                     Stretch="Uniform"/>
+              <TextBlock Text="TOOLS"
                          Grid.Column="1"
                          VerticalAlignment="Center"
                          FontSize="13"
