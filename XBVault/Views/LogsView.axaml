@@ -8,25 +8,34 @@
 
   <UserControl.Resources>
     <converters:LogLevelToBrushConverter x:Key="LevelToBrush"/>
+    <converters:LogLevelToIconConverter x:Key="LevelToIcon"/>
   </UserControl.Resources>
 
-  <Grid Margin="16">
-    <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="6" Padding="12">
-      <ScrollViewer>
+  <Grid RowDefinitions="Auto,*" Margin="16" RowSpacing="8">
+    <Border Grid.Row="0" Padding="8,6" CornerRadius="6" Background="{StaticResource SurfaceAltBrush}">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+        <CheckBox IsChecked="{Binding AutoScroll}"
+                  Content="Auto-scroll"
+                  FontSize="13"/>
+      </Grid>
+    </Border>
+    <Border Grid.Row="1" Background="{StaticResource SurfaceAltBrush}" CornerRadius="6" Padding="12">
+      <ScrollViewer Name="LogScrollViewer">
         <ItemsControl ItemsSource="{Binding Logs}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="svc:LogEntry">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="4" Margin="0,1">
-                <TextBlock Text="{Binding Marker}"
-                           FontSize="13"
-                           VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1"
-                           Text="{Binding Message}"
-                           FontFamily="{StaticResource MonoFont}"
-                           FontSize="12"
-                           TextWrapping="NoWrap"
-                           VerticalAlignment="Center"
-                           Foreground="{Binding Level, Converter={StaticResource LevelToBrush}}"/>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" Margin="0,1">
+                <Image Source="{Binding Level, Converter={StaticResource LevelToIcon}}"
+                       Width="16" Height="16"
+                       Stretch="Uniform"
+                       VerticalAlignment="Top"
+                       Margin="0,2,0,0"/>
+                <SelectableTextBlock Grid.Column="1"
+                                     Text="{Binding Message}"
+                                     FontFamily="{StaticResource MonoFont}"
+                                     FontSize="12"
+                                     TextWrapping="NoWrap"
+                                     Foreground="{Binding Level, Converter={StaticResource LevelToBrush}}"/>
               </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>

@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using XBVault.Models;
@@ -11,15 +14,19 @@ namespace XBVault.Services;
 public class XboxDeviceService
 {
     private HttpClient _http;
+    private HttpClientHandler? _handler;
     private bool _configured;
+    private bool _connected;
+    private string? _csrfToken;
 
     public XboxDeviceService()
     {
-        var handler = new HttpClientHandler
+        _handler = new HttpClientHandler
         {
-            ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+            ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
+            CookieContainer = new CookieContainer()
         };
-        _http = new HttpClient(handler);
+        _http = new HttpClient(_handler);
     }
 
     public void Configure(string baseUrl, string username, string password)
@@ -33,21 +40,49 @@ public class XboxDeviceService
         // Fresh client each call — BaseAddress freezes after first request
         var handler = new HttpClientHandler
         {
-            ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+            ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
+            CookieContainer = new CookieContainer()
         };
         var http = new HttpClient(handler);
         http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", auth);
         http.BaseAddress = new Uri(baseUrl);
 
-        var old = _http;
+        var oldHttp = _http;
+        var oldHandler = _handler;
         _http = http;
-        old.Dispose();
+        _handler = handler;
+        _csrfToken = null;
+        oldHttp.Dispose();
+        oldHandler?.Dispose();
         _configured = true;
         Logger.Debug("XboxDeviceService configured");
     }
 
     public bool IsConfigured => _configured;
+    public bool IsConnected => _connected;
+
+    public void MarkConnected()
+    {
+        _connected = true;
+        Logger.Debug("XboxDeviceService marked as connected");
+    }
+
+    public void Disconnect()
+    {
+        Logger.Info("XboxDeviceService.Disconnect");
+        _configured = false;
+        _connected = false;
+        _csrfToken = null;
+        _http.Dispose();
+        _handler?.Dispose();
+        _handler = new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
+            CookieContainer = new CookieContainer()
+        };
+        _http = new HttpClient(_handler);
+    }
 
     public async Task<ConnectionTestResult> TestConnectionAsync(CancellationToken ct = default)
     {
@@ -59,11 +94,17 @@ public class XboxDeviceService
 
         try
         {
-            Logger.Debug("GET /api/os/info");
+            Logger.Info("GET /api/os/info");
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
             var response = await _http.GetAsync("/api/os/info", linkedCts.Token);
-            Logger.Debug($"Connection test response: {(int)response.StatusCode} {response.ReasonPhrase}");
+            Logger.Info($"GET /api/os/info => {(int)response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+                await ExtractCsrfTokenAsync();
+
+            if (!response.IsSuccessStatusCode)
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
             return new ConnectionTestResult(
                 response.IsSuccessStatusCode,
                 (int)response.StatusCode,
@@ -114,16 +155,34 @@ public class XboxDeviceService
 
         try
         {
-            Logger.Debug("GET /api/app/packagemanager/packages");
+            Logger.Info("GET /api/app/packagemanager/packages");
             var response = await _http.GetAsync("/api/app/packagemanager/packages");
-            response.EnsureSuccessStatusCode();
+            Logger.Info($"GET /api/app/packagemanager/packages => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+            {
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
+                response.EnsureSuccessStatusCode(); // will throw
+            }
 
             var json = await response.Content.ReadAsStringAsync();
             Logger.Trace($"Packages JSON length: {json.Length} chars");
+
+            using var doc = JsonDocument.Parse(json);
+            var sample = doc.RootElement.TryGetProperty("InstalledPackages", out var arr) && arr.GetArrayLength() > 0
+                ? arr[0].ToString() : "no packages";
+            Logger.Info($"First package raw:\n{sample}");
+
             var result = JsonSerializer.Deserialize<PackagesResponse>(json);
 
             var count = result?.InstalledPackages?.Count ?? 0;
             Logger.Debug($"Got {count} installed packages");
+
+            if (result?.InstalledPackages is not null && arr.ValueKind == JsonValueKind.Array)
+            {
+                for (int i = 0; i < Math.Min(result.InstalledPackages.Count, arr.GetArrayLength()); i++)
+                    result.InstalledPackages[i].RawJson = arr[i].ToString();
+            }
+
             return result?.InstalledPackages ?? [];
         }
         catch (Exception ex)
@@ -145,9 +204,12 @@ public class XboxDeviceService
         {
             Logger.Info($"Uninstalling: {packageFullName}");
             var encoded = Uri.EscapeDataString(packageFullName);
-            var response = await _http.DeleteAsync(
-                $"/api/app/packagemanager/package?package={encoded}");
-            Logger.Debug($"Uninstall response: {(int)response.StatusCode}");
+            var url = $"/api/app/packagemanager/package?package={encoded}";
+            Logger.Info($"DELETE {url}");
+            var response = await DeleteWithCsrfAsync(url);
+            Logger.Info($"DELETE => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -159,42 +221,330 @@ public class XboxDeviceService
 
     public async Task<bool> InstallPackageAsync(string filePath, IProgress<double>? progress = null)
     {
+        var wrapped = progress is not null
+            ? new Progress<InstallProgressInfo>(p => progress.Report(p.Total))
+            : null;
+        return await InstallPackageAsync(filePath, [], wrapped);
+    }
+
+    public async Task<bool> InstallPackageAsync(string packagePath, string[] dependencies, IProgress<InstallProgressInfo>? progress = null)
+    {
         if (!_configured)
         {
             Logger.Warn("Install called but not configured");
             return false;
         }
-        if (!File.Exists(filePath))
+        if (!File.Exists(packagePath))
         {
-            Logger.Error($"Install file not found: {filePath}");
+            Logger.Error($"Install file not found: {packagePath}");
             return false;
         }
 
         try
         {
-            progress?.Report(0);
+            var totalFiles = 1 + dependencies.Length;
+            var mainName = Path.GetFileName(packagePath);
+            Logger.Info($"Install starting: {mainName} ({dependencies.Length} dependencies)");
 
-            var fileBytes = await File.ReadAllBytesAsync(filePath);
-            var fileName = Path.GetFileName(filePath);
-            Logger.Info($"Installing: {fileName} ({fileBytes.Length} bytes)");
+            // Upload main package
+            progress?.Report(new InstallProgressInfo
+            {
+                Total = 1.0 / totalFiles * 0,
+                Status = $"Uploading {mainName}...",
+                CurrentFile = mainName
+            });
 
-            using var content = new MultipartFormDataContent();
-            content.Add(new ByteArrayContent(fileBytes), "package", fileName);
+            var mainOk = await UploadAppxFile(packagePath, progress);
+            if (!mainOk)
+            {
+                Logger.Error($"Main package upload failed: {mainName}");
+                return false;
+            }
 
-            progress?.Report(0.5);
+            progress?.Report(new InstallProgressInfo
+            {
+                Total = 1.0 / totalFiles * 1,
+                File = 1,
+                Status = $"Uploaded main package",
+                CurrentFile = mainName
+            });
 
-            Logger.Debug($"POST /api/app/packagemanager/package with {fileName}");
-            var response = await _http.PostAsync("/api/app/packagemanager/package", content);
+            // Upload dependencies one at a time
+            Logger.Info($"Uploading {dependencies.Length} dependencies...");
+            var depIndex = 0;
+            foreach (var dep in dependencies)
+            {
+                depIndex++;
+                if (!File.Exists(dep))
+                {
+                    Logger.Warn($"Dependency not found: {dep}");
+                    continue;
+                }
 
-            progress?.Report(1.0);
-            Logger.Debug($"Install response: {(int)response.StatusCode}");
-            return response.IsSuccessStatusCode;
+                var depName = Path.GetFileName(dep);
+                Logger.Info($"  [{depIndex}/{dependencies.Length}] {depName}");
+                progress?.Report(new InstallProgressInfo
+                {
+                    Total = (double)(1 + depIndex) / totalFiles,
+                    Status = $"Uploading dependency {depIndex}/{dependencies.Length}: {depName}...",
+                    CurrentFile = depName
+                });
+
+                await WaitForPackageManagerReady();
+
+                var depOk = await UploadAppxFile(dep, progress);
+                if (depOk)
+                    Logger.Info($"  Dependency uploaded: {depName}");
+                else
+                    Logger.Error($"  Dependency failed: {depName}");
+            }
+
+            return true;
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, $"Install failed for {filePath}");
+            Logger.Error(ex, $"Install failed for {packagePath}");
             return false;
         }
+    }
+
+    private async Task<bool> UploadAppxFile(string filePath, IProgress<InstallProgressInfo>? progress = null)
+    {
+        var fileName = Path.GetFileName(filePath);
+        var fileSize = new FileInfo(filePath).Length;
+        Logger.Info($"Uploading: {fileName} ({SizeFormat(fileSize)})");
+
+        for (int attempt = 0; attempt <= 5; attempt++)
+        {
+            if (attempt > 0)
+            {
+                var wait = attempt * 5;
+                Logger.Info($"Waiting {wait}s (Xbox busy, attempt {attempt}/5)...");
+                progress?.Report(new InstallProgressInfo
+                {
+                    Status = $"Waiting for previous install to finish ({wait}s)...",
+                    CurrentFile = fileName
+                });
+                await Task.Delay(TimeSpan.FromSeconds(wait));
+                await WaitForPackageManagerReady();
+            }
+
+            var fileBytes = await File.ReadAllBytesAsync(filePath);
+            // Build multipart body manually so Content-Type boundary is unquoted
+            var boundary = "----XboxUploadBoundary";
+            var headerBytes = Encoding.UTF8.GetBytes(
+                $"--{boundary}\r\n" +
+                $"Content-Disposition: form-data; name=\"file\"; filename=\"{fileName}\"\r\n" +
+                $"Content-Type: application/octet-stream\r\n\r\n");
+            var trailerBytes = Encoding.UTF8.GetBytes($"\r\n--{boundary}--\r\n");
+            var bodyBytes = new byte[headerBytes.Length + fileBytes.Length + trailerBytes.Length];
+            headerBytes.CopyTo(bodyBytes, 0);
+            fileBytes.CopyTo(bodyBytes, headerBytes.Length);
+            trailerBytes.CopyTo(bodyBytes, headerBytes.Length + fileBytes.Length);
+
+            var content = new ByteArrayContent(bodyBytes);
+            content.Headers.TryAddWithoutValidation("Content-Type",
+                $"multipart/form-data; boundary={boundary}");
+
+            var url = $"/api/appx/packagemanager/package?package={Uri.EscapeDataString(fileName)}";
+            Logger.Info($">> POST {url}");
+            Logger.Info($"   Content-Type: {content.Headers.ContentType}");
+            Logger.Info($"   Content-Length: {content.Headers.ContentLength ?? 0}");
+            Logger.Info($"   File: {fileName} ({SizeFormat(fileSize)})");
+
+            progress?.Report(new InstallProgressInfo
+            {
+                Status = $"Uploading {fileName}...",
+                CurrentFile = fileName,
+                File = 0.3
+            });
+
+            var response = await PostWithCsrfAsync(url, content);
+
+            Logger.Info($"<< {response.StatusCode:D} ({response.ReasonPhrase})");
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await ReadResponseBody(response);
+                Logger.Warn($"   Body: {body}");
+            }
+            else
+            {
+                var body = await ReadResponseBody(response);
+                Logger.Info($"   Response: {body}");
+            }
+
+            progress?.Report(new InstallProgressInfo
+            {
+                Status = response.IsSuccessStatusCode
+                    ? $"Uploaded {fileName} ✓"
+                    : $"Upload failed: {fileName}",
+                CurrentFile = fileName,
+                File = response.IsSuccessStatusCode ? 1.0 : 0
+            });
+
+            if (response.StatusCode != System.Net.HttpStatusCode.Conflict)
+                return response.IsSuccessStatusCode;
+        }
+
+        return false;
+    }
+
+    private async Task WaitForPackageManagerReady()
+    {
+        Logger.Info("Waiting for package manager to be ready...");
+        var deadline = DateTime.UtcNow.AddSeconds(120);
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                var resp = await _http.GetAsync("/api/app/packagemanager/state");
+                var code = (int)resp.StatusCode;
+                Logger.Info($"GET /api/app/packagemanager/state => {code}");
+                if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    // 404 means no operation in progress
+                    await Task.Delay(2000);
+                    var resp2 = await _http.GetAsync("/api/app/packagemanager/state");
+                    var code2 = (int)resp2.StatusCode;
+                    Logger.Info($"GET /api/app/packagemanager/state => {code2}");
+                    if (resp2.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        Logger.Info("Package manager ready (got 404 twice)");
+                        return;
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore errors during polling
+            }
+            await Task.Delay(3000);
+        }
+        Logger.Warn("Timed out waiting for package manager, continuing anyway");
+    }
+
+    private async Task<string> ReadResponseBody(HttpResponseMessage resp)
+    {
+        try
+        {
+            var body = await resp.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(body)) return "(empty body)";
+            return body.Length <= 2000 ? body : body[..2000] + "... (truncated)";
+        }
+        catch
+        {
+            return "(unreadable body)";
+        }
+    }
+
+    private async Task<HttpResponseMessage> PostWithCsrfAsync(string url, HttpContent? content)
+    {
+        await EnsureCsrfTokenAsync();
+        var req = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+        if (!string.IsNullOrEmpty(_csrfToken))
+            req.Headers.Add("X-CSRF-Token", _csrfToken);
+        return await _http.SendAsync(req);
+    }
+
+    private async Task<HttpResponseMessage> DeleteWithCsrfAsync(string url)
+    {
+        await EnsureCsrfTokenAsync();
+        var req = new HttpRequestMessage(HttpMethod.Delete, url);
+        if (!string.IsNullOrEmpty(_csrfToken))
+            req.Headers.Add("X-CSRF-Token", _csrfToken);
+        return await _http.SendAsync(req);
+    }
+
+    private async Task EnsureCsrfTokenAsync()
+    {
+        if (!string.IsNullOrEmpty(_csrfToken))
+            return;
+
+        await TryFetchCsrfFrom("/api/os/info");
+        if (string.IsNullOrEmpty(_csrfToken))
+            await TryFetchCsrfFrom("/");
+    }
+
+    private async Task TryFetchCsrfFrom(string path)
+    {
+        Logger.Info($"Fetching CSRF from {path}");
+        try
+        {
+            var resp = await _http.GetAsync(path);
+            Logger.Info($"GET {path} => {(int)resp.StatusCode}");
+
+            Logger.Info("--- Response headers ---");
+            foreach (var h in resp.Headers)
+                Logger.Info($"  {h.Key}: {string.Join(", ", h.Value)}");
+            foreach (var h in resp.Content.Headers)
+                Logger.Info($"  Content-{h.Key}: {string.Join(", ", h.Value)}");
+
+            var body = await resp.Content.ReadAsStringAsync();
+            if (body.Length > 0)
+                Logger.Info($"--- Response body (first 1000) ---\n{(body.Length > 1000 ? body[..1000] : body)}");
+
+            if (resp.IsSuccessStatusCode)
+                await ExtractCsrfTokenAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"Failed to fetch CSRF from {path}: {ex.Message}");
+        }
+    }
+
+    private Task ExtractCsrfTokenAsync()
+    {
+        var baseAddress = _http.BaseAddress;
+        if (baseAddress is null)
+        {
+            Logger.Warn("No BaseAddress set, cannot extract CSRF");
+            return Task.CompletedTask;
+        }
+
+        try
+        {
+            var container = _handler?.CookieContainer;
+            if (container is null)
+            {
+                Logger.Warn("No CookieContainer configured");
+                return Task.CompletedTask;
+            }
+
+            var cookies = container.GetCookies(baseAddress);
+            foreach (System.Net.Cookie c in cookies)
+                Logger.Info($"  Cookie: {c.Name}={c.Value}");
+
+            var token = cookies["CSRF-Token"]?.Value;
+            if (!string.IsNullOrEmpty(token))
+            {
+                _csrfToken = token;
+                _http.DefaultRequestHeaders.Remove("X-CSRF-Token");
+                _http.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+                Logger.Info($"CSRF token extracted ({_csrfToken.Length} chars)");
+            }
+            else
+            {
+                Logger.Warn("No CSRF-Token cookie found");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"CSRF extraction error: {ex.Message}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static string SizeFormat(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB"];
+        double n = bytes;
+        foreach (var u in units)
+        {
+            if (n < 1024) return $"{n:F1}{u}";
+            n /= 1024;
+        }
+        return $"{n:F1}TB";
     }
 }
 

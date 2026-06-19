@@ -7,6 +7,7 @@
     <conv:BoolInverseConverter x:Key="BoolInverse"/>
     <conv:StringNotEmptyConverter x:Key="StringNotEmpty"/>
     <conv:IntToBoolConverter x:Key="IntToBool"/>
+    <conv:BoolToOpacityConverter x:Key="BoolToOpacity"/>
   </Application.Resources>
 
   <Application.Styles>

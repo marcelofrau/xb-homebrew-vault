@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -21,6 +22,10 @@ public partial class BrowseViewModel : ObservableObject
     private List<CatalogItem> _allItems = [];
 
     public Action<CatalogItem>? ShowDetailAction;
+    public Action? CloseDetailAction;
+
+    [RelayCommand]
+    private void CloseDetail() => CloseDetailAction?.Invoke();
     public Func<Task>? ShowRefreshDialogAsync;
 
     private static readonly HttpClient ImageHttp = new();
@@ -63,7 +68,19 @@ public partial class BrowseViewModel : ObservableObject
     private double _installProgress;
 
     [ObservableProperty]
+    private double _packageProgress;
+
+    [ObservableProperty]
     private string? _installStatus;
+
+    [ObservableProperty]
+    private string? _packageStatus;
+
+    [ObservableProperty]
+    private string? _currentFile;
+
+    [ObservableProperty]
+    private bool _installComplete;
 
     [ObservableProperty]
     private bool _showExperimental = true;
@@ -79,6 +96,23 @@ public partial class BrowseViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isCheckingInstalled;
+
+    [ObservableProperty]
+    private string? _installResultMessage;
+
+    public bool IsNotInstalling => !IsInstalling;
+    public bool CanCheckInstalled => !IsInstalling && !IsCheckingInstalled;
+
+    partial void OnIsInstallingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsNotInstalling));
+        OnPropertyChanged(nameof(CanCheckInstalled));
+    }
+
+    partial void OnIsCheckingInstalledChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanCheckInstalled));
+    }
 
     [RelayCommand]
     private async Task CheckInstalledAsync()
@@ -114,7 +148,7 @@ public partial class BrowseViewModel : ObservableObject
             InstalledVersion = match?.Version ?? "Not installed";
 
             if (match is not null)
-                Logger.Info($"Found installed: {item.Name} v{match.Version} ({match.InstalledSizeBytes} bytes)");
+                Logger.Info($"Found installed: {item.Name} v{match.Version}");
             else
                 Logger.Info($"Not installed: {item.Name}");
         }
@@ -140,6 +174,7 @@ public partial class BrowseViewModel : ObservableObject
         {
             InstallProgress = 0;
             InstallStatus = null;
+            InstallResultMessage = null;
             Logger.Debug($"Item selected: [{value.Category}] {value.Name} v{value.Version}");
             ShowDetailAction?.Invoke(value);
         }
@@ -156,6 +191,9 @@ public partial class BrowseViewModel : ObservableObject
             Logger.Debug("FetchCatalogAsync start");
             _allItems = await _erService.FetchCatalogAsync(forceRefresh: false);
             Logger.Info($"Catalog loaded: {_allItems.Count} items total");
+
+            foreach (var item in _allItems)
+                Logger.Info($"  {item.Name}");
 
             var byCategory = _allItems.GroupBy(i => i.Category)
                 .Select(g => $"{g.Key}={g.Count()}");
@@ -191,6 +229,10 @@ public partial class BrowseViewModel : ObservableObject
             {
                 _allItems = await _erService.FetchCatalogAsync(forceRefresh: true);
                 Logger.Info($"Catalog refreshed: {_allItems.Count} items total");
+
+                foreach (var item in _allItems)
+                    Logger.Info($"  {item.Name}");
+
                 ApplyFilters();
                 _ = LoadThumbnailsAsync();
             }
@@ -208,6 +250,32 @@ public partial class BrowseViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void VisitSite()
+    {
+        var url = SelectedItem?.DownloadUrl;
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            Logger.Warn("VisitSite called but no URL");
+            return;
+        }
+        Logger.Info($"Opening URL: {url}");
+        try
+        {
+            using var proc = new Process();
+            proc.StartInfo = new ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            };
+            proc.Start();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"Failed to open URL: {url}");
+        }
+    }
+
+    [RelayCommand]
     private async Task InstallSelectedAsync()
     {
         if (SelectedItem is null)
@@ -221,36 +289,44 @@ public partial class BrowseViewModel : ObservableObject
             return;
         }
 
-        IsInstalling = true;
-        InstallProgress = 0;
-        InstallStatus = "Downloading...";
-        Logger.Info($"Install starting: {SelectedItem.Name} from {SelectedItem.DownloadUrl}");
+        var itemName = SelectedItem?.Name ?? "?";
+        var itemUrl = SelectedItem?.DownloadUrl ?? "?";
 
-        var progress = new Progress<double>(p =>
+        IsInstalling = true;
+        InstallComplete = false;
+        InstallProgress = 0;
+        PackageProgress = 0;
+        InstallStatus = "";
+        PackageStatus = "";
+        CurrentFile = "";
+        Logger.Info($"Install starting: {itemName} from {itemUrl}");
+
+        var progress = new Progress<InstallProgressInfo>(info =>
         {
-            InstallProgress = p;
-            if (p < 0.5)
-                InstallStatus = "Downloading...";
-            else if (p < 0.6)
-                InstallStatus = "Analyzing package...";
-            else if (p < 1.0)
-                InstallStatus = "Installing on Xbox...";
-            else
-                InstallStatus = "Complete!";
+            InstallProgress = info.Total;
+            PackageProgress = info.File;
+            PackageStatus = info.Status;
+            CurrentFile = info.CurrentFile;
+
+            InstallStatus = info.Status;
         });
 
         Logger.Debug("Calling DownloadAndInstallAsync");
-        var result = await _installService.DownloadAndInstallAsync(SelectedItem, progress);
+        var result = await _installService.DownloadAndInstallAsync(SelectedItem!, progress);
 
         if (result)
         {
-            InstallStatus = "Complete!";
-            Logger.Info($"Install complete: {SelectedItem.Name}");
+            InstallStatus = "✓ Complete!";
+            InstallComplete = true;
+            InstallResultMessage = null;
+            Logger.Info($"Install complete: {itemName}");
         }
         else
         {
-            InstallStatus = "Install failed";
-            Logger.Error($"Install failed: {SelectedItem.Name}");
+            InstallStatus = "✗ Install failed";
+            InstallComplete = false;
+            InstallResultMessage = "Install failed";
+            Logger.Error($"Install failed: {itemName}");
         }
 
         InstallProgress = result ? 1.0 : 0;

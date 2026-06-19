@@ -6,7 +6,7 @@
          x:DataType="vm:MainViewModel"
          x:Name="Root"
         Title="XB Homebrew Vault"
-        Width="1140" Height="780"
+        Width="1140" Height="800"
         WindowStartupLocation="CenterScreen"
         Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         Background="{StaticResource BgBrush}"
@@ -25,7 +25,7 @@
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="BorderThickness" Value="0"/>
       <Setter Property="CornerRadius" Value="0"/>
-      <Setter Property="Padding" Value="0,12"/>
+      <Setter Property="Padding" Value="0,10"/>
       <Setter Property="Foreground" Value="#CCC"/>
       <Setter Property="FontSize" Value="11"/>
       <Setter Property="Cursor" Value="Hand"/>
@@ -115,7 +115,7 @@ Width="20" Height="20"
                  Background="Transparent"
                  SelectedIndex="{Binding SelectedTab}"
                  SelectionMode="Single">
-          <ListBoxItem Tag="Browse" Padding="16,12">
+          <ListBoxItem Tag="Browse" Padding="16,10">
              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-browse-32.png"
                      Width="32" Height="32"
@@ -129,7 +129,7 @@ Width="20" Height="20"
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Installed" Padding="16,12">
+          <ListBoxItem Tag="Installed" Padding="16,10">
              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-installed-32.png"
                      Width="32" Height="32"
@@ -143,7 +143,7 @@ Width="20" Height="20"
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="FileExplorer" Padding="16,12">
+          <ListBoxItem Tag="FileExplorer" Padding="16,10">
              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-fileexplorer-32.png"
                      Width="32" Height="32"
@@ -157,7 +157,7 @@ Width="20" Height="20"
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Tools" Padding="16,12">
+          <ListBoxItem Tag="Tools" Padding="16,10">
              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-tools-32.png"
                      Width="32" Height="32"
@@ -171,7 +171,7 @@ Width="20" Height="20"
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Settings" Padding="16,12">
+          <ListBoxItem Tag="Settings" Padding="16,10">
              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-settings-32.png"
                      Width="32" Height="32"
@@ -185,7 +185,7 @@ Width="20" Height="20"
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Logs" Padding="16,12">
+          <ListBoxItem Tag="Logs" Padding="16,10">
              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-logs-32.png"
                      Width="32" Height="32"
@@ -217,7 +217,8 @@ Width="20" Height="20"
           <Button Classes="SidebarBtn"
                   HorizontalAlignment="Stretch"
                   FontWeight="SemiBold"
-                  Command="{Binding ConnectCommand}">
+                  Command="{Binding ConnectCommand}"
+                  IsVisible="{Binding IsXboxConnected, Converter={StaticResource BoolInverse}}">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-connect-32.png"
                      Width="32" Height="32"
@@ -225,6 +226,23 @@ Width="20" Height="20"
                      VerticalAlignment="Center"/>
               <TextBlock Grid.Column="1"
                           Text="CONNECT"
+                          VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+
+          <!-- Disconnect button -->
+          <Button Classes="SidebarBtn"
+                  HorizontalAlignment="Stretch"
+                  FontWeight="SemiBold"
+                  Command="{Binding DisconnectCommand}"
+                  IsVisible="{Binding IsXboxConnected}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-disconnect-32.png"
+                     Width="32" Height="32"
+                     Stretch="Uniform"
+                     VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1"
+                          Text="DISCONNECT"
                           VerticalAlignment="Center"/>
             </Grid>
           </Button>
@@ -245,40 +263,51 @@ Width="20" Height="20"
             </Grid>
           </Button>
 
-          <!-- Connection indicator -->
-          <Grid ColumnDefinitions="8,*" ColumnSpacing="6">
-            <Ellipse Width="8" Height="8"
-                     Fill="{StaticResource DangerBrush}"
-                     IsVisible="{Binding IsXboxConnected, Converter={StaticResource BoolInverse}}"
-                     Margin="0,4,0,4"/>
-            <Ellipse Width="8" Height="8"
-                     Fill="{StaticResource AccentBrush}"
-                     IsVisible="{Binding IsXboxConnected}"
-                     Margin="0,4,0,4"/>
-            <TextBlock Grid.Column="1"
-                        Text="{Binding ConnectionStatusText}"
-                        Foreground="#AAA"
-                        FontSize="11"
-                        VerticalAlignment="Center"/>
-          </Grid>
-          <TextBlock x:Name="VersionText"
-                     Foreground="#AAA"
-                     FontSize="11"/>
+
         </StackPanel>
 
       </Grid>
     </Border>
 
-    <!-- Content Area -->
+    <!-- Content Area + Status Bar -->
     <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}"
             Grid.Column="1"
             Padding="0">
-      <Carousel x:Name="ViewCarousel"
-                SelectedIndex="{Binding SelectedTab}">
-        <Carousel.PageTransition>
-          <CrossFade Duration="0:0:0.3"/>
-        </Carousel.PageTransition>
-      </Carousel>
+      <Grid RowDefinitions="*,28">
+        <Carousel x:Name="ViewCarousel"
+                  SelectedIndex="{Binding SelectedTab}">
+          <Carousel.PageTransition>
+            <CrossFade Duration="0:0:0.3"/>
+          </Carousel.PageTransition>
+        </Carousel>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="1" Background="#151515" Padding="12,0">
+          <Grid ColumnDefinitions="Auto,Auto,*">
+            <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-status-notconfigured-16.png"
+                   Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"
+                   IsVisible="{Binding IsNotConfigured}"/>
+            <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-status-disconnected-16.png"
+                   Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"
+                   IsVisible="{Binding IsDisconnected}"/>
+            <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-status-connected-16.png"
+                   Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"
+                   IsVisible="{Binding IsXboxConnected}"/>
+            <TextBlock Grid.Column="1"
+                        Text="{Binding ConnectionStatusText}"
+                        Foreground="#AAA"
+                        FontSize="11"
+                        VerticalAlignment="Center"
+                        Margin="6,0,0,0"/>
+            <TextBlock Grid.Column="2"
+                        x:Name="VersionText"
+                        Foreground="#555"
+                        FontSize="11"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Right"/>
+          </Grid>
+        </Border>
+      </Grid>
     </Border>
 
     </Grid>

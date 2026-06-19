@@ -5,7 +5,7 @@
         x:Class="XBVault.Views.ItemDetailWindow"
         x:DataType="vm:BrowseViewModel"
         Title="Item Details"
-        Width="540" Height="600"
+        Width="540" Height="620"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
         WindowDecorations="None"
@@ -19,227 +19,332 @@
 
   <Border BorderBrush="#447F3E" BorderThickness="2">
     <Grid RowDefinitions="Auto,*">
-    <!-- Title Bar -->
-    <Grid Height="32"
-          PointerPressed="OnTitleBarPointerPressed">
-      <Grid.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-          <GradientStop Color="#447F3E" Offset="0"/>
-          <GradientStop Color="#9ACA3C" Offset="1"/>
-        </LinearGradientBrush>
-      </Grid.Background>
-      <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
-      <TextBlock Text="Item Details"
-                 Foreground="#1A1A1A"
-                 FontSize="14"
-                 FontWeight="Bold"
-                 VerticalAlignment="Center"
-                 Margin="12,0"/>
-      <Button Grid.Column="1"
-              Width="32" Height="32"
-              Padding="0"
-              BorderThickness="0"
-              Click="OnCloseClick"
-              Cursor="Hand"
-              ToolTip.Tip="Close">
-        <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-close-20.png"
-Width="20" Height="20"
-                        Stretch="Uniform"/>
-        <Button.Styles>
-          <Style Selector="Button">
-            <Setter Property="Background" Value="Transparent"/>
-          </Style>
-          <Style Selector="Button:pointerover">
-            <Setter Property="Background" Value="#CC3333"/>
-          </Style>
-          <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#CC3333"/>
-          </Style>
-        </Button.Styles>
-      </Button>
-    </Grid>
-
-    <!-- Content -->
-    <Border Grid.Row="1"
-            BorderThickness="0">
-      <Grid RowDefinitions="Auto,*,Auto" Margin="16">
-
-        <!-- Header -->
-        <TextBlock Grid.Row="0"
-                   Text="{Binding SelectedItem.Name}"
-                   FontSize="20"
+      <!-- Title Bar -->
+      <Grid Height="32"
+            PointerPressed="OnTitleBarPointerPressed">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#447F3E" Offset="0"/>
+            <GradientStop Color="#9ACA3C" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="Item Details"
+                   Foreground="#1A1A1A"
+                   FontSize="14"
                    FontWeight="Bold"
-                   TextWrapping="Wrap"
-                   Margin="0,0,0,4"/>
+                   VerticalAlignment="Center"
+                   Margin="12,0"/>
+        <Button Grid.Column="1"
+                Width="32" Height="32"
+                Padding="0"
+                BorderThickness="0"
+                Click="OnCloseClick"
+                Cursor="Hand"
+                ToolTip.Tip="Close">
+          <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-close-20.png"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
+          <Button.Styles>
+            <Style Selector="Button">
+              <Setter Property="Background" Value="Transparent"/>
+            </Style>
+            <Style Selector="Button:pointerover">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+          </Button.Styles>
+        </Button>
+      </Grid>
 
-        <!-- Scrollable content -->
-        <ScrollViewer Grid.Row="1" Margin="0,16">
-          <StackPanel Spacing="16">
+      <!-- Content -->
+      <Border Grid.Row="1" BorderThickness="0">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="16">
 
-            <TextBlock Text="{Binding SelectedItem.Category}"
-                       FontSize="12"
-                       Foreground="{StaticResource AccentBrush}"/>
+          <!-- Name -->
+          <TextBlock Grid.Row="0"
+                     Text="{Binding SelectedItem.Name}"
+                     FontSize="20"
+                     FontWeight="Bold"
+                     TextWrapping="Wrap"/>
 
-            <Border CornerRadius="8"
-                    Background="{StaticResource SurfaceAltBrush}"
-                    Height="200"
-                    HorizontalAlignment="Stretch">
-              <Image Source="{Binding SelectedItem.Thumbnail}"
-                     Stretch="UniformToFill"/>
-            </Border>
+          <!-- Thumbnail -->
+          <Border Grid.Row="1"
+                  CornerRadius="8"
+                  Background="{StaticResource SurfaceAltBrush}"
+                  Height="180"
+                  HorizontalAlignment="Stretch"
+                  Margin="0,12,0,0">
+            <Image Source="{Binding SelectedItem.Thumbnail}"
+                   Stretch="UniformToFill"/>
+          </Border>
 
-            <TextBlock Text="{Binding SelectedItem.Description}"
-                       FontSize="13"
-                       Foreground="{StaticResource TextMutedBrush}"
-                       TextWrapping="Wrap"/>
+          <!-- Content area: description scroll OR install overlay -->
+          <Grid Grid.Row="2" Margin="0,12,0,0">
+            <!-- Normal description view -->
+            <ScrollViewer IsVisible="{Binding IsInstalling, Converter={StaticResource BoolInverse}}">
+              <StackPanel Spacing="16">
 
-            <Separator Background="{StaticResource BorderBrush}"
-                       Height="1"/>
+                <TextBlock Text="{Binding SelectedItem.Category}"
+                           FontSize="12"
+                           Foreground="{StaticResource AccentBrush}"/>
 
-            <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
-                  RowSpacing="8">
-              <TextBlock Text="Version"
-                         Foreground="{StaticResource TextDimBrush}"
-                         FontSize="12"
-                         Grid.Row="0"/>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding SelectedItem.Version}"
-                         FontSize="12"
-                         Grid.Row="0"/>
+                <TextBlock Text="{Binding SelectedItem.Description}"
+                           FontSize="13"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           TextWrapping="Wrap"/>
 
-              <TextBlock Text="Developer"
-                         Foreground="{StaticResource TextDimBrush}"
-                         FontSize="12"
-                         Grid.Row="1"/>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding SelectedItem.Developer}"
-                         FontSize="12"
-                         Grid.Row="1"/>
+                <Separator Background="{StaticResource BorderBrush}"
+                           Height="1"/>
 
-              <TextBlock Text="Release date"
-                         Foreground="{StaticResource TextDimBrush}"
-                         FontSize="12"
-                         Grid.Row="2"/>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding SelectedItem.ReleaseDate}"
-                         FontSize="12"
-                         Grid.Row="2"/>
+                <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                      RowSpacing="8">
+                  <TextBlock Text="Version"
+                             Foreground="{StaticResource TextDimBrush}"
+                             FontSize="12" Grid.Row="0"/>
+                  <TextBlock Grid.Column="1"
+                             Text="{Binding SelectedItem.Version}"
+                             FontSize="12" Grid.Row="0"/>
 
-              <TextBlock Text="Compatibility"
-                         Foreground="{StaticResource TextDimBrush}"
-                         FontSize="12"
-                         Grid.Row="3"/>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding SelectedItem.Compatibility}"
-                         FontSize="12"
-                         Grid.Row="3"/>
-            </Grid>
+                  <TextBlock Text="Developer"
+                             Foreground="{StaticResource TextDimBrush}"
+                             FontSize="12" Grid.Row="1"/>
+                  <TextBlock Grid.Column="1"
+                             Text="{Binding SelectedItem.Developer}"
+                             FontSize="12" Grid.Row="1"/>
 
-            <StackPanel Spacing="4"
-                        IsVisible="{Binding SelectedItem.Requirements.Count, Converter={StaticResource IntToBool}}">
-              <TextBlock Text="Requirements"
-                         FontSize="12"
-                         FontWeight="SemiBold"/>
-              <ItemsControl ItemsSource="{Binding SelectedItem.Requirements}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="sys:String">
-                    <TextBlock Text="{Binding}"
-                               FontSize="12"
-                               Foreground="{StaticResource TextMutedBrush}"
-                               Margin="12,2,0,2"/>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </StackPanel>
+                  <TextBlock Text="Release date"
+                             Foreground="{StaticResource TextDimBrush}"
+                             FontSize="12" Grid.Row="2"/>
+                  <TextBlock Grid.Column="1"
+                             Text="{Binding SelectedItem.ReleaseDate}"
+                             FontSize="12" Grid.Row="2"/>
 
-            <StackPanel Spacing="4"
-                        IsVisible="{Binding SelectedItem.Features.Count, Converter={StaticResource IntToBool}}">
-              <TextBlock Text="Features"
-                         FontSize="12"
-                         FontWeight="SemiBold"/>
-              <ItemsControl ItemsSource="{Binding SelectedItem.Features}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="sys:String">
-                    <TextBlock Text="{Binding}"
-                               FontSize="12"
-                               Foreground="{StaticResource TextMutedBrush}"
-                               Margin="12,2,0,2"/>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </StackPanel>
+                  <TextBlock Text="Compatibility"
+                             Foreground="{StaticResource TextDimBrush}"
+                             FontSize="12" Grid.Row="3"/>
+                  <TextBlock Grid.Column="1"
+                             Text="{Binding SelectedItem.Compatibility}"
+                             FontSize="12" Grid.Row="3"/>
+                </Grid>
 
-            <StackPanel Spacing="6"
-                        IsVisible="{Binding IsInstalling}">
+                <StackPanel Spacing="4"
+                            IsVisible="{Binding SelectedItem.Requirements.Count, Converter={StaticResource IntToBool}}">
+                  <TextBlock Text="Requirements"
+                             FontSize="12"
+                             FontWeight="SemiBold"/>
+                  <ItemsControl ItemsSource="{Binding SelectedItem.Requirements}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="sys:String">
+                        <TextBlock Text="{Binding}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Margin="12,2,0,2"/>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+
+                <StackPanel Spacing="4"
+                            IsVisible="{Binding SelectedItem.Features.Count, Converter={StaticResource IntToBool}}">
+                  <TextBlock Text="Features"
+                             FontSize="12"
+                             FontWeight="SemiBold"/>
+                  <ItemsControl ItemsSource="{Binding SelectedItem.Features}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="sys:String">
+                        <TextBlock Text="{Binding}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Margin="12,2,0,2"/>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- Install overlay -->
+            <StackPanel IsVisible="{Binding IsInstalling}"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Spacing="10">
+              <Image x:Name="InstallSpinner"
+                     Source="avares://XBVault/Assets/Views/InstalledView/installed-spinner-48.png"
+                     Width="48" Height="48"
+                     Stretch="Uniform"
+                     HorizontalAlignment="Center"
+                     RenderTransformOrigin="50% 50%"
+                     IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
+                <Image.RenderTransform>
+                  <RotateTransform Angle="0"/>
+                </Image.RenderTransform>
+              </Image>
+              <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-success-16.png"
+                     Width="48" Height="48"
+                     Stretch="Uniform"
+                     HorizontalAlignment="Center"
+                     IsVisible="{Binding InstallComplete}"/>
+              <TextBlock Text="{Binding InstallStatus}"
+                         FontSize="14"
+                         FontWeight="SemiBold"
+                         Foreground="{StaticResource AccentBrush}"
+                         TextAlignment="Center"
+                         TextWrapping="Wrap"
+                         MaxWidth="400"
+                         IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
+              <TextBlock Text="✓ Complete!"
+                         FontSize="22"
+                         FontWeight="Bold"
+                         Foreground="{StaticResource SuccessBrush}"
+                         TextAlignment="Center"
+                         TextWrapping="Wrap"
+                         MaxWidth="400"
+                         IsVisible="{Binding InstallComplete}"/>
               <ProgressBar Value="{Binding InstallProgress}"
                            Maximum="1"
-                           Height="4"
+                           Width="260"
+                           Height="6"
                            Foreground="{StaticResource AccentBrush}"/>
-              <TextBlock Text="{Binding InstallStatus}"
+              <TextBlock Text="{Binding CurrentFile}"
                          FontSize="11"
-                         Foreground="{StaticResource TextMutedBrush}"/>
+                         Foreground="{StaticResource TextDimBrush}"
+                         TextAlignment="Center"
+                         TextWrapping="Wrap"
+                         MaxWidth="400"
+                         IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
+              <ProgressBar IsIndeterminate="True"
+                           IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"
+                           Width="260"
+                           Height="4"
+                           Foreground="{StaticResource AccentDimBrush}"/>
+              <TextBlock Text="{Binding PackageStatus}"
+                         FontSize="11"
+                         Foreground="{StaticResource TextDimBrush}"
+                         TextAlignment="Center"
+                         TextWrapping="Wrap"
+                         MaxWidth="400"/>
+            </StackPanel>
+          </Grid>
+
+          <!-- Footer -->
+          <StackPanel Grid.Row="3" Spacing="8" Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="8">
+              <Button Classes="Accent"
+                      Padding="20,10"
+                      Command="{Binding InstallSelectedCommand}"
+                      IsEnabled="{Binding IsNotInstalling}"
+                      IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Install"
+                             FontSize="13"
+                             FontWeight="SemiBold"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+
+              <Button Classes="Accent"
+                      Padding="20,10"
+                      Command="{Binding CloseDetailCommand}"
+                      IsVisible="{Binding InstallComplete}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-close-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Close"
+                             FontSize="13"
+                             FontWeight="SemiBold"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+
+              <Button Padding="20,10"
+                      Command="{Binding VisitSiteCommand}"
+                      IsEnabled="{Binding IsNotInstalling}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-globe-16.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Visit Site"
+                             FontSize="13"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+
+              <Button Padding="16,10"
+                      Command="{Binding CheckInstalledCommand}"
+                      IsEnabled="{Binding CanCheckInstalled}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Check Installed"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
             </StackPanel>
 
-          </StackPanel>
-        </ScrollViewer>
+            <Border Padding="10,8"
+                    CornerRadius="4"
+                    Background="{StaticResource SurfaceAltBrush}"
+                    IsVisible="{Binding InstalledVersion, Converter={StaticResource StringNotEmpty}}">
+              <TextBlock FontSize="12">
+                <Run Text="Status:" FontWeight="SemiBold"/>
+                <Run Text="{Binding InstalledVersion}"/>
+              </TextBlock>
+            </Border>
 
-        <!-- Footer -->
-        <StackPanel Grid.Row="2" Spacing="8" Margin="0,4,0,0">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Classes="Accent"
-                    Padding="20,10"
-                    Command="{Binding InstallSelectedCommand}"
-                    IsEnabled="{Binding IsInstalling, Converter={StaticResource BoolInverse}}">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
-                       Width="20" Height="20"
-                       Stretch="Uniform"/>
-                <TextBlock Grid.Column="1" Text="Install"
+            <Border Padding="10,8"
+                    CornerRadius="4"
+                    BorderBrush="{StaticResource SuccessBrush}"
+                    BorderThickness="1"
+                    Background="#1A2ECC71"
+                    IsVisible="{Binding InstallComplete}">
+              <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-success-16.png"
+                       Width="24" Height="24"
+                       Stretch="Uniform"
+                       VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
                            FontSize="13"
                            FontWeight="SemiBold"
+                           Text="✓ Install complete!"
+                           Foreground="{StaticResource SuccessBrush}"
                            VerticalAlignment="Center"/>
               </Grid>
-            </Button>
+            </Border>
 
-            <Button Padding="20,10"
-                    IsEnabled="{Binding SelectedItem.DownloadUrl, Converter={StaticResource StringNotEmpty}}">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-download-20.png"
-                       Width="20" Height="20"
-                       Stretch="Uniform"/>
-                <TextBlock Grid.Column="1" Text="Download"
-                           FontSize="13"
-                           VerticalAlignment="Center"/>
-              </Grid>
-            </Button>
-
-            <Button Padding="16,10"
-                    Command="{Binding CheckInstalledCommand}"
-                    IsEnabled="{Binding IsCheckingInstalled, Converter={StaticResource BoolInverse}}">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
-                       Width="20" Height="20"
-                       Stretch="Uniform"/>
-                <TextBlock Grid.Column="1" Text="Check Installed"
+            <Border Padding="10,8"
+                    CornerRadius="4"
+                    BorderBrush="{StaticResource DangerBrush}"
+                    BorderThickness="1"
+                    Background="#1AE74C3C"
+                    IsVisible="{Binding InstallResultMessage, Converter={StaticResource StringNotEmpty}}">
+              <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+                <Image Source="avares://XBVault/Assets/Views/LogsView/logs-error-16.png"
+                       Width="24" Height="24"
+                       Stretch="Uniform"
+                       VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
                            FontSize="12"
+                           Text="{Binding InstallResultMessage}"
+                           Foreground="{StaticResource DangerBrush}"
                            VerticalAlignment="Center"/>
               </Grid>
-            </Button>
+            </Border>
           </StackPanel>
 
-          <Border Padding="10,8"
-                  CornerRadius="4"
-                  Background="{StaticResource SurfaceAltBrush}"
-                  IsVisible="{Binding InstalledVersion, Converter={StaticResource StringNotEmpty}}">
-            <TextBlock FontSize="12">
-              <Run Text="Status:" FontWeight="SemiBold"/>
-              <Run Text="{Binding InstalledVersion}"/>
-            </TextBlock>
-          </Border>
-        </StackPanel>
-
-      </Grid>
-    </Border>
+        </Grid>
+      </Border>
     </Grid>
   </Border>
 

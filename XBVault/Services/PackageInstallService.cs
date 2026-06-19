@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using XBVault.Helpers;
 using XBVault.Models;
@@ -13,6 +17,21 @@ public class PackageInstallService
     private readonly CacheService _cache;
     private readonly XboxDeviceService _xbox;
 
+    private static readonly Regex DepPattern = new(
+        @"(?i)(microsoft\.|vclibs|net\.core|ui\.xaml|net\.native|vcruntime|dotnet|runtime\.)");
+
+    private static readonly Regex JunkPattern = new(
+        @"(?i)(\.cer$|\.pfx$|add-appdevpackage|install\.ps1|\.appxsym$|\.psd1$|" +
+        @"telemetrydependenc|logsideloading|diagnostics\.tracing|" +
+        @"visualstudio\.(remote|telemetry|util)|newtonsoft|system\.runtime\.compiler)");
+
+    private static readonly HashSet<string> InstallerExts = new(
+        StringComparer.OrdinalIgnoreCase) { ".appx", ".msix", ".appxbundle", ".msixbundle" };
+
+    private static bool IsDep(string fileName) => DepPattern.IsMatch(fileName);
+    private static bool IsJunk(string fileName) => JunkPattern.IsMatch(fileName);
+    private static bool IsInstallable(string fileName) => InstallerExts.Contains(Path.GetExtension(fileName));
+
     public PackageInstallService(CacheService cache, XboxDeviceService xbox)
     {
         _cache = cache;
@@ -23,7 +42,7 @@ public class PackageInstallService
 
     public async Task<bool> DownloadAndInstallAsync(
         CatalogItem item,
-        IProgress<double>? progress = null)
+        IProgress<InstallProgressInfo>? progress = null)
     {
         if (string.IsNullOrWhiteSpace(item.DownloadUrl))
         {
@@ -31,22 +50,23 @@ public class PackageInstallService
             return false;
         }
 
-        progress?.Report(0);
+        progress?.Report(new InstallProgressInfo { Status = $"Starting install of {item.Name}..." });
         Logger.Info($"DownloadAndInstall: {item.Name} from {item.DownloadUrl}");
 
         var fileName = GetFileNameFromUrl(item.DownloadUrl);
         var localPath = _cache.GetDownloadPath(item.Id, fileName);
         Logger.Debug($"Target local path: {localPath}");
 
-        // Download if not cached
+        // Phase 1: Download
         if (_cache.IsCached(item.Id, fileName))
         {
             Logger.Debug($"Cache hit for {item.Id}/{fileName}");
+            progress?.Report(new InstallProgressInfo { Total = 0.4, Status = $"Using cached {fileName}" });
         }
         else
         {
             Logger.Debug($"Cache miss — downloading {fileName}");
-            progress?.Report(0.1);
+            progress?.Report(new InstallProgressInfo { Total = 0.05, Status = $"Downloading {fileName}..." });
 
             try
             {
@@ -55,7 +75,7 @@ public class PackageInstallService
                 response.EnsureSuccessStatusCode();
 
                 var total = response.Content.Headers.ContentLength ?? -1;
-                Logger.Debug($"Download size: {(total > 0 ? $"{total} bytes" : "unknown")}");
+                Logger.Info($"Download size: {(total > 0 ? $"{total} bytes" : "unknown")}");
                 using var stream = await response.Content.ReadAsStreamAsync();
                 using var fileStream = File.Create(localPath);
 
@@ -67,10 +87,14 @@ public class PackageInstallService
                 {
                     await fileStream.WriteAsync(buffer, 0, bytesRead);
                     read += bytesRead;
-
                     if (total > 0)
                     {
-                        progress?.Report(0.1 + (0.4 * (double)read / total));
+                        var pct = 0.05 + (0.35 * (double)read / total);
+                        progress?.Report(new InstallProgressInfo
+                        {
+                            Total = pct,
+                            Status = $"Downloading {fileName} ({FormatBytes(read)}/{FormatBytes(total)})..."
+                        });
                     }
                 }
 
@@ -85,22 +109,292 @@ public class PackageInstallService
             }
         }
 
-        progress?.Report(0.5);
+        progress?.Report(new InstallProgressInfo { Total = 0.4, Status = "Extracting package..." });
 
-        // Analyze package for dependencies
-        Logger.Trace("Analyzing package dependencies (stub)");
-        var dependencies = AnalyzePackage(localPath);
-        Logger.Debug($"Dependencies found: {dependencies.Length}");
-        progress?.Report(0.6);
+        // Phase 2: Extract ZIP
+        Logger.Info("Extracting package...");
 
-        // Install via Xbox
-        Logger.Debug("Sending package to Xbox for install");
-        var result = await _xbox.InstallPackageAsync(localPath,
-            new Progress<double>(p => progress?.Report(0.6 + (0.4 * p))));
+        var extractDir = GetExtractPath(item.Id, fileName);
+        string[] packages;
+        try
+        {
+            packages = ExtractPackage(localPath, extractDir);
+            if (packages.Length == 0)
+            {
+                Logger.Error($"No installable packages found in {localPath}");
+                return false;
+            }
+            Logger.Info($"Found {packages.Length} installable file(s):");
+            foreach (var p in packages)
+                Logger.Info($"  {Path.GetFileName(p)}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"Extraction failed for {localPath}");
+            return false;
+        }
 
-        progress?.Report(1.0);
-        Logger.Info($"Install result for {item.Name}: {(result ? "success" : "failed")}");
+        // Phase 3: Classify main vs dependencies by name patterns
+        Logger.Info("Classifying packages (main vs dependencies)...");
+        progress?.Report(new InstallProgressInfo { Total = 0.5, Status = "Classifying packages..." });
+        var (mainPackage, dependencies) = ClassifyPackages(packages);
+        if (mainPackage is null)
+        {
+            Logger.Error($"No installable main package found in {localPath}");
+            return false;
+        }
+        Logger.Info($"  Main: {Path.GetFileName(mainPackage)}");
+        for (int i = 0; i < dependencies.Length; i++)
+            Logger.Info($"  Dep {i + 1}/{dependencies.Length}: {Path.GetFileName(dependencies[i])}");
+
+        // Phase 4: Install on Xbox
+        Logger.Info("Installing on Xbox...");
+        progress?.Report(new InstallProgressInfo { Total = 0.6, Status = "Installing on Xbox..." });
+
+        var installProgress = dependencies.Length > 0
+            ? new Progress<InstallProgressInfo>(p =>
+            {
+                var overall = 0.6 + (0.4 * p.Total);
+                progress?.Report(new InstallProgressInfo
+                {
+                    Total = overall,
+                    File = p.File,
+                    Status = p.Status,
+                    CurrentFile = p.CurrentFile
+                });
+            })
+            : new Progress<InstallProgressInfo>(p =>
+            {
+                progress?.Report(new InstallProgressInfo
+                {
+                    Total = 0.6 + (0.4 * p.Total),
+                    File = p.File,
+                    Status = p.Status,
+                    CurrentFile = p.CurrentFile
+                });
+            });
+
+        var result = await _xbox.InstallPackageAsync(mainPackage, dependencies, installProgress);
+
+        if (result)
+        {
+            progress?.Report(new InstallProgressInfo { Total = 1.0, Status = "Complete!" });
+            Logger.Info($"Install SUCCESS: {item.Name}");
+        }
+        else
+        {
+            Logger.Error($"Install FAILED: {item.Name}");
+        }
         return result;
+    }
+
+    public static string GetExtractPath(string itemId, string fileName)
+    {
+        var cacheDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "XBVault", "cache", itemId);
+        return Path.Combine(cacheDir, $"{Path.GetFileNameWithoutExtension(fileName)}_extracted");
+    }
+
+    public static string[] ExtractPackage(string archivePath, string extractDir)
+    {
+        Logger.Debug($"Extracting {archivePath} to {extractDir}");
+
+        if (Directory.Exists(extractDir))
+        {
+            Logger.Debug("Extract dir exists, checking for valid packages...");
+            var existing = FindInstallablePackages(extractDir);
+            if (existing.Length > 0)
+            {
+                Logger.Debug($"Reusing {existing.Length} previously extracted package(s)");
+                return existing;
+            }
+            Logger.Debug("No valid packages found in existing extract dir, re-extracting");
+            Directory.Delete(extractDir, true);
+        }
+
+        Directory.CreateDirectory(extractDir);
+
+        if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            ZipFile.ExtractToDirectory(archivePath, extractDir);
+            Logger.Debug("ZIP extraction complete");
+        }
+        else if (archivePath.EndsWith(".appx", StringComparison.OrdinalIgnoreCase) ||
+                 archivePath.EndsWith(".msix", StringComparison.OrdinalIgnoreCase) ||
+                 archivePath.EndsWith(".appxbundle", StringComparison.OrdinalIgnoreCase) ||
+                 archivePath.EndsWith(".msixbundle", StringComparison.OrdinalIgnoreCase))
+        {
+            Logger.Debug("File is already an installable package");
+            File.Copy(archivePath, Path.Combine(extractDir, Path.GetFileName(archivePath)), true);
+        }
+        else
+        {
+            Logger.Warn($"Unknown archive type: {archivePath}, trying as ZIP");
+            try { ZipFile.ExtractToDirectory(archivePath, extractDir); }
+            catch
+            {
+                Logger.Warn("Not a valid ZIP, copying as-is");
+                File.Copy(archivePath, Path.Combine(extractDir, Path.GetFileName(archivePath)), true);
+            }
+        }
+
+        var standalone = FindInstallablePackages(extractDir);
+        Logger.Debug($"Found {standalone.Length} standalone packages");
+
+        var extractedFromBundles = ExtractBundles(extractDir);
+        Logger.Debug($"Extracted {extractedFromBundles.Length} packages from bundles");
+
+        // Merge: bundle contents first (main app), then standalone non-Deps, then Dependencies
+        var depsDir = Path.Combine(extractDir, "Dependencies");
+        var allPackages = extractedFromBundles
+            .Concat(standalone.Where(f => !f.StartsWith(depsDir, StringComparison.OrdinalIgnoreCase)))
+            .Concat(standalone.Where(f => f.StartsWith(depsDir, StringComparison.OrdinalIgnoreCase)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        Logger.Debug($"Total packages: {allPackages.Length}");
+        foreach (var p in allPackages)
+            Logger.Debug($"  {Path.GetFileName(p)}");
+
+        return allPackages;
+    }
+
+    private static string[] FindInstallablePackages(string directory)
+    {
+        var results = new List<string>();
+
+        var allFiles = Directory.GetFiles(directory, "*", SearchOption.AllDirectories);
+
+        var skipDirs = new HashSet<string>(
+            new[]
+            {
+                Path.Combine(directory, "_extracted_bundles"),
+                Path.Combine(directory, "Dependencies")
+            },
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var f in allFiles)
+        {
+            var parent = Path.GetDirectoryName(f) ?? "";
+            if (skipDirs.Any(d => parent.StartsWith(d, StringComparison.OrdinalIgnoreCase)))
+                continue;
+            if (IsInstallable(Path.GetFileName(f)))
+                results.Add(f);
+        }
+
+        // Look for dependencies folder
+        var depsDir = Path.Combine(directory, "Dependencies");
+        if (Directory.Exists(depsDir))
+        {
+            var deps = Directory.GetFiles(depsDir, "*", SearchOption.AllDirectories)
+                .Where(f => IsInstallable(Path.GetFileName(f)))
+                .ToArray();
+            results.AddRange(deps);
+        }
+
+        results = results.OrderBy(f => Path.GetFileName(f)).ToList();
+        return results.ToArray();
+    }
+
+    public static string[] ExtractBundles(string directory)
+    {
+        var bundles = Directory.GetFiles(directory, "*.appxbundle", SearchOption.TopDirectoryOnly)
+            .Concat(Directory.GetFiles(directory, "*.msixbundle", SearchOption.TopDirectoryOnly))
+            .ToArray();
+
+        var extracted = new List<string>();
+        var outDir = Path.Combine(directory, "_extracted_bundles");
+
+        foreach (var bundle in bundles)
+        {
+            try
+            {
+                var name = Path.GetFileNameWithoutExtension(bundle);
+                var bundleOut = Path.Combine(outDir, name);
+                if (!Directory.Exists(bundleOut))
+                {
+                    Directory.CreateDirectory(bundleOut);
+                    ZipFile.ExtractToDirectory(bundle, bundleOut);
+                    Logger.Debug($"Extracted bundle {Path.GetFileName(bundle)} → {bundleOut}");
+                }
+                var inner = Directory.GetFiles(bundleOut, "*.appx", SearchOption.AllDirectories)
+                    .Concat(Directory.GetFiles(bundleOut, "*.msix", SearchOption.AllDirectories))
+                    .ToArray();
+                extracted.AddRange(inner);
+                foreach (var f in inner)
+                    Logger.Debug($"  Bundle content: {Path.GetFileName(f)}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"Failed to extract bundle {bundle}: {ex.Message}");
+            }
+        }
+
+        return extracted.ToArray();
+    }
+
+    private static (string? main, string[] deps) ClassifyPackages(string[] files)
+    {
+        var candidates = new List<string>();
+        var deps = new List<string>();
+
+        foreach (var f in files)
+        {
+            var name = Path.GetFileName(f);
+            if (IsJunk(name))
+            {
+                Logger.Debug($"  Junk filtered: {name}");
+                continue;
+            }
+            if (IsDep(name))
+            {
+                Logger.Debug($"  Dependency: {name}");
+                deps.Add(f);
+            }
+            else if (IsInstallable(name))
+            {
+                Logger.Debug($"  Main candidate: {name}");
+                candidates.Add(f);
+            }
+            else
+            {
+                Logger.Debug($"  Skipped (not installable): {name}");
+            }
+        }
+
+        deps = deps.OrderBy(f => Path.GetFileName(f)).ToList();
+
+        // Pick main: prefer bundle formats over flat .appx/.msix
+        var main = candidates.OrderBy(f =>
+        {
+            var ext = Path.GetExtension(f).ToLowerInvariant();
+            var bundleRank = ext is ".msixbundle" or ".appxbundle" ? 0 : 1;
+            return (bundleRank, Path.GetFileName(f));
+        }).FirstOrDefault();
+
+        if (main is null && candidates.Count == 0 && deps.Count > 0)
+        {
+            // No non-dep candidates found — maybe all files are deps.
+            // Use first dep as main as last resort.
+            Logger.Warn("No main candidate found, using first dependency as main");
+            main = deps[0];
+            deps = deps.Skip(1).ToList();
+        }
+
+        return (main, deps.ToArray());
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB"];
+        double n = bytes;
+        foreach (var u in units)
+        {
+            if (n < 1024) return $"{n:F1}{u}";
+            n /= 1024;
+        }
+        return $"{n:F1}TB";
     }
 
     private static string GetFileNameFromUrl(string url)
@@ -108,12 +402,5 @@ public class PackageInstallService
         var uri = new Uri(url);
         var fileName = Path.GetFileName(uri.LocalPath);
         return string.IsNullOrWhiteSpace(fileName) ? "package.appx" : fileName;
-    }
-
-    private static string[] AnalyzePackage(string filePath)
-    {
-        // Phase 3: stub — real analysis requires parsing MSIX/APPX
-        // For now, return empty dependency list
-        return [];
     }
 }

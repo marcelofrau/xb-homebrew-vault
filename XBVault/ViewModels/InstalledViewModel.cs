@@ -30,10 +30,27 @@ public partial class InstalledViewModel : ObservableObject
     private bool _hasPackages;
 
     [ObservableProperty]
-    private bool _isUninstalling;
-
-    [ObservableProperty]
     private string? _statusMessage;
+
+    public bool ShowGrid => HasPackages && !IsLoading;
+    public bool ShowRefreshPrompt => !IsLoading && !HasPackages && string.IsNullOrEmpty(StatusMessage);
+
+    partial void OnStatusMessageChanged(string? value)
+    {
+        OnPropertyChanged(nameof(ShowRefreshPrompt));
+    }
+
+    partial void OnIsLoadingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowRefreshPrompt));
+        OnPropertyChanged(nameof(ShowGrid));
+    }
+
+    partial void OnHasPackagesChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowRefreshPrompt));
+        OnPropertyChanged(nameof(ShowGrid));
+    }
 
     [ObservableProperty]
     private InstalledPackage? _selectedPackage;
@@ -43,15 +60,19 @@ public partial class InstalledViewModel : ObservableObject
     partial void OnSelectedPackageChanged(InstalledPackage? value)
     {
         OnPropertyChanged(nameof(IsPackageSelected));
+        if (value is not null)
+        {
+            Logger.Info($"Selected package raw:\n{value.RawJson}");
+        }
     }
 
     [RelayCommand]
     private async Task RefreshPackagesAsync()
     {
-        if (!_xboxService.IsConfigured)
+        if (!_xboxService.IsConnected)
         {
-            Logger.Info("Xbox not configured — skipping package refresh");
-            StatusMessage = "Not connected. Configure Xbox in Settings.";
+            Logger.Info("Xbox not connected — skipping package refresh");
+            StatusMessage = "Not connected. Connect via sidebar first.";
             return;
         }
 
@@ -64,11 +85,28 @@ public partial class InstalledViewModel : ObservableObject
             var packages = await _xboxService.GetInstalledPackagesAsync();
             Packages.Clear();
 
+            var filtered = packages
+                .Where(p => p.Publisher is null ||
+                            !p.Publisher.Contains("Microsoft", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            Logger.Info($"Total packages from Xbox: {packages.Count}, after system filter: {filtered.Count}");
+
             foreach (var pkg in packages.OrderBy(p => p.Name))
+            {
+                var isSystem = pkg.Publisher is not null &&
+                               pkg.Publisher.Contains("Microsoft", StringComparison.OrdinalIgnoreCase);
+                if (isSystem)
+                {
+                    Logger.Debug($"  [SYSTEM] {pkg.Name,-30} v{pkg.Version}  {pkg.PackageFamilyName ?? ""}");
+                    continue;
+                }
                 Packages.Add(pkg);
+                Logger.Info($"  {pkg.Name,-30} v{pkg.Version,-14}  {pkg.DisplayPublisher ?? "-",-20}  {pkg.PackageFamilyName ?? ""}");
+            }
 
             HasPackages = Packages.Count > 0;
-            Logger.Info($"Installed packages: {Packages.Count}");
+            Logger.Info($"User-installed packages shown: {Packages.Count}");
 
             if (!HasPackages)
                 StatusMessage = "No packages installed or Xbox not connected";
@@ -84,37 +122,34 @@ public partial class InstalledViewModel : ObservableObject
         }
     }
 
+    public Func<InstalledPackage, Task<bool>>? ConfirmUninstallAsync { get; set; }
+
     [RelayCommand]
     private async Task UninstallSelectedAsync()
     {
         if (SelectedPackage is null) return;
 
-        IsUninstalling = true;
-        StatusMessage = $"Uninstalling {SelectedPackage.Name}...";
-        Logger.Info($"Uninstalling: {SelectedPackage.Name}");
+        var pkg = SelectedPackage;
+        if (ConfirmUninstallAsync is not null)
+        {
+            var ok = await ConfirmUninstallAsync(pkg);
+            if (!ok) return;
+        }
+
+        pkg.IsUninstalling = true;
+        Logger.Info($"Uninstalling: {pkg.Name}");
 
         try
         {
-            var result = await _xboxService.UninstallPackageAsync(SelectedPackage.FullName);
-            StatusMessage = result
-                ? $"{SelectedPackage.Name} uninstalled"
-                : $"Failed to uninstall {SelectedPackage.Name}";
-
-            if (result)
-                Logger.Info($"Uninstall complete: {SelectedPackage.Name}");
-            else
-                Logger.Error($"Uninstall failed: {SelectedPackage.Name}");
-
+            var result = await _xboxService.UninstallPackageAsync(pkg.FullName);
+            Logger.Info(result ? $"Uninstall complete: {pkg.Name}" : $"Uninstall failed: {pkg.Name}");
             await RefreshPackagesAsync();
         }
         catch (Exception ex)
         {
+            pkg.IsUninstalling = false;
             StatusMessage = "Uninstall failed";
-            Logger.Error(ex, $"Uninstall error: {SelectedPackage.Name}");
-        }
-        finally
-        {
-            IsUninstalling = false;
+            Logger.Error(ex, $"Uninstall error: {pkg.Name}");
         }
     }
 

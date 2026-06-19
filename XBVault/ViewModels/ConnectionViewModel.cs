@@ -44,8 +44,15 @@ public partial class ConnectionViewModel : ObservableObject
     [RelayCommand]
     private void Cancel()
     {
-        if (!IsRunning) return;
-        _cts?.Cancel();
+        if (IsRunning)
+        {
+            _cts?.Cancel();
+        }
+        else
+        {
+            AddLine("CANCELLED — User cancelled connection");
+            Completed?.Invoke(false);
+        }
     }
 
     [RelayCommand]

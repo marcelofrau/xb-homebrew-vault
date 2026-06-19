@@ -138,6 +138,7 @@ public partial class App : Application
             {
                 var detail = new Views.ItemDetailWindow { DataContext = browseViewModel };
                 detail.Closed += (_, _) => browseViewModel.SelectedItem = null;
+                browseViewModel.CloseDetailAction = () => detail.Close();
                 detail.ShowDialog(main);
             };
 
@@ -186,7 +187,37 @@ public partial class App : Application
                 await refreshWindow.ShowDialog(main);
             };
 
+            var exitConfirmed = false;
+            main.Closing += async (_, e) =>
+            {
+                if (exitConfirmed) return;
+                e.Cancel = true;
+                var confirmVm = new ConfirmViewModel(
+                    "Exit",
+                    "Are you sure you want to exit?",
+                    "Exit", "Cancel");
+                var confirmWindow = new Views.ConfirmWindow { DataContext = confirmVm };
+                await confirmWindow.ShowDialog(main);
+                if (confirmVm.Confirmed)
+                {
+                    exitConfirmed = true;
+                    main.Close();
+                }
+            };
+
             var browseView = new Views.BrowseView { DataContext = browseViewModel };
+
+            installedViewModel.ConfirmUninstallAsync = async pkg =>
+            {
+                var confirmVm = new ConfirmViewModel(
+                    "Uninstall Package",
+                    $"Are you sure you want to uninstall {pkg.Name}?",
+                    "Uninstall", "Cancel");
+                var confirmWindow = new Views.ConfirmWindow { DataContext = confirmVm };
+                await confirmWindow.ShowDialog(main);
+                return confirmVm.Confirmed;
+            };
+
             var installedView = new Views.InstalledView { DataContext = installedViewModel };
             settingsViewModel.ShowConnectDialogAsync = async () =>
             {

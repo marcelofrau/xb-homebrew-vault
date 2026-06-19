@@ -30,6 +30,15 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isXboxConnected;
 
+    public bool IsNotConfigured => !IsXboxConnected && !SettingsService.Current.XboxConnection.IsConfigured;
+    public bool IsDisconnected => !IsXboxConnected && SettingsService.Current.XboxConnection.IsConfigured;
+
+    partial void OnIsXboxConnectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsNotConfigured));
+        OnPropertyChanged(nameof(IsDisconnected));
+    }
+
     partial void OnSelectedTabChanged(int value)
     {
         var tabName = value >= 0 && value < TabNames.Length ? TabNames[value] : $"?{value}";
@@ -63,8 +72,21 @@ public partial class MainViewModel : ObservableObject
 
     public void UpdateConnectionStatus()
     {
-        IsXboxConnected = _xboxService.IsConfigured;
-        ConnectionStatusText = _xboxService.IsConfigured ? "Connected" : "Not configured";
+        if (_xboxService.IsConfigured)
+        {
+            IsXboxConnected = true;
+            ConnectionStatusText = "Connected";
+        }
+        else if (SettingsService.Current.XboxConnection.IsConfigured)
+        {
+            IsXboxConnected = false;
+            ConnectionStatusText = "Disconnected";
+        }
+        else
+        {
+            IsXboxConnected = false;
+            ConnectionStatusText = "Not configured";
+        }
         Logger.Debug($"Connection status updated: {ConnectionStatusText}");
     }
 
@@ -95,6 +117,7 @@ public partial class MainViewModel : ObservableObject
         if (result)
         {
             IsXboxConnected = true;
+            _xboxService.MarkConnected();
             ConnectionStatusText = "Connected";
             Logger.Info("Xbox connection established from MainViewModel");
         }
@@ -102,5 +125,14 @@ public partial class MainViewModel : ObservableObject
         {
             Logger.Info("Xbox connection failed or cancelled");
         }
+    }
+
+    [RelayCommand]
+    private void Disconnect()
+    {
+        Logger.Info("Disconnect button clicked");
+        _xboxService.Disconnect();
+        UpdateConnectionStatus();
+        Logger.Info("Xbox disconnected");
     }
 }

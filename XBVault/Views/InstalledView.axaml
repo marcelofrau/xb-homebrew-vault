@@ -77,67 +77,103 @@
     </StackPanel>
 
     <!-- Status message -->
-    <TextBlock Grid.Row="2"
-               Text="{Binding StatusMessage}"
-               IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
-               Foreground="{StaticResource TextMutedBrush}"
-               FontSize="13"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Center"/>
+    <StackPanel Grid.Row="2"
+                IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12">
+      <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-disconnected-64.png"
+             Width="64" Height="64"
+             Stretch="Uniform"
+             HorizontalAlignment="Center"
+             Opacity="0.6"/>
+      <TextBlock Text="{Binding StatusMessage}"
+                 Foreground="{StaticResource TextMutedBrush}"
+                 FontSize="13"
+                 HorizontalAlignment="Center"/>
+    </StackPanel>
 
-    <!-- Package list -->
+    <!-- Refresh prompt -->
+    <StackPanel Grid.Row="2"
+                IsVisible="{Binding ShowRefreshPrompt}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12">
+      <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-empty-64.png"
+             Width="64" Height="64"
+             Stretch="Uniform"
+             HorizontalAlignment="Center"
+             Opacity="0.6"/>
+      <TextBlock Text="No packages loaded"
+                 FontSize="16"
+                 FontWeight="SemiBold"
+                 Foreground="{StaticResource TextMutedBrush}"
+                 HorizontalAlignment="Center"/>
+      <TextBlock Text="Click the Refresh button above to load installed packages"
+                 FontSize="13"
+                 Foreground="{StaticResource TextDimBrush}"
+                 HorizontalAlignment="Center"
+                 TextWrapping="Wrap"
+                 MaxWidth="320"
+                 TextAlignment="Center"/>
+    </StackPanel>
+
+    <!-- Package grid -->
     <ListBox Grid.Row="2"
              ItemsSource="{Binding Packages}"
              SelectedItem="{Binding SelectedPackage}"
              BorderThickness="0"
              Background="Transparent"
-             IsVisible="{Binding HasPackages}">
+             IsVisible="{Binding ShowGrid}"
+             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+      <ListBox.ItemsPanel>
+        <ItemsPanelTemplate>
+          <UniformGrid Columns="4"/>
+        </ItemsPanelTemplate>
+      </ListBox.ItemsPanel>
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="models:InstalledPackage">
           <Border Classes="Card"
-                  Padding="16"
-                  Margin="0,0,0,8"
+                  Padding="10"
+                  Margin="4"
                   Cursor="Hand">
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
-              <!-- Icon placeholder -->
-              <Border Width="40" Height="40"
-                      CornerRadius="4"
-                      Background="{StaticResource SurfaceAltBrush}">
-                <TextBlock Text="P"
-                           FontSize="18"
-                           FontWeight="Bold"
-                           Foreground="{StaticResource AccentBrush}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"/>
-              </Border>
-
-              <!-- Info -->
-              <StackPanel Grid.Column="1"
-                          VerticalAlignment="Center"
-                          Spacing="2">
+            <Grid>
+              <!-- Card content -->
+              <StackPanel Spacing="6" HorizontalAlignment="Center"
+                          Opacity="{Binding IsUninstalling, Converter={StaticResource BoolToOpacity}}">
+                <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-package-32.png"
+                       Width="32" Height="32"
+                       Stretch="Uniform"
+                       HorizontalAlignment="Center"/>
                 <TextBlock Text="{Binding Name}"
                            FontSize="14"
-                           FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding FullName}"
-                           FontSize="11"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"/>
+                <TextBlock Text="{Binding Version}"
+                           FontSize="12"
+                           Foreground="{StaticResource AccentBrush}"
+                           TextAlignment="Center"/>
+                <TextBlock Text="{Binding DisplayPublisher}"
+                           FontSize="10"
                            Foreground="{StaticResource TextMutedBrush}"
-                           TextTrimming="CharacterEllipsis"/>
-                <StackPanel Orientation="Horizontal" Spacing="12">
-                  <TextBlock Text="{Binding Version}"
-                             FontSize="11"
-                             Foreground="{StaticResource TextDimBrush}"/>
-                  <TextBlock Text="{Binding InstalledSizeBytes, StringFormat={}{0:N0} bytes}"
-                             FontSize="11"
-                             Foreground="{StaticResource TextDimBrush}"/>
-                </StackPanel>
+                           TextTrimming="CharacterEllipsis"
+                           IsVisible="{Binding DisplayPublisher, Converter={StaticResource StringNotEmpty}}"
+                           TextAlignment="Center"/>
               </StackPanel>
 
-              <!-- Arrow -->
-              <TextBlock Grid.Column="2"
-                         Text="›"
-                         FontSize="20"
-                         Foreground="{StaticResource TextDimBrush}"
-                         VerticalAlignment="Center"/>
+              <!-- Uninstall overlay -->
+              <Border Background="#AA222222"
+                      CornerRadius="6"
+                      IsVisible="{Binding IsUninstalling}">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+                  <TextBlock Text="Uninstalling..."
+                             FontSize="13"
+                             FontWeight="SemiBold"
+                             Foreground="White"
+                             TextAlignment="Center"/>
+                </StackPanel>
+              </Border>
             </Grid>
           </Border>
         </DataTemplate>

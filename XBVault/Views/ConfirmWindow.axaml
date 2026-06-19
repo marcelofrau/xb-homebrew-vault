@@ -1,0 +1,106 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        x:Class="XBVault.Views.ConfirmWindow"
+        x:DataType="vm:ConfirmViewModel"
+        Title="{Binding Title}"
+        WindowStartupLocation="CenterOwner"
+        Width="380"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
+
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
+
+  <Border BorderBrush="#447F3E" BorderThickness="2">
+    <Grid RowDefinitions="Auto,*">
+      <!-- Title Bar -->
+      <Grid Height="32"
+            PointerPressed="OnTitleBarPointerPressed">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#447F3E" Offset="0"/>
+            <GradientStop Color="#9ACA3C" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="{Binding Title}"
+                   Foreground="#1A1A1A"
+                   FontSize="14"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"
+                   Margin="12,0"/>
+        <Button Grid.Column="1"
+                Width="32" Height="32"
+                Padding="0"
+                BorderThickness="0"
+                Click="OnCloseClick"
+                Cursor="Hand"
+                ToolTip.Tip="Close">
+          <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-close-20.png"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
+          <Button.Styles>
+            <Style Selector="Button">
+              <Setter Property="Background" Value="Transparent"/>
+            </Style>
+            <Style Selector="Button:pointerover">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+          </Button.Styles>
+        </Button>
+      </Grid>
+
+      <!-- Content -->
+      <Border Grid.Row="1" BorderThickness="0">
+        <StackPanel Margin="20,16,20,20" Spacing="16">
+          <!-- Icon left + message right -->
+          <Grid ColumnDefinitions="48,*" ColumnSpacing="14">
+            <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-warn-48.png"
+                   Width="48" Height="48"
+                   Stretch="Uniform"
+                   VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1"
+                       Text="{Binding Message}"
+                       FontSize="14"
+                       Foreground="{StaticResource TextBrush}"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Center"/>
+          </Grid>
+
+          <!-- Buttons right-aligned -->
+          <StackPanel Orientation="Horizontal"
+                      Spacing="8"
+                      HorizontalAlignment="Right">
+            <Button Command="{Binding CancelCommand}"
+                    Padding="12,8"
+                    MinWidth="90">
+              <TextBlock Text="{Binding CancelText}" VerticalAlignment="Center"/>
+            </Button>
+            <Button Command="{Binding ConfirmCommand}"
+                    Classes="Danger"
+                    Padding="12,8"
+                    MinWidth="90">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
+                       Width="20" Height="20"
+                       Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="{Binding ConfirmText}" VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Border>
+
+</Window>
