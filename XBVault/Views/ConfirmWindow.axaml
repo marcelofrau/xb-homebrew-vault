@@ -93,7 +93,12 @@
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                 <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
                        Width="20" Height="20"
-                       Stretch="Uniform"/>
+                       Stretch="Uniform"
+                       IsVisible="{Binding IsExit, Converter={StaticResource BoolInverse}}"/>
+                <Image Source="avares://XBVault/Assets/Views/ConfirmWindow/fluentui-collision-20.png"
+                       Width="20" Height="20"
+                       Stretch="Uniform"
+                       IsVisible="{Binding IsExit}"/>
                 <TextBlock Grid.Column="1" Text="{Binding ConfirmText}" VerticalAlignment="Center"/>
               </Grid>
             </Button>

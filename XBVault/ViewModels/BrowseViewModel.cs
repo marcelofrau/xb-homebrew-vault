@@ -131,8 +131,15 @@ public partial class BrowseViewModel : ObservableObject
         Logger.Debug($"XboxDeviceService.IsConfigured={_xboxService.IsConfigured}");
         if (!_xboxService.IsConfigured)
         {
-            InstalledVersion = "Not connected";
+            InstalledVersion = "Not configured";
             Logger.Info("Xbox not configured — skipping installed check");
+            IsCheckingInstalled = false;
+            return;
+        }
+        if (!_xboxService.IsConnected)
+        {
+            InstalledVersion = "Not connected";
+            Logger.Info("Xbox not connected — skipping installed check");
             IsCheckingInstalled = false;
             return;
         }
@@ -175,7 +182,9 @@ public partial class BrowseViewModel : ObservableObject
             InstallProgress = 0;
             InstallStatus = null;
             InstallResultMessage = null;
-            Logger.Debug($"Item selected: [{value.Category}] {value.Name} v{value.Version}");
+            Logger.Info($"Item selected: [{value.Category}] {value.Name} v{value.Version}");
+            if (ShowDetailAction is null)
+                Logger.Info("ShowDetailAction is NULL — detail window will not open");
             ShowDetailAction?.Invoke(value);
         }
     }
@@ -288,12 +297,19 @@ public partial class BrowseViewModel : ObservableObject
             Logger.Warn($"Install already in progress for {SelectedItem.Name}");
             return;
         }
+        if (!_xboxService.IsConnected)
+        {
+            Logger.Info("Xbox not connected — cannot install");
+            InstallResultMessage = "Not connected. Connect via sidebar first.";
+            return;
+        }
 
         var itemName = SelectedItem?.Name ?? "?";
         var itemUrl = SelectedItem?.DownloadUrl ?? "?";
 
         IsInstalling = true;
         InstallComplete = false;
+        InstallResultMessage = null;
         InstallProgress = 0;
         PackageProgress = 0;
         InstallStatus = "";

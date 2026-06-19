@@ -136,10 +136,25 @@ public partial class App : Application
 
             browseViewModel.ShowDetailAction = item =>
             {
-                var detail = new Views.ItemDetailWindow { DataContext = browseViewModel };
-                detail.Closed += (_, _) => browseViewModel.SelectedItem = null;
-                browseViewModel.CloseDetailAction = () => detail.Close();
-                detail.ShowDialog(main);
+                Logger.Info($"ShowDetailAction invoked for: {item.Name}");
+                try
+                {
+                    var detail = new Views.ItemDetailWindow { DataContext = browseViewModel };
+                    Logger.Info("ItemDetailWindow created");
+                    detail.Closed += (_, _) =>
+                    {
+                        Logger.Info("ItemDetailWindow closed — resetting SelectedItem");
+                        browseViewModel.SelectedItem = null;
+                    };
+                    browseViewModel.CloseDetailAction = () => detail.Close();
+                    Logger.Info("Calling ShowDialog on ItemDetailWindow");
+                    detail.ShowDialog(main);
+                    Logger.Info("ShowDialog returned");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"Exception opening ItemDetailWindow for {item.Name}");
+                }
             };
 
             mainViewModel.ShowAboutAction = () =>
@@ -166,6 +181,7 @@ public partial class App : Application
                         "- Ensure Xbox is in Developer Mode\n" +
                         "- Verify the IP address is correct\n" +
                         "- Confirm the username and password are correct\n" +
+                        "- Make sure the Xbox is powered on and didn't go to sleep\n" +
                         "- Make sure both devices are on the same network",
                         ErrorDialogType.Warn);
                     await errDlg.ShowDialog(main);
@@ -195,7 +211,8 @@ public partial class App : Application
                 var confirmVm = new ConfirmViewModel(
                     "Exit",
                     "Are you sure you want to exit?",
-                    "Exit", "Cancel");
+                    "Exit", "Cancel",
+                    isExit: true);
                 var confirmWindow = new Views.ConfirmWindow { DataContext = confirmVm };
                 await confirmWindow.ShowDialog(main);
                 if (confirmVm.Confirmed)

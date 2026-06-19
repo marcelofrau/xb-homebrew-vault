@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
+using XBVault.Services;
 
 namespace XBVault.Views;
 
@@ -13,8 +14,20 @@ public partial class ItemDetailWindow : Window
 
     public ItemDetailWindow()
     {
-        InitializeComponent();
-        Loaded += (_, _) => StartSpin();
+        try
+        {
+            InitializeComponent();
+            Logger.Info("ItemDetailWindow InitializeComponent OK");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "ItemDetailWindow InitializeComponent FAILED");
+            throw;
+        }
+        Loaded += (_, _) => {
+            Logger.Info("ItemDetailWindow Loaded");
+            StartSpin();
+        };
         Unloaded += (_, _) => StopSpin();
     }
 

@@ -128,7 +128,8 @@ Width="20" Height="20"
                        Foreground="{StaticResource AccentBrush}"
                        Margin="0,0,8,0"/>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-            <Button Command="{Binding CancelCommand}" Padding="10,6" MaxWidth="100">
+            <Button Command="{Binding CancelCommand}" Padding="10,6" MaxWidth="100"
+                    IsEnabled="{Binding IsActive}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                 <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-cancel-20.png"
                        Width="20" Height="20"
@@ -138,8 +139,8 @@ Width="20" Height="20"
             </Button>
             <Button x:Name="ConnectBtn"
                     Classes="Accent"
-                    Command="{Binding ConnectCommand}"
-                    IsEnabled="{Binding IsRunning, Converter={StaticResource BoolInverse}}"
+                     Command="{Binding ConnectCommand}"
+                     IsEnabled="{Binding IsActive}"
                     Padding="10,6" MaxWidth="120">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                 <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"

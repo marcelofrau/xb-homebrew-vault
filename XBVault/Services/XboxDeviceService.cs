@@ -62,9 +62,12 @@ public class XboxDeviceService
     public bool IsConfigured => _configured;
     public bool IsConnected => _connected;
 
+    public event Action<bool>? ConnectionChanged;
+
     public void MarkConnected()
     {
         _connected = true;
+        ConnectionChanged?.Invoke(true);
         Logger.Debug("XboxDeviceService marked as connected");
     }
 
@@ -73,6 +76,7 @@ public class XboxDeviceService
         Logger.Info("XboxDeviceService.Disconnect");
         _configured = false;
         _connected = false;
+        ConnectionChanged?.Invoke(false);
         _csrfToken = null;
         _http.Dispose();
         _handler?.Dispose();

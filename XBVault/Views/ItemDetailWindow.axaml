@@ -196,7 +196,7 @@
                          TextWrapping="Wrap"
                          MaxWidth="400"
                          IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
-              <TextBlock Text="✓ Complete!"
+              <TextBlock Text="Complete!"
                          FontSize="22"
                          FontWeight="Bold"
                          Foreground="{StaticResource SuccessBrush}"
@@ -236,10 +236,10 @@
                         HorizontalAlignment="Right"
                         Spacing="8">
               <Button Classes="Accent"
-                      Padding="20,10"
-                      Command="{Binding InstallSelectedCommand}"
-                      IsEnabled="{Binding IsNotInstalling}"
-                      IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
+                       Padding="20,10"
+                       Command="{Binding InstallSelectedCommand}"
+                       IsEnabled="{Binding IsNotInstalling}"
+                       IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                   <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
                          Width="20" Height="20"
@@ -317,7 +317,7 @@
                 <TextBlock Grid.Column="1"
                            FontSize="13"
                            FontWeight="SemiBold"
-                           Text="✓ Install complete!"
+                           Text="Install complete!"
                            Foreground="{StaticResource SuccessBrush}"
                            VerticalAlignment="Center"/>
               </Grid>

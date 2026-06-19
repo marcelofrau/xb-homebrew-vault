@@ -25,13 +25,17 @@ public partial class ConnectionViewModel : ObservableObject
     private double _progress;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsActive))]
     private bool _isRunning;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsActive))]
     private bool _isSuccess;
 
     [ObservableProperty]
     private bool _isFailed;
+
+    public bool IsActive => !IsRunning && !IsSuccess;
 
     public event Action<bool>? Completed;
 
