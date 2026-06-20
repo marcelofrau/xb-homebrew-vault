@@ -23,9 +23,14 @@ public partial class BrowseViewModel : ObservableObject
 
     public Action<CatalogItem>? ShowDetailAction;
     public Action? CloseDetailAction;
+    public Action? ShowCustomInstallAction;
 
     [RelayCommand]
     private void CloseDetail() => CloseDetailAction?.Invoke();
+
+    [RelayCommand]
+    private void OpenCustomInstall() => ShowCustomInstallAction?.Invoke();
+
     public Func<Task>? ShowRefreshDialogAsync;
 
     private static readonly HttpClient ImageHttp = new();

@@ -1,0 +1,126 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        x:Class="XBVault.Views.PerformanceWindow"
+        x:DataType="vm:PerformanceViewModel"
+        Title="Xbox Performance"
+        WindowStartupLocation="CenterOwner"
+        Width="960" Height="640"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
+
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
+
+  <Border BorderBrush="#447F3E" BorderThickness="2">
+    <Grid RowDefinitions="Auto,*">
+
+      <Grid Height="32" PointerPressed="OnTitleBarPointerPressed">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#447F3E" Offset="0"/>
+            <GradientStop Color="#9ACA3C" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="Xbox Performance"
+                   Foreground="#1A1A1A" FontSize="14" FontWeight="Bold"
+                   VerticalAlignment="Center" Margin="12,0"/>
+        <Button Grid.Column="1" Width="32" Height="32" Padding="0"
+                BorderThickness="0" Click="OnCloseClick" Cursor="Hand"
+                ToolTip.Tip="Close">
+          <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-close-20.png"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <Button.Styles>
+            <Style Selector="Button">
+              <Setter Property="Background" Value="Transparent"/>
+            </Style>
+            <Style Selector="Button:pointerover">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+          </Button.Styles>
+        </Button>
+      </Grid>
+
+      <Border Grid.Row="1" Padding="16">
+        <Grid RowDefinitions="Auto,*,Auto">
+
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
+            <Button Command="{Binding StartMonitoringCommand}"
+                    IsEnabled="{Binding IsMonitoring, Converter={StaticResource BoolInverse}}"
+                    Padding="14,8">
+              <TextBlock Text="Start Monitoring"/>
+            </Button>
+            <Button Command="{Binding StopMonitoringCommand}"
+                    IsEnabled="{Binding IsMonitoring}"
+                    Padding="14,8">
+              <TextBlock Text="Stop"/>
+            </Button>
+            <TextBlock Text="{Binding LastUpdate, StringFormat='Last update: {0}'}"
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                       VerticalAlignment="Center" Margin="12,0,0,0"/>
+          </StackPanel>
+
+          <Grid Grid.Row="1"
+                RowDefinitions="*,*"
+                ColumnDefinitions="*,*"
+                ColumnSpacing="12" RowSpacing="12">
+
+            <Border Grid.Row="0" Grid.Column="0" Classes="Card" Padding="0"
+                    VerticalAlignment="Stretch">
+              <ContentControl Content="{Binding CpuChart}"/>
+            </Border>
+
+            <Border Grid.Row="0" Grid.Column="1" Classes="Card" Padding="0"
+                    VerticalAlignment="Stretch">
+              <ContentControl Content="{Binding GpuChart}"/>
+            </Border>
+
+            <Border Grid.Row="1" Grid.Column="0" Classes="Card" Padding="0"
+                    VerticalAlignment="Stretch">
+              <Grid RowDefinitions="*,Auto">
+                <ContentControl Content="{Binding MemoryChart}"/>
+                <TextBlock Grid.Row="1"
+                           Text="{Binding CurrentMemoryDetail}"
+                           FontSize="11"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           HorizontalAlignment="Center"
+                           Margin="0,4,0,6"/>
+              </Grid>
+            </Border>
+
+            <Border Grid.Row="1" Grid.Column="1" Classes="Card" Padding="0"
+                    VerticalAlignment="Stretch">
+              <Grid RowDefinitions="*,Auto">
+                <ContentControl Content="{Binding IoChart}"/>
+                <TextBlock Grid.Row="1"
+                           Text="R / W / Other"
+                           FontSize="11"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           HorizontalAlignment="Center"
+                           Margin="0,4,0,6"/>
+              </Grid>
+            </Border>
+
+          </Grid>
+
+          <TextBlock Grid.Row="2"
+                     Text="Real-time performance data from Xbox Device Portal"
+                     FontSize="11" Foreground="{StaticResource TextDimBrush}"
+                     HorizontalAlignment="Center" Margin="0,8,0,0"/>
+
+        </Grid>
+      </Border>
+
+    </Grid>
+  </Border>
+
+</Window>

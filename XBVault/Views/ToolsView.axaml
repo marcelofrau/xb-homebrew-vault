@@ -1,38 +1,133 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="XBVault.Views.ToolsView"
-             x:DataType="vm:ToolsViewModel"
-             xmlns:vm="using:XBVault.ViewModels">
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:XBVault.ViewModels"
+              x:Class="XBVault.Views.ToolsView"
+              x:DataType="vm:ToolsViewModel">
 
   <Grid Margin="32">
-    <Border Background="{StaticResource SurfaceAltBrush}"
-            CornerRadius="8"
-            Padding="32"
-            VerticalAlignment="Center"
-            HorizontalAlignment="Center">
-      <StackPanel Spacing="12" HorizontalAlignment="Center">
-        <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-tools-32.png"
-               Width="48" Height="48"
-               Stretch="Uniform"
-               HorizontalAlignment="Center"
-               Opacity="0.5"/>
-        <TextBlock Text="TOOLS"
-                   FontSize="20"
-                   FontWeight="Bold"
-                   Foreground="{StaticResource AccentBrush}"
-                   LetterSpacing="2"
-                   TextAlignment="Center"/>
-        <TextBlock Text="Utilities and system management"
-                   FontSize="13"
-                   Foreground="{StaticResource TextMutedBrush}"
-                   TextAlignment="Center"/>
-        <TextBlock Text="Coming soon"
-                   FontSize="11"
-                   Foreground="{StaticResource TextDimBrush}"
-                   TextAlignment="Center"
-                   FontStyle="Italic"/>
+
+    <StackPanel IsVisible="{Binding ShowDisconnected}"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+      <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-disconnected-64.png"
+             Width="64" Height="64" Stretch="Uniform"
+             HorizontalAlignment="Center" Opacity="0.6"/>
+      <TextBlock Text="Not connected" FontSize="16" FontWeight="SemiBold"
+                 Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+      <TextBlock Text="Connect via sidebar to use Xbox tools"
+                 FontSize="13" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
+    </StackPanel>
+
+    <ScrollViewer IsVisible="{Binding ShowContent}">
+      <StackPanel Spacing="16" MaxWidth="600">
+
+        <StackPanel Margin="0,24,0,0">
+          <TextBlock Text="TOOLS" Classes="PageTitle"/>
+          <TextBlock Text="Utilities and system management"
+                     Classes="Muted" FontSize="14" Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <Border IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
+                Background="#1AE74C3C" BorderBrush="{StaticResource DangerBrush}"
+                BorderThickness="1" CornerRadius="6" Padding="14,10">
+          <TextBlock Text="{Binding StatusMessage}"
+                     Foreground="{StaticResource DangerBrush}"
+                     FontSize="13" FontWeight="SemiBold"/>
+        </Border>
+
+        <Border Classes="Card" Padding="24">
+          <StackPanel Spacing="16">
+            <TextBlock Text="DIAGNOSTICS" Classes="SectionHeader"/>
+            <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="8">
+              <Button Grid.Column="0" Command="{Binding OpenScreenshotCommand}" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-screenshot-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Screenshot" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+              <Button Grid.Column="1" Command="{Binding OpenSystemInfoCommand}" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-systeminfo-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="System Info" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="Card" Padding="24">
+          <StackPanel Spacing="16">
+            <TextBlock Text="MANAGEMENT" Classes="SectionHeader"/>
+            <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="8">
+              <Button Grid.Column="0" Command="{Binding OpenProcessesCommand}" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-processes-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Processes" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+              <Button Grid.Column="1" Command="{Binding OpenNetworkInfoCommand}" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-network-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Network Info" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+              <Button Grid.Column="2" Command="{Binding OpenPerformanceCommand}" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-performance-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Performance" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Command="{Binding OpenCustomInstallCommand}" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-install-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Custom Install" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+              <Button Command="{Binding OpenDevPortalCommand}" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-globe-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Open Dev Portal" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="Card" Padding="24">
+          <StackPanel Spacing="16">
+            <TextBlock Text="XBOX ACTIONS" Classes="SectionHeader"/>
+            <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="8">
+              <Button Grid.Column="0" Command="{Binding RestartXboxCommand}"
+                      Classes="Danger" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-restart-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Restart Xbox" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+              <Button Grid.Column="1" Command="{Binding ShutdownXboxCommand}"
+                      Classes="Danger" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-shutdown-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Shutdown Xbox" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
       </StackPanel>
-    </Border>
+    </ScrollViewer>
+
   </Grid>
 
 </UserControl>

@@ -1,0 +1,119 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        x:Class="XBVault.Views.ScreenshotWindow"
+        x:DataType="vm:ScreenshotViewModel"
+        Title="Screenshot"
+        WindowStartupLocation="CenterOwner"
+        Width="700" Height="600"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
+  <Border BorderBrush="#447F3E" BorderThickness="2">
+    <Grid RowDefinitions="Auto,*">
+      <Grid Height="32" PointerPressed="OnTitleBarPointerPressed">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#447F3E" Offset="0"/>
+            <GradientStop Color="#9ACA3C" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="Screenshot"
+                   Foreground="#1A1A1A" FontSize="14" FontWeight="Bold"
+                   VerticalAlignment="Center" Margin="12,0"/>
+        <Button Grid.Column="1" Width="32" Height="32" Padding="0"
+                BorderThickness="0" Click="OnCloseClick" Cursor="Hand"
+                ToolTip.Tip="Close">
+          <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-close-20.png"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <Button.Styles>
+            <Style Selector="Button"><Setter Property="Background" Value="Transparent"/></Style>
+            <Style Selector="Button:pointerover"><Setter Property="Background" Value="#CC3333"/></Style>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="#CC3333"/></Style>
+          </Button.Styles>
+        </Button>
+      </Grid>
+      <Border Grid.Row="1" Padding="24">
+        <Grid RowDefinitions="*,Auto,Auto" RowSpacing="16">
+
+          <!-- Placeholder: shown when no screenshot -->
+          <Border Grid.Row="0"
+                  IsVisible="{Binding HasScreenshot, Converter={StaticResource BoolInverse}}"
+                  CornerRadius="8"
+                  BorderThickness="2"
+                  BorderBrush="{StaticResource TextDimBrush}"
+                  Background="{StaticResource SurfaceAltBrush}">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12"
+                        Opacity="0.4">
+              <TextBlock Text="📷" FontSize="48" HorizontalAlignment="Center"/>
+              <TextBlock Text="Screenshot preview"
+                         FontSize="16" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"/>
+              <TextBlock Text="Click Capture to take a screenshot"
+                         FontSize="13" HorizontalAlignment="Center"/>
+            </StackPanel>
+          </Border>
+
+          <!-- Image area: shown when screenshot captured -->
+          <Border Grid.Row="0"
+                  IsVisible="{Binding HasScreenshot}"
+                  CornerRadius="8"
+                  BorderThickness="1"
+                  BorderBrush="{StaticResource BorderBrush}">
+            <Image Source="{Binding ScreenshotImage}"
+                   MaxWidth="620" MaxHeight="420"
+                   Stretch="Uniform" Margin="4"/>
+          </Border>
+
+          <!-- Buttons row -->
+          <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
+            <Button Grid.Column="0"
+                    Command="{Binding CaptureScreenshotCommand}"
+                    Classes="Accent"
+                    IsEnabled="{Binding IsCapturing, Converter={StaticResource BoolInverse}}"
+                    Padding="18,10" FontWeight="SemiBold">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ScreenshotWindow/screenshot-capture-20.png"
+                       Width="20" Height="20" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Capture" VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+            <Button Grid.Column="1"
+                    Command="{Binding SaveScreenshotCommand}"
+                    IsVisible="{Binding HasScreenshot}"
+                    Padding="14,8" FontWeight="SemiBold">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ScreenshotWindow/screenshot-save-20.png"
+                       Width="20" Height="20" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Save As..." VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+            <TextBlock Grid.Column="2"
+                       IsVisible="{Binding IsCapturing}"
+                       Text="Capturing..."
+                       FontSize="13" Foreground="{StaticResource TextMutedBrush}"
+                       VerticalAlignment="Center" Margin="8,0,0,0"/>
+          </Grid>
+
+          <!-- Status message -->
+          <Border Grid.Row="2"
+                  IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
+                  Background="#1AE74C3C" BorderBrush="{StaticResource DangerBrush}"
+                  BorderThickness="1" CornerRadius="6" Padding="14,10">
+            <TextBlock Text="{Binding StatusMessage}"
+                       Foreground="{StaticResource DangerBrush}"
+                       FontSize="13" FontWeight="SemiBold"/>
+          </Border>
+
+        </Grid>
+      </Border>
+    </Grid>
+  </Border>
+</Window>

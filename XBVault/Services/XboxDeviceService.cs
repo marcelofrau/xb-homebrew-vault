@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using XBVault.Models;
 
@@ -18,6 +20,9 @@ public class XboxDeviceService
     private bool _configured;
     private bool _connected;
     private string? _csrfToken;
+    private string? _baseUrl;
+    private string? _username;
+    private string? _password;
 
     public XboxDeviceService()
     {
@@ -36,6 +41,10 @@ public class XboxDeviceService
 
         var auth = Convert.ToBase64String(
             System.Text.Encoding.UTF8.GetBytes($"{username}:{password}"));
+
+        _baseUrl = baseUrl;
+        _username = username;
+        _password = password;
 
         // Fresh client each call — BaseAddress freezes after first request
         var handler = new HttpClientHandler
@@ -61,6 +70,15 @@ public class XboxDeviceService
 
     public bool IsConfigured => _configured;
     public bool IsConnected => _connected;
+
+    public string? GetDevPortalUrl()
+    {
+        if (string.IsNullOrEmpty(_baseUrl) || string.IsNullOrEmpty(_username))
+            return null;
+        return !string.IsNullOrEmpty(_password)
+            ? $"{_baseUrl.Replace("://", $"://{_username}:{_password}@")}"
+            : _baseUrl;
+    }
 
     public event Action<bool>? ConnectionChanged;
 
@@ -549,6 +567,305 @@ public class XboxDeviceService
             n /= 1024;
         }
         return $"{n:F1}TB";
+    }
+
+    public async Task<byte[]?> CaptureScreenshotAsync()
+    {
+        if (!_configured)
+        {
+            Logger.Warn("CaptureScreenshot called but not configured");
+            return null;
+        }
+
+        try
+        {
+            var url = $"/ext/screenshot?download=true&hdr=false&time={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+            Logger.Info($"GET {url}");
+            var response = await _http.GetAsync(url);
+            Logger.Info($"GET screenshot => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+            {
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
+                return null;
+            }
+
+            return await response.Content.ReadAsByteArrayAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "CaptureScreenshot failed");
+            return null;
+        }
+    }
+
+    public async Task<string?> GetSystemInfoAsync()
+    {
+        if (!_configured)
+        {
+            Logger.Warn("GetSystemInfo called but not configured");
+            return null;
+        }
+
+        try
+        {
+            Logger.Info("GET /api/systeminfo");
+            var response = await _http.GetAsync("/api/systeminfo");
+            Logger.Info($"GET /api/systeminfo => {(int)response.StatusCode}");
+            if (response.IsSuccessStatusCode)
+                return await response.Content.ReadAsStringAsync();
+
+            Logger.Warn($"GET /api/systeminfo failed: {await ReadResponseBody(response)}");
+
+            Logger.Info("GET /api/os/info (fallback)");
+            var fallback = await _http.GetAsync("/api/os/info");
+            Logger.Info($"GET /api/os/info => {(int)fallback.StatusCode}");
+            if (fallback.IsSuccessStatusCode)
+                return await fallback.Content.ReadAsStringAsync();
+
+            Logger.Warn($"GET /api/os/info also failed: {await ReadResponseBody(fallback)}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetSystemInfo failed");
+            return null;
+        }
+    }
+
+    public async Task<string?> GetProcessesAsync()
+    {
+        if (!_configured)
+        {
+            Logger.Warn("GetProcesses called but not configured");
+            return null;
+        }
+
+        try
+        {
+            Logger.Info("GET /api/resourcemanager/processes");
+            var response = await _http.GetAsync("/api/resourcemanager/processes");
+            Logger.Info($"GET /api/resourcemanager/processes => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+            {
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
+                return null;
+            }
+
+            return await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetProcesses failed");
+            return null;
+        }
+    }
+
+    public async Task<bool> KillProcessAsync(int pid)
+    {
+        if (!_configured)
+        {
+            Logger.Warn("KillProcess called but not configured");
+            return false;
+        }
+
+        try
+        {
+            Logger.Info($"DELETE /api/resourcemanager/process?pid={pid}");
+            var response = await _http.DeleteAsync($"/api/resourcemanager/process?pid={pid}");
+            Logger.Info($"DELETE process => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "KillProcess failed");
+            return false;
+        }
+    }
+
+    public async Task<bool> RestartXboxAsync()
+    {
+        if (!_configured)
+        {
+            Logger.Warn("RestartXbox called but not configured");
+            return false;
+        }
+
+        try
+        {
+            Logger.Info("POST /api/control/restart");
+            var response = await PostWithCsrfAsync("/api/control/restart", null);
+            Logger.Info($"POST /api/control/restart => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "RestartXbox failed");
+            return false;
+        }
+    }
+
+    public async Task<bool> ShutdownXboxAsync()
+    {
+        if (!_configured)
+        {
+            Logger.Warn("ShutdownXbox called but not configured");
+            return false;
+        }
+
+        try
+        {
+            Logger.Info("POST /api/control/shutdown");
+            var response = await PostWithCsrfAsync("/api/control/shutdown", null);
+            Logger.Info($"POST /api/control/shutdown => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "ShutdownXbox failed");
+            return false;
+        }
+    }
+
+    public async Task<string?> GetWifiNetworksAsync()
+    {
+        if (!_configured)
+        {
+            Logger.Warn("GetWifiNetworks called but not configured");
+            return null;
+        }
+
+        try
+        {
+            Logger.Info("GET /api/networking/wifi/networks");
+            var response = await _http.GetAsync("/api/networking/wifi/networks");
+            Logger.Info($"GET /api/networking/wifi/networks => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+            {
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
+                return null;
+            }
+
+            return await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetWifiNetworks failed");
+            return null;
+        }
+    }
+
+    public async Task<string?> GetNetworkProfilesAsync()
+    {
+        if (!_configured)
+        {
+            Logger.Warn("GetNetworkProfiles called but not configured");
+            return null;
+        }
+
+        try
+        {
+            Logger.Info("GET /api/networking/networkprofiles");
+            var response = await _http.GetAsync("/api/networking/networkprofiles");
+            Logger.Info($"GET /api/networking/networkprofiles => {(int)response.StatusCode}");
+            if (response.IsSuccessStatusCode)
+                return await response.Content.ReadAsStringAsync();
+
+            var body = await ReadResponseBody(response);
+            Logger.Warn($"GET /api/networking/networkprofiles failed ({(int)response.StatusCode}): {body}");
+
+            Logger.Info("GET /api/networking/wifi/networks (fallback)");
+            var fallback = await _http.GetAsync("/api/networking/wifi/networks");
+            Logger.Info($"GET /api/networking/wifi/networks => {(int)fallback.StatusCode}");
+            if (fallback.IsSuccessStatusCode)
+                return await fallback.Content.ReadAsStringAsync();
+
+            Logger.Warn($"GET /api/networking/wifi/networks also failed: {await ReadResponseBody(fallback)}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetNetworkProfiles failed");
+            return null;
+        }
+    }
+
+    private string GetWsBaseUrl()
+    {
+        var http = _http.BaseAddress?.ToString() ?? "";
+        return http.Replace("https://", "wss://").Replace("http://", "ws://").TrimEnd('/');
+    }
+
+    public async Task ConnectPerformanceWsAsync(Action<PerformanceSnapshot> onData, CancellationToken ct)
+    {
+        if (!_configured)
+        {
+            Logger.Warn("ConnectPerformanceWs called but not configured");
+            return;
+        }
+
+        var ws = new ClientWebSocket();
+        try
+        {
+            var auth = _http.DefaultRequestHeaders.Authorization;
+            if (auth is not null)
+                ws.Options.SetRequestHeader("Authorization", $"{auth.Scheme} {auth.Parameter}");
+
+            if (!string.IsNullOrEmpty(_csrfToken))
+                ws.Options.SetRequestHeader("Cookie", $"CSRF-Token={_csrfToken}");
+
+            ws.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+
+            var wsUrl = $"{GetWsBaseUrl()}/api/resourcemanager/systemperf";
+            Logger.Info($"WS connecting to {wsUrl}");
+            await ws.ConnectAsync(new Uri(wsUrl), ct);
+            Logger.Info("WS connected");
+
+            var buffer = new byte[8192];
+            var messageBuf = new System.Text.StringBuilder();
+
+            while (!ct.IsCancellationRequested && ws.State == WebSocketState.Open)
+            {
+                var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                if (result.MessageType == WebSocketMessageType.Close)
+                    break;
+
+                messageBuf.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
+
+                if (result.EndOfMessage)
+                {
+                    var json = messageBuf.ToString();
+                    messageBuf.Clear();
+
+                    var snap = PerformanceSnapshot.Parse(json);
+                    if (snap is not null)
+                        onData(snap);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.Info("WS cancelled");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "WS error");
+        }
+        finally
+        {
+            if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived)
+            {
+                try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", CancellationToken.None); }
+                catch { }
+            }
+            ws.Dispose();
+            Logger.Info("WS disconnected");
+        }
     }
 }
 

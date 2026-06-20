@@ -1,11 +1,35 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:XBVault.ViewModels"
              x:Class="XBVault.Views.FileExplorerView"
-             x:DataType="vm:FileExplorerViewModel"
-             xmlns:vm="using:XBVault.ViewModels">
+             x:DataType="vm:FileExplorerViewModel">
 
   <Grid Margin="32">
-    <Border Background="{StaticResource SurfaceAltBrush}"
+
+    <!-- Disconnected overlay -->
+    <StackPanel IsVisible="{Binding ShowDisconnected}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12">
+      <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-disconnected-64.png"
+             Width="64" Height="64"
+             Stretch="Uniform"
+             HorizontalAlignment="Center"
+             Opacity="0.6"/>
+      <TextBlock Text="Not connected"
+                 FontSize="16"
+                 FontWeight="SemiBold"
+                 Foreground="{StaticResource TextMutedBrush}"
+                 HorizontalAlignment="Center"/>
+      <TextBlock Text="Connect via sidebar to browse Xbox files"
+                 FontSize="13"
+                 Foreground="{StaticResource TextDimBrush}"
+                 HorizontalAlignment="Center"/>
+    </StackPanel>
+
+    <!-- Connected placeholder -->
+    <Border IsVisible="{Binding ShowContent}"
+            Background="{StaticResource SurfaceAltBrush}"
             CornerRadius="8"
             Padding="32"
             VerticalAlignment="Center"
@@ -33,6 +57,7 @@
                    FontStyle="Italic"/>
       </StackPanel>
     </Border>
+
   </Grid>
 
 </UserControl>

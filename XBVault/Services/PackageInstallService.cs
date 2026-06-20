@@ -334,7 +334,7 @@ public class PackageInstallService
         return extracted.ToArray();
     }
 
-    private static (string? main, string[] deps) ClassifyPackages(string[] files)
+    public static (string? main, string[] deps) ClassifyPackages(string[] files)
     {
         var candidates = new List<string>();
         var deps = new List<string>();
@@ -385,6 +385,31 @@ public class PackageInstallService
         return (main, deps.ToArray());
     }
 
+    public static string[] GetInstallableFiles(string directory)
+    {
+        var packages = FindInstallablePackages(directory);
+        var bundles = ExtractBundles(directory);
+        var all = packages.Concat(bundles).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        return all;
+    }
+
+    public static AnalyzeResult AnalyzeLocalFile(string filePath)
+    {
+        var extractDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "XBVault", "analysis", Guid.NewGuid().ToString("N"));
+        var packages = ExtractPackage(filePath, extractDir);
+        var (main, deps) = ClassifyPackages(packages);
+        return new AnalyzeResult(packages, main, deps, extractDir);
+    }
+
+    public static AnalyzeResult AnalyzeDirectory(string directory)
+    {
+        var all = GetInstallableFiles(directory);
+        var (main, deps) = ClassifyPackages(all);
+        return new AnalyzeResult(all, main, deps, directory);
+    }
+
     private static string FormatBytes(long bytes)
     {
         string[] units = ["B", "KB", "MB", "GB"];
@@ -397,10 +422,26 @@ public class PackageInstallService
         return $"{n:F1}TB";
     }
 
-    private static string GetFileNameFromUrl(string url)
+    public static string GetFileNameFromUrl(string url)
     {
         var uri = new Uri(url);
         var fileName = Path.GetFileName(uri.LocalPath);
         return string.IsNullOrWhiteSpace(fileName) ? "package.appx" : fileName;
+    }
+}
+
+public class AnalyzeResult
+{
+    public string[] AllFiles { get; }
+    public string? MainPackage { get; }
+    public string[] Dependencies { get; }
+    public string WorkingDirectory { get; }
+
+    public AnalyzeResult(string[] allFiles, string? mainPackage, string[] dependencies, string workingDirectory)
+    {
+        AllFiles = allFiles;
+        MainPackage = mainPackage;
+        Dependencies = dependencies;
+        WorkingDirectory = workingDirectory;
     }
 }

@@ -1,0 +1,80 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        x:Class="XBVault.Views.SystemInfoWindow"
+        x:DataType="vm:SystemInfoViewModel"
+        Title="System Info"
+        WindowStartupLocation="CenterOwner"
+        Width="500" Height="320"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
+  <Border BorderBrush="#447F3E" BorderThickness="2">
+    <Grid RowDefinitions="Auto,*">
+      <Grid Height="32" PointerPressed="OnTitleBarPointerPressed">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#447F3E" Offset="0"/>
+            <GradientStop Color="#9ACA3C" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="System Info"
+                   Foreground="#1A1A1A" FontSize="14" FontWeight="Bold"
+                   VerticalAlignment="Center" Margin="12,0"/>
+        <Button Grid.Column="1" Width="32" Height="32" Padding="0"
+                BorderThickness="0" Click="OnCloseClick" Cursor="Hand"
+                ToolTip.Tip="Close">
+          <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-close-20.png"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <Button.Styles>
+            <Style Selector="Button">
+              <Setter Property="Background" Value="Transparent"/>
+            </Style>
+            <Style Selector="Button:pointerover">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+          </Button.Styles>
+        </Button>
+      </Grid>
+      <Border Grid.Row="1" Padding="20">
+        <StackPanel Spacing="16">
+          <Button Command="{Binding RefreshCommand}"
+                  IsEnabled="{Binding IsLoading, Converter={StaticResource BoolInverse}}"
+                  Padding="14,8" HorizontalAlignment="Left">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+              <Image Source="avares://XBVault/Assets/Views/SystemInfoWindow/systeminfo-refresh-20.png"
+                     Width="20" Height="20" Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Refresh" VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="6"
+                  Padding="12,10"
+                  IsVisible="{Binding SystemInfoText, Converter={StaticResource StringNotEmpty}}">
+            <ScrollViewer>
+              <TextBlock Text="{Binding SystemInfoText}"
+                         FontFamily="{StaticResource MonoFont}"
+                         FontSize="14" LineHeight="22"/>
+            </ScrollViewer>
+          </Border>
+          <Border IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
+                  Background="#1AE74C3C" BorderBrush="{StaticResource DangerBrush}"
+                  BorderThickness="1" CornerRadius="6" Padding="14,10">
+            <TextBlock Text="{Binding StatusMessage}"
+                       Foreground="{StaticResource DangerBrush}"
+                       FontSize="13" FontWeight="SemiBold"/>
+          </Border>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Border>
+</Window>

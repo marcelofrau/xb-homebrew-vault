@@ -215,6 +215,34 @@
     <Setter Property="BorderThickness" Value="1.5"/>
   </Style>
 
+  <!-- CheckBox -->
+  <Style Selector="CheckBox">
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="CheckBox:pointerover">
+    <Setter Property="Foreground" Value="#9ACA3C"/>
+  </Style>
+  <Style Selector="CheckBox TextBlock">
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="CheckBox:pointerover TextBlock">
+    <Setter Property="Foreground" Value="#9ACA3C"/>
+  </Style>
+
+  <!-- RadioButton -->
+  <Style Selector="RadioButton">
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="RadioButton:pointerover">
+    <Setter Property="Foreground" Value="#9ACA3C"/>
+  </Style>
+  <Style Selector="RadioButton TextBlock">
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="RadioButton:pointerover TextBlock">
+    <Setter Property="Foreground" Value="#9ACA3C"/>
+  </Style>
+
   <!-- ListBox -->
   <Style Selector="ListBox">
     <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>

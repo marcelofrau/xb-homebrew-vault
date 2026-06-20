@@ -1,0 +1,432 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        x:Class="XBVault.Views.CustomInstallWindow"
+        x:DataType="vm:CustomInstallViewModel"
+        Title="Custom Install"
+        Width="600" Height="440"
+        MinWidth="600" MinHeight="440"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        WindowDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
+
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
+
+  <Border BorderBrush="#447F3E" BorderThickness="2">
+    <Grid RowDefinitions="32,*" ColumnDefinitions="160,*">
+
+      <!-- Title Bar -->
+      <Grid Grid.ColumnSpan="2" Height="32"
+            PointerPressed="OnTitleBarPointerPressed">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#447F3E" Offset="0"/>
+            <GradientStop Color="#9ACA3C" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="Custom Install Wizard"
+                   Foreground="#1A1A1A"
+                   FontSize="14"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"
+                   Margin="12,0"/>
+        <Button Grid.Column="1"
+                Width="32" Height="32"
+                Padding="0"
+                BorderThickness="0"
+                Click="OnCloseClick"
+                Cursor="Hand"
+                ToolTip.Tip="Close">
+          <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-close-20.png"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
+          <Button.Styles>
+            <Style Selector="Button">
+              <Setter Property="Background" Value="Transparent"/>
+            </Style>
+            <Style Selector="Button:pointerover">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+          </Button.Styles>
+        </Button>
+      </Grid>
+
+      <!-- Left Panel: InstallShield-style wizard sidebar -->
+      <Border Grid.Row="1" Grid.Column="0">
+        <Border.Background>
+          <ImageBrush Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-sidebarbg.png"
+                      Stretch="UniformToFill"/>
+        </Border.Background>
+        <Grid RowDefinitions="Auto,*,Auto" Margin="0,20,0,16">
+
+          <!-- Wizard icon -->
+          <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-wizard-100.png"
+                 Width="80" Height="80"
+                 Stretch="Uniform"
+                 HorizontalAlignment="Center"
+                 Opacity="0.85"/>
+
+          <!-- Step indicators -->
+          <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="20" Margin="20,0">
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step1-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     Opacity="{Binding IsSourceStep, Converter={StaticResource StepActiveOpacity}}"/>
+              <TextBlock Grid.Column="1" Text="Source"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsSourceStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step2-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     Opacity="{Binding IsAnalysisStep, Converter={StaticResource StepActiveOpacity}}"/>
+              <TextBlock Grid.Column="1" Text="Analysis"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsAnalysisStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step3-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     Opacity="{Binding IsConfirmStep, Converter={StaticResource StepActiveOpacity}}"/>
+              <TextBlock Grid.Column="1" Text="Confirm"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsConfirmStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step4-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     Opacity="{Binding IsInstallStep, Converter={StaticResource StepActiveOpacity}}"/>
+              <TextBlock Grid.Column="1" Text="Install"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsInstallStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+          </StackPanel>
+
+          <!-- Bottom branding -->
+          <TextBlock Grid.Row="2"
+                     Text="XB Homebrew Vault"
+                     FontSize="10"
+                     Foreground="#447F3E"
+                     HorizontalAlignment="Center"
+                     Opacity="0.5"/>
+        </Grid>
+      </Border>
+
+      <!-- Right Panel: Wizard Content -->
+      <Border Grid.Row="1" Grid.Column="1" BorderThickness="0" Background="{StaticResource SurfaceBrush}">
+        <Grid RowDefinitions="*,Auto" Margin="20,16,20,16">
+
+          <!-- Step 0: Source Selection -->
+          <StackPanel IsVisible="{Binding IsSourceStep}" Spacing="12">
+            <TextBlock Text="Choose package source"
+                       FontSize="16" FontWeight="SemiBold"/>
+            <TextBlock Text="Select a local package file or enter a download URL."
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                       TextWrapping="Wrap"/>
+
+            <Separator Height="1" Background="{StaticResource BorderBrush}"/>
+
+            <RadioButton IsChecked="{Binding UseFileSource}"
+                         Content="Local file"
+                         FontSize="13"/>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"
+                  Margin="16,0,0,0">
+              <TextBox Text="{Binding SourcePath}"
+                       IsReadOnly="True"
+                       PlaceholderText="No file selected..."
+                       FontSize="12"/>
+              <Button Grid.Column="1"
+                      Padding="12,6"
+                      Command="{Binding BrowseFileCommand}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-file-20.png"
+                         Width="18" Height="18" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Browse..."
+                             FontSize="12" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+
+            <RadioButton IsChecked="{Binding UseFileSource, Converter={StaticResource BoolInverse}}"
+                         Content="Download URL"
+                         FontSize="13"/>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"
+                  Margin="16,0,0,0">
+              <TextBox Text="{Binding SourceUrl}"
+                       PlaceholderText="https://example.com/package.appx"
+                       FontSize="12"/>
+              <Button Grid.Column="1"
+                      Padding="12,6"
+                      Command="{Binding AnalyzeCommand}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-globe-20.png"
+                         Width="18" Height="18" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Download"
+                             FontSize="12" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+
+            <TextBlock Text="{Binding StatusText}"
+                       FontSize="11"
+                       Foreground="{StaticResource TextDimBrush}"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmpty}}"/>
+          </StackPanel>
+
+          <!-- Step 1: Analysis -->
+          <StackPanel IsVisible="{Binding IsAnalysisStep}"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Center"
+                      Spacing="12">
+            <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-analyze-20.png"
+                   Width="48" Height="48"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center"
+                   Opacity="0.7"/>
+            <TextBlock Text="Analyzing package..."
+                       FontSize="16" FontWeight="SemiBold"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="{Binding StatusText}"
+                       FontSize="12"
+                       Foreground="{StaticResource TextDimBrush}"
+                       HorizontalAlignment="Center"/>
+            <ProgressBar IsIndeterminate="True"
+                         Width="200" Height="4"
+                         Foreground="{StaticResource AccentBrush}"/>
+          </StackPanel>
+
+          <!-- Step 2: Confirm -->
+          <StackPanel IsVisible="{Binding IsConfirmStep}" Spacing="12">
+            <TextBlock Text="Review packages"
+                       FontSize="16" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding AnalysisResultText}"
+                       FontSize="12"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       TextWrapping="Wrap"/>
+
+            <Border Padding="10,8"
+                    CornerRadius="4"
+                    Background="{StaticResource SurfaceAltBrush}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border Width="32" Height="32" CornerRadius="4"
+                        Background="{StaticResource AccentDimBrush}">
+                  <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-check-20.png"
+                         Width="20" Height="20" Stretch="Uniform"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="{Binding MainPackageName}"
+                             FontSize="14" FontWeight="Bold"
+                             TextWrapping="Wrap"/>
+                  <TextBlock Text="{Binding DependencyText}"
+                             FontSize="11"
+                             Foreground="{StaticResource TextDimBrush}"/>
+                </StackPanel>
+              </Grid>
+            </Border>
+
+            <ScrollViewer MaxHeight="120">
+              <ItemsControl ItemsSource="{Binding FileList}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <TextBlock Text="{Binding}"
+                               FontSize="11"
+                               Foreground="{StaticResource TextMutedBrush}"/>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </StackPanel>
+
+          <!-- Step 3: Install Progress / Result -->
+          <StackPanel IsVisible="{Binding IsInstallStep}"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Center"
+                      Spacing="10"
+                      MaxWidth="380">
+
+            <!-- During install -->
+            <StackPanel Spacing="10"
+                        IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
+              <Image x:Name="InstallSpinner"
+                     Source="avares://XBVault/Assets/Views/InstalledView/installed-spinner-48.png"
+                     Width="48" Height="48"
+                     Stretch="Uniform"
+                     HorizontalAlignment="Center"
+                     RenderTransformOrigin="50% 50%">
+                <Image.RenderTransform>
+                  <RotateTransform Angle="0"/>
+                </Image.RenderTransform>
+              </Image>
+              <TextBlock Text="{Binding InstallStatus}"
+                         FontSize="14"
+                         FontWeight="SemiBold"
+                         Foreground="{StaticResource AccentBrush}"
+                         TextAlignment="Center"
+                         TextWrapping="Wrap"/>
+              <ProgressBar Value="{Binding InstallProgress}"
+                           Maximum="1"
+                           Width="260" Height="6"
+                           Foreground="{StaticResource AccentBrush}"/>
+              <TextBlock Text="{Binding CurrentFile}"
+                         FontSize="11"
+                         Foreground="{StaticResource TextDimBrush}"
+                         TextAlignment="Center"
+                         TextWrapping="Wrap"/>
+              <ProgressBar IsIndeterminate="True"
+                           Width="260" Height="4"
+                           Foreground="{StaticResource AccentDimBrush}"/>
+              <TextBlock Text="{Binding PackageStatus}"
+                         FontSize="11"
+                         Foreground="{StaticResource TextDimBrush}"
+                         TextAlignment="Center"
+                         TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <!-- Result: success or failure -->
+            <StackPanel Spacing="10"
+                        IsVisible="{Binding InstallComplete}">
+              <!-- Success block -->
+              <StackPanel Spacing="10"
+                          IsVisible="{Binding InstallSuccess}">
+                <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-success-16.png"
+                       Width="64" Height="64" Stretch="Uniform"
+                       HorizontalAlignment="Center"/>
+                <TextBlock Text="Install complete!"
+                           FontSize="22" FontWeight="Bold"
+                           Foreground="{StaticResource SuccessBrush}"
+                           TextAlignment="Center"/>
+                <Border Padding="12,10" CornerRadius="4"
+                        BorderBrush="{StaticResource SuccessBrush}"
+                        BorderThickness="1" Background="#1A2ECC71">
+                  <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+                    <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-check-20.png"
+                           Width="24" Height="24" Stretch="Uniform"
+                           VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" FontSize="13"
+                               Text="{Binding InstallStatus}"
+                               Foreground="{StaticResource SuccessBrush}"
+                               VerticalAlignment="Center" TextWrapping="Wrap"/>
+                  </Grid>
+                </Border>
+              </StackPanel>
+
+              <!-- Failure block -->
+              <StackPanel Spacing="10"
+                          IsVisible="{Binding InstallSuccess, Converter={StaticResource BoolInverse}}">
+                <Image Source="avares://XBVault/Assets/Views/LogsView/logs-error-16.png"
+                       Width="64" Height="64" Stretch="Uniform"
+                       HorizontalAlignment="Center"/>
+                <TextBlock Text="Install failed"
+                           FontSize="22" FontWeight="Bold"
+                           Foreground="{StaticResource DangerBrush}"
+                           TextAlignment="Center"/>
+                <Border Padding="12,10" CornerRadius="4"
+                        BorderBrush="{StaticResource DangerBrush}"
+                        BorderThickness="1" Background="#1AE74C3C"
+                        IsVisible="{Binding InstallResultMessage, Converter={StaticResource StringNotEmpty}}">
+                  <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+                    <Image Source="avares://XBVault/Assets/Views/LogsView/logs-error-16.png"
+                           Width="24" Height="24" Stretch="Uniform"
+                           VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" FontSize="13"
+                               Text="{Binding InstallResultMessage}"
+                               Foreground="{StaticResource DangerBrush}"
+                               VerticalAlignment="Center" TextWrapping="Wrap"/>
+                  </Grid>
+                </Border>
+              </StackPanel>
+            </StackPanel>
+
+          </StackPanel>
+
+          <!-- Footer Buttons -->
+          <StackPanel Grid.Row="1"
+                      Orientation="Horizontal"
+                      HorizontalAlignment="Right"
+                      Spacing="8"
+                      Margin="0,12,0,0">
+            <!-- Back button -->
+            <Button Padding="16,8"
+                    Command="{Binding GoBackCommand}"
+                    IsEnabled="{Binding CanGoBack}">
+              <TextBlock Text="Back"
+                         FontSize="12" VerticalAlignment="Center"/>
+            </Button>
+
+            <!-- Step 0: Analyze / Step 2: Install -->
+            <Button Classes="Accent"
+                    Padding="20,8"
+                    Command="{Binding AnalyzeCommand}"
+                    IsVisible="{Binding IsSourceStep}"
+                    IsEnabled="{Binding CanGoNext}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-analyze-20.png"
+                       Width="18" Height="18" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Analyze"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+
+            <Button Classes="Accent"
+                    Padding="20,8"
+                    Command="{Binding InstallCommand}"
+                    IsVisible="{Binding IsConfirmStep}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-install-20.png"
+                       Width="18" Height="18" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Install"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+
+            <!-- Close after complete -->
+            <Button Classes="Accent"
+                    Padding="20,8"
+                    Command="{Binding CloseCommand}"
+                    IsVisible="{Binding InstallComplete}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-close-20.png"
+                       Width="18" Height="18" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Close"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+
+            <!-- Cancel button -->
+            <Button Classes="Danger"
+                    Padding="16,8"
+                    Command="{Binding CancelCommand}"
+                    IsVisible="{Binding CanCancel}">
+              <TextBlock Text="Cancel"
+                         FontSize="12" VerticalAlignment="Center"/>
+            </Button>
+          </StackPanel>
+
+        </Grid>
+      </Border>
+
+    </Grid>
+  </Border>
+
+</Window>

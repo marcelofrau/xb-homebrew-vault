@@ -8,6 +8,16 @@
     <conv:StringNotEmptyConverter x:Key="StringNotEmpty"/>
     <conv:IntToBoolConverter x:Key="IntToBool"/>
     <conv:BoolToOpacityConverter x:Key="BoolToOpacity"/>
+    <conv:BoolToValueConverter x:Key="StepIndicatorBg"
+                                TrueValue="#9ACA3C" FalseValue="Transparent"/>
+    <conv:BoolToValueConverter x:Key="StepIndicatorBorder"
+                                TrueValue="#9ACA3C" FalseValue="#447F3E"/>
+    <conv:BoolToValueConverter x:Key="StepIndicatorFg"
+                                TrueValue="#1A1A1A" FalseValue="#447F3E"/>
+    <conv:BoolToValueConverter x:Key="StepLabelFg"
+                                TrueValue="#E0E0E0" FalseValue="#447F3E"/>
+    <conv:BoolToValueConverter x:Key="StepActiveOpacity"
+                                TrueValue="1.0" FalseValue="0.35"/>
   </Application.Resources>
 
   <Application.Styles>

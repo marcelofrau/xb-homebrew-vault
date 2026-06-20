@@ -1,5 +1,8 @@
 using System.Collections.Specialized;
+using System.Text;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using XBVault.ViewModels;
 
@@ -33,5 +36,32 @@ public partial class LogsView : UserControl
     private void ScrollToBottom()
     {
         LogScrollViewer?.ScrollToEnd();
+    }
+
+    private async void OnCopyClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not LogsViewModel vm || vm.Logs.Count == 0) return;
+
+        var sb = new StringBuilder();
+        foreach (var entry in vm.Logs)
+        {
+            if (sb.Length > 0) sb.AppendLine();
+            sb.Append(entry.ToString());
+        }
+
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (clipboard is not null)
+            await clipboard.SetTextAsync(sb.ToString());
+
+        var orig = CopyButtonText.Text;
+        CopyButtonText.Text = "Copied!";
+        await Task.Delay(2000);
+        CopyButtonText.Text = orig;
+    }
+
+    private void OnClearClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is LogsViewModel vm)
+            vm.Logs.Clear();
     }
 }

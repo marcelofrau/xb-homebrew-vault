@@ -1,6 +1,8 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using XBVault.Services;
 using XBVault.ViewModels;
@@ -45,8 +47,8 @@ public partial class App : Application
             var mainViewModel = new MainViewModel(xboxService);
             var browseViewModel = new BrowseViewModel(erService, installService, xboxService);
             var installedViewModel = new InstalledViewModel(xboxService);
-            var fileExplorerViewModel = new FileExplorerViewModel();
-            var toolsViewModel = new ToolsViewModel();
+            var fileExplorerViewModel = new FileExplorerViewModel(xboxService);
+            var toolsViewModel = new ToolsViewModel(xboxService);
             var settingsViewModel = new SettingsViewModel(xboxService, cacheService);
 
             // splash first, main after delay
@@ -55,7 +57,7 @@ public partial class App : Application
 
             _ = InitAfterSplashAsync(desktop, splash, mainViewModel, browseViewModel,
                 installedViewModel, fileExplorerViewModel, toolsViewModel,
-                settingsViewModel, xboxService, erService);
+                settingsViewModel, xboxService, installService, erService);
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -118,6 +120,7 @@ public partial class App : Application
         ToolsViewModel toolsViewModel,
         SettingsViewModel settingsViewModel,
         XboxDeviceService xboxService,
+        PackageInstallService installService,
         EmulationRevivalService erService)
     {
         Logger.Debug("Splash delay starting (2s)");
@@ -212,7 +215,7 @@ public partial class App : Application
                     "Exit",
                     "Are you sure you want to exit?",
                     "Exit", "Cancel",
-                    isExit: true);
+                    "avares://XBVault/Assets/Views/ConfirmWindow/fluentui-collision-20.png");
                 var confirmWindow = new Views.ConfirmWindow { DataContext = confirmVm };
                 await confirmWindow.ShowDialog(main);
                 if (confirmVm.Confirmed)
@@ -229,7 +232,8 @@ public partial class App : Application
                 var confirmVm = new ConfirmViewModel(
                     "Uninstall Package",
                     $"Are you sure you want to uninstall {pkg.Name}?",
-                    "Uninstall", "Cancel");
+                    "Uninstall", "Cancel",
+                    "avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png");
                 var confirmWindow = new Views.ConfirmWindow { DataContext = confirmVm };
                 await confirmWindow.ShowDialog(main);
                 return confirmVm.Confirmed;
@@ -246,6 +250,117 @@ public partial class App : Application
 
             var fileExplorerView = new Views.FileExplorerView { DataContext = fileExplorerViewModel };
             var toolsView = new Views.ToolsView { DataContext = toolsViewModel };
+
+            toolsViewModel.ShowScreenshotAction = () =>
+            {
+                var vm = new ScreenshotViewModel(xboxService);
+                vm.SaveScreenshotDialog = async stream =>
+                {
+                    try
+                    {
+                        var file = await main.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+                        {
+                            DefaultExtension = "png",
+                            FileTypeChoices =
+                            [
+                                new FilePickerFileType("PNG Image") { Patterns = ["*.png"] }
+                            ]
+                        });
+                        if (file is null) return null;
+                        await using var writeStream = await file.OpenWriteAsync();
+                        await stream.CopyToAsync(writeStream);
+                        return file.Name;
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "SaveScreenshot failed");
+                        return null;
+                    }
+                };
+                var win = new Views.ScreenshotWindow { DataContext = vm };
+                win.ShowDialog(main);
+            };
+
+            toolsViewModel.ShowSystemInfoAction = () =>
+            {
+                var vm = new SystemInfoViewModel(xboxService);
+                var win = new Views.SystemInfoWindow { DataContext = vm };
+                win.ShowDialog(main);
+            };
+
+            toolsViewModel.ShowProcessesAction = () =>
+            {
+                var vm = new ProcessesViewModel(xboxService);
+                var win = new Views.ProcessesWindow { DataContext = vm };
+                win.ShowDialog(main);
+            };
+
+            toolsViewModel.ShowNetworkInfoAction = () =>
+            {
+                var vm = new NetworkInfoViewModel(xboxService);
+                var win = new Views.NetworkInfoWindow { DataContext = vm };
+                win.ShowDialog(main);
+            };
+
+            toolsViewModel.ShowPerformanceAction = () =>
+            {
+                var vm = new PerformanceViewModel(xboxService);
+                var win = new Views.PerformanceWindow { DataContext = vm };
+                win.ShowDialog(main);
+            };
+
+            Action openCustomInstall = () =>
+            {
+                if (!xboxService.IsConnected)
+                {
+                    var errDlg = new ErrorDialog(
+                        "Not Connected",
+                        "Connect to an Xbox first before using Custom Install.",
+                        "Go to the sidebar and connect to your Xbox Developer Mode console.",
+                        ErrorDialogType.Warn);
+                    errDlg.ShowDialog(main);
+                    return;
+                }
+                var vm = new CustomInstallViewModel(xboxService, installService);
+                vm.PickFileAsync = async () =>
+                {
+                    try
+                    {
+                        var files = await main.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                        {
+                            Title = "Select Package",
+                            AllowMultiple = false,
+                            FileTypeFilter =
+                            [
+                                new FilePickerFileType("Package files")
+                                {
+                                    Patterns = ["*.appx", "*.msix", "*.appxbundle", "*.msixbundle", "*.zip"]
+                                }
+                            ]
+                        });
+                        return files?.FirstOrDefault()?.TryGetLocalPath();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "CustomInstall file picker failed");
+                        return null;
+                    }
+                };
+                var win = new Views.CustomInstallWindow { DataContext = vm };
+                vm.CloseAction = () => win.Close();
+                win.ShowDialog(main);
+            };
+            toolsViewModel.ShowCustomInstallAction = openCustomInstall;
+            browseViewModel.ShowCustomInstallAction = openCustomInstall;
+
+            toolsViewModel.ShowConfirmAsync = async (title, message, confirmText, cancelText, iconSource) =>
+            {
+                var vm = new ConfirmViewModel(title, message, confirmText, cancelText, iconSource);
+                var win = new Views.ConfirmWindow { DataContext = vm };
+                await win.ShowDialog(main);
+                return vm.Confirmed;
+            };
+
             var settingsView = new Views.SettingsView { DataContext = settingsViewModel };
             var logsView = new Views.LogsView { DataContext = new LogsViewModel() };
 

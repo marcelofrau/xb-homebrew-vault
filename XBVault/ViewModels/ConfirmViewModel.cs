@@ -1,4 +1,6 @@
 using System;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -6,20 +8,22 @@ namespace XBVault.ViewModels;
 
 public partial class ConfirmViewModel : ObservableObject
 {
-    public ConfirmViewModel(string title, string message, string confirmText, string cancelText, bool isExit = false)
+    public ConfirmViewModel(string title, string message, string confirmText, string cancelText, string? iconSource = null)
     {
         Title = title;
         Message = message;
         ConfirmText = confirmText;
         CancelText = cancelText;
-        IsExit = isExit;
+        if (!string.IsNullOrEmpty(iconSource))
+            Icon = new Bitmap(AssetLoader.Open(new Uri(iconSource)));
     }
 
     public string Title { get; }
     public string Message { get; }
     public string ConfirmText { get; }
     public string CancelText { get; }
-    public bool IsExit { get; }
+    public Bitmap? Icon { get; }
+    public bool HasIcon => Icon is not null;
     public bool Confirmed { get; private set; }
     public event Action<bool>? Completed;
 
