@@ -7,6 +7,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -63,7 +66,7 @@ jobs:
       shell: pwsh
       run: |
         $ver = "${{ github.ref_name }}" -replace '^v', ''
-        dotnet publish XBVault/XBVault.csproj -c Release -r linux-x64 --self-contained true -p:PublishReadyToRun=true -p:Version=$ver -o publish-linux
+        dotnet publish XBVault/XBVault.csproj -c Release -r linux-x64 --self-contained true -p:PublishReadyToRun=false -p:Version=$ver -o publish-linux
 
     - name: Package linux-x64
       shell: pwsh

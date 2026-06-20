@@ -121,6 +121,16 @@ public partial class CustomInstallViewModel : ObservableObject
         OnPropertyChanged(nameof(CanGoBack));
     }
 
+    partial void OnIsAnalyzingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanGoBack));
+    }
+
+    partial void OnIsInstallingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanGoBack));
+    }
+
     partial void OnInstallCompleteChanged(bool value)
     {
         OnPropertyChanged(nameof(CanCancel));
