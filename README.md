@@ -23,12 +23,37 @@
 | 🔐 | **Secure Storage** | Obfuscated credential storage (XOR + Base64) |
 | 📋 | **Activity Log** | Full application log with multi-select, copy, auto-scroll, and configurable log level |
 
+## 📸 Screenshots
+
+| | |
+|---|---|
+| **Main Window** — catalog browser with Blades theme | **Browse & Detail View** |
+| ![](docs/screenshots/main.png) | ![](docs/screenshots/detailview-browse.png) |
+| **Installed Packages** | **Installing from Browse** |
+| ![](docs/screenshots/installed.png) | ![](docs/screenshots/installing-from-browse.png) |
+| **Install Complete** | **Custom Install Wizard** |
+| ![](docs/screenshots/install-complete-from-browse.png) | ![](docs/screenshots/wizard-installcustom.png) |
+| **Wizard — Analysis** | **Wizard — Confirm** |
+| ![](docs/screenshots/wizard-installcustom1.png) | ![](docs/screenshots/wizard-installcustom2.png) |
+| **Confirm Uninstall** | **Not Connected Warning** |
+| ![](docs/screenshots/confirm-uninstall.png) | ![](docs/screenshots/install-not-connected.png) |
+| **Connection Dialog** | **About Window** |
+| ![](docs/screenshots/connecting.png) | ![](docs/screenshots/about-window.png) |
+| **Dev Tools Panel** | **Performance Monitor** |
+| ![](docs/screenshots/tools.png) | ![](docs/screenshots/performancemonitor.png) |
+| **Process List** | **Screen Capture** |
+| ![](docs/screenshots/processlist.png) | ![](docs/screenshots/screen%20capture.png) |
+
+> Tip: click any screenshot to view full size.
+
+---
+
 ## 📥 Installation
 
 Download the latest release from the [Releases page](https://github.com/marcelofrau/xb-homebrew-vault/releases).
 
 ```powershell
-# Extract XBVault-v0.8.0-win-x64.zip and run XBVault.exe
+# Extract XBVault-v0.8.1-win-x64.zip and run XBVault.exe
 ```
 
 ## 📋 Prerequisites
@@ -48,7 +73,7 @@ cd xb-homebrew-vault
 .\build\run.ps1
 
 # Build release
-.\build\build-release.ps1 -Version 0.8.0 -Arch x64
+.\build\build-release.ps1 -Version 0.8.1 -Arch x64
 ```
 
 The release script produces a self-contained ZIP at `build/dist/XBVault-v<Version>-win-<Arch>.zip`.
