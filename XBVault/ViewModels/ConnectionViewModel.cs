@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -43,6 +44,29 @@ public partial class ConnectionViewModel : ObservableObject
     {
         OutputLines.Add(text);
         Logger.Info(text);
+    }
+
+    private async Task<string?> TryGetLinkSpeedAsync()
+    {
+        try
+        {
+            var json = await _xboxService.GetNetworkProfilesAsync();
+            if (json is null) return null;
+
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("NetworkProfiles", out var profiles))
+                return null;
+
+            foreach (var p in profiles.EnumerateArray())
+            {
+                if (p.TryGetProperty("LinkSpeed", out var s))
+                    return s.GetString();
+                if (p.TryGetProperty("Speed", out var s2))
+                    return s2.GetString();
+            }
+        }
+        catch { }
+        return null;
     }
 
     [RelayCommand]
@@ -116,12 +140,14 @@ public partial class ConnectionViewModel : ObservableObject
             }
             else if (result.Success)
             {
+                var linkSpeed = await TryGetLinkSpeedAsync();
+
                 AddLine("");
                 AddLine("RING... RING...");
                 Progress = 0.3;
                 await Task.Delay(300, ct);
 
-                AddLine("CONNECT 33600 bps");
+                AddLine("CONNECT " + (linkSpeed ?? "1 Gbps"));
                 Progress = 0.35;
                 await Task.Delay(250, ct);
 
