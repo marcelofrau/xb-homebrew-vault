@@ -104,7 +104,7 @@ public partial class CustomInstallViewModel : ObservableObject
     };
 
     public bool CanGoBack => CurrentStep > 0 && !IsAnalyzing && !IsInstalling;
-    public bool CanCancel => !IsAnalyzing && !IsInstalling;
+    public bool CanCancel => !IsAnalyzing && !IsInstalling && !InstallComplete;
 
     public bool IsSourceStep => CurrentStep == 0;
     public bool IsAnalysisStep => CurrentStep == 1;
@@ -119,6 +119,11 @@ public partial class CustomInstallViewModel : ObservableObject
         OnPropertyChanged(nameof(IsInstallStep));
         OnPropertyChanged(nameof(CanGoNext));
         OnPropertyChanged(nameof(CanGoBack));
+    }
+
+    partial void OnInstallCompleteChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanCancel));
     }
 
     partial void OnUseFileSourceChanged(bool value)
@@ -253,15 +258,18 @@ public partial class CustomInstallViewModel : ObservableObject
     [RelayCommand]
     private async Task InstallAsync()
     {
-        if (_analysis?.MainPackage is null) return;
+        var analysis = _analysis;
+        if (analysis?.MainPackage is null) return;
 
         IsInstalling = true;
         CurrentStep = 3;
         InstallComplete = false;
         InstallProgress = 0;
+        PackageProgress = 0;
         InstallResultMessage = null;
-
-        var deps = _analysis.Dependencies ?? [];
+        PackageStatus = "Starting...";
+        InstallStatus = "Starting...";
+        CurrentFile = Path.GetFileName(analysis.MainPackage);
 
         var progress = new Progress<InstallProgressInfo>(info =>
         {
@@ -272,10 +280,16 @@ public partial class CustomInstallViewModel : ObservableObject
             CurrentFile = info.CurrentFile;
         });
 
+        var startTime = DateTime.UtcNow;
+
         var result = await _xboxService.InstallPackageAsync(
-            _analysis.MainPackage,
-            deps,
+            analysis.MainPackage,
+            analysis.Dependencies ?? [],
             progress);
+
+        var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
+        if (elapsed < 1000)
+            await Task.Delay(1000 - (int)elapsed);
 
         InstallComplete = true;
         InstallSuccess = result;

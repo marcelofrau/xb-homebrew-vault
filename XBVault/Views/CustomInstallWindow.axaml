@@ -80,7 +80,10 @@
             <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step1-20.png"
                      Width="20" Height="20" Stretch="None"
-                     Opacity="{Binding IsSourceStep, Converter={StaticResource StepActiveOpacity}}"/>
+                     IsVisible="{Binding IsSourceStep}"/>
+              <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step1-disabled-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsSourceStep, Converter={StaticResource BoolInverse}}"/>
               <TextBlock Grid.Column="1" Text="Source"
                          FontSize="12" FontWeight="Bold"
                          VerticalAlignment="Center"
@@ -90,7 +93,10 @@
             <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step2-20.png"
                      Width="20" Height="20" Stretch="None"
-                     Opacity="{Binding IsAnalysisStep, Converter={StaticResource StepActiveOpacity}}"/>
+                     IsVisible="{Binding IsAnalysisStep}"/>
+              <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step2-disabled-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsAnalysisStep, Converter={StaticResource BoolInverse}}"/>
               <TextBlock Grid.Column="1" Text="Analysis"
                          FontSize="12" FontWeight="Bold"
                          VerticalAlignment="Center"
@@ -100,7 +106,10 @@
             <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step3-20.png"
                      Width="20" Height="20" Stretch="None"
-                     Opacity="{Binding IsConfirmStep, Converter={StaticResource StepActiveOpacity}}"/>
+                     IsVisible="{Binding IsConfirmStep}"/>
+              <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step3-disabled-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsConfirmStep, Converter={StaticResource BoolInverse}}"/>
               <TextBlock Grid.Column="1" Text="Confirm"
                          FontSize="12" FontWeight="Bold"
                          VerticalAlignment="Center"
@@ -110,7 +119,10 @@
             <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step4-20.png"
                      Width="20" Height="20" Stretch="None"
-                     Opacity="{Binding IsInstallStep, Converter={StaticResource StepActiveOpacity}}"/>
+                     IsVisible="{Binding IsInstallStep}"/>
+              <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step4-disabled-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsInstallStep, Converter={StaticResource BoolInverse}}"/>
               <TextBlock Grid.Column="1" Text="Install"
                          FontSize="12" FontWeight="Bold"
                          VerticalAlignment="Center"
@@ -305,52 +317,41 @@
                         IsVisible="{Binding InstallComplete}">
               <!-- Success block -->
               <StackPanel Spacing="10"
+                          VerticalAlignment="Center"
                           IsVisible="{Binding InstallSuccess}">
-                <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-success-16.png"
-                       Width="64" Height="64" Stretch="Uniform"
+                <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-success-100.png"
+                       Width="100" Height="100" Stretch="Uniform"
                        HorizontalAlignment="Center"/>
                 <TextBlock Text="Install complete!"
                            FontSize="22" FontWeight="Bold"
                            Foreground="{StaticResource SuccessBrush}"
                            TextAlignment="Center"/>
-                <Border Padding="12,10" CornerRadius="4"
-                        BorderBrush="{StaticResource SuccessBrush}"
-                        BorderThickness="1" Background="#1A2ECC71">
-                  <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
-                    <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-check-20.png"
-                           Width="24" Height="24" Stretch="Uniform"
-                           VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" FontSize="13"
-                               Text="{Binding InstallStatus}"
-                               Foreground="{StaticResource SuccessBrush}"
-                               VerticalAlignment="Center" TextWrapping="Wrap"/>
-                  </Grid>
-                </Border>
               </StackPanel>
 
               <!-- Failure block -->
               <StackPanel Spacing="10"
                           IsVisible="{Binding InstallSuccess, Converter={StaticResource BoolInverse}}">
-                <Image Source="avares://XBVault/Assets/Views/LogsView/logs-error-16.png"
-                       Width="64" Height="64" Stretch="Uniform"
+                <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-failure-100.png"
+                       Width="100" Height="100" Stretch="Uniform"
                        HorizontalAlignment="Center"/>
                 <TextBlock Text="Install failed"
                            FontSize="22" FontWeight="Bold"
                            Foreground="{StaticResource DangerBrush}"
                            TextAlignment="Center"/>
-                <Border Padding="12,10" CornerRadius="4"
-                        BorderBrush="{StaticResource DangerBrush}"
-                        BorderThickness="1" Background="#1AE74C3C"
+                <Border Padding="16" CornerRadius="6"
+                        BorderBrush="#55E74C3C"
+                        BorderThickness="1"
+                        Background="#1AE74C3C"
+                        MinHeight="100"
+                        MaxHeight="180"
                         IsVisible="{Binding InstallResultMessage, Converter={StaticResource StringNotEmpty}}">
-                  <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
-                    <Image Source="avares://XBVault/Assets/Views/LogsView/logs-error-16.png"
-                           Width="24" Height="24" Stretch="Uniform"
-                           VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" FontSize="13"
-                               Text="{Binding InstallResultMessage}"
-                               Foreground="{StaticResource DangerBrush}"
-                               VerticalAlignment="Center" TextWrapping="Wrap"/>
-                  </Grid>
+                  <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <TextBlock Text="{Binding InstallResultMessage}"
+                               FontSize="13"
+                               Foreground="#EEE"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center"/>
+                  </ScrollViewer>
                 </Border>
               </StackPanel>
             </StackPanel>
