@@ -15,8 +15,6 @@ public class CdSpinner : Grid
 
     public CdSpinner()
     {
-        RenderTransform = _rotate;
-        RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
         HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
         VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center;
 
@@ -32,7 +30,8 @@ public class CdSpinner : Grid
             Width = 64,
             Height = 64,
             Stretch = Stretch.Uniform,
-            [!HorizontalAlignmentProperty] = this[!HorizontalAlignmentProperty],
+            RenderTransform = _rotate,
+            RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
         };
 
         var loadingText = new TextBlock
@@ -45,6 +44,8 @@ public class CdSpinner : Grid
                          ?? new SolidColorBrush(Colors.Gray),
         };
 
+        Grid.SetRow(cd, 0);
+        Grid.SetRow(loadingText, 1);
         Children.Add(cd);
         Children.Add(loadingText);
     }

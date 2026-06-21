@@ -27,7 +27,21 @@ Removed from tracking, added to `.gitignore`, deleted from disk.
 
 ## 🟡 Medium
 
-### 3. Title bar gradient duplicated in 14 windows
+### 3. Border CornerRadius não clipa Image com UniformToFill (Avalonia 12.0.0)
+
+BrowseView + ItemDetailWindow: `Border CornerRadius="8,8,0,0"` com `Image Stretch="UniformToFill"` dentro não clipa a imagem aos cantos arredondados. Cantos da imagem "furam" a borda do Card.
+
+**Tentativas que não resolveram:**
+- Overlay `Border` com stroke em cima (mascarava mas hover ficava "atrás")
+- `Border` próprio pra Image com `CornerRadius` (Avalonia não clipou)
+- `ClipToBounds="True"` combinado (clipa retângulo, não arredondado)
+
+**Próximo passo sugerido:**
+- Aplicar `Clip` geometry via código-behind (`RectangleGeometry` com `RadiusX/Y` atrelado ao `ActualWidth/ActualHeight`)
+- Ou migrar pra `ImageBrush` com `CornerRadius` num `Border` (outro caminho de render)
+- Verificar se Avalonia 11.1+ corrige (projeto usa 12.0.0)
+
+### 4. Title bar gradient duplicated in 14 windows
 
 The same `LinearGradientBrush` (#447F3E → #9ACA3C) is defined **inline** in every dialog window plus MainWindow, some twice (title bar + table header).
 
@@ -39,13 +53,13 @@ The same `LinearGradientBrush` (#447F3E → #9ACA3C) is defined **inline** in ev
 </LinearGradientBrush>
 ```
 
-### 4. Close button template duplicated in 14 windows
+### 5. Close button template duplicated in 14 windows
 
 The same `<Button>` with inline styles (`#CC3333` hover, 32×32, transparent default) is copied into every window.
 
 **Recommendation:** Create a reusable `WindowCloseButton` style or UserControl with the red hover behavior.
 
-### 5. `async void` in code-behind (fire-and-forget)
+### 6. `async void` in code-behind (fire-and-forget)
 
 4 event handlers use `async void` (dangerous — unhandled exceptions crash the process):
 
@@ -58,7 +72,7 @@ The same `<Button>` with inline styles (`#CC3333` hover, 32×32, transparent def
 
 **Recommendation:** Wrap body in `Task.Run` or use a safe `FireAndForget` helper with exception logging.
 
-### 6. No `ConfigureAwait(false)` anywhere
+### 7. No `ConfigureAwait(false)` anywhere
 
 Zero instances of `.ConfigureAwait(false)` across the entire codebase.
 
@@ -66,7 +80,7 @@ Zero instances of `.ConfigureAwait(false)` across the entire codebase.
 
 ## 🟢 Low
 
-### 7. Hardcoded magic delays
+### 8. Hardcoded magic delays
 
 `Task.Delay(ms)` with inline magic numbers:
 
@@ -80,13 +94,13 @@ Zero instances of `.ConfigureAwait(false)` across the entire codebase.
 
 **Recommendation:** Name as `const int` with a descriptive identifier.
 
-### 8. `App.axaml.cs` — 349 lines
+### 9. `App.axaml.cs` — 349 lines
 
 The main application startup file registers every dialog action inline (about, connect, refresh, custom install, browse detail, etc.), making it hard to navigate.
 
 **Recommendation:** Extract dialog registration into a separate `DialogRegistry` class or push registration into each ViewModel's constructor.
 
-### 9. `PerformanceSnapshot.cs:78` — catch with no log
+### 10. `PerformanceSnapshot.cs:78` — catch with no log
 
 ```csharp
 catch (Exception ex)
@@ -97,13 +111,13 @@ catch (Exception ex)
 
 All other `catch (Exception ex)` blocks in Services log via `Logger.Error(ex, ...)`. This one silently swallows.
 
-### 10. `DllImport` in Logger (Windows-only)
+### 11. `DllImport` in Logger (Windows-only)
 
 `XBVault/Services/Logger.cs:150` uses `[DllImport("kernel32.dll")]` for `AttachConsole`. This blocks Linux/macOS portability.
 
 **Recommendation:** Guard with `RuntimeInformation.IsOSPlatform(OSPlatform.Windows)` or provide a no-op fallback.
 
-### 11. Orphaned `_Backup` icons after SetupWindow removal
+### 12. Orphaned `_Backup` icons after SetupWindow removal
 
 `Assets/_Backup/Icons/setup-save-continue.ico` and `setup-test-connection.ico` reference the removed SetupWindow. Harmless but unused.
 
@@ -113,7 +127,7 @@ All other `catch (Exception ex)` blocks in Services log via `Logger.Error(ex, ..
 graph LR
     subgraph Severity["Severity distribution"]
         H("🔴 High: 2"):::high
-        M("🟡 Medium: 4"):::medium
+        M("🟡 Medium: 5"):::medium
         L("🟢 Low: 5"):::low
     end
 
@@ -127,6 +141,6 @@ graph LR
 | Severity | Items | Estimated effort |
 |----------|-------|-----------------|
 | 🔴 High | 2 | 2–4 hours |
-| 🟡 Medium | 4 | 4–8 hours |
+| 🟡 Medium | 5 | 5–10 hours |
 | 🟢 Low | 5 | 2–4 hours |
-| **Total** | **11** | **8–16 hours** |
+| **Total** | **12** | **9–18 hours** |

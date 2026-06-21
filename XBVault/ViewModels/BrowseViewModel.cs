@@ -37,6 +37,9 @@ public partial class BrowseViewModel : ObservableObject
 
     public BrowseViewModel(EmulationRevivalService erService, PackageInstallService installService, XboxDeviceService xboxService)
     {
+#if DEBUG
+        SlowThumbnails = true;
+#endif
         _erService = erService;
         _installService = installService;
         _xboxService = xboxService;
@@ -390,6 +393,10 @@ public partial class BrowseViewModel : ObservableObject
         Logger.Debug($"Filters applied: cat={SelectedCategory} search='{SearchText}' → {Items.Count} items");
     }
 
+#if DEBUG
+    public static bool SlowThumbnails { get; set; }
+#endif
+
     private async Task LoadThumbnailsAsync()
     {
         var total = _allItems.Count(i => !string.IsNullOrEmpty(i.ImageUrl) && i.Thumbnail is null);
@@ -403,6 +410,10 @@ public partial class BrowseViewModel : ObservableObject
 
             try
             {
+#if DEBUG
+                if (SlowThumbnails)
+                    await Task.Delay(3000);
+#endif
                 Logger.Trace($"Fetching thumbnail: {item.ImageUrl}");
                 var bytes = await ImageHttp.GetByteArrayAsync(item.ImageUrl);
                 using var ms = new MemoryStream(bytes);
