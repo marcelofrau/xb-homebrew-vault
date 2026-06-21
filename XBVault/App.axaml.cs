@@ -353,6 +353,33 @@ public partial class App : Application
                         return null;
                     }
                 };
+                vm.PickDependencyFilesAsync = async () =>
+                {
+                    try
+                    {
+                        var files = await main.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                        {
+                            Title = "Select Dependencies",
+                            AllowMultiple = true,
+                            FileTypeFilter =
+                            [
+                                new FilePickerFileType("Package files")
+                                {
+                                    Patterns = ["*.appx", "*.msix", "*.appxbundle", "*.msixbundle", "*.zip"]
+                                }
+                            ]
+                        });
+                        return files?.Select(f => f.TryGetLocalPath())
+                                     .Where(p => p is not null)
+                                     .Cast<string>()
+                                     .ToArray();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "CustomInstall dependency picker failed");
+                        return null;
+                    }
+                };
                 var win = new Views.CustomInstallWindow { DataContext = vm };
                 vm.CloseAction = () => win.Close();
                 win.ShowDialog(main);

@@ -4,8 +4,8 @@
         x:Class="XBVault.Views.CustomInstallWindow"
         x:DataType="vm:CustomInstallViewModel"
         Title="Custom Install"
-        Width="600" Height="440"
-        MinWidth="600" MinHeight="440"
+        Width="600" Height="500"
+        MinWidth="600" MinHeight="500"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
         WindowDecorations="None"
@@ -110,7 +110,7 @@
               <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-step3-disabled-20.png"
                      Width="20" Height="20" Stretch="None"
                      IsVisible="{Binding IsConfirmStep, Converter={StaticResource BoolInverse}}"/>
-              <TextBlock Grid.Column="1" Text="Confirm"
+              <TextBlock Grid.Column="1" Text="Dependencies"
                          FontSize="12" FontWeight="Bold"
                          VerticalAlignment="Center"
                          Foreground="{Binding IsConfirmStep, Converter={StaticResource StepLabelFg}}"/>
@@ -225,7 +225,7 @@
           </StackPanel>
 
           <!-- Step 2: Confirm -->
-          <StackPanel IsVisible="{Binding IsConfirmStep}" Spacing="12">
+          <StackPanel IsVisible="{Binding IsConfirmStep}" Spacing="8">
             <TextBlock Text="Review packages"
                        FontSize="16" FontWeight="SemiBold"/>
             <TextBlock Text="{Binding AnalysisResultText}"
@@ -239,7 +239,7 @@
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <Border Width="32" Height="32" CornerRadius="4"
                         Background="{StaticResource AccentDimBrush}">
-                  <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-check-20.png"
+                  <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-package-20.png"
                          Width="20" Height="20" Stretch="Uniform"
                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
@@ -254,29 +254,132 @@
               </Grid>
             </Border>
 
-            <ScrollViewer MaxHeight="120">
-              <ItemsControl ItemsSource="{Binding FileList}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="x:String">
-                    <TextBlock Text="{Binding}"
-                               FontSize="11"
-                               Foreground="{StaticResource TextMutedBrush}"/>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
+            <!-- Dependencies list -->
+            <TextBlock Text="Dependencies"
+                       FontSize="13" FontWeight="SemiBold"/>
+            <Border CornerRadius="4"
+                    Background="{StaticResource SurfaceAltBrush}"
+                    Padding="6,4"
+                    MinHeight="32">
+              <Grid>
+                <!-- Placeholder when empty -->
+                <TextBlock Text="No dependencies detected. Add files below if needed."
+                           FontSize="11"
+                           Foreground="{StaticResource TextDimBrush}"
+                           VerticalAlignment="Center"
+                           Margin="6,0"
+                           IsVisible="{Binding DepItems.Count, Converter={StaticResource IntToBoolInverse}}"/>
+                <!-- List when has items -->
+                <ScrollViewer MaxHeight="140"
+                              IsVisible="{Binding DepItems.Count, Converter={StaticResource IntPositive}}">
+                  <ItemsControl ItemsSource="{Binding DepItems}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:SelectableDep">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6"
+                              Margin="2,2,14,2">
+                          <TextBlock Text="{Binding FileName}"
+                                     FontSize="12"
+                                     VerticalAlignment="Center"
+                                     TextWrapping="Wrap"
+                                     ToolTip.Tip="{Binding FilePath}"/>
+                          <Button Grid.Column="1"
+                                  Command="{Binding $parent[ItemsControl].DataContext.RemoveDepCommand}"
+                                  CommandParameter="{Binding}"
+                                  Width="24" Height="24" Padding="0"
+                                  Background="Transparent"
+                                  ToolTip.Tip="Remove">
+                            <TextBlock Text="x" FontSize="14" FontWeight="Bold"
+                                       Foreground="#E74C3C"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                          </Button>
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Grid>
+            </Border>
+
+            <!-- Add files button (always visible) -->
+            <Button Padding="10,6"
+                    Command="{Binding AddDepCommand}"
+                    HorizontalAlignment="Left">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-add-20.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Add files"
+                           FontSize="12" VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+
+
           </StackPanel>
 
-          <!-- Step 3: Install Progress / Result -->
+          <!-- Step 3: Summary / Install Progress / Result -->
           <StackPanel IsVisible="{Binding IsInstallStep}"
                       VerticalAlignment="Center"
                       HorizontalAlignment="Center"
                       Spacing="10"
                       MaxWidth="380">
 
+            <!-- Summary (before install starts) -->
+            <StackPanel Spacing="10"
+                        IsVisible="{Binding IsSummaryVisible}">
+              <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-package-48.png"
+                     Width="48" Height="48" Stretch="Uniform"
+                     HorizontalAlignment="Center" Opacity="0.90"/>
+              <TextBlock Text="Ready to install"
+                         FontSize="18" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"/>
+              <Border Padding="10,8" CornerRadius="4"
+                      Background="{StaticResource SurfaceAltBrush}">
+                <StackPanel Spacing="4">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                    <TextBlock Text="Package:" FontSize="12"
+                               Foreground="{StaticResource TextDimBrush}"/>
+                    <TextBlock Grid.Column="1" Text="{Binding MainPackageName}"
+                               FontSize="12" FontWeight="Bold"/>
+                  </Grid>
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                    <TextBlock Text="Dependencies:" FontSize="12"
+                               Foreground="{StaticResource TextDimBrush}"/>
+                    <TextBlock Grid.Column="1" Text="{Binding DependencyText}"
+                               FontSize="12"/>
+                  </Grid>
+                </StackPanel>
+              </Border>
+
+              <!-- Dependencies card -->
+              <Border Padding="8,6" CornerRadius="4"
+                      Background="{StaticResource SurfaceAltBrush}"
+                      IsVisible="{Binding DepItems.Count, Converter={StaticResource IntPositive}}">
+                <ScrollViewer MaxHeight="120">
+                  <ItemsControl ItemsSource="{Binding DepItems}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:SelectableDep">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6"
+                              Margin="2,1">
+                          <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-package-20.png"
+                                 Width="16" Height="16" Stretch="Uniform"
+                                 VerticalAlignment="Center" Opacity="0.7"/>
+                          <TextBlock Grid.Column="1"
+                                     Text="{Binding FileName}"
+                                     FontSize="11"
+                                     Foreground="{StaticResource TextMutedBrush}"
+                                     VerticalAlignment="Center"
+                                     TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Border>
+            </StackPanel>
+
             <!-- During install -->
             <StackPanel Spacing="10"
-                        IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
+                        IsVisible="{Binding IsInstalling}">
               <Image x:Name="InstallSpinner"
                      Source="avares://XBVault/Assets/Views/InstalledView/installed-spinner-48.png"
                      Width="48" Height="48"
@@ -364,15 +467,14 @@
                       HorizontalAlignment="Right"
                       Spacing="8"
                       Margin="0,12,0,0">
-            <!-- Back button -->
             <Button Padding="16,8"
                     Command="{Binding GoBackCommand}"
                     IsEnabled="{Binding CanGoBack}">
               <TextBlock Text="Back"
-                         FontSize="12" VerticalAlignment="Center"/>
+                         FontSize="13" VerticalAlignment="Center"/>
             </Button>
 
-            <!-- Step 0: Analyze / Step 2: Install -->
+            <!-- Step 0: Analyze -->
             <Button Classes="Accent"
                     Padding="20,8"
                     Command="{Binding AnalyzeCommand}"
@@ -387,10 +489,22 @@
               </Grid>
             </Button>
 
+            <!-- Step 2: Next -->
+            <Button Classes="Accent"
+                    Padding="20,8"
+                    Command="{Binding GoNextCommand}"
+                    IsVisible="{Binding IsConfirmStep}"
+                    IsEnabled="{Binding CanGoNext}">
+              <TextBlock Text="Next"
+                         FontSize="13" FontWeight="SemiBold"
+                         VerticalAlignment="Center"/>
+            </Button>
+
+            <!-- Step 3: Install -->
             <Button Classes="Accent"
                     Padding="20,8"
                     Command="{Binding InstallCommand}"
-                    IsVisible="{Binding IsConfirmStep}">
+                    IsVisible="{Binding IsInstallStep}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                 <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-install-20.png"
                        Width="18" Height="18" Stretch="Uniform"/>

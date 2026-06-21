@@ -17,6 +17,9 @@ public class PackageInstallService
     private readonly CacheService _cache;
     private readonly XboxDeviceService _xbox;
 
+    private static readonly HashSet<string> DepFolderNames = new(
+        StringComparer.OrdinalIgnoreCase) { "Dependencies", "deps", "dep" };
+
     private static readonly Regex DepPattern = new(
         @"(?i)(microsoft\.|vclibs|net\.core|ui\.xaml|net\.native|vcruntime|dotnet|runtime\.)");
 
@@ -245,11 +248,13 @@ public class PackageInstallService
         var extractedFromBundles = ExtractBundles(extractDir);
         Logger.Debug($"Extracted {extractedFromBundles.Length} packages from bundles");
 
-        // Merge: bundle contents first (main app), then standalone non-Deps, then Dependencies
-        var depsDir = Path.Combine(extractDir, "Dependencies");
+        // Merge: bundle contents first (main app), then standalone non-deps, then deps
+        var depSubPaths = DepFolderNames
+            .Select(n => Path.Combine(extractDir, n))
+            .ToArray();
         var allPackages = extractedFromBundles
-            .Concat(standalone.Where(f => !f.StartsWith(depsDir, StringComparison.OrdinalIgnoreCase)))
-            .Concat(standalone.Where(f => f.StartsWith(depsDir, StringComparison.OrdinalIgnoreCase)))
+            .Concat(standalone.Where(f => !depSubPaths.Any(d => f.StartsWith(d, StringComparison.OrdinalIgnoreCase))))
+            .Concat(standalone.Where(f => depSubPaths.Any(d => f.StartsWith(d, StringComparison.OrdinalIgnoreCase))))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
@@ -266,12 +271,13 @@ public class PackageInstallService
 
         var allFiles = Directory.GetFiles(directory, "*", SearchOption.AllDirectories);
 
+        var depSubPaths = DepFolderNames
+            .Select(n => Path.Combine(directory, n))
+            .ToArray();
+
         var skipDirs = new HashSet<string>(
-            new[]
-            {
-                Path.Combine(directory, "_extracted_bundles"),
-                Path.Combine(directory, "Dependencies")
-            },
+            new[] { Path.Combine(directory, "_extracted_bundles") }
+                .Concat(depSubPaths),
             StringComparer.OrdinalIgnoreCase);
 
         foreach (var f in allFiles)
@@ -283,14 +289,16 @@ public class PackageInstallService
                 results.Add(f);
         }
 
-        // Look for dependencies folder
-        var depsDir = Path.Combine(directory, "Dependencies");
-        if (Directory.Exists(depsDir))
+        // Look for dependency folders (deps/, dep/, Dependencies/)
+        foreach (var sub in depSubPaths)
         {
-            var deps = Directory.GetFiles(depsDir, "*", SearchOption.AllDirectories)
-                .Where(f => IsInstallable(Path.GetFileName(f)))
-                .ToArray();
-            results.AddRange(deps);
+            if (Directory.Exists(sub))
+            {
+                var deps = Directory.GetFiles(sub, "*", SearchOption.AllDirectories)
+                    .Where(f => IsInstallable(Path.GetFileName(f)))
+                    .ToArray();
+                results.AddRange(deps);
+            }
         }
 
         results = results.OrderBy(f => Path.GetFileName(f)).ToList();
@@ -399,6 +407,18 @@ public class PackageInstallService
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "XBVault", "analysis", Guid.NewGuid().ToString("N"));
         var packages = ExtractPackage(filePath, extractDir);
+
+        // Scan sibling files in parent directory for additional deps
+        var parentDir = Path.GetDirectoryName(filePath);
+        if (parentDir is not null && Directory.Exists(parentDir))
+        {
+            var siblings = GetInstallableFiles(parentDir)
+                .Where(f => !f.Equals(filePath, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            if (siblings.Length > 0)
+                packages = packages.Concat(siblings).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        }
+
         var (main, deps) = ClassifyPackages(packages);
         return new AnalyzeResult(packages, main, deps, extractDir);
     }

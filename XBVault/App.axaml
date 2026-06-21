@@ -7,6 +7,8 @@
     <conv:BoolInverseConverter x:Key="BoolInverse"/>
     <conv:StringNotEmptyConverter x:Key="StringNotEmpty"/>
     <conv:IntToBoolConverter x:Key="IntToBool"/>
+    <conv:IntToBoolConverter x:Key="IntPositive"/>
+    <conv:IntToBoolInverseConverter x:Key="IntToBoolInverse"/>
     <conv:BoolToOpacityConverter x:Key="BoolToOpacity"/>
     <conv:BoolToValueConverter x:Key="StepIndicatorBg"
                                 TrueValue="#9ACA3C" FalseValue="Transparent"/>

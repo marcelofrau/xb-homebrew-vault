@@ -12,6 +12,13 @@ using XBVault.Services;
 
 namespace XBVault.ViewModels;
 
+public record SelectableDep
+{
+    public string FilePath { get; init; } = "";
+    public string FileName => Path.GetFileName(FilePath);
+    public bool IsSelected { get; set; } = true;
+}
+
 public partial class CustomInstallViewModel : ObservableObject
 {
     private readonly XboxDeviceService _xboxService;
@@ -22,6 +29,7 @@ public partial class CustomInstallViewModel : ObservableObject
     private string? _downloadedFile;
 
     public Func<Task<string?>>? PickFileAsync;
+    public Func<Task<string[]?>>? PickDependencyFilesAsync;
     public Action? CloseAction;
 
     public CustomInstallViewModel(XboxDeviceService xboxService, PackageInstallService installService)
@@ -33,7 +41,7 @@ public partial class CustomInstallViewModel : ObservableObject
     [ObservableProperty]
     private int _currentStep;
 
-    public static string[] StepLabels => ["Source", "Analysis", "Confirm", "Install"];
+    public static string[] StepLabels => ["Source", "Analysis", "Dependencies", "Install"];
 
     [ObservableProperty]
     private bool _useFileSource = true;
@@ -55,7 +63,7 @@ public partial class CustomInstallViewModel : ObservableObject
 
     public string? MainPackageName => _analysis?.MainPackage is not null ? Path.GetFileName(_analysis.MainPackage) : null;
 
-    public int DependencyCount => _analysis?.Dependencies.Length ?? 0;
+    public int DependencyCount => DepItems.Count;
 
     public string DependencyText
     {
@@ -67,6 +75,8 @@ public partial class CustomInstallViewModel : ObservableObject
     }
 
     public ObservableCollection<string> FileList { get; } = [];
+
+    public ObservableCollection<SelectableDep> DepItems { get; } = [];
 
     [ObservableProperty]
     private bool _isInstalling;
@@ -110,6 +120,7 @@ public partial class CustomInstallViewModel : ObservableObject
     public bool IsAnalysisStep => CurrentStep == 1;
     public bool IsConfirmStep => CurrentStep == 2;
     public bool IsInstallStep => CurrentStep == 3;
+    public bool IsSummaryVisible => !IsInstalling && !InstallComplete;
 
     partial void OnCurrentStepChanged(int value)
     {
@@ -129,11 +140,13 @@ public partial class CustomInstallViewModel : ObservableObject
     partial void OnIsInstallingChanged(bool value)
     {
         OnPropertyChanged(nameof(CanGoBack));
+        OnPropertyChanged(nameof(IsSummaryVisible));
     }
 
     partial void OnInstallCompleteChanged(bool value)
     {
         OnPropertyChanged(nameof(CanCancel));
+        OnPropertyChanged(nameof(IsSummaryVisible));
     }
 
     partial void OnUseFileSourceChanged(bool value)
@@ -197,8 +210,13 @@ public partial class CustomInstallViewModel : ObservableObject
                 foreach (var f in _analysis.AllFiles)
                     FileList.Add($"  {Path.GetFileName(f)}");
 
+                DepItems.Clear();
+                foreach (var d in _analysis.Dependencies ?? [])
+                    DepItems.Add(new SelectableDep { FilePath = d, IsSelected = true });
+
                 var main = _analysis.MainPackage is not null ? Path.GetFileName(_analysis.MainPackage) : "None";
-                AnalysisResultText = $"Main: {main}\nDependencies: {_analysis.Dependencies.Length}";
+                var depCount = _analysis.Dependencies?.Length ?? 0;
+                AnalysisResultText = $"Main: {main}\nDependencies: {depCount}";
                 OnPropertyChanged(nameof(MainPackageName));
                 OnPropertyChanged(nameof(DependencyCount));
                 OnPropertyChanged(nameof(DependencyText));
@@ -266,13 +284,19 @@ public partial class CustomInstallViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void GoNext()
+    {
+        if (CurrentStep < 3)
+            CurrentStep++;
+    }
+
+    [RelayCommand]
     private async Task InstallAsync()
     {
         var analysis = _analysis;
         if (analysis?.MainPackage is null) return;
 
         IsInstalling = true;
-        CurrentStep = 3;
         InstallComplete = false;
         InstallProgress = 0;
         PackageProgress = 0;
@@ -292,9 +316,13 @@ public partial class CustomInstallViewModel : ObservableObject
 
         var startTime = DateTime.UtcNow;
 
+        var selectedDeps = DepItems
+            .Select(d => d.FilePath)
+            .ToArray();
+
         var result = await _xboxService.InstallPackageAsync(
             analysis.MainPackage,
-            analysis.Dependencies ?? [],
+            selectedDeps,
             progress);
 
         var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
@@ -317,6 +345,36 @@ public partial class CustomInstallViewModel : ObservableObject
 
         InstallProgress = result ? 1.0 : 0;
         IsInstalling = false;
+    }
+
+    [RelayCommand]
+    private async Task AddDepAsync()
+    {
+        if (PickDependencyFilesAsync is null) return;
+        try
+        {
+            var paths = await PickDependencyFilesAsync();
+            if (paths is null || paths.Length == 0) return;
+            foreach (var path in paths)
+            {
+                if (DepItems.Any(d => string.Equals(d.FilePath, path, StringComparison.OrdinalIgnoreCase))) continue;
+                DepItems.Add(new SelectableDep { FilePath = path, IsSelected = true });
+            }
+            OnPropertyChanged(nameof(DependencyCount));
+            OnPropertyChanged(nameof(DependencyText));
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Error adding dependency: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private void RemoveDep(SelectableDep dep)
+    {
+        DepItems.Remove(dep);
+        OnPropertyChanged(nameof(DependencyCount));
+        OnPropertyChanged(nameof(DependencyText));
     }
 
     [RelayCommand]
