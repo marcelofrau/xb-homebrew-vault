@@ -25,3 +25,13 @@ Thumbs.db
 # Temp
 [Tt]emp/
 [Ll]ogs/
+
+# AI agent workspace dirs
+.opencode/
+.claude/
+.codebase-memory/
+.cursor/
+.aider/
+
+# Orphaned legacy assets
+XBVault/Assets/_Backup/

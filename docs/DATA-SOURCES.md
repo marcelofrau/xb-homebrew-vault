@@ -42,22 +42,38 @@ HtmlAgilityPack with XPath/CSS selectors targeting the card structure. Pages use
 
 ## Package Cache
 
-Downloaded packages are stored in:
-```
-%TEMP%\XBVault\cache\{app-id}\
+Downloaded packages are stored in `%TEMP%/XBVault/cache/`:
+
+```mermaid
+graph
+    root["%TEMP%/XBVault/cache/"]
+    dolphin["dolphin/"]
+    retroarch["retroarch/"]
+    pcsx2["pcsx2/"]
+    root --> dolphin
+    root --> retroarch
+    root --> pcsx2
+
+    dolphin --> d1["DolphinWinRT_1.1.9.0_x64.msix"]
+    dolphin --> dm["manifest.json"]
+
+    retroarch --> r1["RetroArch-SeriesConsoles.appx"]
+    retroarch --> r2["Microsoft.VCLibs.x64.14.00.appx"]
+    retroarch --> rm["manifest.json"]
+
+    pcsx2 --> p1["pcsx2-v1.0.0-xbox.msix"]
+    pcsx2 --> pm["manifest.json"]
 ```
 
-Cache structure:
-```
-cache/
-├── dolphin/
-│   ├── DolphinWinRT_1.1.9.0_x64.msix
-│   └── manifest.json
-├── retroarch/
-│   ├── RetroArch-SeriesConsoles.appx
-│   ├── Microsoft.VCLibs.x64.14.00.appx    # dependency
-│   └── manifest.json
-└── ...
-```
+`manifest.json` stores parsed metadata and dependency info so reinstalls don't need re-download:
 
-`manifest.json` stores parsed metadata and dependency info so reinstalls don't need re-download.
+```json
+{
+  "name": "RetroArch",
+  "version": "1.16.0",
+  "category": "Emulator",
+  "packageFile": "RetroArch-SeriesConsoles.appx",
+  "dependencies": ["Microsoft.VCLibs.x64.14.00.appx"],
+  "sourceUrl": "https://emulationrevival.github.io/..."
+}
+```

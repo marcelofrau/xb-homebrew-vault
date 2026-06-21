@@ -33,9 +33,17 @@ Docs quick links
 - Cross-platform porting plan: docs/CROSS-PLATFORM-PORTING.md
 - Versioning & branch strategy: docs/PLAN.md
 - Icon attributions & personal set: docs/ATTRIBUTIONS.md
+- Window creation template: docs/WINDOW-TEMPLATE.md
+- Asset naming & icon sourcing: docs/ASSETS-GUIDE.md
 
-Icons
-- Personal icon set lives outside repo by default. If you need to sync it into this repo, follow docs/ICON-SET-SYNC.md. Do not commit personal/commercial-licensed icons without explicit permission.
+Assets / Icons
+- Always use PNG files. Never use .ico unless user explicitly requests it.
+- Naming: `{viewname}-{descriptor}-{size}.png` (lowercase, hyphens, no underscores).
+- Each view/window gets its own folder under XBVault/Assets/Views/.
+- Personal icon set path: F:\workspace\icons8-personal-set (or /mnt/f/workspace/icons8-personal-set on WSL).
+  Organized by size (16x16/, 20x20/, 32x32/, etc.). Copy PNGs from there; do not convert .ico.
+- Full reference: docs/ASSETS-GUIDE.md
+- Personal icon set sync: follow docs/ICON-SET-SYNC.md. Do not commit personal/commercial-licensed icons without explicit permission.
 
 When unsure
 - If a change touches build scripts, verify on Windows with PowerShell 7+ and .NET 8 before committing artifacts or CI changes.

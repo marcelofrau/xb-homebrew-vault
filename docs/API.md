@@ -10,7 +10,7 @@ https://<xbox-ip>:11443
 
 HTTP Basic Authentication with the username and password configured in Xbox Developer Mode settings.
 
-## Endpoints
+## Connection test
 
 ### GET /api/os/info
 
@@ -23,6 +23,8 @@ Returns device information. Used for connection testing.
   "Version": "10.0.22621.1000"
 }
 ```
+
+## Package management
 
 ### GET /api/app/packagemanager/packages
 
@@ -55,6 +57,127 @@ Uninstalls a package.
 
 Query parameters:
 - `package`: Full package name to uninstall
+
+### POST /api/taskmanager/app
+
+Launches an app by its PackageRelativeId.
+
+Query parameters:
+- `appid`: Base64-encoded + URL-escaped PackageRelativeId
+
+### POST /api/taskmanager/app/state
+
+Changes the state of a running package.
+
+Query parameters:
+- `package`: Base64-encoded + URL-escaped PackageFullName
+- `state`: `suspend` | `terminate`
+
+### GET /ext/app/runningtitle
+
+Returns the currently running foreground title.
+
+```json
+{
+  "PackageFullName": "RetroArch.20319A388A0CE8_px48cv62crvag"
+}
+```
+
+## Processes
+
+### GET /api/resourcemanager/processes
+
+Lists all running processes. Also used for real-time performance data via WebSocket.
+
+```json
+{
+  "Processes": [
+    {
+      "ProcessId": 1234,
+      "ImageName": "RetroArch.exe",
+      "UserName": "XDK",
+      "MemoryUsage": 52428800,
+      "CpuUsage": 12.5,
+      "PageFileUsage": 10240000
+    }
+  ]
+}
+```
+
+### DELETE /api/taskmanager/process
+
+Kills a process by PID.
+
+Query parameters:
+- `pid`: Process ID to kill
+
+## Crash dumps
+
+### GET /api/app/debug/crashdump
+
+Lists available crash dump files.
+
+### DELETE /api/app/debug/crashdump/{filename}
+
+Deletes a specific crash dump file.
+
+### GET /api/app/debug/crashcontrol
+
+Returns current crash dump settings.
+
+```json
+{
+  "CrashDumpEnabled": true
+}
+```
+
+### POST /api/app/debug/crashcontrol
+
+Enables or disables crash dump collection.
+
+Form data:
+- `CrashDumpEnabled`: `true` | `false`
+
+## Network
+
+### GET /api/networking/networkconfig
+
+Returns network configuration (interfaces, IP, DNS, MAC, link speed).
+
+### GET /api/wifi/interfaces
+
+Lists available WiFi interfaces.
+
+### GET /api/wifi/networks/{interfaceGuid}
+
+Lists WiFi networks visible to the specified interface.
+
+## System
+
+### GET /api/system/info
+
+Returns detailed system information (OS version, console type, CPU, memory, serial).
+
+### GET /api/screenshot
+
+Captures a screenshot of the current Xbox screen. Returns raw image bytes.
+
+### POST /api/system/restart
+
+Restarts the Xbox console.
+
+### POST /api/system/shutdown
+
+Shuts down the Xbox console.
+
+## Performance WebSocket
+
+```
+wss://<xbox-ip>:11443/api/resourcemanager/processes
+```
+
+Receives continuous JSON frames with performance snapshot data (CPU usage, memory,
+GPU clock, temperature per core).
 
 ## References
 

@@ -1,0 +1,973 @@
+openapi: "3.0.0"
+info:
+  title: Xbox Device Portal API
+  description: |
+    REST API for Xbox Developer Mode (WDP). Used by XBVault to manage
+    packages, processes, crash dumps, networking, and system control on
+    an Xbox One/Series console in Developer Mode.
+  version: "1.0.0"
+  contact:
+    name: XBVault
+    url: https://github.com/anomalyco/xb-homebrew-vault
+
+servers:
+  - url: https://{xbox-ip}:11443
+    description: Xbox Developer Mode (production)
+    variables:
+      xbox-ip:
+        default: 192.168.1.100
+        description: IP address of the Xbox console
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: |
+        Xbox Developer Mode credentials (username/password). Supply via
+        standard HTTP Basic Authentication header.
+
+  schemas:
+    # ─── System / OS Info ───────────────────────────────────────
+    OsInfo:
+      type: object
+      properties:
+        Name:
+          type: string
+          example: XboxOne
+        Publisher:
+          type: string
+          example: Microsoft
+        Version:
+          type: string
+          example: 10.0.22621.1000
+      example:
+        Name: XboxOne
+        Publisher: Microsoft
+        Version: 10.0.22621.1000
+
+    SystemInfo:
+      type: object
+      properties:
+        ConsoleType:
+          type: string
+          example: XboxOne
+        OsVersion:
+          type: string
+          example: 10.0.22621.1000
+        OsEdition:
+          type: string
+          example: Developer
+        DeviceName:
+          type: string
+          example: DevKit
+        Platform:
+          type: string
+          example: Xbox
+        Region:
+          type: string
+          example: en-US
+        Language:
+          type: string
+          example: en-US
+        SerialNumber:
+          type: string
+          example: XK60123456789
+        XboxLiveDeviceKey:
+          type: string
+        TotalMemory:
+          type: string
+          example: "8589934592"
+        Cpu:
+          type: string
+          example: 8-core 2.3GHz
+        SystemUptimeMs:
+          type: integer
+          format: int64
+          example: 86400000
+        MacAddress:
+          type: string
+          example: 00:1A:2B:3C:4D:5E
+        FirmwareVersion:
+          type: string
+        XboxHardwareVersion:
+          type: string
+
+    # ─── Packages ───────────────────────────────────────────────
+    InstalledPackage:
+      type: object
+      properties:
+        Name:
+          type: string
+          example: RetroArch.20319A388A0CE8
+        PackageFullName:
+          type: string
+          example: RetroArch.20319A388A0CE8_px48cv62crvag
+        PackageDisplayName:
+          type: string
+          nullable: true
+          example: RetroArch
+        Version:
+          oneOf:
+            - type: string
+              example: 1.16.0.0
+            - type: object
+              properties:
+                Major: { type: integer }
+                Minor: { type: integer }
+                Build: { type: integer }
+                Revision: { type: integer }
+          description: May be a version string or a version object
+        Publisher:
+          type: string
+          nullable: true
+          example: CN=RetroArch
+        CanUninstall:
+          type: boolean
+          example: true
+        PackageOrigin:
+          type: integer
+          enum: [0, 1, 2, 3, 4, 5]
+          description: "0=Unknown, 1=Store, 2=System, 3=Developer, 4=Bundle, 5=Sideload"
+        PackageFamilyName:
+          type: string
+          example: RetroArch.20319A388A0CE8
+        PackageRelativeId:
+          type: string
+          nullable: true
+          example: RetroArch.20319A388A0CE8_px48cv62crvag!App
+
+    PackagesResponse:
+      type: object
+      properties:
+        InstalledPackages:
+          type: array
+          items:
+            $ref: "#/components/schemas/InstalledPackage"
+
+    # ─── Processes ──────────────────────────────────────────────
+    ProcessInfo:
+      type: object
+      properties:
+        ProcessId:
+          type: integer
+          example: 1234
+        ImageName:
+          type: string
+          example: RetroArch.exe
+        UserName:
+          type: string
+          example: XDK
+        MemoryUsage:
+          type: integer
+          format: int64
+          nullable: true
+          example: 52428800
+        CpuUsage:
+          type: number
+          format: double
+          nullable: true
+          example: 12.5
+        PageFileUsage:
+          type: integer
+          format: int64
+          example: 10240000
+        PrivatePageCount:
+          type: integer
+          format: int64
+          example: 40960000
+        PackageFullName:
+          type: string
+          nullable: true
+          example: RetroArch.20319A388A0CE8_px48cv62crvag
+        PackageFamilyName:
+          type: string
+          nullable: true
+          example: RetroArch.20319A388A0CE8
+        AppName:
+          type: string
+          nullable: true
+          example: RetroArch
+
+    ProcessListResponse:
+      type: object
+      properties:
+        Processes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInfo"
+
+    # ─── Crash Dumps ────────────────────────────────────────────
+    CrashDumpInfo:
+      type: object
+      properties:
+        FileName:
+          type: string
+          example: live_dump_2026-01-15T12-00-00Z.dmp
+        FileSize:
+          type: integer
+          format: int64
+          example: 1048576
+        CreatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-01-15T12:00:00Z"
+
+    CrashDumpListResponse:
+      type: object
+      properties:
+        CrashDumps:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrashDumpInfo"
+
+    CrashControlInfo:
+      type: object
+      properties:
+        CrashDumpEnabled:
+          type: boolean
+          example: true
+
+    # ─── Network ────────────────────────────────────────────────
+    NetworkAdapter:
+      type: object
+      properties:
+        Description:
+          type: string
+          example: Realtek PCIe GbE Family Controller
+        HardwareAddress:
+          type: string
+          example: 00:1A:2B:3C:4D:5E
+        TypeName:
+          type: string
+          example: Ethernet
+        LinkSpeed:
+          type: string
+          nullable: true
+          example: 1000 Mbps
+        IpAddresses:
+          type: array
+          items:
+            type: string
+            example: 192.168.1.100
+        Gateways:
+          type: array
+          items:
+            type: string
+            example: 192.168.1.1
+        DnsAddresses:
+          type: array
+          items:
+            type: string
+            example: 8.8.8.8
+        DhcpServer:
+          type: string
+          nullable: true
+          example: 192.168.1.1
+
+    WifiInterface:
+      type: object
+      properties:
+        Guid:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        Description:
+          type: string
+          example: Wireless Network Adapter
+        MacAddress:
+          type: string
+          example: 00:1A:2B:3C:4D:5F
+        State:
+          type: string
+          example: Connected
+
+    WifiNetwork:
+      type: object
+      properties:
+        Ssid:
+          type: string
+          example: MyHomeWiFi
+        SignalQuality:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 85
+        Authentication:
+          type: string
+          example: WPA2-Personal
+        IsConnected:
+          type: boolean
+          example: false
+        Bssid:
+          type: string
+          nullable: true
+          example: 00:1A:2B:3C:4D:60
+        Channel:
+          type: integer
+          nullable: true
+          example: 6
+
+    # ─── Running Title ──────────────────────────────────────────
+    RunningTitleResponse:
+      type: object
+      properties:
+        PackageFullName:
+          type: string
+          nullable: true
+          example: RetroArch.20319A388A0CE8_px48cv62crvag
+
+    # ─── Performance Snapshot (WebSocket) ───────────────────────
+    PerformanceSnapshot:
+      type: object
+      properties:
+        CpuLoad:
+          type: number
+          format: double
+          example: 23.5
+        AvailablePages:
+          type: integer
+          format: int64
+          example: 2097152
+        TotalPages:
+          type: integer
+          format: int64
+          example: 4194304
+        CommittedPages:
+          type: integer
+          format: int64
+          example: 1572864
+        PageSize:
+          type: integer
+          format: int64
+          example: 4096
+        IOReadSpeed:
+          type: integer
+          format: int64
+          example: 1048576
+        IOWriteSpeed:
+          type: integer
+          format: int64
+          example: 524288
+        IOOtherSpeed:
+          type: integer
+          format: int64
+          example: 0
+        GPUData:
+          type: object
+          properties:
+            AvailableAdapters:
+              type: array
+              items:
+                type: object
+                properties:
+                  DedicatedMemory:
+                    type: integer
+                    format: int64
+                  DedicatedMemoryUsed:
+                    type: integer
+                    format: int64
+                  SystemMemory:
+                    type: integer
+                    format: int64
+                  SystemMemoryUsed:
+                    type: integer
+                    format: int64
+                  EnginesUtilization:
+                    type: array
+                    items:
+                      type: number
+                      format: double
+        NetworkingData:
+          type: object
+          properties:
+            NetworkInBytes:
+              type: integer
+              format: int64
+            NetworkOutBytes:
+              type: integer
+              format: int64
+
+    # ─── Error ──────────────────────────────────────────────────
+    ErrorResponse:
+      type: object
+      properties:
+        ErrorMessage:
+          type: string
+          example: Access denied
+        StatusCode:
+          type: integer
+          example: 403
+        Reason:
+          type: string
+          example: Unauthorized
+
+  responses:
+    401Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    403Forbidden:
+      description: Insufficient permissions or CSRF token missing
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    404NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    409Conflict:
+      description: Package manager busy with another operation
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+paths:
+  # ─── System / OS ─────────────────────────────────────────────
+  /api/os/info:
+    get:
+      summary: Get OS information
+      description: |
+        Returns basic OS info. Used for connection testing and CSRF
+        token acquisition.
+      operationId: getOsInfo
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: OS info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OsInfo"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  /api/systeminfo:
+    get:
+      summary: Get detailed system information
+      description: |
+        Returns comprehensive system info including console type,
+        OS version, CPU, memory, serial number, uptime, and firmware.
+      operationId: getSystemInfo
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: System information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemInfo"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  # ─── Package Management ───────────────────────────────────────
+  /api/app/packagemanager/packages:
+    get:
+      summary: List installed packages
+      description: Returns all packages installed on the Xbox console.
+      operationId: getInstalledPackages
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: List of installed packages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PackagesResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  /api/app/packagemanager/package:
+    post:
+      summary: Install package from URL
+      description: |
+        Initiates package installation from a remote URL. For file
+        upload installation, use POST /api/appx/packagemanager/package.
+      operationId: installPackageFromUrl
+      security:
+        - basicAuth: []
+      parameters:
+        - name: package
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+          description: URL to download the package from
+      responses:
+        "200":
+          description: Installation started
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+
+    delete:
+      summary: Uninstall a package
+      description: Uninstalls a package by its full name.
+      operationId: uninstallPackage
+      security:
+        - basicAuth: []
+      parameters:
+        - name: package
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Full package name to uninstall
+            (e.g. RetroArch.20319A388A0CE8_px48cv62crvag)
+      responses:
+        "200":
+          description: Package uninstalled
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+  /api/appx/packagemanager/package:
+    post:
+      summary: Upload and install appx package
+      description: |
+        Uploads an appx/appxbundle file (multipart/form-data) and
+        installs it on the console. Supports dependency upload via
+        sequential calls.
+      operationId: uploadAndInstallPackage
+      security:
+        - basicAuth: []
+      parameters:
+        - name: package
+          in: query
+          required: true
+          schema:
+            type: string
+          description: File name of the package being uploaded
+            (e.g. RetroArch_1.16.0.0_x64.appx)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The appx/appxbundle file
+      responses:
+        "200":
+          description: Package uploaded and installation queued
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+
+  /api/app/packagemanager/state:
+    get:
+      summary: Get package manager state
+      description: |
+        Used for polling package manager readiness. Returns 404 when
+        no operation is in progress (i.e., ready).
+      operationId: getPackageManagerState
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: An operation is in progress
+        "404":
+          description: No operation in progress (ready)
+
+  # ─── Task Manager ─────────────────────────────────────────────
+  /api/taskmanager/app:
+    post:
+      summary: Launch an application
+      description: |
+        Launches an application by its PackageRelativeId. The appid
+        parameter must be Base64-encoded then URL-escaped.
+      operationId: launchApplication
+      security:
+        - basicAuth: []
+      parameters:
+        - name: appid
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Base64-encoded + URL-escaped PackageRelativeId
+            (e.g. UmV0cm9BcmNoLjIwMzE5QTM4OEEwQ0U4X3B4NDhjdjYyY3J2YWchQXBw)
+      responses:
+        "200":
+          description: Application launched
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+    delete:
+      summary: Terminate an application
+      description: |
+        Terminates a running application by its PackageFullName.
+        The package parameter must be Base64-encoded then URL-escaped.
+      operationId: terminateApplication
+      security:
+        - basicAuth: []
+      parameters:
+        - name: package
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Base64-encoded + URL-escaped PackageFullName
+      responses:
+        "200":
+          description: Application terminated
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+  /api/taskmanager/app/state:
+    post:
+      summary: Suspend or resume an application
+      description: |
+        Changes the state of a running package. The package parameter
+        must be Base64-encoded then URL-escaped.
+      operationId: setApplicationState
+      security:
+        - basicAuth: []
+      parameters:
+        - name: package
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Base64-encoded + URL-escaped PackageFullName
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [suspend, terminate]
+          description: Desired state to apply
+      responses:
+        "200":
+          description: Application state changed
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+  # ─── Running Title ────────────────────────────────────────────
+  /ext/app/runningtitle:
+    get:
+      summary: Get foreground application
+      description: |
+        Returns the PackageFullName of the currently running
+        foreground application (title).
+      operationId: getRunningTitle
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Running title
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunningTitleResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  # ─── Processes ────────────────────────────────────────────────
+  /api/resourcemanager/processes:
+    get:
+      summary: List running processes
+      description: Returns all running processes on the console.
+      operationId: getProcesses
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Process list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessListResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  /api/resourcemanager/process:
+    delete:
+      summary: Kill a process
+      description: Terminates a process by its process ID.
+      operationId: killProcess
+      security:
+        - basicAuth: []
+      parameters:
+        - name: pid
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Process ID to terminate
+      responses:
+        "200":
+          description: Process terminated
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          description: Process not found
+
+  # ─── Crash Dumps ──────────────────────────────────────────────
+  /api/app/debug/crashdump:
+    get:
+      summary: List crash dumps
+      description: Returns available crash dump files on the console.
+      operationId: getCrashDumps
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Crash dump list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrashDumpListResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  /api/app/debug/crashdump/{filename}:
+    delete:
+      summary: Delete a crash dump
+      description: Deletes a specific crash dump file by filename.
+      operationId: deleteCrashDump
+      security:
+        - basicAuth: []
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Crash dump filename
+            (e.g. live_dump_2026-01-15T12-00-00Z.dmp)
+      responses:
+        "200":
+          description: Crash dump deleted
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+  /api/app/debug/crashcontrol:
+    get:
+      summary: Get crash dump settings
+      description: Returns current crash dump collection settings.
+      operationId: getCrashControl
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Crash control settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrashControlInfo"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+    post:
+      summary: Set crash dump settings
+      description: Enables or disables crash dump collection.
+      operationId: setCrashControl
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - CrashDumpEnabled
+              properties:
+                CrashDumpEnabled:
+                  type: boolean
+                  description: Enable or disable crash dump collection
+      responses:
+        "200":
+          description: Crash control updated
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  # ─── Network ──────────────────────────────────────────────────
+  /api/networking/ipconfig:
+    get:
+      summary: Get network configuration
+      description: |
+        Returns network adapter configuration including IP addresses,
+        DNS, gateways, MAC addresses, and link speeds.
+      operationId: getNetworkConfig
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Network configuration
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NetworkAdapter"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  /api/wifi/interfaces:
+    get:
+      summary: List WiFi interfaces
+      description: Returns available wireless network interfaces.
+      operationId: getWifiInterfaces
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: WiFi interfaces
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WifiInterface"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  /api/wifi/networks:
+    get:
+      summary: List WiFi networks
+      description: |
+        Returns WiFi networks visible to the specified interface.
+      operationId: getWifiNetworks
+      security:
+        - basicAuth: []
+      parameters:
+        - name: interface
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: GUID of the WiFi interface
+      responses:
+        "200":
+          description: WiFi networks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WifiNetwork"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  # ─── Screenshot ───────────────────────────────────────────────
+  /ext/screenshot:
+    get:
+      summary: Capture screenshot
+      description: |
+        Captures the current Xbox screen and returns raw image bytes.
+        Supports optional HDR flag and cache-busting timestamp.
+      operationId: captureScreenshot
+      security:
+        - basicAuth: []
+      parameters:
+        - name: download
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: true
+          description: Set to true to receive image bytes
+        - name: hdr
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Enable HDR capture
+        - name: time
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Cache-busting Unix timestamp in milliseconds
+      responses:
+        "200":
+          description: Screenshot image (PNG/JPEG)
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  # ─── System Control ───────────────────────────────────────────
+  /api/control/restart:
+    post:
+      summary: Restart Xbox
+      description: Restarts the Xbox console.
+      operationId: restartXbox
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Restart initiated
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  /api/control/shutdown:
+    post:
+      summary: Shutdown Xbox
+      description: Shuts down the Xbox console.
+      operationId: shutdownXbox
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Shutdown initiated
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  # ─── WebSocket (Performance) ──────────────────────────────────
+  /api/resourcemanager/systemperf:
+    get:
+      summary: Performance data WebSocket
+      description: |
+        Upgrades to a WebSocket connection that streams real-time
+        performance snapshots (CPU, GPU, memory, I/O, network) as
+        JSON frames. Uses the same authentication as REST endpoints.
+      operationId: connectPerformanceWs
+      security:
+        - basicAuth: []
+      responses:
+        "101":
+          description: Upgraded to WebSocket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PerformanceSnapshot"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
