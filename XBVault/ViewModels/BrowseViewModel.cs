@@ -88,6 +88,9 @@ public partial class BrowseViewModel : ObservableObject
     private bool _installComplete;
 
     [ObservableProperty]
+    private bool _installSuccess;
+
+    [ObservableProperty]
     private bool _showExperimental = true;
 
     [ObservableProperty]
@@ -184,6 +187,8 @@ public partial class BrowseViewModel : ObservableObject
     {
         if (value is not null)
         {
+            InstallComplete = false;
+            InstallSuccess = false;
             InstallProgress = 0;
             InstallStatus = null;
             InstallResultMessage = null;
@@ -339,13 +344,15 @@ public partial class BrowseViewModel : ObservableObject
         {
             InstallStatus = "✓ Complete!";
             InstallComplete = true;
+            InstallSuccess = true;
             InstallResultMessage = null;
             Logger.Info($"Install complete: {itemName}");
         }
         else
         {
             InstallStatus = "✗ Install failed";
-            InstallComplete = false;
+            InstallComplete = true;
+            InstallSuccess = false;
             InstallResultMessage = "Install failed";
             Logger.Error($"Install failed: {itemName}");
         }

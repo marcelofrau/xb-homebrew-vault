@@ -183,27 +183,49 @@
                   <RotateTransform Angle="0"/>
                 </Image.RenderTransform>
               </Image>
-              <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-success-16.png"
-                     Width="48" Height="48"
-                     Stretch="Uniform"
-                     HorizontalAlignment="Center"
-                     IsVisible="{Binding InstallComplete}"/>
-              <TextBlock Text="{Binding InstallStatus}"
-                         FontSize="14"
-                         FontWeight="SemiBold"
-                         Foreground="{StaticResource AccentBrush}"
-                         TextAlignment="Center"
-                         TextWrapping="Wrap"
-                         MaxWidth="400"
-                         IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
-              <TextBlock Text="Complete!"
-                         FontSize="22"
-                         FontWeight="Bold"
-                         Foreground="{StaticResource SuccessBrush}"
-                         TextAlignment="Center"
-                         TextWrapping="Wrap"
-                         MaxWidth="400"
-                         IsVisible="{Binding InstallComplete}"/>
+              <!-- Result: success or failure -->
+              <StackPanel Spacing="10"
+                          IsVisible="{Binding InstallComplete}">
+                <!-- Success -->
+                <StackPanel Spacing="10"
+                            VerticalAlignment="Center"
+                            IsVisible="{Binding InstallSuccess}">
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-success-100.png"
+                         Width="100" Height="100" Stretch="Uniform"
+                         HorizontalAlignment="Center"/>
+                  <TextBlock Text="Install complete!"
+                             FontSize="22" FontWeight="Bold"
+                             Foreground="{StaticResource SuccessBrush}"
+                             TextAlignment="Center"/>
+                </StackPanel>
+                <!-- Failure -->
+                <StackPanel Spacing="10"
+                            VerticalAlignment="Center"
+                            IsVisible="{Binding InstallSuccess, Converter={StaticResource BoolInverse}}">
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-failure-100.png"
+                         Width="100" Height="100" Stretch="Uniform"
+                         HorizontalAlignment="Center"/>
+                  <TextBlock Text="Install failed"
+                             FontSize="22" FontWeight="Bold"
+                             Foreground="{StaticResource DangerBrush}"
+                             TextAlignment="Center"/>
+                  <Border Padding="16" CornerRadius="6"
+                          BorderBrush="#55E74C3C"
+                          BorderThickness="1"
+                          Background="#1AE74C3C"
+                          MinHeight="100"
+                          MaxHeight="180"
+                          IsVisible="{Binding InstallResultMessage, Converter={StaticResource StringNotEmpty}}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                      <TextBlock Text="{Binding InstallResultMessage}"
+                                 FontSize="13"
+                                 Foreground="#EEE"
+                                 TextWrapping="Wrap"
+                                 VerticalAlignment="Center"/>
+                    </ScrollViewer>
+                  </Border>
+                </StackPanel>
+              </StackPanel>
               <ProgressBar Value="{Binding InstallProgress}"
                            Maximum="1"
                            Width="260"
