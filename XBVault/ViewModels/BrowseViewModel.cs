@@ -37,9 +37,6 @@ public partial class BrowseViewModel : ObservableObject
 
     public BrowseViewModel(EmulationRevivalService erService, PackageInstallService installService, XboxDeviceService xboxService)
     {
-#if DEBUG
-        SlowThumbnails = true;
-#endif
         _erService = erService;
         _installService = installService;
         _xboxService = xboxService;
