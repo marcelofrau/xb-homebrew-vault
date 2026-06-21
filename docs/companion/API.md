@@ -264,5 +264,5 @@ Open the disc tray.
 
 ## References
 
-- OpenAPI spec: `docs/api/companion-openapi.yaml`
+- OpenAPI spec: `docs/companion/openapi.yaml`
 - WDP API (primary): `docs/API.md`
