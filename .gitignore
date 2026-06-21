@@ -33,5 +33,8 @@ Thumbs.db
 .cursor/
 .aider/
 
+# AI agent rules
+AGENTS.md
+
 # Orphaned legacy assets
 XBVault/Assets/_Backup/
