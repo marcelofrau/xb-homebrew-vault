@@ -110,11 +110,21 @@ public partial class BrowseViewModel : ObservableObject
 
     public bool IsNotInstalling => !IsInstalling;
     public bool CanCheckInstalled => !IsInstalling && !IsCheckingInstalled;
+    public bool ShowDescriptionPanel => !IsInstalling && !InstallComplete;
+    public bool ShowInstallOverlay => IsInstalling || InstallComplete;
 
     partial void OnIsInstallingChanged(bool value)
     {
         OnPropertyChanged(nameof(IsNotInstalling));
         OnPropertyChanged(nameof(CanCheckInstalled));
+        OnPropertyChanged(nameof(ShowDescriptionPanel));
+        OnPropertyChanged(nameof(ShowInstallOverlay));
+    }
+
+    partial void OnInstallCompleteChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowDescriptionPanel));
+        OnPropertyChanged(nameof(ShowInstallOverlay));
     }
 
     partial void OnIsCheckingInstalledChanged(bool value)
@@ -192,6 +202,7 @@ public partial class BrowseViewModel : ObservableObject
             InstallProgress = 0;
             InstallStatus = null;
             InstallResultMessage = null;
+            InstalledVersion = null;
             Logger.Info($"Item selected: [{value.Category}] {value.Name} v{value.Version}");
             if (ShowDetailAction is null)
                 Logger.Info("ShowDetailAction is NULL — detail window will not open");
@@ -310,6 +321,8 @@ public partial class BrowseViewModel : ObservableObject
         if (!_xboxService.IsConnected)
         {
             Logger.Info("Xbox not connected — cannot install");
+            InstallComplete = true;
+            InstallSuccess = false;
             InstallResultMessage = "Not connected. Connect via sidebar first.";
             return;
         }

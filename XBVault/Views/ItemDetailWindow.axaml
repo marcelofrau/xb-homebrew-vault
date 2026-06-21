@@ -92,7 +92,7 @@
           <!-- Content area: description scroll OR install overlay -->
           <Grid Grid.Row="2" Margin="0,12,0,0">
             <!-- Normal description view -->
-            <ScrollViewer IsVisible="{Binding IsInstalling, Converter={StaticResource BoolInverse}}">
+            <ScrollViewer IsVisible="{Binding ShowDescriptionPanel}">
               <StackPanel Spacing="16">
 
                 <TextBlock Text="{Binding SelectedItem.Category}"
@@ -176,7 +176,7 @@
             </ScrollViewer>
 
             <!-- Install overlay -->
-            <StackPanel IsVisible="{Binding IsInstalling}"
+            <StackPanel IsVisible="{Binding ShowInstallOverlay}"
                         VerticalAlignment="Center"
                         HorizontalAlignment="Center"
                         Spacing="10">
@@ -238,7 +238,8 @@
                            Maximum="1"
                            Width="260"
                            Height="6"
-                           Foreground="{StaticResource AccentBrush}"/>
+                           Foreground="{StaticResource AccentBrush}"
+                           IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
               <TextBlock Text="{Binding CurrentFile}"
                          FontSize="11"
                          Foreground="{StaticResource TextDimBrush}"
@@ -252,11 +253,12 @@
                            Height="4"
                            Foreground="{StaticResource AccentDimBrush}"/>
               <TextBlock Text="{Binding PackageStatus}"
-                         FontSize="11"
-                         Foreground="{StaticResource TextDimBrush}"
-                         TextAlignment="Center"
-                         TextWrapping="Wrap"
-                         MaxWidth="400"/>
+                          FontSize="11"
+                          Foreground="{StaticResource TextDimBrush}"
+                          TextAlignment="Center"
+                          TextWrapping="Wrap"
+                          MaxWidth="400"
+                          IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
             </StackPanel>
           </Grid>
 
@@ -323,54 +325,6 @@
               </Button>
             </StackPanel>
 
-            <Border Padding="10,8"
-                    CornerRadius="4"
-                    Background="{StaticResource SurfaceAltBrush}"
-                    IsVisible="{Binding InstalledVersion, Converter={StaticResource StringNotEmpty}}">
-              <TextBlock FontSize="12">
-                <Run Text="Status:" FontWeight="SemiBold"/>
-                <Run Text="{Binding InstalledVersion}"/>
-              </TextBlock>
-            </Border>
-
-            <Border Padding="10,8"
-                    CornerRadius="4"
-                    BorderBrush="{StaticResource SuccessBrush}"
-                    BorderThickness="1"
-                    Background="#1A2ECC71"
-                    IsVisible="{Binding InstallComplete}">
-              <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
-                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-success-16.png"
-                       Width="24" Height="24"
-                       Stretch="Uniform"
-                       VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1"
-                           FontSize="13"
-                           FontWeight="SemiBold"
-                           Text="Install complete!"
-                           Foreground="{StaticResource SuccessBrush}"
-                           VerticalAlignment="Center"/>
-              </Grid>
-            </Border>
-
-            <Border Padding="10,8"
-                    CornerRadius="4"
-                    BorderBrush="{StaticResource DangerBrush}"
-                    BorderThickness="1"
-                    Background="#1AE74C3C"
-                    IsVisible="{Binding InstallResultMessage, Converter={StaticResource StringNotEmpty}}">
-              <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
-                <Image Source="avares://XBVault/Assets/Views/LogsView/logs-error-16.png"
-                       Width="24" Height="24"
-                       Stretch="Uniform"
-                       VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1"
-                           FontSize="12"
-                           Text="{Binding InstallResultMessage}"
-                           Foreground="{StaticResource DangerBrush}"
-                           VerticalAlignment="Center"/>
-              </Grid>
-            </Border>
           </StackPanel>
 
         </Grid>
