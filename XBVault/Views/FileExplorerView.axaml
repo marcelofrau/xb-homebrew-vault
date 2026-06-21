@@ -50,10 +50,12 @@
                    FontSize="13"
                    Foreground="{StaticResource TextMutedBrush}"
                    TextAlignment="Center"/>
-        <TextBlock Text="Coming soon"
+        <TextBlock Text="Not implemented yet — coming in a future version"
                    FontSize="11"
                    Foreground="{StaticResource TextDimBrush}"
                    TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   MaxWidth="260"
                    FontStyle="Italic"/>
       </StackPanel>
     </Border>

@@ -124,6 +124,7 @@ public partial class BrowseViewModel : ObservableObject
     public bool ShowCheckOverlay => IsCheckingInstalled || CheckComplete;
     public bool CanRecheck => CheckComplete && !IsCheckingInstalled;
     public bool ShowCheckNotInstalled => CheckComplete && !CheckInstalled && !CheckError;
+    public bool ShowCheckNotDetectedHint => ShowCheckNotInstalled;
     public bool ShowCheckNotConnectedHint => CheckComplete && CheckError && CheckResultMessage == "Not connected";
     public string? CheckVersionHint => CheckInstalled ? $"Available: {SelectedItem?.Version}" : null;
 
@@ -147,6 +148,7 @@ public partial class BrowseViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowCheckOverlay));
         OnPropertyChanged(nameof(CanRecheck));
         OnPropertyChanged(nameof(ShowCheckNotInstalled));
+        OnPropertyChanged(nameof(ShowCheckNotDetectedHint));
         OnPropertyChanged(nameof(ShowCheckNotConnectedHint));
         OnPropertyChanged(nameof(CheckVersionHint));
     }
@@ -163,6 +165,7 @@ public partial class BrowseViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowDescriptionPanel));
         OnPropertyChanged(nameof(CanRecheck));
         OnPropertyChanged(nameof(ShowCheckNotInstalled));
+        OnPropertyChanged(nameof(ShowCheckNotDetectedHint));
         OnPropertyChanged(nameof(ShowCheckNotConnectedHint));
     }
 
@@ -181,6 +184,7 @@ public partial class BrowseViewModel : ObservableObject
         CheckInstalled = false;
         CheckError = false;
         CheckResultMessage = null;
+        InstallComplete = false;
         Logger.Info($"Checking install status for [{item.Category}] {item.Name}");
 
         if (!_xboxService.IsConfigured)
@@ -485,13 +489,6 @@ public partial class BrowseViewModel : ObservableObject
                 using var ms = new MemoryStream(bytes);
                 item.Thumbnail = new Bitmap(ms);
                 loaded++;
-
-                var idx = Items.IndexOf(item);
-                if (idx >= 0)
-                {
-                    Items.RemoveAt(idx);
-                    Items.Insert(idx, item);
-                }
             }
             catch (Exception ex)
             {

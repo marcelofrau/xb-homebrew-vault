@@ -298,15 +298,22 @@
                              TextAlignment="Center"
                              IsVisible="{Binding CheckVersionHint, Converter={StaticResource StringNotEmpty}}"/>
                 </StackPanel>
-                <!-- Not installed -->
+                <!-- Not detected -->
                 <StackPanel Spacing="10" IsVisible="{Binding ShowCheckNotInstalled}">
                   <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-checknotinstalled-100.png"
                          Width="100" Height="100" Stretch="Uniform"
                          HorizontalAlignment="Center"/>
-                  <TextBlock Text="Not installed"
+                  <TextBlock Text="Not detected"
                              FontSize="22" FontWeight="Bold"
                              Foreground="{StaticResource YellowBrush}"
                              TextAlignment="Center"/>
+                  <TextBlock Text="The package name on your console may differ from the catalog. It could be installed under a different name."
+                             FontSize="11"
+                             Foreground="{StaticResource TextDimBrush}"
+                             TextAlignment="Center"
+                             TextWrapping="Wrap"
+                             MaxWidth="320"
+                             IsVisible="{Binding ShowCheckNotDetectedHint}"/>
                 </StackPanel>
                 <!-- Error -->
                 <StackPanel Spacing="10" IsVisible="{Binding CheckError}">

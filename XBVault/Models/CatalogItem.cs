@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace XBVault.Models;
 
-public class CatalogItem
+public partial class CatalogItem : ObservableObject
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
@@ -21,8 +22,10 @@ public class CatalogItem
     public List<string> Features { get; set; } = [];
     public bool IsExperimental { get; set; }
 
-    [JsonIgnore]
-    public Bitmap? Thumbnail { get; set; }
+    [ObservableProperty]
+    [property: JsonIgnore]
+    [NotifyPropertyChangedFor(nameof(IsThumbnailLoading))]
+    private Bitmap? _thumbnail;
 
     [JsonIgnore]
     public bool IsThumbnailLoading => Thumbnail is null;

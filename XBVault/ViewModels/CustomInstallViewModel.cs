@@ -283,7 +283,18 @@ public partial class CustomInstallViewModel : ObservableObject
     private void GoBack()
     {
         if (CurrentStep > 0)
-            CurrentStep--;
+        {
+            if (CurrentStep == 3)
+            {
+                IsInstalling = false;
+                InstallComplete = false;
+            }
+            CurrentStep = CurrentStep switch
+            {
+                2 => 0,
+                _ => CurrentStep - 1
+            };
+        }
     }
 
     [RelayCommand]
@@ -348,6 +359,7 @@ public partial class CustomInstallViewModel : ObservableObject
 
         InstallProgress = result ? 1.0 : 0;
         IsInstalling = false;
+        Cleanup();
     }
 
     [RelayCommand]

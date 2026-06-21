@@ -207,7 +207,7 @@
                       VerticalAlignment="Center"
                       HorizontalAlignment="Center"
                       Spacing="12">
-            <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-analyze-20.png"
+            <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-analyze-48.png"
                    Width="48" Height="48"
                    Stretch="Uniform"
                    HorizontalAlignment="Center"

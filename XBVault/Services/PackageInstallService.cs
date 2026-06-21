@@ -183,6 +183,8 @@ public class PackageInstallService
         {
             progress?.Report(new InstallProgressInfo { Total = 1.0, Status = "Complete!" });
             Logger.Info($"Install SUCCESS: {item.Name}");
+            _cache.ClearAppCache(item.Id);
+            Logger.Debug($"Cache cleared for {item.Id} after successful install");
         }
         else
         {
@@ -191,11 +193,9 @@ public class PackageInstallService
         return result;
     }
 
-    public static string GetExtractPath(string itemId, string fileName)
+    private string GetExtractPath(string itemId, string fileName)
     {
-        var cacheDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "XBVault", "cache", itemId);
+        var cacheDir = _cache.GetAppCacheDir(itemId);
         return Path.Combine(cacheDir, $"{Path.GetFileNameWithoutExtension(fileName)}_extracted");
     }
 

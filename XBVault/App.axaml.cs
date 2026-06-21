@@ -395,6 +395,14 @@ public partial class App : Application
                 return vm.Confirmed;
             };
 
+            settingsViewModel.ShowConfirmAsync = async (title, message, confirmText, cancelText, iconSource) =>
+            {
+                var vm = new ConfirmViewModel(title, message, confirmText, cancelText, iconSource);
+                var win = new Views.ConfirmWindow { DataContext = vm };
+                await win.ShowDialog(main);
+                return vm.Confirmed;
+            };
+
             var settingsView = new Views.SettingsView { DataContext = settingsViewModel };
             var logsView = new Views.LogsView { DataContext = new LogsViewModel() };
 

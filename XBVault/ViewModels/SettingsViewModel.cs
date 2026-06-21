@@ -17,6 +17,8 @@ public partial class SettingsViewModel : ObservableObject
     // Called to show the full ConnectionWindow dialog for testing
     public Func<Task<bool>>? ShowConnectDialogAsync { get; set; }
 
+    public Func<string, string, string, string, string?, Task<bool>>? ShowConfirmAsync { get; set; }
+
     public SettingsViewModel(XboxDeviceService xboxService, CacheService cacheService)
     {
         _xboxService = xboxService;
@@ -301,8 +303,13 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ClearCache()
+    private async Task ClearCacheAsync()
     {
+        if (ShowConfirmAsync is not null)
+        {
+            var ok = await ShowConfirmAsync("Clear Cache", "Clear the local package cache? Cached files will be deleted and re-downloaded as needed.", "Clear", "Cancel", null);
+            if (!ok) return;
+        }
         Logger.Debug("ClearCache called");
         var oldSize = CacheSizeText;
         _cacheService.ClearCache();
@@ -312,8 +319,13 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RestartApp()
+    private async Task RestartAppAsync()
     {
+        if (ShowConfirmAsync is not null)
+        {
+            var ok = await ShowConfirmAsync("Restart Application", "Are you sure you want to restart the app? All unsaved changes will be lost.", "Restart", "Cancel", null);
+            if (!ok) return;
+        }
         Logger.Info("RestartApp called — launching new process");
         var exe = Environment.ProcessPath;
         if (exe is not null)
@@ -322,8 +334,13 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ResetSettings()
+    private async Task ResetSettingsAsync()
     {
+        if (ShowConfirmAsync is not null)
+        {
+            var ok = await ShowConfirmAsync("Reset Settings", "Reset all settings to defaults? Saved connection, preferences, and log level will be cleared.", "Reset", "Cancel", null);
+            if (!ok) return;
+        }
         Logger.Info("ResetSettings called");
         SettingsService.Reset();
         LoadSettings();
