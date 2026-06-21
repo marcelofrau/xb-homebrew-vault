@@ -13,6 +13,7 @@ public partial class CatalogItem : ObservableObject
     public string Version { get; set; } = string.Empty;
     public string? ReleaseDate { get; set; }
     public string? Developer { get; set; }
+    public string? UwpPortBy { get; set; }
     public string? DownloadUrl { get; set; }
     public string? SourceUrl { get; set; }
     public string? ImageUrl { get; set; }

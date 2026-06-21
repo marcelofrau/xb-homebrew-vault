@@ -19,6 +19,15 @@ public partial class EmulationRevivalService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "XBVault", "cache", "catalog");
 
+    private static bool IsCacheStale()
+    {
+        var path = Path.Combine(CacheDir, "catalog.json");
+        if (!File.Exists(path)) return true;
+
+        var elapsed = DateTime.UtcNow - File.GetLastWriteTimeUtc(path);
+        return elapsed.TotalHours > 6;
+    }
+
     private static readonly (string Path, string Category)[] Pages =
     [
         ("/xbox-dev-mode/emulators.html", "Emulator"),
@@ -49,12 +58,19 @@ public partial class EmulationRevivalService
             var cached = LoadFromCache();
             if (cached.Count > 0)
             {
-                progress?.Report(("Loaded from cache", 1.0));
-                Logger.Info($"Catalog loaded from cache: {cached.Count} items");
-                Logger.Debug($"Cache file: {CacheDir}");
-                return cached;
+                if (!IsCacheStale())
+                {
+                    progress?.Report(("Loaded from cache", 1.0));
+                    Logger.Info($"Catalog loaded from cache: {cached.Count} items");
+                    Logger.Debug($"Cache file: {CacheDir}");
+                    return cached;
+                }
+                Logger.Debug("Cache expired — fetching from web");
             }
-            Logger.Debug("Cache empty or missing — fetching from web");
+            else
+            {
+                Logger.Debug("Cache empty or missing — fetching from web");
+            }
         }
 
         progress?.Report(("Downloading catalog...", 0.0));
@@ -108,7 +124,7 @@ public partial class EmulationRevivalService
         var doc = new HtmlDocument();
         doc.LoadHtml(html);
 
-        var cards = doc.DocumentNode.SelectNodes("//div[contains(@class,'card')]");
+        var cards = doc.DocumentNode.SelectNodes("//div[contains(concat(' ', normalize-space(@class), ' '), ' card ')]");
         if (cards is null) return items;
 
         foreach (var card in cards)
@@ -145,6 +161,7 @@ public partial class EmulationRevivalService
         var listNodes = card.SelectNodes(".//li");
         var listItems = listNodes?.Cast<HtmlNode>().ToArray() ?? [];
         string? version = null, releaseDate = null, developer = null;
+        string? uwpPortBy = null;
         string? compatibility = null;
         var requirements = new List<string>();
         var features = new List<string>();
@@ -158,6 +175,11 @@ public partial class EmulationRevivalService
                 releaseDate = text["Release date:".Length..].Trim();
             else if (text.StartsWith("Developer:", StringComparison.OrdinalIgnoreCase))
                 developer = text["Developer:".Length..].Trim();
+            else if (text.StartsWith("UWP Port by:", StringComparison.OrdinalIgnoreCase))
+            {
+                var link = li.SelectSingleNode(".//a[contains(@class,'contributor-name-link')]");
+                uwpPortBy = link?.InnerText.Trim();
+            }
             else if (text.StartsWith("Compatibility:", StringComparison.OrdinalIgnoreCase))
                 compatibility = text["Compatibility:".Length..].Trim();
             else if (text.StartsWith("Requires:", StringComparison.OrdinalIgnoreCase))
@@ -188,6 +210,7 @@ public partial class EmulationRevivalService
             Version = version ?? string.Empty,
             ReleaseDate = releaseDate,
             Developer = developer,
+            UwpPortBy = uwpPortBy,
             DownloadUrl = downloadUrl is not null ? NormalizeUrl(downloadUrl) : null,
             SourceUrl = sourceUrl is not null ? NormalizeUrl(sourceUrl) : null,
             ImageUrl = imageUrl is not null ? NormalizeUrl(imageUrl) : null,

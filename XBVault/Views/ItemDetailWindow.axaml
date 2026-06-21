@@ -107,7 +107,7 @@
                 <Separator Background="{StaticResource BorderBrush}"
                            Height="1"/>
 
-                <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
                       RowSpacing="8">
                   <TextBlock Text="Version"
                              Foreground="{StaticResource TextDimBrush}"
@@ -123,19 +123,28 @@
                              Text="{Binding SelectedItem.Developer}"
                              FontSize="12" Grid.Row="1"/>
 
+                  <TextBlock Text="Port"
+                             Foreground="{StaticResource TextDimBrush}"
+                             FontSize="12" Grid.Row="2"
+                             IsVisible="{Binding SelectedItem.UwpPortBy, Converter={StaticResource StringNotEmpty}}"/>
+                  <TextBlock Grid.Column="1"
+                             Text="{Binding SelectedItem.UwpPortBy}"
+                             FontSize="12" Grid.Row="2"
+                             IsVisible="{Binding SelectedItem.UwpPortBy, Converter={StaticResource StringNotEmpty}}"/>
+
                   <TextBlock Text="Release date"
                              Foreground="{StaticResource TextDimBrush}"
-                             FontSize="12" Grid.Row="2"/>
+                             FontSize="12" Grid.Row="3"/>
                   <TextBlock Grid.Column="1"
                              Text="{Binding SelectedItem.ReleaseDate}"
-                             FontSize="12" Grid.Row="2"/>
+                             FontSize="12" Grid.Row="3"/>
 
                   <TextBlock Text="Compatibility"
                              Foreground="{StaticResource TextDimBrush}"
-                             FontSize="12" Grid.Row="3"/>
+                             FontSize="12" Grid.Row="4"/>
                   <TextBlock Grid.Column="1"
                              Text="{Binding SelectedItem.Compatibility}"
-                             FontSize="12" Grid.Row="3"/>
+                             FontSize="12" Grid.Row="4"/>
                 </Grid>
 
                 <StackPanel Spacing="4"
