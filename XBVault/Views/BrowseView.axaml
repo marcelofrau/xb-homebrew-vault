@@ -2,6 +2,7 @@
               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
               xmlns:vm="using:XBVault.ViewModels"
               xmlns:models="using:XBVault.Models"
+              xmlns:controls="using:XBVault.Controls"
               x:Class="XBVault.Views.BrowseView"
               x:DataType="vm:BrowseViewModel">
 
@@ -154,8 +155,15 @@
                       Height="130"
                       Background="{StaticResource SurfaceAltBrush}"
                       HorizontalAlignment="Stretch">
-                <Image Source="{Binding Thumbnail}"
-                       Stretch="UniformToFill"/>
+                <Grid>
+                  <Image Source="{Binding Thumbnail}"
+                         Stretch="UniformToFill"
+                         IsVisible="{Binding IsThumbnailLoading, Converter={StaticResource BoolInverse}}"/>
+                  <Border Background="{StaticResource SurfaceAltBrush}"
+                          IsVisible="{Binding IsThumbnailLoading}">
+                    <controls:CdSpinner/>
+                  </Border>
+                </Grid>
               </Border>
               <StackPanel Grid.Row="1" Spacing="6" Margin="12">
                 <TextBlock Text="{Binding Name}"

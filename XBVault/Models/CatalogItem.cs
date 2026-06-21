@@ -23,4 +23,7 @@ public class CatalogItem
 
     [JsonIgnore]
     public Bitmap? Thumbnail { get; set; }
+
+    [JsonIgnore]
+    public bool IsThumbnailLoading => Thumbnail is null;
 }
