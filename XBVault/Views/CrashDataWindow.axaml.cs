@@ -4,18 +4,18 @@ using XBVault.ViewModels;
 
 namespace XBVault.Views;
 
-public partial class NetworkInfoWindow : Window
+public partial class CrashDataWindow : Window
 {
-    public NetworkInfoWindow()
+    public CrashDataWindow()
     {
         InitializeComponent();
-        Loaded += OnLoaded;
+        Opened += OnOpened;
     }
 
-    private async void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnOpened(object? sender, EventArgs e)
     {
-        if (DataContext is NetworkInfoViewModel vm)
-            await vm.RefreshCommand.ExecuteAsync(null);
+        if (DataContext is CrashDataViewModel vm)
+            vm.Initialize();
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)

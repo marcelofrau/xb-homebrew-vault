@@ -309,6 +309,13 @@ public partial class App : Application
                 win.ShowDialog(main);
             };
 
+            toolsViewModel.ShowCrashDataAction = () =>
+            {
+                var vm = new CrashDataViewModel(xboxService);
+                var win = new Views.CrashDataWindow { DataContext = vm };
+                win.ShowDialog(main);
+            };
+
             Action openCustomInstall = () =>
             {
                 if (!xboxService.IsConnected)

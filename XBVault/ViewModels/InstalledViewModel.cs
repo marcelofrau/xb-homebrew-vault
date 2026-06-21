@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
@@ -14,11 +15,39 @@ namespace XBVault.ViewModels;
 public partial class InstalledViewModel : ObservableObject
 {
     private readonly XboxDeviceService _xboxService;
+    private readonly List<InstalledPackage> _allPackages = [];
 
     public InstalledViewModel(XboxDeviceService xboxService)
     {
         _xboxService = xboxService;
         Logger.Debug("InstalledViewModel initialized");
+    }
+
+    private DispatcherTimer? _pollTimer;
+
+    public void StartPolling()
+    {
+        if (_pollTimer is not null) return;
+        IsPolling = true;
+        _pollTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
+        _pollTimer.Tick += async (_, _) =>
+        {
+            if (_allPackages.Count == 0) return;
+            Logger.Debug("Polling running state...");
+            await RefreshRunningStateAsync();
+            LastUpdated = "Updated: " + DateTime.Now.ToString("HH:mm:ss");
+        };
+        _pollTimer.Start();
+        Logger.Info("Running-state polling started (8s interval)");
+    }
+
+    public void StopPolling()
+    {
+        if (_pollTimer is null) return;
+        _pollTimer.Stop();
+        _pollTimer = null;
+        IsPolling = false;
+        Logger.Info("Running-state polling stopped");
     }
 
     public ObservableCollection<InstalledPackage> Packages { get; } = [];
@@ -27,10 +56,41 @@ public partial class InstalledViewModel : ObservableObject
     private bool _isLoading;
 
     [ObservableProperty]
+    private bool _isPolling;
+
+    [ObservableProperty]
+    private string? _lastUpdated;
+
+    [ObservableProperty]
     private bool _hasPackages;
 
     [ObservableProperty]
     private string? _statusMessage;
+
+    [ObservableProperty]
+    private string? _toolbarStatus;
+
+    [ObservableProperty]
+    private string? _searchText;
+
+    partial void OnSearchTextChanged(string? value)
+    {
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        Packages.Clear();
+        var filtered = string.IsNullOrWhiteSpace(SearchText)
+            ? _allPackages
+            : _allPackages.Where(p =>
+                p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                (p.DisplayName?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (p.Publisher?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ?? false));
+        foreach (var pkg in filtered)
+            Packages.Add(pkg);
+        HasPackages = Packages.Count > 0;
+    }
 
     public bool ShowGrid => HasPackages && !IsLoading;
     public bool ShowRefreshPrompt => !IsLoading && !HasPackages && string.IsNullOrEmpty(StatusMessage);
@@ -56,14 +116,105 @@ public partial class InstalledViewModel : ObservableObject
     private InstalledPackage? _selectedPackage;
 
     public bool IsPackageSelected => SelectedPackage is not null;
+    public bool IsPackageRunning => SelectedPackage?.IsRunning ?? false;
+    public bool IsPackageNotRunning => SelectedPackage is null || !SelectedPackage.IsRunning;
 
     partial void OnSelectedPackageChanged(InstalledPackage? value)
     {
         OnPropertyChanged(nameof(IsPackageSelected));
+        OnPropertyChanged(nameof(IsPackageRunning));
+        OnPropertyChanged(nameof(IsPackageNotRunning));
         if (value is not null)
         {
             Logger.Info($"Selected package raw:\n{value.RawJson}");
         }
+    }
+
+    private void UpdateRunningState()
+    {
+        OnPropertyChanged(nameof(IsPackageRunning));
+        OnPropertyChanged(nameof(IsPackageNotRunning));
+    }
+
+    [RelayCommand]
+    private async Task LaunchSelectedAsync()
+    {
+        if (SelectedPackage is null || SelectedPackage.IsRunning) return;
+
+        var rid = SelectedPackage.PackageRelativeId;
+        if (string.IsNullOrEmpty(rid))
+        {
+            ToolbarStatus = "Cannot launch: no package relative id";
+            return;
+        }
+
+        try
+        {
+            var (ok, err) = await _xboxService.LaunchPackageAsync(SelectedPackage.FullName, rid);
+            if (ok)
+            {
+                SelectedPackage.IsRunning = true;
+                ToolbarStatus = $"Launched: {SelectedPackage.Name}";
+                UpdateRunningState();
+                _ = RefreshRunningStateAsync(); // background refresh
+            }
+            else
+            {
+                ToolbarStatus = $"Failed: {err ?? "unknown error"}";
+            }
+        }
+        catch (Exception ex)
+        {
+            ToolbarStatus = "Launch failed";
+            Logger.Error(ex, $"Launch failed for {SelectedPackage.Name}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task SuspendSelectedAsync()
+    {
+        if (SelectedPackage is null || !SelectedPackage.IsRunning) return;
+        var ok = await _xboxService.SuspendPackageAsync(SelectedPackage.FullName);
+        if (ok)
+        {
+            SelectedPackage.IsRunning = false;
+            ToolbarStatus = $"Suspended: {SelectedPackage.Name}";
+            UpdateRunningState();
+        }
+        else
+        {
+            ToolbarStatus = $"Suspend failed: {SelectedPackage.Name}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task TerminateSelectedAsync()
+    {
+        if (SelectedPackage is null || !SelectedPackage.IsRunning) return;
+        var ok = await _xboxService.TerminatePackageAsync(SelectedPackage.FullName);
+        if (ok)
+        {
+            SelectedPackage.IsRunning = false;
+            ToolbarStatus = $"Terminated: {SelectedPackage.Name}";
+            UpdateRunningState();
+        }
+        else
+        {
+            ToolbarStatus = $"Terminate failed: {SelectedPackage.Name}";
+        }
+    }
+
+    private async Task RefreshRunningStateAsync()
+    {
+        var running = await _xboxService.GetRunningPackageNamesAsync();
+
+        if (running.Count > 0)
+        {
+            foreach (var pkg in _allPackages)
+                pkg.IsRunning = running.Contains(pkg.FullName) || running.Contains(pkg.PackageFamilyName ?? "");
+        }
+        // else: keep existing IsRunning (local tracking)
+        UpdateRunningState();
     }
 
     [RelayCommand]
@@ -83,30 +234,23 @@ public partial class InstalledViewModel : ObservableObject
         try
         {
             var packages = await _xboxService.GetInstalledPackagesAsync();
-            Packages.Clear();
 
-            var filtered = packages
+            _allPackages.Clear();
+            _allPackages.AddRange(packages
                 .Where(p => p.Publisher is null ||
                             !p.Publisher.Contains("Microsoft", StringComparison.OrdinalIgnoreCase))
-                .ToList();
+                .OrderBy(p => p.Name));
 
-            Logger.Info($"Total packages from Xbox: {packages.Count}, after system filter: {filtered.Count}");
+            Logger.Info($"Total packages from Xbox: {packages.Count}, after system filter: {_allPackages.Count}");
 
-            foreach (var pkg in packages.OrderBy(p => p.Name))
-            {
-                var isSystem = pkg.Publisher is not null &&
-                               pkg.Publisher.Contains("Microsoft", StringComparison.OrdinalIgnoreCase);
-                if (isSystem)
-                {
-                    Logger.Debug($"  [SYSTEM] {pkg.Name,-30} v{pkg.Version}  {pkg.PackageFamilyName ?? ""}");
-                    continue;
-                }
-                Packages.Add(pkg);
+            foreach (var pkg in _allPackages)
                 Logger.Info($"  {pkg.Name,-30} v{pkg.Version,-14}  {pkg.DisplayPublisher ?? "-",-20}  {pkg.PackageFamilyName ?? ""}");
-            }
 
-            HasPackages = Packages.Count > 0;
-            Logger.Info($"User-installed packages shown: {Packages.Count}");
+            ApplyFilter();
+
+            await RefreshRunningStateAsync();
+            LastUpdated = "Updated: " + DateTime.Now.ToString("HH:mm:ss");
+            Logger.Info($"User-installed packages shown: {Packages.Count}, running: {_allPackages.Count(p => p.IsRunning)}");
 
             if (!HasPackages)
                 StatusMessage = "No packages installed or Xbox not connected";

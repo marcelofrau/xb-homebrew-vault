@@ -5,29 +5,65 @@
               x:Class="XBVault.Views.InstalledView"
               x:DataType="vm:InstalledViewModel">
 
+  <UserControl.Styles>
+    <Style Selector="ListBoxItem">
+      <Setter Property="Padding" Value="0"/>
+    </Style>
+    <Style Selector="ListBoxItem:selected Border.Card">
+      <Setter Property="Background" Value="#3A6E35"/>
+      <Setter Property="BorderBrush" Value="#9ACA3C"/>
+      <Setter Property="BorderThickness" Value="2"/>
+    </Style>
+    <Style Selector="ListBoxItem:selected:focus Border.Card">
+      <Setter Property="Background" Value="#3A6E35"/>
+      <Setter Property="BorderBrush" Value="#9ACA3C"/>
+      <Setter Property="BorderThickness" Value="2"/>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover Border.Card">
+      <Setter Property="Background" Value="#2F5A2A"/>
+    </Style>
+
+  </UserControl.Styles>
+
   <Grid RowDefinitions="Auto,Auto,*" Margin="32">
 
     <!-- Header -->
-    <StackPanel Grid.Row="0" Margin="0,24,0,16">
-      <TextBlock Text="INSTALLED"
-                 Classes="PageTitle"/>
-      <TextBlock Text="Manage apps and emulators installed on your Xbox"
-                 Classes="Muted"
-                 FontSize="14"
-                 Margin="0,4,0,0"/>
-    </StackPanel>
+    <Grid Grid.Row="0" Margin="0,24,0,16" ColumnDefinitions="*,Auto,Auto">
+      <StackPanel>
+        <TextBlock Text="INSTALLED"
+                   Classes="PageTitle"/>
+        <TextBlock Text="Manage apps and emulators installed on your Xbox"
+                   Classes="Muted"
+                   FontSize="14"
+                   Margin="0,4,0,0"/>
+      </StackPanel>
+      <TextBlock Grid.Column="1"
+                 Text="{Binding LastUpdated}"
+                 FontSize="11"
+                 Foreground="{StaticResource TextMutedBrush}"
+                 VerticalAlignment="Top"
+                 IsVisible="{Binding LastUpdated, Converter={StaticResource StringNotEmpty}}"/>
+      <TextBlock Grid.Column="2"
+                 Text="{Binding ToolbarStatus}"
+                 FontSize="11"
+                 Foreground="{StaticResource TextMutedBrush}"
+                 VerticalAlignment="Top"
+                 Margin="12,0,0,0"
+                 IsVisible="{Binding ToolbarStatus, Converter={StaticResource StringNotEmpty}}"/>
+    </Grid>
 
     <!-- Toolbar -->
-    <StackPanel Grid.Row="1"
-                Orientation="Horizontal"
-                Spacing="8"
-                Margin="0,0,0,16">
-      <Button Command="{Binding RefreshPackagesCommand}"
+    <Grid Grid.Row="1"
+          ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto"
+          Margin="0,0,0,16">
+
+      <Button Grid.Column="0"
+              Command="{Binding RefreshPackagesCommand}"
               Padding="12,8">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
 <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-refresh-20.png"
-                  Width="20" Height="20"
-                  Stretch="Uniform"/>
+                   Width="20" Height="20"
+                   Stretch="Uniform"/>
           <TextBlock Grid.Column="1"
                      Text="Refresh"
                      FontSize="13"
@@ -35,21 +71,85 @@
         </Grid>
       </Button>
 
-      <Button Command="{Binding UninstallSelectedCommand}"
+      <Button Grid.Column="1"
+              Command="{Binding UninstallSelectedCommand}"
               Classes="Danger"
               Padding="12,8"
-              IsEnabled="{Binding IsPackageSelected}">
+              IsEnabled="{Binding IsPackageSelected}"
+              Margin="8,0,0,0">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
 <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
-                  Width="20" Height="20"
-                  Stretch="Uniform"/>
+                   Width="20" Height="20"
+                   Stretch="Uniform"/>
           <TextBlock Grid.Column="1"
                      Text="Uninstall"
                      FontSize="13"
                      VerticalAlignment="Center"/>
         </Grid>
       </Button>
-    </StackPanel>
+
+      <!-- Launch (not running) -->
+      <Button Grid.Column="2"
+              Command="{Binding LaunchSelectedCommand}"
+              Padding="12,8"
+              IsVisible="{Binding IsPackageNotRunning}"
+              IsEnabled="{Binding IsPackageSelected}"
+              Margin="8,0,0,0">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+          <Path Data="M7,4 L17,12 L7,20 Z"
+                Fill="{StaticResource AccentBrush}"
+                Width="18" Height="18"
+                Stretch="Uniform"
+                VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="1"
+                     Text="Launch"
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
+        </Grid>
+      </Button>
+
+      <!-- Suspend + Terminate (running) -->
+      <Button Grid.Column="2"
+              Command="{Binding SuspendSelectedCommand}"
+              Padding="12,8"
+              IsVisible="{Binding IsPackageRunning}"
+              IsEnabled="{Binding IsPackageRunning}"
+              Margin="8,0,0,0">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+          <TextBlock Text="⏸"
+                     FontSize="16"
+                     VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="1"
+                     Text="Suspend"
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
+        </Grid>
+      </Button>
+
+      <Button Grid.Column="3"
+              Command="{Binding TerminateSelectedCommand}"
+              Padding="12,8"
+              IsVisible="{Binding IsPackageRunning}"
+              IsEnabled="{Binding IsPackageRunning}"
+              Margin="8,0,0,0">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-terminate-16.png"
+                 Width="16" Height="16" Stretch="Uniform"/>
+          <TextBlock Grid.Column="1"
+                     Text="Terminate"
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
+        </Grid>
+      </Button>
+
+      <TextBox Grid.Column="6"
+               Text="{Binding SearchText}"
+               PlaceholderText="Filter packages..."
+               FontSize="13"
+               Width="180"
+               VerticalAlignment="Center"
+               Padding="8,6"/>
+    </Grid>
 
     <!-- Loading -->
     <StackPanel Grid.Row="2"
@@ -128,7 +228,7 @@
              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
       <ListBox.ItemsPanel>
         <ItemsPanelTemplate>
-          <UniformGrid Columns="4"/>
+          <UniformGrid Columns="4" VerticalAlignment="Top"/>
         </ItemsPanelTemplate>
       </ListBox.ItemsPanel>
       <ListBox.ItemTemplate>
@@ -136,8 +236,15 @@
           <Border Classes="Card"
                   Padding="10"
                   Margin="4"
+                  Height="150"
                   Cursor="Hand">
             <Grid>
+              <!-- Running border overlay -->
+              <Border BorderBrush="#9ACA3C"
+                      BorderThickness="2"
+                      CornerRadius="8"
+                      IsVisible="{Binding IsRunning}"/>
+
               <!-- Card content -->
               <StackPanel Spacing="6" HorizontalAlignment="Center"
                           Opacity="{Binding IsUninstalling, Converter={StaticResource BoolToOpacity}}">
@@ -160,6 +267,13 @@
                            TextTrimming="CharacterEllipsis"
                            IsVisible="{Binding DisplayPublisher, Converter={StaticResource StringNotEmpty}}"
                            TextAlignment="Center"/>
+                <TextBlock Text="{Binding StateLabel}"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           Margin="0,4,0,0"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+
               </StackPanel>
 
               <!-- Uninstall overlay -->

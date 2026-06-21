@@ -1,11 +1,12 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:XBVault.ViewModels"
+        xmlns:m="using:XBVault.Models"
         x:Class="XBVault.Views.NetworkInfoWindow"
         x:DataType="vm:NetworkInfoViewModel"
         Title="Network Info"
         WindowStartupLocation="CenterOwner"
-        Width="500" Height="320"
+        Width="760" Height="620"
         CanResize="False"
         ShowInTaskbar="False"
         WindowDecorations="None"
@@ -14,9 +15,21 @@
     <Style Selector="Window">
       <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
     </Style>
+    <Style Selector="TextBlock.section-title">
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.field-label">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+      <Setter Property="Width" Value="60"/>
+    </Style>
   </Window.Styles>
   <Border BorderBrush="#447F3E" BorderThickness="2">
     <Grid RowDefinitions="Auto,*">
+
+      <!-- Title Bar -->
       <Grid Height="32" PointerPressed="OnTitleBarPointerPressed">
         <Grid.Background>
           <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
@@ -46,35 +59,155 @@
           </Button.Styles>
         </Button>
       </Grid>
-      <Border Grid.Row="1" Padding="20">
+
+      <!-- Content -->
+      <ScrollViewer Grid.Row="1" Padding="16,14">
         <StackPanel Spacing="16">
-          <Button Command="{Binding RefreshCommand}"
-                  IsEnabled="{Binding IsLoading, Converter={StaticResource BoolInverse}}"
-                  Padding="14,8" HorizontalAlignment="Left">
+
+          <!-- Loading -->
+          <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="8" Padding="24"
+                  IsVisible="{Binding IsLoading}">
+            <TextBlock Text="Scanning network interfaces..."
+                       Foreground="{StaticResource TextMutedBrush}" FontSize="13"
+                       HorizontalAlignment="Center"/>
+          </Border>
+
+          <!-- No results -->
+          <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="8" Padding="24"
+                  IsVisible="{Binding Adapters.Count, Converter={StaticResource IntToBool}, ConverterParameter=invert}">
+            <TextBlock Text="No network adapters found"
+                       Foreground="{StaticResource TextMutedBrush}" FontSize="13"
+                       HorizontalAlignment="Center"/>
+          </Border>
+
+          <!-- Network Adapters Section -->
+          <StackPanel Spacing="8"
+                      IsVisible="{Binding Adapters.Count, Converter={StaticResource IntToBool}}">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-              <Image Source="avares://XBVault/Assets/Views/NetworkInfoWindow/networkinfo-refresh-20.png"
-                     Width="20" Height="20" Stretch="Uniform"/>
-              <TextBlock Grid.Column="1" Text="Refresh" VerticalAlignment="Center"/>
+              <Image Source="avares://XBVault/Assets/Views/NetworkInfoWindow/networkinfo-router-20.png"
+                     Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="Network Adapters" Classes="section-title"/>
             </Grid>
-          </Button>
-          <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="6"
-                  Padding="12,10"
-                  IsVisible="{Binding NetworkInfoText, Converter={StaticResource StringNotEmpty}}">
-            <ScrollViewer>
-              <TextBlock Text="{Binding NetworkInfoText}"
-                         FontFamily="{StaticResource MonoFont}"
-                         FontSize="14" LineHeight="22"/>
-            </ScrollViewer>
-          </Border>
-          <Border IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
-                  Background="#1AE74C3C" BorderBrush="{StaticResource DangerBrush}"
-                  BorderThickness="1" CornerRadius="6" Padding="14,10">
-            <TextBlock Text="{Binding StatusMessage}"
-                       Foreground="{StaticResource DangerBrush}"
-                       FontSize="13" FontWeight="SemiBold"/>
-          </Border>
+            <ItemsControl ItemsSource="{Binding Adapters}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="8"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="m:NetworkAdapter">
+                  <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="8" Padding="14,12">
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                      <Image Width="20" Height="20" Stretch="Uniform"
+                             Source="avares://XBVault/Assets/Views/NetworkInfoWindow/networkinfo-wired-20.png"/>
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="{Binding Description}" FontWeight="SemiBold" FontSize="14"/>
+                        <TextBlock Text="{Binding TypeName}" Foreground="{StaticResource TextMutedBrush}" FontSize="12" VerticalAlignment="Center"/>
+                      </StackPanel>
+
+                      <Image Grid.Row="1" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
+                             Source="avares://XBVault/Assets/Views/NetworkInfoWindow/networkinfo-globe-20.png"
+                             IsVisible="{Binding HasIp}"/>
+                      <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Horizontal" Spacing="4"
+                                  IsVisible="{Binding HasIp}">
+                        <TextBlock Text="IP" Classes="field-label"/>
+                        <TextBlock Text="{Binding IpAddressesDisplay}" FontFamily="{StaticResource MonoFont}" FontSize="13"/>
+                      </StackPanel>
+
+                      <Image Grid.Row="2" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
+                             Source="avares://XBVault/Assets/Views/NetworkInfoWindow/networkinfo-globe-20.png"
+                             IsVisible="{Binding GatewaysDisplay, Converter={StaticResource StringNotEmpty}}"/>
+                      <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Horizontal" Spacing="4"
+                                  IsVisible="{Binding GatewaysDisplay, Converter={StaticResource StringNotEmpty}}">
+                        <TextBlock Text="Gateway" Classes="field-label"/>
+                        <TextBlock Text="{Binding GatewaysDisplay}" FontFamily="{StaticResource MonoFont}" FontSize="13"/>
+                      </StackPanel>
+
+                      <Image Grid.Row="3" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
+                             Source="avares://XBVault/Assets/Views/NetworkInfoWindow/networkinfo-server-20.png"
+                             IsVisible="{Binding DnsDisplay, Converter={StaticResource StringNotEmpty}}"/>
+                      <StackPanel Grid.Column="1" Grid.Row="3" Orientation="Horizontal" Spacing="4"
+                                  IsVisible="{Binding DnsDisplay, Converter={StaticResource StringNotEmpty}}">
+                        <TextBlock Text="DNS" Classes="field-label"/>
+                        <TextBlock Text="{Binding DnsDisplay}" FontFamily="{StaticResource MonoFont}" FontSize="13"/>
+                      </StackPanel>
+
+                      <Image Grid.Row="4" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
+                             Source="avares://XBVault/Assets/Views/NetworkInfoWindow/networkinfo-data-20.png"/>
+                      <StackPanel Grid.Column="1" Grid.Row="4" Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="MAC" Classes="field-label"/>
+                        <TextBlock Text="{Binding HardwareAddress}" FontFamily="{StaticResource MonoFont}" FontSize="13"/>
+                      </StackPanel>
+
+                      <Image Grid.Row="5" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
+                             Source="avares://XBVault/Assets/Views/NetworkInfoWindow/networkinfo-server-20.png"
+                             IsVisible="{Binding DhcpDisplay, Converter={StaticResource StringNotEmpty}}"/>
+                      <StackPanel Grid.Column="1" Grid.Row="5" Orientation="Horizontal" Spacing="4"
+                                  IsVisible="{Binding DhcpDisplay, Converter={StaticResource StringNotEmpty}}">
+                        <TextBlock Text="DHCP" Classes="field-label"/>
+                        <TextBlock Text="{Binding DhcpDisplay}" FontFamily="{StaticResource MonoFont}" FontSize="13"/>
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <!-- WiFi Networks Section -->
+          <StackPanel Spacing="8"
+                      IsVisible="{Binding WifiNetworks.Count, Converter={StaticResource IntToBool}}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+              <Image Source="avares://XBVault/Assets/Views/NetworkInfoWindow/networkinfo-wifi-20.png"
+                     Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="Available WiFi Networks" Classes="section-title"/>
+            </Grid>
+            <ItemsControl ItemsSource="{Binding WifiNetworks}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="6"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="m:WifiNetwork">
+                  <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="8" Padding="12,10">
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10">
+                      <Ellipse Width="10" Height="10" Fill="#4CAF50"
+                               IsVisible="{Binding IsConnected}"
+                               VerticalAlignment="Center"/>
+                      <Ellipse Width="10" Height="10" Fill="Transparent" Stroke="#555"
+                               StrokeThickness="1"
+                               IsVisible="{Binding IsConnected, Converter={StaticResource BoolInverse}}"
+                               VerticalAlignment="Center"/>
+                      <Image Grid.Column="1" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"
+                             Source="avares://XBVault/Assets/Views/NetworkInfoWindow/networkinfo-lock-16.png"
+                             IsVisible="{Binding IsSecured}"/>
+                      <Image Grid.Column="1" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"
+                             Source="avares://XBVault/Assets/Views/NetworkInfoWindow/networkinfo-unlock-16.png"
+                             IsVisible="{Binding IsSecured, Converter={StaticResource BoolInverse}}"/>
+                      <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Ssid}" FontWeight="SemiBold" FontSize="14"/>
+                        <TextBlock Text="{Binding Authentication}" Foreground="{StaticResource TextMutedBrush}" FontSize="12"/>
+                      </StackPanel>
+                      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6"
+                                  VerticalAlignment="Center">
+                        <TextBlock Text="{Binding SignalQuality, StringFormat='{}{0}%'}"
+                                   FontWeight="Bold" FontSize="20"
+                                   Foreground="{Binding SignalColor}"/>
+                        <TextBlock Text="{Binding SignalBars}" FontSize="20"
+                                   Foreground="{Binding SignalColor}"
+                                   LetterSpacing="2"/>
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
         </StackPanel>
-      </Border>
+      </ScrollViewer>
+
     </Grid>
   </Border>
 </Window>

@@ -50,18 +50,18 @@ public partial class ConnectionViewModel : ObservableObject
     {
         try
         {
-            var json = await _xboxService.GetNetworkProfilesAsync();
+            var json = await _xboxService.GetNetworkConfigAsync();
             if (json is null) return null;
 
             using var doc = JsonDocument.Parse(json);
-            if (!doc.RootElement.TryGetProperty("NetworkProfiles", out var profiles))
+            if (!doc.RootElement.TryGetProperty("Adapters", out var adapters))
                 return null;
 
-            foreach (var p in profiles.EnumerateArray())
+            foreach (var a in adapters.EnumerateArray())
             {
-                if (p.TryGetProperty("LinkSpeed", out var s))
+                if (a.TryGetProperty("LinkSpeed", out var s))
                     return s.GetString();
-                if (p.TryGetProperty("Speed", out var s2))
+                if (a.TryGetProperty("Speed", out var s2))
                     return s2.GetString();
             }
         }

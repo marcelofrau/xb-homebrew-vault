@@ -14,10 +14,10 @@ public class ProcessInfo
     public string? UserName { get; set; }
 
     [JsonPropertyName("MemoryUsage")]
-    public long MemoryUsage { get; set; }
+    public long? MemoryUsage { get; set; }
 
     [JsonPropertyName("CpuUsage")]
-    public double CpuUsage { get; set; }
+    public double? CpuUsage { get; set; }
 
     [JsonPropertyName("PageFileUsage")]
     public long PageFileUsage { get; set; }
@@ -25,20 +25,49 @@ public class ProcessInfo
     [JsonPropertyName("PrivatePageCount")]
     public long PrivatePageCount { get; set; }
 
-    [JsonIgnore]
-    public string MemoryDisplay => FormatBytes(MemoryUsage);
+    [JsonPropertyName("PackageFullName")]
+    public string? PackageFullName { get; set; }
 
-    private static string FormatBytes(long bytes)
+    [JsonPropertyName("PackageFamilyName")]
+    public string? PackageFamilyName { get; set; }
+
+    [JsonPropertyName("AppName")]
+    public string? AppName { get; set; }
+
+    [JsonIgnore]
+    public string MemoryDisplay
     {
-        string[] units = ["B", "KB", "MB", "GB"];
-        double n = bytes;
-        foreach (var u in units)
+        get
         {
-            if (n < 1024) return $"{n:F1}{u}";
-            n /= 1024;
+            if (MemoryUsage is null or 0) return "-";
+            string[] units = ["B", "KB", "MB", "GB"];
+            double n = MemoryUsage.Value;
+            foreach (var u in units)
+            {
+                if (n < 1024) return $"{n:F1}{u}";
+                n /= 1024;
+            }
+            return $"{n:F1}TB";
         }
-        return $"{n:F1}TB";
     }
+
+    [JsonIgnore]
+    public string CpuDisplay => CpuUsage is null or 0 ? "-" : $"{CpuUsage:F1}%";
+}
+
+public enum ProcessSortColumn
+{
+    ProcessId,
+    ImageName,
+    MemoryUsage,
+    CpuUsage,
+    UserName
+}
+
+public class ProcessSortState
+{
+    public ProcessSortColumn Column { get; set; } = ProcessSortColumn.ImageName;
+    public bool Ascending { get; set; } = true;
 }
 
 public class ProcessListResponse

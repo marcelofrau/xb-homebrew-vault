@@ -39,6 +39,7 @@ public class VersionToStringConverter : JsonConverter<string?>
 public class InstalledPackage : INotifyPropertyChanged
 {
     private bool _isUninstalling;
+    private bool _isRunning;
 
     [JsonPropertyName("Name")]
     public string Name { get; set; } = string.Empty;
@@ -61,6 +62,9 @@ public class InstalledPackage : INotifyPropertyChanged
 
     [JsonPropertyName("PackageFamilyName")]
     public string? PackageFamilyName { get; set; }
+
+    [JsonPropertyName("PackageRelativeId")]
+    public string? PackageRelativeId { get; set; }
 
     [JsonIgnore]
     public string? DisplayPublisher
@@ -108,6 +112,22 @@ public class InstalledPackage : INotifyPropertyChanged
             OnPropertyChanged();
         }
     }
+
+    [JsonIgnore]
+    public bool IsRunning
+    {
+        get => _isRunning;
+        set
+        {
+            if (_isRunning == value) return;
+            _isRunning = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(StateLabel));
+        }
+    }
+
+    [JsonIgnore]
+    public string StateLabel => IsRunning ? "Running" : "Not Running";
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

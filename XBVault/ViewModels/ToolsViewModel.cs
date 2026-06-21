@@ -44,6 +44,7 @@ public partial class ToolsViewModel : ObservableObject
     public Action? ShowNetworkInfoAction { get; set; }
     public Action? ShowPerformanceAction { get; set; }
     public Action? ShowCustomInstallAction { get; set; }
+    public Action? ShowCrashDataAction { get; set; }
     public Func<string, string, string, string, string?, Task<bool>>? ShowConfirmAsync { get; set; }
 
     [RelayCommand]
@@ -86,6 +87,13 @@ public partial class ToolsViewModel : ObservableObject
     {
         if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         ShowCustomInstallAction?.Invoke();
+    }
+
+    [RelayCommand]
+    private void OpenCrashData()
+    {
+        if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        ShowCrashDataAction?.Invoke();
     }
 
     [RelayCommand]

@@ -241,6 +241,150 @@ public class XboxDeviceService
         }
     }
 
+    public async Task<(bool Success, string? ErrorMessage)> LaunchPackageAsync(string packageFullName, string packageRelativeId)
+    {
+        if (!_configured)
+        {
+            Logger.Warn("Launch called but not configured");
+            return (false, null);
+        }
+
+        try
+        {
+            var b64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(packageRelativeId));
+            var encoded = Uri.EscapeDataString(b64);
+            var url = $"/api/taskmanager/app?appid={encoded}";
+            Logger.Info($"Launching: {packageRelativeId}");
+            var response = await PostWithCsrfAsync(url, new StringContent(""));
+            Logger.Info($"POST {url} => {(int)response.StatusCode}");
+            if (response.IsSuccessStatusCode)
+                return (true, null);
+
+            var body = await ReadResponseBody(response);
+            Logger.Warn($"Body: {body}");
+            var msg = TryParseError(body) ?? $"HTTP {(int)response.StatusCode}";
+            return (false, msg);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"Launch failed for {packageRelativeId}");
+            return (false, "Request failed");
+        }
+    }
+
+    public async Task<HashSet<string>> GetRunningPackageNamesAsync()
+    {
+        if (!_configured) return [];
+
+        try
+        {
+            Logger.Info("GET /api/resourcemanager/processes (for running packages)");
+            var response = await _http.GetAsync("/api/resourcemanager/processes");
+            Logger.Info($"GET /api/resourcemanager/processes => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode) return [];
+
+            var json = await response.Content.ReadAsStringAsync();
+            var parsed = JsonSerializer.Deserialize<ProcessListResponse>(json);
+            var running = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (parsed?.Processes is not null)
+            {
+                foreach (var p in parsed.Processes)
+                {
+                    if (!string.IsNullOrEmpty(p.PackageFullName))
+                        running.Add(p.PackageFullName);
+                    if (!string.IsNullOrEmpty(p.PackageFamilyName))
+                        running.Add(p.PackageFamilyName);
+                }
+            }
+
+            Logger.Info($"Processes with package info: {running.Count}");
+            return running;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetRunningPackageNames failed");
+            return [];
+        }
+    }
+
+    public async Task<string?> GetRunningTitleAsync()
+    {
+        if (!_configured) return null;
+
+        try
+        {
+            Logger.Info("GET /ext/app/runningtitle");
+            var response = await _http.GetAsync("/ext/app/runningtitle");
+            Logger.Info($"GET /ext/app/runningtitle => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode) return null;
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            var pfn = doc.RootElement.TryGetProperty("PackageFullName", out var p) ? p.GetString() : null;
+            Logger.Info($"Running title: {(string.IsNullOrEmpty(pfn) ? "(none)" : pfn)}");
+            return string.IsNullOrEmpty(pfn) ? null : pfn;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetRunningTitle failed");
+            return null;
+        }
+    }
+
+    public async Task<bool> SuspendPackageAsync(string packageFullName)
+    {
+        if (!_configured) return false;
+        try
+        {
+            var b64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(packageFullName));
+            var encoded = Uri.EscapeDataString(b64);
+            var url = $"/api/taskmanager/app/state?package={encoded}&state=suspend";
+            Logger.Info($"Suspend: {packageFullName}");
+            var response = await PostWithCsrfAsync(url, new StringContent(""));
+            Logger.Info($"POST {url} => {(int)response.StatusCode}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"Suspend failed for {packageFullName}");
+            return false;
+        }
+    }
+
+    public async Task<bool> TerminatePackageAsync(string packageFullName)
+    {
+        if (!_configured) return false;
+        try
+        {
+            var b64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(packageFullName));
+            var encoded = Uri.EscapeDataString(b64);
+            var url = $"/api/taskmanager/app?package={encoded}";
+            Logger.Info($"Terminate: {packageFullName}");
+            var response = await DeleteWithCsrfAsync(url);
+            Logger.Info($"DELETE {url} => {(int)response.StatusCode}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"Terminate failed for {packageFullName}");
+            return false;
+        }
+    }
+
+    private static string? TryParseError(string? body)
+    {
+        if (string.IsNullOrEmpty(body)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("ErrorMessage", out var msg))
+                return msg.GetString();
+        }
+        catch { }
+        return null;
+    }
+
     public async Task<bool> InstallPackageAsync(string filePath, IProgress<double>? progress = null)
     {
         var wrapped = progress is not null
@@ -632,6 +776,111 @@ public class XboxDeviceService
         }
     }
 
+    public async Task<string?> GetCrashDumpsAsync()
+    {
+        if (!_configured)
+        {
+            Logger.Warn("GetCrashDumps called but not configured");
+            return null;
+        }
+
+        try
+        {
+            Logger.Info("GET /api/app/debug/crashdump");
+            var response = await _http.GetAsync("/api/app/debug/crashdump");
+            Logger.Info($"GET /api/app/debug/crashdump => {(int)response.StatusCode}");
+            if (response.IsSuccessStatusCode)
+                return await response.Content.ReadAsStringAsync();
+
+            Logger.Warn($"GET /api/app/debug/crashdump failed: {await ReadResponseBody(response)}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetCrashDumps failed");
+            return null;
+        }
+    }
+
+    public async Task<bool> DeleteCrashDumpAsync(string filename)
+    {
+        if (!_configured)
+        {
+            Logger.Warn("DeleteCrashDump called but not configured");
+            return false;
+        }
+
+        try
+        {
+            var encoded = Uri.EscapeDataString(filename);
+            Logger.Info($"DELETE /api/app/debug/crashdump/{encoded}");
+            var response = await DeleteWithCsrfAsync($"/api/app/debug/crashdump/{encoded}");
+            Logger.Info($"DELETE crashdump => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"DeleteCrashDump failed for {filename}");
+            return false;
+        }
+    }
+
+    public async Task<string?> GetCrashControlAsync()
+    {
+        if (!_configured)
+        {
+            Logger.Warn("GetCrashControl called but not configured");
+            return null;
+        }
+
+        try
+        {
+            Logger.Info("GET /api/app/debug/crashcontrol");
+            var response = await _http.GetAsync("/api/app/debug/crashcontrol");
+            Logger.Info($"GET /api/app/debug/crashcontrol => {(int)response.StatusCode}");
+            if (response.IsSuccessStatusCode)
+                return await response.Content.ReadAsStringAsync();
+
+            Logger.Warn($"GET /api/app/debug/crashcontrol failed: {await ReadResponseBody(response)}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetCrashControl failed");
+            return null;
+        }
+    }
+
+    public async Task<bool> SetCrashControlAsync(bool enabled)
+    {
+        if (!_configured)
+        {
+            Logger.Warn("SetCrashControl called but not configured");
+            return false;
+        }
+
+        try
+        {
+            var content = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("CrashDumpEnabled", enabled ? "true" : "false")
+            });
+            Logger.Info($"POST /api/app/debug/crashcontrol (enabled={enabled})");
+            var response = await PostWithCsrfAsync("/api/app/debug/crashcontrol", content);
+            Logger.Info($"POST /api/app/debug/crashcontrol => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "SetCrashControl failed");
+            return false;
+        }
+    }
+
     public async Task<string?> GetProcessesAsync()
     {
         if (!_configured)
@@ -732,7 +981,63 @@ public class XboxDeviceService
         }
     }
 
-    public async Task<string?> GetWifiNetworksAsync()
+    public async Task<string?> GetNetworkConfigAsync()
+    {
+        if (!_configured)
+        {
+            Logger.Warn("GetNetworkConfig called but not configured");
+            return null;
+        }
+
+        try
+        {
+            Logger.Info("GET /api/networking/ipconfig");
+            var response = await _http.GetAsync("/api/networking/ipconfig");
+            Logger.Info($"GET /api/networking/ipconfig => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+            {
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
+                return null;
+            }
+
+            return await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetNetworkConfig failed");
+            return null;
+        }
+    }
+
+    public async Task<string?> GetWifiInterfacesAsync()
+    {
+        if (!_configured)
+        {
+            Logger.Warn("GetWifiInterfaces called but not configured");
+            return null;
+        }
+
+        try
+        {
+            Logger.Info("GET /api/wifi/interfaces");
+            var response = await _http.GetAsync("/api/wifi/interfaces");
+            Logger.Info($"GET /api/wifi/interfaces => {(int)response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+            {
+                Logger.Warn($"Body: {await ReadResponseBody(response)}");
+                return null;
+            }
+
+            return await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetWifiInterfaces failed");
+            return null;
+        }
+    }
+
+    public async Task<string?> GetWifiNetworksAsync(string interfaceGuid)
     {
         if (!_configured)
         {
@@ -742,9 +1047,10 @@ public class XboxDeviceService
 
         try
         {
-            Logger.Info("GET /api/networking/wifi/networks");
-            var response = await _http.GetAsync("/api/networking/wifi/networks");
-            Logger.Info($"GET /api/networking/wifi/networks => {(int)response.StatusCode}");
+            var path = $"/api/wifi/networks?interface={interfaceGuid}";
+            Logger.Info($"GET {path}");
+            var response = await _http.GetAsync(path);
+            Logger.Info($"GET {path} => {(int)response.StatusCode}");
             if (!response.IsSuccessStatusCode)
             {
                 Logger.Warn($"Body: {await ReadResponseBody(response)}");
@@ -756,41 +1062,6 @@ public class XboxDeviceService
         catch (Exception ex)
         {
             Logger.Error(ex, "GetWifiNetworks failed");
-            return null;
-        }
-    }
-
-    public async Task<string?> GetNetworkProfilesAsync()
-    {
-        if (!_configured)
-        {
-            Logger.Warn("GetNetworkProfiles called but not configured");
-            return null;
-        }
-
-        try
-        {
-            Logger.Info("GET /api/networking/networkprofiles");
-            var response = await _http.GetAsync("/api/networking/networkprofiles");
-            Logger.Info($"GET /api/networking/networkprofiles => {(int)response.StatusCode}");
-            if (response.IsSuccessStatusCode)
-                return await response.Content.ReadAsStringAsync();
-
-            var body = await ReadResponseBody(response);
-            Logger.Warn($"GET /api/networking/networkprofiles failed ({(int)response.StatusCode}): {body}");
-
-            Logger.Info("GET /api/networking/wifi/networks (fallback)");
-            var fallback = await _http.GetAsync("/api/networking/wifi/networks");
-            Logger.Info($"GET /api/networking/wifi/networks => {(int)fallback.StatusCode}");
-            if (fallback.IsSuccessStatusCode)
-                return await fallback.Content.ReadAsStringAsync();
-
-            Logger.Warn($"GET /api/networking/wifi/networks also failed: {await ReadResponseBody(fallback)}");
-            return null;
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "GetNetworkProfiles failed");
             return null;
         }
     }

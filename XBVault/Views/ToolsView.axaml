@@ -18,7 +18,7 @@
     </StackPanel>
 
     <ScrollViewer IsVisible="{Binding ShowContent}">
-      <StackPanel Spacing="16" MaxWidth="600">
+      <StackPanel Spacing="16" MaxWidth="680">
 
         <StackPanel Margin="0,24,0,0">
           <TextBlock Text="TOOLS" Classes="PageTitle"/>
@@ -37,7 +37,7 @@
         <Border Classes="Card" Padding="24">
           <StackPanel Spacing="16">
             <TextBlock Text="DIAGNOSTICS" Classes="SectionHeader"/>
-            <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="8">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8">
               <Button Grid.Column="0" Command="{Binding OpenScreenshotCommand}" Padding="14,8">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                   <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-screenshot-20.png"
@@ -52,6 +52,20 @@
                   <TextBlock Grid.Column="1" Text="System Info" VerticalAlignment="Center"/>
                 </Grid>
               </Button>
+              <Button Grid.Column="2" Command="{Binding OpenCrashDataCommand}" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ConfirmWindow/fluentui-collision-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Crash Data" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+              <Button Grid.Column="3" Command="{Binding OpenDevPortalCommand}" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-globe-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Open Dev Portal" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
             </Grid>
           </StackPanel>
         </Border>
@@ -59,7 +73,7 @@
         <Border Classes="Card" Padding="24">
           <StackPanel Spacing="16">
             <TextBlock Text="MANAGEMENT" Classes="SectionHeader"/>
-            <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="8">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8">
               <Button Grid.Column="0" Command="{Binding OpenProcessesCommand}" Padding="14,8">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                   <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-processes-20.png"
@@ -81,23 +95,14 @@
                   <TextBlock Grid.Column="1" Text="Performance" VerticalAlignment="Center"/>
                 </Grid>
               </Button>
-            </Grid>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Command="{Binding OpenCustomInstallCommand}" Padding="14,8">
+              <Button Grid.Column="3" Command="{Binding OpenCustomInstallCommand}" Padding="14,8">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                   <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-install-20.png"
                          Width="20" Height="20" Stretch="Uniform"/>
                   <TextBlock Grid.Column="1" Text="Custom Install" VerticalAlignment="Center"/>
                 </Grid>
               </Button>
-              <Button Command="{Binding OpenDevPortalCommand}" Padding="14,8">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-globe-20.png"
-                         Width="20" Height="20" Stretch="Uniform"/>
-                  <TextBlock Grid.Column="1" Text="Open Dev Portal" VerticalAlignment="Center"/>
-                </Grid>
-              </Button>
-            </StackPanel>
+            </Grid>
           </StackPanel>
         </Border>
 

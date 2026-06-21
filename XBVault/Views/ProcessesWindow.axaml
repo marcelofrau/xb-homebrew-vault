@@ -58,31 +58,93 @@
           <Border Grid.Row="2"
                   Background="{StaticResource SurfaceAltBrush}"
                   CornerRadius="6" Padding="0">
-            <ScrollViewer>
-              <ListBox ItemsSource="{Binding Processes}"
-                       SelectedItem="{Binding SelectedProcess}"
-                       BorderThickness="0" Background="Transparent">
-                <ListBox.ItemTemplate>
-                  <DataTemplate x:DataType="models:ProcessInfo">
-                    <Border Padding="8,6">
-                      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
-                        <TextBlock Text="{Binding ProcessId}" FontSize="11"
-                                   Foreground="{StaticResource TextDimBrush}" Width="60"/>
-                        <TextBlock Grid.Column="1" Text="{Binding ImageName}"
-                                   FontSize="12" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Column="2" Text="{Binding MemoryDisplay}"
-                                   FontSize="11" Foreground="{StaticResource TextMutedBrush}"
-                                   Width="90" TextAlignment="Right"/>
-                        <TextBlock Grid.Column="3"
-                                   Text="{Binding CpuUsage, StringFormat='{}{0:F1}%'}"
-                                   FontSize="11" Foreground="{StaticResource TextMutedBrush}"
-                                   Width="60" TextAlignment="Right"/>
-                      </Grid>
-                    </Border>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-            </ScrollViewer>
+            <Grid RowDefinitions="Auto,*">
+              <Border Padding="0" CornerRadius="6,6,0,0">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                    <GradientStop Color="#447F3E" Offset="0"/>
+                    <GradientStop Color="#9ACA3C" Offset="1"/>
+                  </LinearGradientBrush>
+                </Border.Background>
+                <Border.Styles>
+                  <Style Selector="Button">
+                    <Setter Property="Background" Value="Transparent"/>
+                  </Style>
+                  <Style Selector="Button:pointerover">
+                    <Setter Property="Background" Value="#33447F3E"/>
+                  </Style>
+                  <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                    <Setter Property="Background" Value="#33447F3E"/>
+                  </Style>
+                </Border.Styles>
+                <Grid ColumnDefinitions="60,*,90,90,80" ColumnSpacing="10">
+                  <Button Command="{Binding SortByCommand}" CommandParameter="ProcessId"
+                          Background="Transparent" BorderThickness="0"
+                          Padding="8,6" HorizontalContentAlignment="Stretch" Cursor="Hand">
+                    <TextBlock FontSize="11" FontWeight="Bold" Foreground="#1A1A1A">
+                      <Run Text="PID"/><Run Text="{Binding SortPidIndicator}"/>
+                    </TextBlock>
+                  </Button>
+                  <Button Grid.Column="1" Command="{Binding SortByCommand}" CommandParameter="ImageName"
+                          Background="Transparent" BorderThickness="0"
+                          Padding="8,6" HorizontalContentAlignment="Stretch" Cursor="Hand">
+                    <TextBlock FontSize="11" FontWeight="Bold" Foreground="#1A1A1A">
+                      <Run Text="Image Name"/><Run Text="{Binding SortImageNameIndicator}"/>
+                    </TextBlock>
+                  </Button>
+                  <Button Grid.Column="2" Command="{Binding SortByCommand}" CommandParameter="MemoryUsage"
+                          Background="Transparent" BorderThickness="0"
+                          Padding="8,6" HorizontalContentAlignment="Stretch" Cursor="Hand">
+                    <TextBlock FontSize="11" FontWeight="Bold" Foreground="#1A1A1A" TextAlignment="Right">
+                      <Run Text="Memory"/><Run Text="{Binding SortMemoryIndicator}"/>
+                    </TextBlock>
+                  </Button>
+                  <Button Grid.Column="3" Command="{Binding SortByCommand}" CommandParameter="CpuUsage"
+                          Background="Transparent" BorderThickness="0"
+                          Padding="8,6" HorizontalContentAlignment="Stretch" Cursor="Hand">
+                    <TextBlock FontSize="11" FontWeight="Bold" Foreground="#1A1A1A" TextAlignment="Right">
+                      <Run Text="CPU"/><Run Text="{Binding SortCpuIndicator}"/>
+                    </TextBlock>
+                  </Button>
+                  <Button Grid.Column="4" Command="{Binding SortByCommand}" CommandParameter="UserName"
+                          Background="Transparent" BorderThickness="0"
+                          Padding="8,6" HorizontalContentAlignment="Stretch" Cursor="Hand">
+                    <TextBlock FontSize="11" FontWeight="Bold" Foreground="#1A1A1A" TextAlignment="Right">
+                      <Run Text="User"/><Run Text="{Binding SortUserIndicator}"/>
+                    </TextBlock>
+                  </Button>
+                </Grid>
+              </Border>
+              <ScrollViewer Grid.Row="1">
+                <ListBox ItemsSource="{Binding Processes}"
+                         SelectedItem="{Binding SelectedProcess}"
+                         BorderThickness="0" Background="Transparent">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="models:ProcessInfo">
+                      <Border Padding="8,6">
+                        <Grid ColumnDefinitions="60,*,90,90,80" ColumnSpacing="10">
+                          <TextBlock Text="{Binding ProcessId}" FontSize="11"
+                                     Foreground="{StaticResource TextDimBrush}"/>
+                          <TextBlock Grid.Column="1" Text="{Binding ImageName}"
+                                     FontSize="12" FontWeight="SemiBold"/>
+                          <TextBlock Grid.Column="2" Text="{Binding MemoryDisplay}"
+                                     FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                                     TextAlignment="Right"/>
+                          <TextBlock Grid.Column="3"
+                                     Text="{Binding CpuDisplay}"
+                                     FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                                     TextAlignment="Right"/>
+                          <TextBlock Grid.Column="4"
+                                     Text="{Binding UserName}"
+                                     FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                                     TextAlignment="Right" Margin="0,0,8,0"/>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+              </ScrollViewer>
+            </Grid>
           </Border>
 
           <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
@@ -97,6 +159,8 @@
             </Button>
             <Button Grid.Column="1" Command="{Binding KillSelectedCommand}"
                     IsEnabled="{Binding IsProcessSelected}"
+                    Background="{StaticResource CardBgBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
                     Padding="14,8">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                 <Image Source="avares://XBVault/Assets/Views/ProcessesWindow/processes-kill-20.png"

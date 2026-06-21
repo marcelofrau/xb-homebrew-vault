@@ -5,7 +5,7 @@
         x:DataType="vm:SystemInfoViewModel"
         Title="System Info"
         WindowStartupLocation="CenterOwner"
-        Width="500" Height="320"
+        Width="520" Height="480"
         CanResize="False"
         ShowInTaskbar="False"
         WindowDecorations="None"

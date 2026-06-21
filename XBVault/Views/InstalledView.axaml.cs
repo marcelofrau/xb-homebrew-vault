@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
+using XBVault.ViewModels;
 
 namespace XBVault.Views;
 
@@ -12,8 +13,18 @@ public partial class InstalledView : UserControl
     public InstalledView()
     {
         InitializeComponent();
-        Loaded += (_, _) => StartSpin();
-        Unloaded += (_, _) => StopSpin();
+        Loaded += (_, _) =>
+        {
+            StartSpin();
+            if (DataContext is InstalledViewModel vm)
+                vm.StartPolling();
+        };
+        Unloaded += (_, _) =>
+        {
+            StopSpin();
+            if (DataContext is InstalledViewModel vm)
+                vm.StopPolling();
+        };
     }
 
     private void StartSpin()
