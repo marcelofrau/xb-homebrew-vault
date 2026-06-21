@@ -19,7 +19,7 @@
     </Style>
   </Window.Styles>
 
-  <Border BorderBrush="#447F3E" BorderThickness="2">
+  <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
     <Grid RowDefinitions="Auto,*">
       <!-- Title Bar -->
       <Grid Height="32"

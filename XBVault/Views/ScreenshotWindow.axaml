@@ -15,7 +15,7 @@
       <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
     </Style>
   </Window.Styles>
-  <Border BorderBrush="#447F3E" BorderThickness="2">
+  <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
     <Grid RowDefinitions="Auto,*">
       <Grid Height="32" PointerPressed="OnTitleBarPointerPressed">
         <Grid.Background>
