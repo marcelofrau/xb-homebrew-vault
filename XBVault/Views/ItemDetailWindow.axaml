@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:XBVault.ViewModels"
         xmlns:sys="using:System"
+        xmlns:controls="using:XBVault.Controls"
         x:Class="XBVault.Views.ItemDetailWindow"
         x:DataType="vm:BrowseViewModel"
         Title="Item Details"
@@ -77,8 +78,15 @@
                   Height="180"
                   HorizontalAlignment="Stretch"
                   Margin="0,12,0,0">
-            <Image Source="{Binding SelectedItem.Thumbnail}"
-                   Stretch="UniformToFill"/>
+            <Grid>
+              <Image Source="{Binding SelectedItem.Thumbnail}"
+                     Stretch="UniformToFill"
+                     IsVisible="{Binding SelectedItem.IsThumbnailLoading, Converter={StaticResource BoolInverse}}"/>
+              <Border Background="{StaticResource SurfaceAltBrush}"
+                      IsVisible="{Binding SelectedItem.IsThumbnailLoading}">
+                <controls:CdSpinner/>
+              </Border>
+            </Grid>
           </Border>
 
           <!-- Content area: description scroll OR install overlay -->
