@@ -159,7 +159,7 @@ The credentials should be:
 
 ## 6. API Endpoints
 
-Full OpenAPI 3.0 spec: `docs/companion/openapi.yaml` (28 endpoints)
+Full OpenAPI 3.0 spec: `docs/companion/COMPANION-openapi.yaml` (28 endpoints)
 
 ### Summary
 
@@ -225,7 +225,7 @@ received. Default chunk size: 50MB.
 
 ## 7. Console UI
 
-Full spec: `docs/companion/UIUX.md`
+Full spec: `docs/companion/COMPANION-UIUX.md`
 
 ### Key requirements
 
@@ -452,10 +452,10 @@ Not required for v1. Manual testing via:
 
 | File | Description |
 |------|-------------|
-| `docs/companion/SPEC.md` | This document — full architecture & implementation spec |
-| `docs/companion/API.md` | Human-readable API reference with examples |
-| `docs/companion/openapi.yaml` | OpenAPI 3.0 spec (28 endpoints, all schemas) |
-| `docs/companion/UIUX.md` | Console UI design, colors, typography, layout |
+| `docs/companion/COMPANION-SPEC.md` | This document — full architecture & implementation spec |
+| `docs/companion/COMPANION-API.md` | Human-readable API reference with examples |
+| `docs/companion/COMPANION-openapi.yaml` | OpenAPI 3.0 spec (28 endpoints, all schemas) |
+| `docs/companion/COMPANION-UIUX.md` | Console UI design, colors, typography, layout |
 | `docs/THEME.md` | XBVault theme reference (shared palette) |
 
 ## 17. Implementation Order (for the agent)
