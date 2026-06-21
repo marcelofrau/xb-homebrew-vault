@@ -1,0 +1,1088 @@
+openapi: "3.0.0"
+info:
+  title: XBVault Companion API
+  description: |
+    Companion UWP REST API running on Xbox Developer Mode. Exposes
+    file system, USB, DVD/CD drive, and system sensors not available
+    through the standard Windows Device Portal (WDP).
+
+    Requires HTTPS. Uses HTTP Basic Authentication (same credentials
+    as WDP). Chunked upload supports files up to 2GB+.
+  version: "1.0.0"
+  contact:
+    name: XBVault
+    url: https://github.com/anomalyco/xb-homebrew-vault
+
+servers:
+  - url: https://{xbox-ip}:11444
+    description: Companion API (default port 11444)
+    variables:
+      xbox-ip:
+        default: 192.168.1.100
+        description: IP address of the Xbox console
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: |
+        Xbox Developer Mode credentials. HTTPS required.
+
+  schemas:
+    # ─── Drive ─────────────────────────────────────────────────
+    DriveInfo:
+      type: object
+      properties:
+        letter:
+          type: string
+          example: C
+        label:
+          type: string
+          example: Xbox Internal
+        format:
+          type: string
+          example: NTFS
+        type:
+          type: string
+          enum: [internal, usb, dvd, network]
+          example: internal
+        totalSize:
+          type: integer
+          format: int64
+          example: 512000000000
+        freeSpace:
+          type: integer
+          format: int64
+          example: 256000000000
+        isReady:
+          type: boolean
+          example: true
+      required: [letter, format, type, totalSize, freeSpace, isReady]
+
+    FileItem:
+      type: object
+      properties:
+        name:
+          type: string
+          example: RetroArch_1.16.0.0_x64.appx
+        isDirectory:
+          type: boolean
+          example: false
+        extension:
+          type: string
+          nullable: true
+          example: .appx
+        size:
+          type: integer
+          format: int64
+          nullable: true
+          example: 52428800
+        modifiedAt:
+          type: string
+          format: date-time
+          example: "2026-06-20T14:30:00Z"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-06-15T10:00:00Z"
+        attributes:
+          type: string
+          nullable: true
+          example: Archive
+      required: [name, isDirectory, modifiedAt, createdAt]
+
+    # ─── Upload Sessions (chunked) ──────────────────────────────
+    UploadSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        filename:
+          type: string
+          example: large-game.pkg
+        targetPath:
+          type: string
+          example: /drive/E/Games/
+        totalSize:
+          type: integer
+          format: int64
+          example: 3000000000
+        chunkSize:
+          type: integer
+          format: int64
+          default: 52428800
+          description: 50 MB per chunk
+        totalChunks:
+          type: integer
+          example: 58
+        receivedChunks:
+          type: array
+          items:
+            type: integer
+          description: List of chunk indices received so far
+        status:
+          type: string
+          enum: [active, completed, cancelled]
+          example: active
+      required: [id, filename, targetPath, totalSize, chunkSize, totalChunks, receivedChunks, status]
+
+    # ─── Sensors ────────────────────────────────────────────────
+    SensorData:
+      type: object
+      properties:
+        cpu:
+          type: object
+          properties:
+            usagePercent:
+              type: number
+              format: double
+              nullable: true
+              example: 23.5
+            temperatureCelsius:
+              type: number
+              format: double
+              nullable: true
+              example: null
+              description: Not exposed on Xbox, always null
+        gpu:
+          type: object
+          properties:
+            usagePercent:
+              type: number
+              format: double
+              nullable: true
+              example: 45.2
+            temperatureCelsius:
+              type: number
+              format: double
+              nullable: true
+              example: null
+              description: Not exposed on Xbox, always null
+        memory:
+          type: object
+          properties:
+            totalBytes:
+              type: integer
+              format: int64
+              example: 8589934592
+            usedBytes:
+              type: integer
+              format: int64
+              example: 4294967296
+          required: [totalBytes, usedBytes]
+        power:
+          type: object
+          properties:
+            state:
+              type: string
+              enum: [on, standby, off]
+              example: on
+            batteryLevel:
+              type: number
+              format: double
+              nullable: true
+              example: null
+              description: Console has no battery, always null
+            isCharging:
+              type: boolean
+              nullable: true
+              example: null
+              description: Console has no battery, always null
+        system:
+          type: object
+          properties:
+            uptimeMs:
+              type: integer
+              format: int64
+              example: 86400000
+            thermalThrottle:
+              type: boolean
+              nullable: true
+              example: null
+              description: May be unavailable, returns null
+        fan:
+          type: object
+          nullable: true
+          default: null
+          description: Fan speed not exposed via UWP, always null
+
+    # ─── DVD ────────────────────────────────────────────────────
+    DvdInfo:
+      type: object
+      properties:
+        isDiscInserted:
+          type: boolean
+          example: false
+        label:
+          type: string
+          nullable: true
+          example: XBOX_DISC
+        format:
+          type: string
+          nullable: true
+          example: UDF
+        totalSize:
+          type: integer
+          format: int64
+          nullable: true
+          example: 4700000000
+        isWritable:
+          type: boolean
+          example: false
+      required: [isDiscInserted]
+
+    # ─── Search ─────────────────────────────────────────────────
+    SearchResult:
+      type: object
+      properties:
+        path:
+          type: string
+          example: /drive/E/Games/RetroArch
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileItem"
+        totalResults:
+          type: integer
+          example: 42
+        query:
+          type: string
+          example: retro
+
+    ErrorResponse:
+      type: object
+      properties:
+        ErrorMessage:
+          type: string
+          example: Drive not found
+        StatusCode:
+          type: integer
+          example: 404
+        Reason:
+          type: string
+          example: The specified drive letter does not exist
+
+  responses:
+    401Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    404NotFound:
+      description: Path or resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    409Conflict:
+      description: Conflict (e.g. drive busy, file exists with overwrite=false)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    413PayloadTooLarge:
+      description: Single upload exceeds max size. Use chunked upload.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+paths:
+  # ─── Drives ──────────────────────────────────────────────────
+  /api/drives:
+    get:
+      summary: List all drives
+      description: |
+        Returns all available drives: internal storage, USB devices,
+        DVD/CD-ROM, and network drives.
+      operationId: listDrives
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Drive list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DriveInfo"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  # ─── File Browsing ───────────────────────────────────────────
+  /api/files/drive/{letter}/{path}:
+    get:
+      summary: List directory contents
+      description: |
+        Lists files and directories at the given path on the
+        specified drive letter. Supports pagination.
+      operationId: listDirectory
+      security:
+        - basicAuth: []
+      parameters:
+        - name: letter
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Z]$"
+          description: Drive letter (e.g. C, D, E)
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+          description: |
+            Relative path from drive root (URL-encoded).
+            Use empty string for root. Example: `Users/Public/Games`
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Number of items to skip (pagination)
+        - name: take
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 100
+          description: Max items to return
+      responses:
+        "200":
+          description: Directory listing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  parentPath:
+                    type: string
+                    nullable: true
+                    example: /drive/E/Games
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FileItem"
+                  total:
+                    type: integer
+                    example: 150
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+    delete:
+      summary: Delete file or directory
+      description: |
+        Deletes a file or directory at the given path. Directories
+        are deleted recursively.
+      operationId: deleteItem
+      security:
+        - basicAuth: []
+      parameters:
+        - name: letter
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Z]$"
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Item deleted
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+    patch:
+      summary: Rename or move file/directory
+      description: |
+        Renames or moves a file or directory. Supply new name to
+        rename in place, or full path to move.
+      operationId: renameItem
+      security:
+        - basicAuth: []
+      parameters:
+        - name: letter
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Z]$"
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              oneOf:
+                - properties:
+                    name:
+                      type: string
+                      description: New name (rename in place)
+                  required: [name]
+                - properties:
+                    targetPath:
+                      type: string
+                      description: Full target path (move)
+                  required: [targetPath]
+            examples:
+              rename:
+                summary: Rename file
+                value:
+                  name: new-name.appx
+              move:
+                summary: Move to different directory
+                value:
+                  targetPath: /drive/D/Games/new-name.appx
+      responses:
+        "200":
+          description: Renamed/moved
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+
+  # ─── File Info ───────────────────────────────────────────────
+  /api/files/drive/{letter}/{path}/info:
+    get:
+      summary: Get file or directory info
+      description: Returns detailed metadata for a single file or directory.
+      operationId: getFileInfo
+      security:
+        - basicAuth: []
+      parameters:
+        - name: letter
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Z]$"
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileItem"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+  # ─── Download ────────────────────────────────────────────────
+  /api/files/drive/{letter}/{path}/download:
+    get:
+      summary: Download a file
+      description: |
+        Downloads a file as byte stream. Supports range requests
+        for resume capability.
+      operationId: downloadFile
+      security:
+        - basicAuth: []
+      parameters:
+        - name: letter
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Z]$"
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File bytes
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "206":
+          description: Partial content (range request)
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+  # ─── Upload (single) ─────────────────────────────────────────
+  /api/files/drive/{letter}/{path}/upload:
+    post:
+      summary: Upload single file
+      description: |
+        Uploads a file (multipart/form-data). Max ~2GB; for larger
+        files use the chunked upload endpoint.
+      operationId: uploadFile
+      security:
+        - basicAuth: []
+      parameters:
+        - name: letter
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Z]$"
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Target directory path
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File to upload
+                overwrite:
+                  type: boolean
+                  default: true
+                  description: Overwrite existing file
+      responses:
+        "200":
+          description: File uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: game.pkg
+                  size:
+                    type: integer
+                    format: int64
+                    example: 1048576
+                  path:
+                    type: string
+                    example: /drive/E/Games/game.pkg
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "413":
+          $ref: "#/components/responses/413PayloadTooLarge"
+
+  # ─── Upload (batch) ──────────────────────────────────────────
+  /api/files/upload/batch:
+    post:
+      summary: Upload multiple files
+      description: |
+        Uploads multiple files in a single multipart request. Each
+        file is placed at the target directory. Individual files
+        still subject to ~2GB limit per part.
+      operationId: uploadFilesBatch
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                targetDir:
+                  type: string
+                  description: Target directory on Xbox
+                  example: /drive/E/Games/
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: One or more files to upload
+                overwrite:
+                  type: boolean
+                  default: true
+      responses:
+        "200":
+          description: Files uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uploaded:
+                    type: integer
+                    example: 5
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        size:
+                          type: integer
+                          format: int64
+                        path:
+                          type: string
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+  # ─── Upload (chunked sessions) ───────────────────────────────
+  /api/files/upload/session:
+    post:
+      summary: Create chunked upload session
+      description: |
+        Initiates a chunked upload session for files >2GB. Returns
+        a session ID. Send chunks via POST session/{id}/chunk, then
+        finish via POST session/{id}/complete.
+      operationId: createUploadSession
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [filename, targetPath, totalSize]
+              properties:
+                filename:
+                  type: string
+                  example: large-game.pkg
+                targetPath:
+                  type: string
+                  example: /drive/E/Games/
+                totalSize:
+                  type: integer
+                  format: int64
+                  example: 3000000000
+                chunkSize:
+                  type: integer
+                  format: int64
+                  default: 52428800
+                  description: Chunk size in bytes (default 50MB)
+                overwrite:
+                  type: boolean
+                  default: true
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadSession"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  /api/files/upload/session/{sessionId}/chunk:
+    post:
+      summary: Upload a chunk
+      description: |
+        Sends one chunk of the file. Chunks can be sent in any
+        order; they are reassembled by index on completion.
+      operationId: uploadChunk
+      security:
+        - basicAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: index
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+          description: Chunk index (0-based)
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+            description: Raw chunk bytes
+      responses:
+        "200":
+          description: Chunk received
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  index:
+                    type: integer
+                    example: 5
+                  received:
+                    type: boolean
+                    example: true
+        "400":
+          description: Invalid chunk index or session not found
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+  /api/files/upload/session/{sessionId}/complete:
+    post:
+      summary: Complete upload session
+      description: |
+        Assembles all received chunks into the final file. Validates
+        that all chunks have been received before assembling.
+      operationId: completeUploadSession
+      security:
+        - basicAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: File assembled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  path:
+                    type: string
+                    example: /drive/E/Games/large-game.pkg
+                  size:
+                    type: integer
+                    format: int64
+                    example: 3000000000
+                  chunksReceived:
+                    type: integer
+                    example: 58
+        "400":
+          description: Not all chunks received yet
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+  /api/files/upload/session/{sessionId}:
+    get:
+      summary: Get upload session status
+      description: Returns progress information for an active session.
+      operationId: getUploadSessionStatus
+      security:
+        - basicAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Session status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadSession"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+    delete:
+      summary: Cancel upload session
+      description: Cancels an active session and cleans up any partial data.
+      operationId: cancelUploadSession
+      security:
+        - basicAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Session cancelled
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+  # ─── Extract Zip ─────────────────────────────────────────────
+  /api/files/drive/{letter}/{path}/extract-zip:
+    post:
+      summary: Upload and extract ZIP archive
+      description: |
+        Uploads a ZIP file via multipart, extracts it to the target
+        directory, then deletes the ZIP. Existing files are
+        overwritten.
+      operationId: extractZip
+      security:
+        - basicAuth: []
+      parameters:
+        - name: letter
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Z]$"
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Target extraction directory
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: ZIP file
+      responses:
+        "200":
+          description: ZIP extracted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  extracted:
+                    type: integer
+                    example: 24
+                  targetDir:
+                    type: string
+                    example: /drive/E/Games/MyGame
+                  totalSize:
+                    type: integer
+                    format: int64
+                    example: 524288000
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+  # ─── Create Directory ────────────────────────────────────────
+  /api/files/drive/{letter}/{path}/mkdir:
+    post:
+      summary: Create directory
+      description: Creates directory at the specified path.
+      operationId: createDirectory
+      security:
+        - basicAuth: []
+      parameters:
+        - name: letter
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Z]$"
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Directory path to create
+      responses:
+        "200":
+          description: Directory created
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+
+  # ─── File Search ─────────────────────────────────────────────
+  /api/files/search:
+    get:
+      summary: Search files
+      description: |
+        Searches for files by name pattern across a directory and
+        its subdirectories.
+      operationId: searchFiles
+      security:
+        - basicAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query (partial filename match)
+        - name: dir
+          in: query
+          required: false
+          schema:
+            type: string
+          description: |
+            Root directory to search in (e.g. /drive/E). Defaults
+            to all drives.
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: take
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResult"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  # ─── USB Eject ───────────────────────────────────────────────
+  /api/usb/eject/{letter}:
+    post:
+      summary: Safely eject USB drive
+      description: Safely removes a USB drive from the Xbox.
+      operationId: ejectUsb
+      security:
+        - basicAuth: []
+      parameters:
+        - name: letter
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Z]$"
+          description: Drive letter of the USB device
+      responses:
+        "200":
+          description: Drive ejected
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+          description: Drive busy, cannot eject
+
+  # ─── DVD ─────────────────────────────────────────────────────
+  /api/dvd/info:
+    get:
+      summary: Get DVD/CD info
+      description: |
+        Returns information about the disc in the DVD/CD drive.
+      operationId: getDvdInfo
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: DVD info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DvdInfo"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  /api/dvd/files:
+    get:
+      summary: List DVD/CD contents
+      description: Lists files and directories on the disc.
+      operationId: listDvdFiles
+      security:
+        - basicAuth: []
+      parameters:
+        - name: path
+          in: query
+          required: false
+          schema:
+            type: string
+            default: ""
+          description: Subdirectory on disc (optional, empty for root)
+      responses:
+        "200":
+          description: Disc file listing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FileItem"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+
+  /api/dvd/eject:
+    post:
+      summary: Eject DVD/CD tray
+      description: Opens the DVD/CD drive tray.
+      operationId: ejectDvd
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Tray ejected
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+
+  # ─── Sensors ─────────────────────────────────────────────────
+  /api/sensors:
+    get:
+      summary: Get all sensor data
+      description: |
+        Returns all available system sensor readings. System values
+        that are not accessible via UWP return null.
+      operationId: getSensors
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Sensor readings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorData"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
