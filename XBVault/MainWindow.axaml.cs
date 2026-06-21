@@ -12,6 +12,11 @@ public partial class MainWindow : Window
         VersionText.Text = BuildInfo.DisplayVersion;
     }
 
+    private void OnMinimizeClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
     private void OnCloseClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Close();

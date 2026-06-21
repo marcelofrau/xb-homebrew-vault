@@ -121,6 +121,7 @@ public partial class CustomInstallViewModel : ObservableObject
     public bool IsConfirmStep => CurrentStep == 2;
     public bool IsInstallStep => CurrentStep == 3;
     public bool IsSummaryVisible => !IsInstalling && !InstallComplete;
+    public bool CanShowInstallButton => IsInstallStep && !InstallComplete;
 
     partial void OnCurrentStepChanged(int value)
     {
@@ -130,6 +131,7 @@ public partial class CustomInstallViewModel : ObservableObject
         OnPropertyChanged(nameof(IsInstallStep));
         OnPropertyChanged(nameof(CanGoNext));
         OnPropertyChanged(nameof(CanGoBack));
+        OnPropertyChanged(nameof(CanShowInstallButton));
     }
 
     partial void OnIsAnalyzingChanged(bool value)
@@ -147,6 +149,7 @@ public partial class CustomInstallViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(CanCancel));
         OnPropertyChanged(nameof(IsSummaryVisible));
+        OnPropertyChanged(nameof(CanShowInstallButton));
     }
 
     partial void OnUseFileSourceChanged(bool value)

@@ -10,6 +10,13 @@ public partial class ScreenshotWindow : Window
         InitializeComponent();
     }
 
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        if (DataContext is ViewModels.ScreenshotViewModel vm)
+            vm.Cleanup();
+        base.OnClosing(e);
+    }
+
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         BeginMoveDrag(e);

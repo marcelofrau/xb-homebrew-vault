@@ -44,7 +44,7 @@
           <GradientStop Color="#9ACA3C" Offset="1"/>
         </LinearGradientBrush>
       </Grid.Background>
-      <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+      <Grid.ColumnDefinitions>*,Auto,Auto</Grid.ColumnDefinitions>
       <TextBlock Text="XB Homebrew Vault"
                  Foreground="#1A1A1A"
                  FontSize="14"
@@ -53,12 +53,32 @@
                  Margin="12,0"/>
       <Button Grid.Column="1" Width="32" Height="32"
               Padding="0"
+              BorderThickness="0" Click="OnMinimizeClick"
+              Cursor="Hand"
+              ToolTip.Tip="Minimize">
+        <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-minimize-20.png"
+               Width="20" Height="20"
+               Stretch="Uniform"/>
+        <Button.Styles>
+          <Style Selector="Button">
+            <Setter Property="Background" Value="Transparent"/>
+          </Style>
+          <Style Selector="Button:pointerover">
+            <Setter Property="Background" Value="#33555555"/>
+          </Style>
+          <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#33555555"/>
+          </Style>
+        </Button.Styles>
+      </Button>
+      <Button Grid.Column="2" Width="32" Height="32"
+              Padding="0"
               BorderThickness="0" Click="OnCloseClick"
               Cursor="Hand"
               ToolTip.Tip="Close">
         <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-close-20.png"
-Width="20" Height="20"
-                Stretch="Uniform"/>
+               Width="20" Height="20"
+               Stretch="Uniform"/>
         <Button.Styles>
           <Style Selector="Button">
             <Setter Property="Background" Value="Transparent"/>

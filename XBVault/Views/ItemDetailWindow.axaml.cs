@@ -51,6 +51,8 @@ public partial class ItemDetailWindow : Window
         _spinAngle = (_spinAngle - 6 + 360) % 360;
         if (InstallSpinner?.RenderTransform is RotateTransform rt)
             rt.Angle = _spinAngle;
+        if (CheckSpinner?.RenderTransform is RotateTransform ct)
+            ct.Angle = _spinAngle;
     }
 
     private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();

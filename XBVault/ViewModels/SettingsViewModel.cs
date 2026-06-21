@@ -1,7 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
+using XBVault.Models;
 using XBVault.Services;
 
 namespace XBVault.ViewModels;
@@ -306,5 +309,36 @@ public partial class SettingsViewModel : ObservableObject
         UpdateCacheInfo();
         Logger.Info($"Cache cleared (was {oldSize})");
         ConnectionStatus = "Cache cleared";
+    }
+
+    [RelayCommand]
+    private void RestartApp()
+    {
+        Logger.Info("RestartApp called — launching new process");
+        var exe = Environment.ProcessPath;
+        if (exe is not null)
+            Process.Start(exe);
+        Environment.Exit(0);
+    }
+
+    [RelayCommand]
+    private void ResetSettings()
+    {
+        Logger.Info("ResetSettings called");
+        SettingsService.Reset();
+        LoadSettings();
+        SavedNotificationText = "Settings reset to defaults";
+        ShowSavedNotification = true;
+    }
+
+    [RelayCommand]
+    private void OpenSettingsFolder()
+    {
+        Logger.Debug("OpenSettingsFolder called");
+        var dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "XBVault");
+        if (Directory.Exists(dir))
+            Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
     }
 }

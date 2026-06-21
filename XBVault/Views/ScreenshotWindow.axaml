@@ -5,7 +5,7 @@
         x:DataType="vm:ScreenshotViewModel"
         Title="Screenshot"
         WindowStartupLocation="CenterOwner"
-        Width="700" Height="600"
+        Width="900" Height="680"
         CanResize="False"
         ShowInTaskbar="False"
         WindowDecorations="None"
@@ -16,7 +16,7 @@
     </Style>
   </Window.Styles>
   <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,*,Auto,Auto">
       <Grid Height="32" PointerPressed="OnTitleBarPointerPressed">
         <Grid.Background>
           <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
@@ -40,8 +40,8 @@
           </Button.Styles>
         </Button>
       </Grid>
-      <Border Grid.Row="1" Padding="24">
-        <Grid RowDefinitions="*,Auto,Auto" RowSpacing="16">
+      <Border Grid.Row="1" Padding="24,16">
+        <Grid RowDefinitions="*,Auto,Auto" RowSpacing="8">
 
           <!-- Placeholder: shown when no screenshot -->
           <Border Grid.Row="0"
@@ -50,7 +50,7 @@
                   BorderThickness="2"
                   BorderBrush="{StaticResource TextDimBrush}"
                   Background="{StaticResource SurfaceAltBrush}">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12"
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8"
                         Opacity="0.4">
               <TextBlock Text="📷" FontSize="48" HorizontalAlignment="Center"/>
               <TextBlock Text="Screenshot preview"
@@ -68,17 +68,19 @@
                   BorderThickness="1"
                   BorderBrush="{StaticResource BorderBrush}">
             <Image Source="{Binding ScreenshotImage}"
-                   MaxWidth="620" MaxHeight="420"
+                   MaxWidth="820" MaxHeight="540"
                    Stretch="Uniform" Margin="4"/>
           </Border>
 
-          <!-- Buttons row -->
-          <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
+          <!-- Buttons + Live capture row -->
+          <Grid Grid.Row="1"
+                ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto"
+                ColumnSpacing="6">
             <Button Grid.Column="0"
                     Command="{Binding CaptureScreenshotCommand}"
                     Classes="Accent"
-                    IsEnabled="{Binding IsCapturing, Converter={StaticResource BoolInverse}}"
-                    Padding="18,10" FontWeight="SemiBold">
+                    IsEnabled="{Binding IsLiveCapturing, Converter={StaticResource BoolInverse}}"
+                    Padding="14,8" FontWeight="SemiBold">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                 <Image Source="avares://XBVault/Assets/Views/ScreenshotWindow/screenshot-capture-20.png"
                        Width="20" Height="20" Stretch="Uniform"/>
@@ -88,10 +90,11 @@
             <Button Grid.Column="1"
                     Command="{Binding SaveScreenshotCommand}"
                     IsVisible="{Binding HasScreenshot}"
-                    Padding="14,8" FontWeight="SemiBold">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    IsEnabled="{Binding IsLiveCapturing, Converter={StaticResource BoolInverse}}"
+                    Padding="12,7" FontWeight="SemiBold">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
                 <Image Source="avares://XBVault/Assets/Views/ScreenshotWindow/screenshot-save-20.png"
-                       Width="20" Height="20" Stretch="Uniform"/>
+                       Width="18" Height="18" Stretch="Uniform"/>
                 <TextBlock Grid.Column="1" Text="Save As..." VerticalAlignment="Center"/>
               </Grid>
             </Button>
@@ -99,7 +102,39 @@
                        IsVisible="{Binding IsCapturing}"
                        Text="Capturing..."
                        FontSize="13" Foreground="{StaticResource TextMutedBrush}"
-                       VerticalAlignment="Center" Margin="8,0,0,0"/>
+                       VerticalAlignment="Center"/>
+
+            <!-- Live capture controls -->
+            <ComboBox Grid.Column="3"
+                      VerticalAlignment="Center"
+                      ItemsSource="{Binding IntervalOptions}"
+                      SelectedItem="{Binding SelectedInterval}"
+                      IsEnabled="{Binding IsLiveCapturing, Converter={StaticResource BoolInverse}}"
+                      Width="80"/>
+
+            <TextBlock Grid.Column="4" Text="● LIVE"
+                       Foreground="#E74C3C" FontSize="13" FontWeight="Bold"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding IsLiveCapturing}"/>
+
+            <Button Grid.Column="5"
+                    Command="{Binding ToggleLiveCaptureCommand}"
+                    Padding="12,7" FontWeight="SemiBold">
+              <ToolTip.Tip>
+                <TextBlock Text="Periodically captures screenshots via the Xbox REST API. Not a real live stream — the interval controls how often a new screenshot is taken. Useful for monitoring what's happening on the console without leaving Windows."
+                           TextWrapping="Wrap" MaxWidth="300"/>
+              </ToolTip.Tip>
+              <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="5">
+                <Image Source="avares://XBVault/Assets/Views/ScreenshotWindow/screenshot-live-start-20.png"
+                       Width="18" Height="18" Stretch="Uniform"
+                       IsVisible="{Binding IsLiveCapturing, Converter={StaticResource BoolInverse}}"/>
+                <Image Source="avares://XBVault/Assets/Views/ScreenshotWindow/screenshot-live-stop-20.png"
+                       Width="18" Height="18" Stretch="Uniform"
+                       IsVisible="{Binding IsLiveCapturing}"/>
+                <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                           Text="{Binding LiveButtonText}"/>
+              </Grid>
+            </Button>
           </Grid>
 
           <!-- Status message -->

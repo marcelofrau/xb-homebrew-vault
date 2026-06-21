@@ -17,12 +17,14 @@
     <Color x:Key="BladesDanger">#E74C3C</Color>
     <Color x:Key="BladesSuccess">#2ECC71</Color>
     <Color x:Key="BladesWarning">#F39C12</Color>
+    <Color x:Key="BladesYellow">#FFD700</Color>
     <Color x:Key="BladesBorder">#2A2D33</Color>
     <Color x:Key="BladesCardBg">#1E2128</Color>
     <Color x:Key="BladesSidebarBg">#0F1F10</Color>
     <Color x:Key="BladesInputBg">#0F1F0F</Color>
     <Color x:Key="BladesInputBorder">#4A7A20</Color>
     <Color x:Key="BladesInputBorderHover">#6B8F2A</Color>
+    <Color x:Key="BladesComboBoxBg">#7AA82E</Color>
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BladesBg}"/>
@@ -38,6 +40,7 @@
     <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource BladesDanger}"/>
     <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource BladesSuccess}"/>
     <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource BladesWarning}"/>
+    <SolidColorBrush x:Key="YellowBrush" Color="{StaticResource BladesYellow}"/>
     <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BladesBorder}"/>
     <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource BladesCardBg}"/>
     <SolidColorBrush x:Key="SidebarBgBrush" Color="{StaticResource BladesSidebarBg}"/>
@@ -45,6 +48,7 @@
     <SolidColorBrush x:Key="InputBgBrush" Color="{StaticResource BladesInputBg}"/>
     <SolidColorBrush x:Key="InputBorderBrush" Color="{StaticResource BladesInputBorder}"/>
     <SolidColorBrush x:Key="InputBorderHoverBrush" Color="{StaticResource BladesInputBorderHover}"/>
+    <SolidColorBrush x:Key="ComboBoxBgBrush" Color="{StaticResource BladesComboBoxBg}"/>
 
     <!-- Fonts -->
     <FontFamily x:Key="TitleFont">avares://XBVault/Assets/Fonts/Oxanium-700.ttf#Oxanium</FontFamily>
@@ -52,7 +56,7 @@
     <FontFamily x:Key="MonoFont">avares://XBVault/Assets/Fonts/ProFontWindowsNerdFont-Regular.ttf#ProFontWindows Nerd Font, Consolas, Courier New, Courier, monospace</FontFamily>
 
     <!-- Fluent theme overrides -->
-    <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="{StaticResource BladesAccent}"/>
+    <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="{StaticResource BladesComboBoxBg}"/>
     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#3A6B2E"/>
     <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#F0F0F0"/>
     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#45803E"/>
@@ -82,6 +86,17 @@
 
   <Style Selector="TextBlock.Accent">
     <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+  </Style>
+
+  <!-- ToolTip -->
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
   </Style>
 
   <!-- Button -->
@@ -293,25 +308,49 @@
 
   <!-- ComboBox -->
   <Style Selector="ComboBox">
-    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+    <Setter Property="Background" Value="{StaticResource ComboBoxBgBrush}"/>
     <Setter Property="Foreground" Value="#0D1117"/>
   </Style>
 
   <Style Selector="ComboBox ScrollViewer">
-    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+    <Setter Property="Background" Value="{StaticResource ComboBoxBgBrush}"/>
   </Style>
 
   <Style Selector="ComboBoxItem">
-    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+    <Setter Property="Background" Value="{StaticResource ComboBoxBgBrush}"/>
     <Setter Property="Foreground" Value="#0D1117"/>
   </Style>
 
   <Style Selector="ComboBoxItem:pointerover">
-    <Setter Property="Background" Value="#7AA82E"/>
+    <Setter Property="Background" Value="#3D6B1F"/>
   </Style>
 
   <Style Selector="ComboBoxItem:selected">
     <Setter Property="Background" Value="{StaticResource AccentGlowBrush}"/>
+  </Style>
+
+  <!-- NumericUpDown -->
+  <Style Selector="NumericUpDown">
+    <Setter Property="Background" Value="{StaticResource InputBgBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource InputBorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="ButtonSpinnerLocation" Value="Right"/>
+  </Style>
+  <Style Selector="NumericUpDown:pointerover">
+    <Setter Property="BorderBrush" Value="{StaticResource InputBorderHoverBrush}"/>
+  </Style>
+  <Style Selector="NumericUpDown:focus-within">
+    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+  </Style>
+  <Style Selector="NumericUpDown /template/ RepeatButton">
+    <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+  </Style>
+  <Style Selector="NumericUpDown /template/ RepeatButton:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
   </Style>
 
 </Styles>

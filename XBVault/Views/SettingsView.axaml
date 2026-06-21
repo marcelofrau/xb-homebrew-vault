@@ -74,68 +74,69 @@
                        PasswordChar="●"/>
             </StackPanel>
 
+            <Separator Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>
+
+            <!-- Actions -->
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="8">
+              <Button Command="{Binding TestConnectionCommand}"
+                      IsEnabled="{Binding IsTestingConnection, Converter={StaticResource BoolInverse}}"
+                      Padding="16,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-test-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Test Connection"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+              <Button Classes="Accent"
+                      Command="{Binding SaveSettingsCommand}"
+                      Padding="16,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-save-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Save"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </StackPanel>
+
+            <!-- Saved notification -->
+            <Border IsVisible="{Binding ShowSavedNotification}"
+                    Background="#1A3A1E"
+                    BorderBrush="{StaticResource AccentBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="14,10">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <Path Data="M10,18 L16,24 L26,12"
+                      Stroke="{StaticResource AccentBrush}"
+                      StrokeThickness="2"
+                      StrokeLineCap="Round"
+                      StrokeJoin="Round"
+                      Width="20" Height="20"
+                      Stretch="Uniform"/>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding SavedNotificationText}"
+                           Foreground="{StaticResource AccentGlowBrush}"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Grid>
+            </Border>
+
           </StackPanel>
         </Border>
 
-        <!-- Actions -->
-        <StackPanel Orientation="Horizontal"
-                    HorizontalAlignment="Right"
-                    Spacing="8">
-
-          <Button Command="{Binding TestConnectionCommand}"
-                  IsEnabled="{Binding IsTestingConnection, Converter={StaticResource BoolInverse}}"
-                  Padding="16,8">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-              <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-test-20.png"
-                     Width="20" Height="20"
-                     Stretch="Uniform"/>
-              <TextBlock Grid.Column="1" Text="Test Connection"
-                         VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
-
-          <Button Classes="Accent"
-                  Command="{Binding SaveSettingsCommand}"
-                  Padding="16,8">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-              <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-save-20.png"
-                     Width="20" Height="20"
-                     Stretch="Uniform"/>
-              <TextBlock Grid.Column="1" Text="Save"
-                         VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
-        </StackPanel>
-
-        <!-- Saved notification -->
-        <Border IsVisible="{Binding ShowSavedNotification}"
-                Background="#1A3A1E"
-                BorderBrush="{StaticResource AccentBrush}"
-                BorderThickness="1"
-                CornerRadius="6"
-                Padding="14,10">
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-            <Path Data="M10,18 L16,24 L26,12"
-                  Stroke="{StaticResource AccentBrush}"
-                  StrokeThickness="2"
-                  StrokeLineCap="Round"
-                  StrokeJoin="Round"
-                  Width="20" Height="20"
-                  Stretch="Uniform"/>
-            <TextBlock Grid.Column="1"
-                       Text="{Binding SavedNotificationText}"
-                       Foreground="{StaticResource AccentGlowBrush}"
-                       FontSize="13"
-                       FontWeight="SemiBold"
-                       VerticalAlignment="Center"/>
-          </Grid>
-        </Border>
-
-        <!-- Cache Section -->
+        <!-- Application Section (cache, logging, app management) -->
         <Border Classes="Card" Padding="24">
           <StackPanel Spacing="12">
-            <TextBlock Text="CACHE"
+            <TextBlock Text="APPLICATION"
                        Classes="SectionHeader"/>
+
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Spacing="4">
                 <TextBlock Text="Local package cache"
@@ -149,35 +150,107 @@
                       Padding="12,6"
                       VerticalAlignment="Center">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-<Image Source="avares://XBVault/Assets/Views/SettingsView/settings-clear-20.png"
-                          Width="20" Height="20"
-                          Stretch="Uniform"/>
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-clear-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
                   <TextBlock Grid.Column="1" Text="Clear cache"
                              FontSize="12"
                              VerticalAlignment="Center"/>
                 </Grid>
               </Button>
             </Grid>
-          </StackPanel>
-        </Border>
 
-        <!-- Logging Section -->
-        <Border Classes="Card" Padding="24">
-          <StackPanel Spacing="12">
-            <TextBlock Text="LOGGING"
-                       Classes="SectionHeader"/>
-            <StackPanel Spacing="4">
-              <TextBlock Text="Minimum log level"
-                         FontSize="12"
-                         Foreground="{StaticResource TextMutedBrush}"/>
-              <ComboBox ItemsSource="{Binding LogLevels}"
+            <Separator Background="{StaticResource BorderBrush}" Height="1"/>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Minimum log level"
+                           FontSize="13"/>
+              </StackPanel>
+              <ComboBox Grid.Column="1"
+                        ItemsSource="{Binding LogLevels}"
                         SelectedItem="{Binding SelectedLogLevel}"
                         Width="200"/>
-            </StackPanel>
+            </Grid>
             <TextBlock Text="Changes take effect immediately. Restart to capture startup logs."
                        FontSize="11"
                        Foreground="{StaticResource TextDimBrush}"
                        TextWrapping="Wrap"/>
+
+            <Separator Background="{StaticResource BorderBrush}" Height="1"/>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Restart application"
+                           FontSize="13"/>
+                <TextBlock Text="Restart to apply changes or resolve issues"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding RestartAppCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-restart-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Restart"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+
+            <Separator Background="{StaticResource BorderBrush}" Height="1"/>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Reset all settings"
+                           FontSize="13"/>
+                <TextBlock Text="Clear saved connection and preferences to defaults"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding ResetSettingsCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-reset-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Reset"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+
+            <Separator Background="{StaticResource BorderBrush}" Height="1"/>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Open settings folder"
+                           FontSize="13"/>
+                <TextBlock Text="View or edit the settings file directly"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding OpenSettingsFolderCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-folder-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Open"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
           </StackPanel>
         </Border>
 

@@ -100,18 +100,32 @@ public partial class BrowseViewModel : ObservableObject
     private CatalogItem? _selectedItem;
 
     [ObservableProperty]
-    private string? _installedVersion;
+    private bool _isCheckingInstalled;
 
     [ObservableProperty]
-    private bool _isCheckingInstalled;
+    private bool _checkComplete;
+
+    [ObservableProperty]
+    private bool _checkInstalled;
+
+    [ObservableProperty]
+    private bool _checkError;
+
+    [ObservableProperty]
+    private string? _checkResultMessage;
 
     [ObservableProperty]
     private string? _installResultMessage;
 
     public bool IsNotInstalling => !IsInstalling;
     public bool CanCheckInstalled => !IsInstalling && !IsCheckingInstalled;
-    public bool ShowDescriptionPanel => !IsInstalling && !InstallComplete;
+    public bool ShowDescriptionPanel => !IsInstalling && !InstallComplete && !IsCheckingInstalled && !CheckComplete;
     public bool ShowInstallOverlay => IsInstalling || InstallComplete;
+    public bool ShowCheckOverlay => IsCheckingInstalled || CheckComplete;
+    public bool CanRecheck => CheckComplete && !IsCheckingInstalled;
+    public bool ShowCheckNotInstalled => CheckComplete && !CheckInstalled && !CheckError;
+    public bool ShowCheckNotConnectedHint => CheckComplete && CheckError && CheckResultMessage == "Not connected";
+    public string? CheckVersionHint => CheckInstalled ? $"Available: {SelectedItem?.Version}" : null;
 
     partial void OnIsInstallingChanged(bool value)
     {
@@ -127,9 +141,29 @@ public partial class BrowseViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowInstallOverlay));
     }
 
+    partial void OnCheckCompleteChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowDescriptionPanel));
+        OnPropertyChanged(nameof(ShowCheckOverlay));
+        OnPropertyChanged(nameof(CanRecheck));
+        OnPropertyChanged(nameof(ShowCheckNotInstalled));
+        OnPropertyChanged(nameof(ShowCheckNotConnectedHint));
+        OnPropertyChanged(nameof(CheckVersionHint));
+    }
+
+    partial void OnCheckInstalledChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CheckVersionHint));
+    }
+
     partial void OnIsCheckingInstalledChanged(bool value)
     {
         OnPropertyChanged(nameof(CanCheckInstalled));
+        OnPropertyChanged(nameof(ShowCheckOverlay));
+        OnPropertyChanged(nameof(ShowDescriptionPanel));
+        OnPropertyChanged(nameof(CanRecheck));
+        OnPropertyChanged(nameof(ShowCheckNotInstalled));
+        OnPropertyChanged(nameof(ShowCheckNotConnectedHint));
     }
 
     [RelayCommand]
@@ -143,20 +177,26 @@ public partial class BrowseViewModel : ObservableObject
         }
 
         IsCheckingInstalled = true;
-        InstalledVersion = null;
+        CheckComplete = false;
+        CheckInstalled = false;
+        CheckError = false;
+        CheckResultMessage = null;
         Logger.Info($"Checking install status for [{item.Category}] {item.Name}");
 
-        Logger.Debug($"XboxDeviceService.IsConfigured={_xboxService.IsConfigured}");
         if (!_xboxService.IsConfigured)
         {
-            InstalledVersion = "Not configured";
+            CheckComplete = true;
+            CheckError = true;
+            CheckResultMessage = "Not configured";
             Logger.Info("Xbox not configured — skipping installed check");
             IsCheckingInstalled = false;
             return;
         }
         if (!_xboxService.IsConnected)
         {
-            InstalledVersion = "Not connected";
+            CheckComplete = true;
+            CheckError = true;
+            CheckResultMessage = "Not connected";
             Logger.Info("Xbox not connected — skipping installed check");
             IsCheckingInstalled = false;
             return;
@@ -170,16 +210,25 @@ public partial class BrowseViewModel : ObservableObject
 
             var match = packages.FirstOrDefault(p =>
                 p.Name.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
-            InstalledVersion = match?.Version ?? "Not installed";
+            CheckComplete = true;
 
             if (match is not null)
+            {
+                CheckInstalled = true;
+                CheckResultMessage = match.Version;
                 Logger.Info($"Found installed: {item.Name} v{match.Version}");
+            }
             else
+            {
+                CheckResultMessage = "Not installed";
                 Logger.Info($"Not installed: {item.Name}");
+            }
         }
         catch (Exception ex)
         {
-            InstalledVersion = "Check failed";
+            CheckComplete = true;
+            CheckError = true;
+            CheckResultMessage = "Check failed";
             Logger.Error(ex, $"Check installed failed for {item.Name}");
         }
         finally
@@ -202,7 +251,10 @@ public partial class BrowseViewModel : ObservableObject
             InstallProgress = 0;
             InstallStatus = null;
             InstallResultMessage = null;
-            InstalledVersion = null;
+            CheckComplete = false;
+            CheckInstalled = false;
+            CheckError = false;
+            CheckResultMessage = null;
             Logger.Info($"Item selected: [{value.Category}] {value.Name} v{value.Version}");
             if (ShowDetailAction is null)
                 Logger.Info("ShowDetailAction is NULL — detail window will not open");
@@ -330,6 +382,10 @@ public partial class BrowseViewModel : ObservableObject
         var itemName = SelectedItem?.Name ?? "?";
         var itemUrl = SelectedItem?.DownloadUrl ?? "?";
 
+        CheckComplete = false;
+        CheckInstalled = false;
+        CheckError = false;
+        CheckResultMessage = null;
         IsInstalling = true;
         InstallComplete = false;
         InstallResultMessage = null;

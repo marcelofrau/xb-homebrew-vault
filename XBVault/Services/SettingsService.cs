@@ -52,6 +52,13 @@ public static class SettingsService
         _current = new AppSettings();
     }
 
+    public static void Reset()
+    {
+        _current = new AppSettings();
+        Save();
+        Logger.Info("Settings reset to defaults");
+    }
+
     public static void Save()
     {
         if (!Directory.Exists(AppDataDir))

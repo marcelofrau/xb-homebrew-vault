@@ -713,7 +713,7 @@ public class XboxDeviceService
         return $"{n:F1}TB";
     }
 
-    public async Task<byte[]?> CaptureScreenshotAsync()
+    public async Task<byte[]?> CaptureScreenshotAsync(CancellationToken ct = default)
     {
         if (!_configured)
         {
@@ -725,7 +725,7 @@ public class XboxDeviceService
         {
             var url = $"/ext/screenshot?download=true&hdr=false&time={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
             Logger.Info($"GET {url}");
-            var response = await _http.GetAsync(url);
+            var response = await _http.GetAsync(url, ct);
             Logger.Info($"GET screenshot => {(int)response.StatusCode}");
             if (!response.IsSuccessStatusCode)
             {
@@ -734,6 +734,11 @@ public class XboxDeviceService
             }
 
             return await response.Content.ReadAsByteArrayAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.Info("CaptureScreenshot cancelled");
+            return null;
         }
         catch (Exception ex)
         {
