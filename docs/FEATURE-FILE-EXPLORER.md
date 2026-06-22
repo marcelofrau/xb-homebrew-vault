@@ -1,99 +1,113 @@
-# File Explorer — Xbox Dev Portal Browser
+# File Explorer — SSH/SFTP Browser
 
 ## Goal
-Replace the `FileExplorerView` placeholder tab (index 2) with a functional file browser for the Xbox Dev Mode filesystem, using the Dev Portal REST API.
+Replace the `FileExplorerView` placeholder tab (index 2) with a functional file browser for the Xbox Dev Mode filesystem using SSH/SFTP — no companion app, no REST API.
+
+## Architecture
+```
+┌─────────────┐     ┌──────────────┐     ┌───────────────────┐
+│ XBVault App │────→│ SftpService  │────→│ Xbox (port 22)    │
+│             │     │ (SSH.NET)    │     │  ├─ SFTP subsystem │
+│ TreeView    │     │ SshClient    │     │  └─ SSH shell      │
+│ File List   │     │ SftpClient   │     │     (mklink /J)    │
+│ Upload Card │     │ Shell (cmd)  │     └───────────────────┘
+└─────────────┘     └──────────────┘
+```
+
+**Key insight:** WDP endpoint `/ext/smb/developerfolder` returns SMB path + `DevToolsUser` credentials — same credentials work for SSH on port 22. `mklink /J` via SSH shell bypasses SFTP chroot to expose `C:\`, `D:\`, `E:\`.
 
 ## Layout
-
 ```
-+------------------------------------------------------------------+
-| FILE EXPLORER  header + path breadcrumb                          |
-+----------------------------------+-------------------------------+
-| TreeView (left, 280px)           | Right pane: contents list     |
-|  /Apps                           | of selected folder, or       |
-|  /Data                           | empty state if nothing       |
-|  /LocalAppData                   | selected                     |
-|  /Logs                           |                              |
-|  (single-expand: expand a root   |                              |
-|   collapses any other root)      |                              |
-+----------------------------------+-------------------------------+
-| Upload card: [Drop zone + Browse Files button]                   |
-| Target: <selected folder path>                                   |
-+------------------------------------------------------------------+
+┌──────────────────────────────────────────────────────────┐
+│ FILE EXPLORER     [Mount Drives] [New Folder] [Refresh]   │
+├──────────────────┬───────────────────────────────────────┤
+│ TreeView (260px)  │ Breadcrumb: D:\DevelopmentFiles\...  │
+│  D:\Development\  ├───────────────────────────────────────┤
+│  ├── C:\ (junc)   │ Name         Size     Modified       │
+│  │   ├── Data     │ 📄 pkg.appx  12 MB   2026-06-20      │
+│  │   └── Users    │ 📄 test.dll  340 KB  2026-06-19      │
+│  ├── D:\ (junc)   │ 📁 Subfolder  —      2026-06-18      │
+│  └── E:\ (junc)   │                                       │
+│                   │ [right-click: Download / Delete /    │
+│ (single-expand)   │  Rename / Properties]                │
+├──────────────────┴───────────────────────────────────────┤
+│ Upload card: [Drop files here]  or  [Browse Files]        │
+│ ████████████░░░░ 60% — package.appx                      │
+│ Target: D:\DevelopmentFiles\current\folder\              │
+└──────────────────────────────────────────────────────────┘
 ```
 
-## TreeView Behavior
+## Key Components
+
+### SftpService (`Services/SftpService.cs`)
+Wrapper around `Renci.SshNet` (`SshClient` + `SftpClient`). All file operations go through SFTP; shell commands used only for `mklink /J`.
+
+| Method | Description |
+|---|---|
+| `ConnectAsync(host, port, user, pass)` | Open SSH + SFTP connection |
+| `Disconnect()` | Close connection |
+| `ListDirectoryAsync(path)` | List entries, filter `.`/`..` |
+| `UploadFileAsync(stream, path, progress)` | Upload with % callback |
+| `DownloadFileAsync(path, stream, progress)` | Download with % callback |
+| `DeleteFileAsync(path)` | Remove file |
+| `DeleteDirectoryAsync(path)` | Remove dir recursively |
+| `CreateDirectoryAsync(path)` | mkdir |
+| `RenameAsync(old, new)` | Rename/move |
+| `RunShellCommandAsync(cmd)` | SSH shell for mklink |
+
+### Mount Drives
+Button runs via SSH shell:
+```cmd
+if not exist D:\DevelopmentFiles\C mklink /J D:\DevelopmentFiles\C C:\
+if not exist D:\DevelopmentFiles\D mklink /J D:\DevelopmentFiles\D D:\
+if not exist D:\DevelopmentFiles\E mklink /J D:\DevelopmentFiles\E E:\
+```
+Junctions make `C:\`, `D:\`, `E:\` appear as folders inside `D:\DevelopmentFiles\`, visible to SFTP. USB media (FAT32/NTFS at `E:\`) works via this mechanism. XCRD USB (`[XE0:]`) requires `xcrdutil` — out of scope (v2).
+
+### TreeView
 - Single-expand: expanding a root collapses any previously expanded root
-- Clicking a file shows its details in the right pane
-- Right-click context menu: Delete, Download
+- Lazy-load children on expand (calls `ListDirectoryAsync`)
+- Icons: closed folder, open folder, file, drive (junction)
 
-## Upload Card (bottom)
-- Drag-and-drop zone (accepts multiple files)
-- "Browse Files" button using `OpenFileDialog` (multi-file)
-- Uploads to the currently selected folder in the tree
-- Progress indicator per file (or batch success/fail toast)
+### File List
+- Grid columns: icon, name, size (formatted), last modified
+- Directories before files, alphabetical
+- Right-click context menu: Download, Delete, Rename
 
-## REST Endpoints
-**Blocked — user provides curl calls when feature is resumed.**
-
-Endpoints needed:
-- List directory contents
-- Upload file
-- Delete file/directory
-- Create folder
-- Download file
-
-## Models
-- `FileEntry` (name, path, size, isDirectory, modified date, extension)
-
-## ViewModel
-- `ObservableCollection<FileEntry>` Roots (top-level dirs)
-- `FileEntry? SelectedEntry`
-- `string CurrentPath`
-- `IsUploading` + upload progress properties
-- Commands: `ExpandFolderCommand`, `SelectEntryCommand`, `UploadFilesCommand`, `DeleteEntryCommand`, `DownloadEntryCommand`, `RefreshCommand`
-
-## Icons (from personal set — 16x16 for tree items, 20x20 for toolbar)
-- `fileexplorer-folder-closed-16.png`
-- `fileexplorer-folder-open-16.png`
-- `fileexplorer-file-16.png`
-- `fileexplorer-upload-20.png`
-- `fileexplorer-download-20.png`
-- `fileexplorer-delete-20.png`
-- `fileexplorer-refresh-20.png`
-- `fileexplorer-new-folder-20.png`
+### Upload Card
+- Drag-drop zone (`DragDrop` events)
+- Browse Files button (`OpenFileDialog`, multi-file)
+- Progress bar per file + status text
+- Uploads to currently selected folder path
+- No overwrite confirmation (direct upload)
 
 ## Files to Create/Modify
-| File | Action |
+
+**New files:**
+| File | Purpose |
 |---|---|
-| `XBVault/Models/FileEntry.cs` | New model |
-| `XBVault/Services/XboxDeviceService.cs` | Add filesystem API methods |
-| `XBVault/ViewModels/FileExplorerViewModel.cs` | Rewrite skeleton |
-| `XBVault/Views/FileExplorerView.axaml` | Rewrite placeholder |
-| `XBVault/Views/FileExplorerView.axaml.cs` | Wire code-behind if needed |
-| `Assets/Views/FileExplorerView/*.png` | New icons |
+| `Services/SftpService.cs` | SSH/SFTP wrapper (SSH.NET) |
+| `Models/SftpEntry.cs` | File/dir model: name, path, size, date, isDir |
 
-## Questions to Answer When Resuming
-1. **API endpoints** — provide curl calls for:
-   - `GET` to list root directories (`/api/filesystem/apps/`? what are the roots?)
-   - `GET` to list a folder's contents (same endpoint with path?)
-   - `PUT/POST` to upload a file
-   - `DELETE` to remove files/folders
-   - Any `mkdir` endpoint?
+**Modified files:**
+| File | Change |
+|---|---|
+| `XBVault.csproj` | Add `Renci.SshNet` NuGet |
+| `Services/XboxDeviceService.cs` | Add `GetSshCredentials()` |
+| `ViewModels/FileExplorerViewModel.cs` | Rewrite (34→~250 lines) |
+| `Views/FileExplorerView.axaml` | Rewrite placeholder |
+| `Views/FileExplorerView.axaml.cs` | Drag-drop handlers |
 
-2. **Operations** — beyond browse + upload, want:
-   - Download file (click to save?)
-   - Delete (right-click context menu?)
-   - Create new folder
-   - Rename
+**Icons** (from `D:\workspace\_non_work_\icons8-personal-set`):
+See `openspec/changes/file-explorer-ssh/tasks.md` §1 for full mapping.
 
-3. **Layout preference** — split-pane (tree left + contents right) as drawn above, or full-width tree with upload card at bottom?
+## Non-Goals
+- USB XCRD (`xcrdutil`) — delayed to v2 (needs hardware testing)
+- File preview (text, image, hex)
+- Multi-select in file list
+- Companion UWP app (SSH replaces it)
 
-4. **Upload feedback** — show progress per file? or just success/fail toast?
-
-5. **Delete behavior** — confirm dialog before delete? (following existing `ConfirmWindow` pattern)
-
-## Future Ideas (discuss before implementing)
-- File preview in right pane (text, image, hex)
-- Multi-select in contents list
-- Drag files from tree to upload card to copy/move
+## Reference
+- OpenSpec change: `openspec/changes/file-explorer-ssh/`
+- SSH.NET: https://github.com/sshnet/SSH.NET (MIT)
+- Xbox SSH techniques: DanielLMcGuire/XboxSeries, Xbox One Research Wiki
