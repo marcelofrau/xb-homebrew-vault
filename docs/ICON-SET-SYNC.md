@@ -20,7 +20,7 @@ When you need to bring developer's personal Icons8-derived set into this reposit
 
 3) Local path for development only
 
-- Keep icons outside repo at `C:\Apps\Icons\icons8-personal-set` (developer machine).
+- Keep icons outside repo at `F:\workspace\icons8-personal-set` (developer machine).
 - Do not commit absolute paths. If you need to reference resources at build time, use relative paths inside XBVault/Assets and ensure CI uses the same layout (or submodule).
 
 Checklist before committing icons

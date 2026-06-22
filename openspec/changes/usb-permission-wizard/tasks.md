@@ -1,7 +1,7 @@
 ## 1. Icons & Assets
 
 - [ ] 1.1 Create `Assets/Views/UsbPermissionWindow/` directory
-- [ ] 1.2 Copy icons from `D:\workspace\_non_work_\icons8-personal-set`:
+- [ ] 1.2 Copy icons from `F:\workspace\icons8-personal-set`:
   - `icons8-usb-{size}.png` → `usbperm-usb-20.png` (step 0 active, 20px)
   - Grayscale variant → `usbperm-usb-disabled-20.png` (step 0 disabled, 20px via `magick -colorspace Gray`)
   - `icons8-gear-{size}.png` → `usbperm-gear-20.png` (step 1 active, 20px)

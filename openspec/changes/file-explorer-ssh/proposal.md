@@ -12,7 +12,7 @@ The Dev Portal REST filesystem API (`/api/filesystem/apps/files`) doesn't exist 
 - Rewrite `FileExplorerView.axaml` with TreeView (left, 260px), file list (right), upload card (bottom)
 - Add "Mount Drives" button — runs `mklink /J` over SSH shell to expose `C:\`, `D:\`, `E:\` via junctions
 - SSH.NET NuGet dependency (`Renci.SshNet`, MIT)
-- Icons from `D:\workspace\_non_work_\icons8-personal-set` (file, folder, upload, download, delete, refresh, drives)
+- Icons from `F:\workspace\icons8-personal-set` (file, folder, upload, download, delete, refresh, drives)
 - New service `SftpService` manages SSH connection lifecycle; shares credentials from XboxDeviceService
 - `FEATURE-FILE-EXPLORER.md` rewritten to reflect SSH/SFTP architecture (replaces old REST + companion app plan)
 

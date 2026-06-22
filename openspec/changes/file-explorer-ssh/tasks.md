@@ -1,7 +1,7 @@
 ## 1. Icons & Assets
 
 - [ ] 1.1 Create `Assets/Views/FileExplorerView/` directory
-- [ ] 1.2 Copy icons from `D:\workspace\_non_work_\icons8-personal-set`:
+- [ ] 1.2 Copy icons from `F:\workspace\icons8-personal-set`:
   - `icons8-folder-{size}.png` → `fileexplorer-folder-16.png` (tree folder closed, 16px)
   - `icons8-opened-folder-{size}.png` → `fileexplorer-folder-open-16.png` (tree folder open, 16px)
   - `icons8-file-2d-{size}.png` → `fileexplorer-file-16.png` (tree file, 16px)

@@ -98,7 +98,7 @@ Junctions make `C:\`, `D:\`, `E:\` appear as folders inside `D:\DevelopmentFiles
 | `Views/FileExplorerView.axaml` | Rewrite placeholder |
 | `Views/FileExplorerView.axaml.cs` | Drag-drop handlers |
 
-**Icons** (from `D:\workspace\_non_work_\icons8-personal-set`):
+**Icons** (from `F:\workspace\icons8-personal-set`):
 See `openspec/changes/file-explorer-ssh/tasks.md` §1 for full mapping.
 
 ## Non-Goals

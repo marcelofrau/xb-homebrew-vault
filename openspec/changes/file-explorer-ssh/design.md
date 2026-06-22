@@ -18,7 +18,7 @@ USB media (FAT32/NTFS) mounts as `E:\` — exposed via junction `D:\DevelopmentF
 - Rename file/folder (right-click context menu)
 - Refresh current folder contents
 - Reuse `DevToolsUser` credentials from XboxDeviceService
-- Icons from `D:\workspace\_non_work_\icons8-personal-set` (16px tree items, 20px toolbar)
+- Icons from `F:\workspace\icons8-personal-set` (16px tree items, 20px toolbar)
 
 **Non-Goals:**
 - USB XCRD (xrdutil) — needs hardware testing, defer to v2
@@ -58,7 +58,7 @@ USB media (FAT32/NTFS) mounts as `E:\` — exposed via junction `D:\DevelopmentF
 
 ### Decision 6: Icons mapped from icons8-personal-set
 
-- **Choice:** Icons from `D:\workspace\_non_work_\icons8-personal-set`. 16px for tree items, 20px for toolbar buttons.
+- **Choice:** Icons from `F:\workspace\icons8-personal-set`. 16px for tree items, 20px for toolbar buttons.
 - **Rationale:** Existing project uses Icons8 icons. Personal set has all needed icons in 3d-fluency style matching existing assets.
 
 ### Decision 7: Reuse close icon from connection assets
@@ -167,7 +167,7 @@ UserControl
 
 ## Icons Mapping
 
-All sourced from `D:\workspace\_non_work_\icons8-personal-set`:
+All sourced from `F:\workspace\icons8-personal-set`:
 
 | Usage | Size | Icon file |
 |---|---|---|
