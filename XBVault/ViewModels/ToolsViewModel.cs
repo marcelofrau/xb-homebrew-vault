@@ -45,7 +45,7 @@ public partial class ToolsViewModel : ObservableObject
     public Action? ShowPerformanceAction { get; set; }
     public Action? ShowCustomInstallAction { get; set; }
     public Action? ShowCrashDataAction { get; set; }
-    public Func<string, string, string, string, string?, Task<bool>>? ShowConfirmAsync { get; set; }
+    public Func<string, string, string, string, string?, string?, Task<bool>>? ShowConfirmAsync { get; set; }
 
     [RelayCommand]
     private void OpenScreenshot()
@@ -123,7 +123,7 @@ public partial class ToolsViewModel : ObservableObject
         if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         if (ShowConfirmAsync is not null)
         {
-            var ok = await ShowConfirmAsync("Restart Xbox", "Are you sure you want to restart the Xbox? This will disconnect you.", "Restart", "Cancel", null);
+            var ok = await ShowConfirmAsync("Restart Xbox", "Are you sure you want to restart the Xbox? This will disconnect you.", "Restart", "Cancel", null, "avares://XBVault/Assets/Views/ErrorDialog/errordialog-restart-48.png");
             if (!ok) return;
         }
         StatusMessage = "Restarting Xbox...";
@@ -145,7 +145,7 @@ public partial class ToolsViewModel : ObservableObject
         if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         if (ShowConfirmAsync is not null)
         {
-            var ok = await ShowConfirmAsync("Shutdown Xbox", "Are you sure you want to shutdown the Xbox? This will disconnect you.", "Shutdown", "Cancel", null);
+            var ok = await ShowConfirmAsync("Shutdown Xbox", "Are you sure you want to shutdown the Xbox? This will disconnect you.", "Shutdown", "Cancel", null, "avares://XBVault/Assets/Views/ErrorDialog/errordialog-shutdown-48.png");
             if (!ok) return;
         }
         StatusMessage = "Shutting down Xbox...";

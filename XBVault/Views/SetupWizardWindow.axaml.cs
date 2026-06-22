@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -27,5 +28,11 @@ public partial class SetupWizardWindow : Window
     {
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             BeginMoveDrag(e);
+    }
+
+    private void OnDevModeLinkClick(object? sender, RoutedEventArgs e)
+    {
+        Logger.Info("Opening Emulation Revival Dev Mode info");
+        Process.Start(new ProcessStartInfo("https://emulationrevival.github.io") { UseShellExecute = true });
     }
 }

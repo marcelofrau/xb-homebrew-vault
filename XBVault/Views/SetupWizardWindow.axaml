@@ -69,14 +69,40 @@
         <Grid RowDefinitions="Auto,*,Auto" Margin="0,20,0,16">
 
           <!-- Wizard icon -->
-          <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-wizard-100.png"
-                 Width="80" Height="80"
-                 Stretch="Uniform"
-                 HorizontalAlignment="Center"
-                 Opacity="0.90"/>
+          <StackPanel HorizontalAlignment="Center">
+            <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-wizard-100.png"
+                   Width="80" Height="80"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center"
+                   Opacity="0.90"/>
+            <StackPanel HorizontalAlignment="Center" Margin="0,4,0,0">
+              <TextBlock Text="WELCOME"
+                         FontSize="13" FontWeight="Bold"
+                         Foreground="{StaticResource AccentBrush}"
+                         HorizontalAlignment="Center"/>
+              <TextBlock Text="SETUP"
+                         FontSize="13" FontWeight="Bold"
+                         Foreground="{StaticResource AccentBrush}"
+                         HorizontalAlignment="Center"
+                         Margin="0,-2,0,0"/>
+            </StackPanel>
+          </StackPanel>
 
           <!-- Step indicators -->
-          <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="20" Margin="20,0">
+          <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="16" Margin="20,0">
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-step0-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsWelcomeStep}"/>
+              <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-step0-disabled-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsWelcomeStep, Converter={StaticResource BoolInverse}}"/>
+              <TextBlock Grid.Column="1" Text="Welcome"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsWelcomeStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
             <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-step1-20.png"
                      Width="20" Height="20" Stretch="None"
@@ -131,7 +157,51 @@
       <Border Grid.Row="1" Grid.Column="1" BorderThickness="0" Background="{StaticResource SurfaceBrush}">
         <Grid RowDefinitions="*,Auto" Margin="20,16,20,16">
 
-          <!-- Step 0: Console -->
+          <!-- Step 0: Welcome -->
+          <StackPanel IsVisible="{Binding IsWelcomeStep}" Spacing="12"
+                      VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-welcome-48.png"
+                   Width="64" Height="64" Stretch="Uniform"
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,4"/>
+            <TextBlock Text="Welcome to XB Homebrew Vault"
+                       FontSize="18" FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap"/>
+            <TextBlock TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       HorizontalAlignment="Center"
+                       MaxWidth="320"
+                       FontSize="12"
+                       Foreground="{StaticResource TextMutedBrush}">
+              <Run Text="This wizard will help you set up the connection to your Xbox in Developer Mode. Before you begin, make sure your Xbox is already in "/>
+              <Run Text="Developer Mode" FontWeight="Bold"/>
+              <Run Text=" and turned on."/>
+            </TextBlock>
+
+            <Button Cursor="Hand"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    HorizontalAlignment="Center"
+                    Padding="0"
+                    Click="OnDevModeLinkClick">
+              <TextBlock FontSize="11"
+                         Foreground="{StaticResource AccentBrush}"
+                         TextDecorations="Underline"
+                         Text="Learn more about Xbox Developer Mode"/>
+            </Button>
+
+            <Separator Height="1" Background="{StaticResource BorderBrush}"
+                       Width="200" HorizontalAlignment="Center" Margin="0,8"/>
+            <TextBlock Text="Click Next to continue."
+                       FontSize="12"
+                       Foreground="{StaticResource TextDimBrush}"
+                       FontStyle="Italic"
+                       HorizontalAlignment="Center"/>
+          </StackPanel>
+
+          <!-- Step 1: Console -->
           <StackPanel IsVisible="{Binding IsConsoleStep}" Spacing="12">
             <TextBlock Text="Xbox Console"
                        FontSize="16" FontWeight="SemiBold"/>
@@ -165,7 +235,7 @@
                        IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmpty}}"/>
           </StackPanel>
 
-          <!-- Step 1: Authentication -->
+          <!-- Step 2: Authentication -->
           <StackPanel IsVisible="{Binding IsAuthStep}" Spacing="12">
             <TextBlock Text="Authentication"
                        FontSize="16" FontWeight="SemiBold"/>
@@ -194,7 +264,7 @@
                        IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmpty}}"/>
           </StackPanel>
 
-          <!-- Step 2: Ready -->
+          <!-- Step 3: Ready -->
           <StackPanel IsVisible="{Binding IsReadyStep}" Spacing="12">
             <TextBlock Text="Ready"
                        FontSize="16" FontWeight="SemiBold"/>
@@ -268,12 +338,12 @@
               <Button Padding="16,8"
                       Command="{Binding GoBackCommand}"
                       IsEnabled="{Binding CanGoBack}"
-                      IsVisible="{Binding IsReadyStep, Converter={StaticResource BoolInverse}}">
+                      IsVisible="{Binding CanGoBack}">
                 <TextBlock Text="Back"
                            FontSize="13" VerticalAlignment="Center"/>
               </Button>
 
-              <!-- Step 0,1: Next -->
+              <!-- Steps 0-2: Next -->
               <Button Classes="Accent"
                       Padding="20,8"
                       Command="{Binding GoNextCommand}"
@@ -284,7 +354,7 @@
                            VerticalAlignment="Center"/>
               </Button>
 
-              <!-- Step 2: Finish -->
+              <!-- Step 3: Finish -->
               <Button Classes="Accent"
                       Padding="20,8"
                       Command="{Binding FinishCommand}"

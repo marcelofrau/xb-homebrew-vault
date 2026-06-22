@@ -8,14 +8,24 @@ namespace XBVault.ViewModels;
 
 public partial class ConfirmViewModel : ObservableObject
 {
-    public ConfirmViewModel(string title, string message, string confirmText, string cancelText, string? iconSource = null)
+    private static readonly Uri DefaultMessageIconUri = new("avares://XBVault/Assets/Views/ErrorDialog/errordialog-warn-48.png");
+
+    public ConfirmViewModel(string title, string message, string confirmText, string cancelText, string? iconSource = null, string? messageIconSource = null)
     {
         Title = title;
         Message = message;
         ConfirmText = confirmText;
         CancelText = cancelText;
+
         if (!string.IsNullOrEmpty(iconSource))
             Icon = new Bitmap(AssetLoader.Open(new Uri(iconSource)));
+
+        var msgUri = !string.IsNullOrEmpty(messageIconSource)
+            ? new Uri(messageIconSource)
+            : !string.IsNullOrEmpty(iconSource)
+                ? new Uri(iconSource)
+                : DefaultMessageIconUri;
+        MessageIcon = new Bitmap(AssetLoader.Open(msgUri));
     }
 
     public string Title { get; }
@@ -23,6 +33,7 @@ public partial class ConfirmViewModel : ObservableObject
     public string ConfirmText { get; }
     public string CancelText { get; }
     public Bitmap? Icon { get; }
+    public Bitmap MessageIcon { get; }
     public bool HasIcon => Icon is not null;
     public bool Confirmed { get; private set; }
     public event Action<bool>? Completed;

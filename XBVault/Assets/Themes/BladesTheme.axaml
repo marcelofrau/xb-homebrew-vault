@@ -66,6 +66,13 @@
     <SolidColorBrush x:Key="ButtonBorderBrush" Color="#6B8F2A"/>
     <SolidColorBrush x:Key="ButtonForeground" Color="#1A1A1A"/>
     <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#5A5C60"/>
+    <SolidColorBrush x:Key="RegionBrush" Color="{StaticResource BladesSurface}"/>
+    <Color x:Key="RegionColor">#1A1D23</Color>
+    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="{StaticResource BladesSurface}"/>
+    <Color x:Key="ContentBackgroundColor">#1A1D23</Color>
+    <SolidColorBrush x:Key="SystemControlBackgroundAltHighBrush" Color="{StaticResource BladesSurface}"/>
+    <SolidColorBrush x:Key="SystemControlPageBackgroundAltHighBrush" Color="{StaticResource BladesSurface}"/>
+    <SolidColorBrush x:Key="SystemControlPageBackgroundChromeLowBrush" Color="{StaticResource BladesSurface}"/>
   </Styles.Resources>
 
   <!-- Window -->

@@ -40,14 +40,19 @@ public partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty]
     private string? _statusText;
 
-    public bool IsConsoleStep => CurrentStep == 0;
-    public bool IsAuthStep => CurrentStep == 1;
-    public bool IsReadyStep => CurrentStep == 2;
+    private bool _completed;
+    public bool WasCompleted => _completed;
+
+    public bool IsWelcomeStep => CurrentStep == 0;
+    public bool IsConsoleStep => CurrentStep == 1;
+    public bool IsAuthStep => CurrentStep == 2;
+    public bool IsReadyStep => CurrentStep == 3;
 
     public bool CanGoNext => CurrentStep switch
     {
-        0 => !string.IsNullOrWhiteSpace(Address),
-        1 => !string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password),
+        0 => true,
+        1 => !string.IsNullOrWhiteSpace(Address),
+        2 => !string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password),
         _ => false
     };
 
@@ -56,6 +61,7 @@ public partial class SetupWizardViewModel : ObservableObject
 
     partial void OnCurrentStepChanged(int value)
     {
+        OnPropertyChanged(nameof(IsWelcomeStep));
         OnPropertyChanged(nameof(IsConsoleStep));
         OnPropertyChanged(nameof(IsAuthStep));
         OnPropertyChanged(nameof(IsReadyStep));
@@ -81,7 +87,7 @@ public partial class SetupWizardViewModel : ObservableObject
     [RelayCommand]
     private void GoNext()
     {
-        if (CurrentStep < 2)
+        if (CurrentStep < 3)
             CurrentStep++;
     }
 
@@ -96,6 +102,7 @@ public partial class SetupWizardViewModel : ObservableObject
     private void Finish()
     {
         SaveToSettings();
+        _completed = true;
         CloseAction?.Invoke();
     }
 

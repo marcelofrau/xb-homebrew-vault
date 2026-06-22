@@ -64,7 +64,7 @@
         <StackPanel Margin="20,16,20,20" Spacing="16">
 
           <Grid ColumnDefinitions="48,*" ColumnSpacing="14">
-            <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-warn-48.png"
+            <Image Source="{Binding MessageIcon}"
                    Width="48" Height="48"
                    Stretch="Uniform"
                    VerticalAlignment="Center"/>

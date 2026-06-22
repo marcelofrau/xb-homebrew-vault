@@ -213,7 +213,8 @@ public partial class App : Application
                     "Exit",
                     "Are you sure you want to exit?",
                     "Exit", "Cancel",
-                    "avares://XBVault/Assets/Views/ConfirmWindow/fluentui-collision-20.png");
+                    "avares://XBVault/Assets/Views/ConfirmWindow/fluentui-collision-20.png",
+                    "avares://XBVault/Assets/Views/ConfirmWindow/confirmwindow-exit-48.png");
                 var confirmWindow = new Views.ConfirmWindow { DataContext = confirmVm };
                 await confirmWindow.ShowDialog(main);
                 if (confirmVm.Confirmed)
@@ -231,7 +232,8 @@ public partial class App : Application
                     "Uninstall Package",
                     $"Are you sure you want to uninstall {pkg.Name}?",
                     "Uninstall", "Cancel",
-                    "avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png");
+                    "avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png",
+                    "avares://XBVault/Assets/Views/ErrorDialog/errordialog-trash-48.png");
                 var confirmWindow = new Views.ConfirmWindow { DataContext = confirmVm };
                 await confirmWindow.ShowDialog(main);
                 return confirmVm.Confirmed;
@@ -385,17 +387,17 @@ public partial class App : Application
             toolsViewModel.ShowCustomInstallAction = openCustomInstall;
             browseViewModel.ShowCustomInstallAction = openCustomInstall;
 
-            toolsViewModel.ShowConfirmAsync = async (title, message, confirmText, cancelText, iconSource) =>
+            toolsViewModel.ShowConfirmAsync = async (title, message, confirmText, cancelText, iconSource, messageIconSource) =>
             {
-                var vm = new ConfirmViewModel(title, message, confirmText, cancelText, iconSource);
+                var vm = new ConfirmViewModel(title, message, confirmText, cancelText, iconSource, messageIconSource);
                 var win = new Views.ConfirmWindow { DataContext = vm };
                 await win.ShowDialog(main);
                 return vm.Confirmed;
             };
 
-            settingsViewModel.ShowConfirmAsync = async (title, message, confirmText, cancelText, iconSource) =>
+            settingsViewModel.ShowConfirmAsync = async (title, message, confirmText, cancelText, iconSource, messageIconSource) =>
             {
-                var vm = new ConfirmViewModel(title, message, confirmText, cancelText, iconSource);
+                var vm = new ConfirmViewModel(title, message, confirmText, cancelText, iconSource, messageIconSource);
                 var win = new Views.ConfirmWindow { DataContext = vm };
                 await win.ShowDialog(main);
                 return vm.Confirmed;
@@ -425,7 +427,7 @@ public partial class App : Application
                 var wizardWin = new Views.SetupWizardWindow { DataContext = wizardVm };
                 wizardVm.CloseAction = () => wizardWin.Close();
                 await wizardWin.ShowDialog(main);
-                if (wizardVm.OpenConnectionAfter && mainViewModel.ShowConnectAction is not null)
+                if (wizardVm.WasCompleted && wizardVm.OpenConnectionAfter && mainViewModel.ShowConnectAction is not null)
                 {
                     var connected = await mainViewModel.ShowConnectAction();
                     if (connected)

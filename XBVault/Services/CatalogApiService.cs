@@ -161,14 +161,16 @@ public partial class CatalogApiService
         var mainDownload = api.Downloads.FirstOrDefault();
         var downloadUrl = mainDownload?.Url ?? api.DownloadUrl;
 
-        // Extract developer and porter from contributors
+        // Extract developer, porter, and maintainer from contributors
         string? developer = null;
         string? uwpPortBy = null;
+        string? maintainedBy = null;
 
         if (api.Contributors is not null)
         {
             developer = api.Contributors.Developers?.FirstOrDefault()?.Name;
             uwpPortBy = api.Contributors.Porters?.FirstOrDefault()?.Name;
+            maintainedBy = api.Contributors.Maintainers?.FirstOrDefault()?.Name;
         }
 
         return new CatalogItem
@@ -180,6 +182,7 @@ public partial class CatalogApiService
             ReleaseDate = api.ReleaseDate,
             Developer = developer,
             UwpPortBy = uwpPortBy,
+            MaintainedBy = maintainedBy,
             Category = api.Category,
             Compatibility = api.Compatibility,
             IsExperimental = api.IsExperimental,
@@ -346,7 +349,8 @@ public partial class CatalogApiService
                 ReleaseNotesUrl = item.ReleaseNotesUrl,
                 Requirements = item.Requirements,
                 Features = item.Features,
-                Downloads = item.Downloads
+                Downloads = item.Downloads,
+                Contributors = ReconstructContributorsMap(item.Contributors)
             }).ToList();
 
             var cache = new CatalogCache
@@ -392,5 +396,36 @@ public partial class CatalogApiService
         {
             Logger.Warn($"Failed to clear cache: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Reconstruct ContributorsMap from flat Contributor list for cache storage
+    /// </summary>
+    private static ContributorsMap? ReconstructContributorsMap(List<Contributor> contributors)
+    {
+        if (contributors.Count == 0) return null;
+
+        var groups = contributors
+            .Where(c => c.Role is not null)
+            .GroupBy(c => c.Role!)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var map = new ContributorsMap();
+
+        if (groups.TryGetValue("Developer", out var devs))
+            map.Developers = devs.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url }).ToList();
+
+        if (groups.TryGetValue("Porter", out var porters))
+            map.Porters = porters.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url }).ToList();
+
+        if (groups.TryGetValue("Maintainer", out var mains))
+            map.Maintainers = mains.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url }).ToList();
+
+        if (groups.TryGetValue("Mod Author", out var mods))
+            map.ModAuthors = mods.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url }).ToList();
+
+        if (groups.TryGetValue("Prebuilt By", out var prebuilt))
+            map.PrebuiltBy = prebuilt.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url }).ToList();
+
+        return map;
     }
 }
