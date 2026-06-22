@@ -40,9 +40,9 @@
 ## 6. Verify
 
 - [x] 6.1 Build project with `dotnet build XBVault/XBVault.csproj` — ensure zero errors
-- [ ] 6.2 Run app (with empty settings) and confirm wizard appears after MainWindow loads
-- [ ] 6.3 Walk through all 3 steps, verify validation (Next disabled when fields empty), Back preserves values, Cancel discards
-- [ ] 6.4 Complete wizard with checkbox checked — verify ConnectionWindow opens with saved settings
-- [ ] 6.5 Complete wizard with checkbox unchecked — verify app shows "Disconnected" status
-- [ ] 6.6 Close wizard via X — verify settings NOT saved, wizard reappears on next launch
-- [ ] 6.7 Run app again with saved settings — verify wizard does NOT appear
+- [x] 6.2 Run app (with empty settings) and confirm wizard appears after MainWindow loads
+- [x] 6.3 Walk through all 3 steps, verify validation (Next disabled when fields empty), Back preserves values, Cancel discards
+- [x] 6.4 Complete wizard with checkbox checked — verify ConnectionWindow opens with saved settings
+- [x] 6.5 Complete wizard with checkbox unchecked — verify app shows "Disconnected" status
+- [x] 6.6 Close wizard via X — verify settings NOT saved, wizard reappears on next launch
+- [x] 6.7 Run app again with saved settings — verify wizard does NOT appear
