@@ -80,4 +80,4 @@ jobs:
         files: |
           XBVault-*-win-x64.zip
           XBVault-*-linux-x64.zip
-        generate_release_notes: true
+        generate_release_notes: false
