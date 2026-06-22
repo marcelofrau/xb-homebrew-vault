@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:XBVault.ViewModels"
+        xmlns:models="using:XBVault.Models"
         xmlns:sys="using:System"
         xmlns:controls="using:XBVault.Controls"
         x:Class="XBVault.Views.ItemDetailWindow"
@@ -179,6 +180,108 @@
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
+                </StackPanel>
+
+                <!-- Contributors -->
+                <StackPanel Spacing="4"
+                            IsVisible="{Binding SelectedItem.HasContributors}">
+                  <TextBlock Text="Contributors"
+                             FontSize="12"
+                             FontWeight="SemiBold"/>
+                  <ItemsControl ItemsSource="{Binding SelectedItem.Contributors}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"/>
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="models:Contributor">
+                        <Border Background="{StaticResource SurfaceAltBrush}"
+                                CornerRadius="4"
+                                Padding="8,4"
+                                Margin="0,2,6,2">
+                          <TextBlock Text="{Binding Name}"
+                                     FontSize="11"
+                                     Foreground="{StaticResource TextBrush}"/>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+
+                <!-- Links -->
+                <StackPanel Spacing="4"
+                            IsVisible="{Binding SelectedItem.HasLinks}">
+                  <TextBlock Text="Links"
+                             FontSize="12"
+                             FontWeight="SemiBold"/>
+                  <WrapPanel Orientation="Horizontal">
+                    <!-- Setup Guide -->
+                    <Button Padding="8,4"
+                            Margin="0,2,6,2"
+                            Command="{Binding OpenLinkCommand}"
+                            CommandParameter="{Binding SelectedItem.SetupGuideUrl}"
+                            IsVisible="{Binding SelectedItem.SetupGuideUrl, Converter={StaticResource StringNotEmpty}}"
+                            Cursor="Hand">
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-guide-20.png"
+                               Width="16" Height="16" Stretch="Uniform"/>
+                        <TextBlock Text="Setup Guide" FontSize="11" VerticalAlignment="Center"/>
+                      </StackPanel>
+                    </Button>
+                    <!-- Tutorial -->
+                    <Button Padding="8,4"
+                            Margin="0,2,6,2"
+                            Command="{Binding OpenLinkCommand}"
+                            CommandParameter="{Binding SelectedItem.TutorialUrl}"
+                            IsVisible="{Binding SelectedItem.TutorialUrl, Converter={StaticResource StringNotEmpty}}"
+                            Cursor="Hand">
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-youtube-20.png"
+                               Width="16" Height="16" Stretch="Uniform"/>
+                        <TextBlock Text="Tutorial" FontSize="11" VerticalAlignment="Center"/>
+                      </StackPanel>
+                    </Button>
+                    <!-- Release Notes -->
+                    <Button Padding="8,4"
+                            Margin="0,2,6,2"
+                            Command="{Binding OpenLinkCommand}"
+                            CommandParameter="{Binding SelectedItem.ReleaseNotesUrl}"
+                            IsVisible="{Binding SelectedItem.ReleaseNotesUrl, Converter={StaticResource StringNotEmpty}}"
+                            Cursor="Hand">
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-notes-20.png"
+                               Width="16" Height="16" Stretch="Uniform"/>
+                        <TextBlock Text="Release Notes" FontSize="11" VerticalAlignment="Center"/>
+                      </StackPanel>
+                    </Button>
+                    <!-- Source Code -->
+                    <Button Padding="8,4"
+                            Margin="0,2,6,2"
+                            Command="{Binding OpenLinkCommand}"
+                            CommandParameter="{Binding SelectedItem.SourceCodeUrl}"
+                            IsVisible="{Binding SelectedItem.SourceCodeUrl, Converter={StaticResource StringNotEmpty}}"
+                            Cursor="Hand">
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-github-20.png"
+                               Width="16" Height="16" Stretch="Uniform"/>
+                        <TextBlock Text="Source Code" FontSize="11" VerticalAlignment="Center"/>
+                      </StackPanel>
+                    </Button>
+                    <!-- Website -->
+                    <Button Padding="8,4"
+                            Margin="0,2,6,2"
+                            Command="{Binding OpenLinkCommand}"
+                            CommandParameter="{Binding SelectedItem.Url}"
+                            IsVisible="{Binding SelectedItem.Url, Converter={StaticResource StringNotEmpty}}"
+                            Cursor="Hand">
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-globe-16.png"
+                               Width="16" Height="16" Stretch="Uniform"/>
+                        <TextBlock Text="Website" FontSize="11" VerticalAlignment="Center"/>
+                      </StackPanel>
+                    </Button>
+                  </WrapPanel>
                 </StackPanel>
 
               </StackPanel>

@@ -16,6 +16,7 @@ namespace XBVault.ViewModels;
 
 public partial class BrowseViewModel : ObservableObject
 {
+    private readonly CatalogApiService _catalogService;
     private readonly EmulationRevivalService _erService;
     private readonly PackageInstallService _installService;
     private readonly XboxDeviceService _xboxService;
@@ -38,6 +39,7 @@ public partial class BrowseViewModel : ObservableObject
     public BrowseViewModel(EmulationRevivalService erService, PackageInstallService installService, XboxDeviceService xboxService)
     {
         _erService = erService;
+        _catalogService = new CatalogApiService();
         _installService = installService;
         _xboxService = xboxService;
         Categories =
@@ -49,7 +51,8 @@ public partial class BrowseViewModel : ObservableObject
             "App",
             "Experimental",
             "Media",
-            "Utility"
+            "Utility",
+            "GZDoom"
         ];
         Logger.Debug($"BrowseViewModel created, {Categories.Count} categories");
     }
@@ -270,12 +273,12 @@ public partial class BrowseViewModel : ObservableObject
     private async Task LoadCatalogAsync()
     {
         IsLoading = true;
-        Logger.Info("Loading catalog from Emulation Revival...");
+        Logger.Info("Loading catalog...");
 
         try
         {
-            Logger.Debug("FetchCatalogAsync start");
-            _allItems = await _erService.FetchCatalogAsync(forceRefresh: false);
+            Logger.Debug("FetchCatalogAsync start (JSON API primary)");
+            _allItems = await _catalogService.FetchCatalogAsync(forceRefresh: false);
             Logger.Info($"Catalog loaded: {_allItems.Count} items total");
 
             foreach (var item in _allItems)
@@ -301,7 +304,10 @@ public partial class BrowseViewModel : ObservableObject
     [RelayCommand]
     private async Task RefreshCatalogAsync()
     {
-        Logger.Info("RefreshCatalog command triggered — opening refresh dialog");
+        Logger.Info("RefreshCatalog command triggered — clearing cache and refreshing");
+
+        // Clear cache to force fresh fetch
+        CatalogApiService.ClearCache();
 
         if (ShowRefreshDialogAsync is not null)
         {
@@ -313,7 +319,7 @@ public partial class BrowseViewModel : ObservableObject
             // Fallback: do inline if delegate not wired
             try
             {
-                _allItems = await _erService.FetchCatalogAsync(forceRefresh: true);
+                _allItems = await _catalogService.FetchCatalogAsync(forceRefresh: true);
                 Logger.Info($"Catalog refreshed: {_allItems.Count} items total");
 
                 foreach (var item in _allItems)
@@ -338,12 +344,28 @@ public partial class BrowseViewModel : ObservableObject
     [RelayCommand]
     private void VisitSite()
     {
-        var url = SelectedItem?.DownloadUrl;
+        var url = SelectedItem?.DownloadUrl ?? SelectedItem?.Url;
         if (string.IsNullOrWhiteSpace(url))
         {
             Logger.Warn("VisitSite called but no URL");
             return;
         }
+        OpenUrl(url);
+    }
+
+    [RelayCommand]
+    private void OpenLink(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            Logger.Warn("OpenLink called with empty URL");
+            return;
+        }
+        OpenUrl(url);
+    }
+
+    private static void OpenUrl(string url)
+    {
         Logger.Info($"Opening URL: {url}");
         try
         {

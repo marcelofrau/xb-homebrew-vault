@@ -1,76 +1,77 @@
-# Plano: portar XBVault para Linux e macOS
+# Plan: Port XBVault to Linux and macOS
 
-Objetivo
-- Tornar possível buildar, publicar e executar XBVault em Linux e macOS para desenvolvimento e testes (não cobre empacotamento final tipo notarização macOS).
+## Objective
+- Enable building, publishing, and running XBVault on Linux and macOS for development and testing (does not cover final packaging like macOS notarization).
 
-Premissas verificadas
-- Projeto usa .NET 8 + Avalonia (suporta Linux/macOS).
-- Hoje há dependências e scripts assumindo Windows (WinExe, caminho absoluto do dotnet, PublishReadyToRun, BuiltInComInteropSupport).
+## Verified Assumptions
+- Project uses .NET 8 + Avalonia (supports Linux/macOS).
+- Currently has dependencies and scripts assuming Windows (WinExe, absolute dotnet path, PublishReadyToRun, BuiltInComInteropSupport).
 
-Checklist de alto nível (ordem executável)
-1. Experimento rápido (provar que app inicia)
-   - Em máquina Linux com .NET 8 instalado:
-     ```bash
-     dotnet publish XBVault -c Release -r linux-x64 --self-contained false -o out
-     ./out/XBVault
-     ```
-   - Em macOS substitua -r por osx-x64 ou osx-arm64 e execute `./out/XBVault` ou `open out/XBVault.app` se empacotar.
-   - Instale libs nativas necessárias se app falhar (ver seção "Dependências nativas").
+## High-Level Checklist (Executable Order)
 
-2. Reforçar csproj (mudanças mínimas)
-   - Adicionar RuntimeIdentifiers: `win-x64;linux-x64;osx-x64;osx-arm64`.
-   - Condicionalizar props Windows-only:
-     - `OutputType` pode ser `Exe` em vez de `WinExe` para multiplataforma.
-     - `BuiltInComInteropSupport` mover para Condition="'$(RuntimeIdentifier)'=='win-*'".
-   - Não remover Avalonia; apenas tornar props condicionais.
+### 1. Quick Experiment (prove app launches)
+- On a Linux machine with .NET 8 installed:
+  ```bash
+  dotnet publish XBVault -c Release -r linux-x64 --self-contained false -o out
+  ./out/XBVault
+  ```
+- On macOS, replace `-r` with `osx-x64` or `osx-arm64` and run `./out/XBVault` or `open out/XBVault.app` if bundled.
+- Install native libs if app fails (see "Native Dependencies" section).
 
-3. Tornar scripts multi-OS / documentar alternativas
-   - Não confiar em "C:\Program Files\dotnet\dotnet.exe" em scripts. Opções:
-     - Atualizar scripts para usar `dotnet` do PATH (cross-OS).
-     - Ou documentar claramente como rodar `dotnet publish` diretamente (ver comandos acima).
+### 2. Harden csproj (minimal changes)
+- Add RuntimeIdentifiers: `win-x64;linux-x64;osx-x64;osx-arm64`.
+- Conditionalize Windows-only props:
+  - `OutputType` can be `Exe` instead of `WinExe` for cross-platform.
+  - Move `BuiltInComInteropSupport` to `Condition="'$(RuntimeIdentifier)'=='win-*'"`.
+- Don't remove Avalonia; just make props conditional.
 
-4. Proteger código Windows-específico
-   - Buscar P/Invoke, COM, registry ou caminhos hard-coded:
-     ```bash
-     rg "DllImport|ComInterop|Registry|RegistryKey|PInvoke|BuiltInComInteropSupport|RuntimeInformation" -S
-     ```
-   - Encapsular/condicionar com `RuntimeInformation.IsOSPlatform(OSPlatform.Windows)`.
+### 3. Make scripts multi-OS / document alternatives
+- Don't rely on `"C:\Program Files\dotnet\dotnet.exe"` in scripts. Options:
+  - Update scripts to use `dotnet` from PATH (cross-OS).
+  - Or clearly document how to run `dotnet publish` directly (see commands above).
 
-5. Dependências nativas (instalar para dev/test)
-   - Linux (Debian/Ubuntu exemplo):
-     ```bash
-     sudo apt install -y libgtk-3-0 libgdk-pixbuf2.0-0 libx11-6 libc6 libharfbuzz0b libfontconfig1
-     ```
-   - macOS: instalar via Homebrew libs recomendadas por Avalonia (gtk3/homebrew formulas) e configurar DISPLAY se usar remote GUI.
+### 4. Guard Windows-specific code
+- Search for P/Invoke, COM, registry, or hard-coded paths:
+  ```bash
+  rg "DllImport|ComInterop|Registry|RegistryKey|PInvoke|BuiltInComInteropSupport|RuntimeInformation" -S
+  ```
+- Wrap/conditionalize with `RuntimeInformation.IsOSPlatform(OSPlatform.Windows)`.
 
-6. Smoke tests e validação
-   - CI job simples por OS: `dotnet publish` + tentar executar o binário (exit code 0) dentro do runner.
-   - Testes manuais: abrir UI e navegar rapidamente entre telas mais críticas (Settings, Browse, Installed).
+### 5. Native Dependencies (install for dev/test)
+- Linux (Debian/Ubuntu example):
+  ```bash
+  sudo apt install -y libgtk-3-0 libgdk-pixbuf2.0-0 libx11-6 libc6 libharfbuzz0b libfontconfig1
+  ```
+- macOS: install via Homebrew libs recommended by Avalonia (gtk3/homebrew formulas) and configure DISPLAY if using remote GUI.
 
-7. CI
-   - Adicionar matrix job (windows-latest, ubuntu-latest, macos-latest) que execute:
-     - dotnet --info
-     - dotnet restore
-     - dotnet publish XBVault -c Release -r <rid> --self-contained false -o out
-     - Run smoke executable (where possible)
+### 6. Smoke Tests and Validation
+- Simple CI job per OS: `dotnet publish` + try to run the binary (exit code 0) inside the runner.
+- Manual tests: open UI and quickly navigate through critical screens (Settings, Browse, Installed).
 
-8. Packaging e distribuição (separado)
-   - Linux: AppImage / deb / flatpak — precisa empacotar dependências nativas corretamente.
-   - macOS: .app bundle, codesign e notarize para distribuição pública.
+### 7. CI
+- Add matrix job (windows-latest, ubuntu-latest, macos-latest) that runs:
+  - `dotnet --info`
+  - `dotnet restore`
+  - `dotnet publish XBVault -c Release -r <rid> --self-contained false -o out`
+  - Run smoke executable (where possible)
 
-Estimativa rápida
-- Experimentação local (provar publish + abrir): 1–2 horas.
-- Remover/condicionar Windows-only e ajustar csproj/scripts: 2–6 horas.
-- Configurar CI multi-OS + smoke runs: 1–3 horas.
-- Packaging cross-platform (prod): dias → semanas (depends on target quality).
+### 8. Packaging and Distribution (separate)
+- Linux: AppImage / deb / flatpak — needs to package native dependencies correctly.
+- macOS: .app bundle, codesign and notarize for public distribution.
 
-PR checklist mínimo
-- csproj: RuntimeIdentifiers e condicionais aplicadas.
-- build scripts: não usam caminho absoluto do dotnet ou documentam alternativas.
-- Código: runtime-guarded onde necessário; nenhum P/Invoke Windows cru sem guardas.
-- docs: atualizar AGENTS.md e adicionar instruções rápidas de como testar em Linux/macOS.
-- CI: job matrix com publish + smoke run.
+## Quick Estimate
+- Local experimentation (prove publish + open): 1–2 hours.
+- Remove/conditionalize Windows-only and adjust csproj/scripts: 2–6 hours.
+- Configure multi-OS CI + smoke runs: 1–3 hours.
+- Cross-platform packaging (prod): days → weeks (depends on target quality).
 
-Notas finais
-- Priorizar experimento rápido para saber se problemas são apenas libs nativas. Se falhar na UI imediatamente, problema é env (dependências) e não código .NET.
-- Posso abrir PR com csproj condicional e um exemplo de workflow CI se quiser — diga qual opção prefere.
+## Minimum PR Checklist
+- csproj: RuntimeIdentifiers and conditionals applied.
+- Build scripts: don't use absolute dotnet path or document alternatives.
+- Code: runtime-guarded where necessary; no raw Windows P/Invoke without guards.
+- Docs: update AGENTS.md and add quick instructions on how to test on Linux/macOS.
+- CI: job matrix with publish + smoke run.
+
+## Final Notes
+- Prioritize quick experiment to know if problems are just native libs. If UI fails immediately, problem is env (dependencies) not .NET code.
+- I can open a PR with conditional csproj and a sample CI workflow if you want — let me know which option you prefer.

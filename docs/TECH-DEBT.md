@@ -27,19 +27,19 @@ Removed from tracking, added to `.gitignore`, deleted from disk.
 
 ## 🟡 Medium
 
-### 3. Border CornerRadius não clipa Image com UniformToFill (Avalonia 12.0.0)
+### 3. Border CornerRadius does not clip Image with UniformToFill (Avalonia 12.0.0)
 
-BrowseView + ItemDetailWindow: `Border CornerRadius="8,8,0,0"` com `Image Stretch="UniformToFill"` dentro não clipa a imagem aos cantos arredondados. Cantos da imagem "furam" a borda do Card.
+BrowseView + ItemDetailWindow: `Border CornerRadius="8,8,0,0"` with `Image Stretch="UniformToFill"` inside does not clip the image to the rounded corners. Image corners "bleed through" the Card border.
 
-**Tentativas que não resolveram:**
-- Overlay `Border` com stroke em cima (mascarava mas hover ficava "atrás")
-- `Border` próprio pra Image com `CornerRadius` (Avalonia não clipou)
-- `ClipToBounds="True"` combinado (clipa retângulo, não arredondado)
+**Attempts that did not work:**
+- Overlay `Border` with stroke on top (masked but hover was "behind")
+- Separate `Border` for Image with `CornerRadius` (Avalonia did not clip)
+- `ClipToBounds="True"` combined (clips rectangle, not rounded)
 
-**Próximo passo sugerido:**
-- Aplicar `Clip` geometry via código-behind (`RectangleGeometry` com `RadiusX/Y` atrelado ao `ActualWidth/ActualHeight`)
-- Ou migrar pra `ImageBrush` com `CornerRadius` num `Border` (outro caminho de render)
-- Verificar se Avalonia 11.1+ corrige (projeto usa 12.0.0)
+**Suggested next step:**
+- Apply `Clip` geometry via code-behind (`RectangleGeometry` with `RadiusX/Y` bound to `ActualWidth/ActualHeight`)
+- Or migrate to `ImageBrush` with `CornerRadius` in a `Border` (different render path)
+- Check if Avalonia 11.1+ fixes this (project uses 12.0.0)
 
 ### 4. Title bar gradient duplicated in 14 windows
 

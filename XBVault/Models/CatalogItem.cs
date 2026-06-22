@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -22,6 +23,38 @@ public partial class CatalogItem : ObservableObject
     public List<string> Requirements { get; set; } = [];
     public List<string> Features { get; set; } = [];
     public bool IsExperimental { get; set; }
+
+    // New fields from JSON API
+    public string? Url { get; set; }
+    public string? SourceCodeUrl { get; set; }
+    public string? SetupGuideUrl { get; set; }
+    public string? TutorialUrl { get; set; }
+    public string? ReleaseNotesUrl { get; set; }
+    public List<Contributor> Contributors { get; set; } = [];
+    public List<DownloadAsset> Downloads { get; set; } = [];
+
+    // Computed properties for UI visibility
+    [JsonIgnore]
+    public bool HasContributors => Contributors.Count > 0;
+
+    [JsonIgnore]
+    public bool HasLinks => !string.IsNullOrEmpty(SetupGuideUrl)
+                         || !string.IsNullOrEmpty(TutorialUrl)
+                         || !string.IsNullOrEmpty(ReleaseNotesUrl)
+                         || !string.IsNullOrEmpty(SourceCodeUrl)
+                         || !string.IsNullOrEmpty(Url);
+
+    [JsonIgnore]
+    public bool HasMultipleDownloads => Downloads.Count > 1;
+
+    [JsonIgnore]
+    public DownloadAsset? MainDownload => Downloads.FirstOrDefault(d => d.DownloadType == DownloadType.MainPackage)
+                                       ?? Downloads.FirstOrDefault();
+
+    [JsonIgnore]
+    public List<DownloadAsset> DependencyDownloads => Downloads
+        .Where(d => d.DownloadType == DownloadType.Dependency)
+        .ToList();
 
     [ObservableProperty]
     [property: JsonIgnore]
