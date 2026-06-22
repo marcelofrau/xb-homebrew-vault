@@ -7,6 +7,10 @@
 
 > Desktop manager for **Xbox Dev Mode** homebrew — browse, install, and manage emulators and apps from [Emulation Revival](https://emulationrevival.github.io), plus remote console tools via the Xbox Device Portal API.
 
+<p align="center">
+  <img src="docs/social-preview.png" alt="XB Homebrew Vault" width="800"/>
+</p>
+
 ---
 
 ## ✨ Features
