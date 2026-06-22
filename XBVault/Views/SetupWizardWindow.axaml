@@ -1,0 +1,309 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        x:Class="XBVault.Views.SetupWizardWindow"
+        x:DataType="vm:SetupWizardViewModel"
+        Title="Setup Wizard"
+        Width="600" Height="500"
+        MinWidth="600" MinHeight="500"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        WindowDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
+
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
+
+  <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
+    <Grid RowDefinitions="32,*" ColumnDefinitions="160,*">
+
+      <!-- Title Bar -->
+      <Grid Grid.ColumnSpan="2" Height="32"
+            PointerPressed="OnTitleBarPointerPressed">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#447F3E" Offset="0"/>
+            <GradientStop Color="#9ACA3C" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="Setup Wizard"
+                   Foreground="#1A1A1A"
+                   FontSize="14"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"
+                   Margin="12,0"/>
+        <Button Grid.Column="1"
+                Width="32" Height="32"
+                Padding="0"
+                BorderThickness="0"
+                Click="OnCloseClick"
+                Cursor="Hand"
+                ToolTip.Tip="Close">
+          <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-close-20.png"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
+          <Button.Styles>
+            <Style Selector="Button">
+              <Setter Property="Background" Value="Transparent"/>
+            </Style>
+            <Style Selector="Button:pointerover">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+          </Button.Styles>
+        </Button>
+      </Grid>
+
+      <!-- Left Panel: InstallShield-style wizard sidebar -->
+      <Border Grid.Row="1" Grid.Column="0">
+        <Border.Background>
+          <ImageBrush Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-sidebarbg.png"
+                      Stretch="UniformToFill"/>
+        </Border.Background>
+        <Grid RowDefinitions="Auto,*,Auto" Margin="0,20,0,16">
+
+          <!-- Wizard icon -->
+          <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-wizard-100.png"
+                 Width="80" Height="80"
+                 Stretch="Uniform"
+                 HorizontalAlignment="Center"
+                 Opacity="0.90"/>
+
+          <!-- Step indicators -->
+          <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="20" Margin="20,0">
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-step1-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsConsoleStep}"/>
+              <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-step1-disabled-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsConsoleStep, Converter={StaticResource BoolInverse}}"/>
+              <TextBlock Grid.Column="1" Text="Console"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsConsoleStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-step2-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsAuthStep}"/>
+              <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-step2-disabled-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsAuthStep, Converter={StaticResource BoolInverse}}"/>
+              <TextBlock Grid.Column="1" Text="Authentication"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsAuthStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-step3-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsReadyStep}"/>
+              <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-step3-disabled-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsReadyStep, Converter={StaticResource BoolInverse}}"/>
+              <TextBlock Grid.Column="1" Text="Ready"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsReadyStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+          </StackPanel>
+
+          <!-- Bottom branding -->
+          <TextBlock Grid.Row="2"
+                     Text="XB Homebrew Vault"
+                     FontSize="10"
+                     Foreground="#447F3E"
+                     HorizontalAlignment="Center"
+                     Opacity="0.5"/>
+        </Grid>
+      </Border>
+
+      <!-- Right Panel: Wizard Content -->
+      <Border Grid.Row="1" Grid.Column="1" BorderThickness="0" Background="{StaticResource SurfaceBrush}">
+        <Grid RowDefinitions="*,Auto" Margin="20,16,20,16">
+
+          <!-- Step 0: Console -->
+          <StackPanel IsVisible="{Binding IsConsoleStep}" Spacing="12">
+            <TextBlock Text="Xbox Console"
+                       FontSize="16" FontWeight="SemiBold"/>
+            <TextBlock Text="Enter the IP address of your Xbox in Developer Mode."
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                       TextWrapping="Wrap"/>
+
+            <Separator Height="1" Background="{StaticResource BorderBrush}"/>
+
+            <TextBlock Text="IP Address"
+                       FontSize="13" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding Address}"
+                     PlaceholderText="e.g. 192.168.1.100"
+                     FontSize="13"/>
+
+            <TextBlock Text="Port"
+                       FontSize="13" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding Port}"
+                     PlaceholderText="11443"
+                     FontSize="13"/>
+
+            <CheckBox IsChecked="{Binding UseHttps}"
+                      Content="Use HTTPS"
+                      FontSize="13"
+                      Foreground="{StaticResource TextBrush}"/>
+
+            <TextBlock Text="{Binding StatusText}"
+                       FontSize="11"
+                       Foreground="{StaticResource TextDimBrush}"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmpty}}"/>
+          </StackPanel>
+
+          <!-- Step 1: Authentication -->
+          <StackPanel IsVisible="{Binding IsAuthStep}" Spacing="12">
+            <TextBlock Text="Authentication"
+                       FontSize="16" FontWeight="SemiBold"/>
+            <TextBlock Text="Enter the credentials for your Xbox Device Portal."
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                       TextWrapping="Wrap"/>
+
+            <Separator Height="1" Background="{StaticResource BorderBrush}"/>
+
+            <TextBlock Text="Username"
+                       FontSize="13" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding Username}"
+                     PlaceholderText="e.g. DevPortalUser"
+                     FontSize="13"/>
+
+            <TextBlock Text="Password"
+                       FontSize="13" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding Password}"
+                     PasswordChar="*"
+                     FontSize="13"/>
+
+            <TextBlock Text="{Binding StatusText}"
+                       FontSize="11"
+                       Foreground="{StaticResource TextDimBrush}"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmpty}}"/>
+          </StackPanel>
+
+          <!-- Step 2: Ready -->
+          <StackPanel IsVisible="{Binding IsReadyStep}" Spacing="12">
+            <TextBlock Text="Ready"
+                       FontSize="16" FontWeight="SemiBold"/>
+            <TextBlock Text="Review your settings before saving."
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                       TextWrapping="Wrap"/>
+
+            <Separator Height="1" Background="{StaticResource BorderBrush}"/>
+
+            <Border Padding="12,10" CornerRadius="4"
+                    Background="{StaticResource SurfaceAltBrush}">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="80,*" ColumnSpacing="8">
+                  <TextBlock Text="Address:" FontSize="12"
+                             Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding Address}"
+                             FontSize="12" FontWeight="Bold"/>
+                </Grid>
+                <Grid ColumnDefinitions="80,*" ColumnSpacing="8">
+                  <TextBlock Text="Port:" FontSize="12"
+                             Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding Port}"
+                             FontSize="12" FontWeight="Bold"/>
+                </Grid>
+                <Grid ColumnDefinitions="80,*" ColumnSpacing="8">
+                  <TextBlock Text="Username:" FontSize="12"
+                             Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding Username}"
+                             FontSize="12" FontWeight="Bold"/>
+                </Grid>
+                <Grid ColumnDefinitions="80,*" ColumnSpacing="8">
+                  <TextBlock Text="HTTPS:" FontSize="12"
+                             Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1"
+                             Text="{Binding UseHttps}"
+                             FontSize="12" FontWeight="Bold"/>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <CheckBox IsChecked="{Binding OpenConnectionAfter}"
+                      Content="Open connection window"
+                      FontSize="13"
+                      Foreground="{StaticResource TextBrush}"/>
+
+            <TextBlock Text="{Binding StatusText}"
+                       FontSize="11"
+                       Foreground="{StaticResource TextDimBrush}"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding StatusText, Converter={StaticResource StringNotEmpty}}"/>
+          </StackPanel>
+
+          <!-- Footer Buttons -->
+          <Grid Grid.Row="1" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Cancel on the left -->
+            <Button Classes="Danger"
+                    Padding="16,8"
+                    HorizontalAlignment="Left"
+                    Command="{Binding CancelCommand}">
+              <TextBlock Text="Cancel"
+                         FontSize="12" VerticalAlignment="Center"/>
+            </Button>
+
+            <!-- Navigation on the right -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+              <Button Padding="16,8"
+                      Command="{Binding GoBackCommand}"
+                      IsEnabled="{Binding CanGoBack}"
+                      IsVisible="{Binding IsReadyStep, Converter={StaticResource BoolInverse}}">
+                <TextBlock Text="Back"
+                           FontSize="13" VerticalAlignment="Center"/>
+              </Button>
+
+              <!-- Step 0,1: Next -->
+              <Button Classes="Accent"
+                      Padding="20,8"
+                      Command="{Binding GoNextCommand}"
+                      IsVisible="{Binding IsReadyStep, Converter={StaticResource BoolInverse}}"
+                      IsEnabled="{Binding CanGoNext}">
+                <TextBlock Text="Next"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Button>
+
+              <!-- Step 2: Finish -->
+              <Button Classes="Accent"
+                      Padding="20,8"
+                      Command="{Binding FinishCommand}"
+                      IsVisible="{Binding IsReadyStep}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-wizard-48.png"
+                         Width="18" Height="18" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Finish"
+                             FontSize="13" FontWeight="SemiBold"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </StackPanel>
+          </Grid>
+
+        </Grid>
+      </Border>
+
+    </Grid>
+  </Border>
+
+</Window>

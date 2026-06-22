@@ -125,7 +125,7 @@ public partial class App : Application
         await Task.Delay(2000);
         Logger.Debug("Splash delay complete, building main window");
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             var main = new MainWindow
             {
@@ -415,9 +415,27 @@ public partial class App : Application
             _ = browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
             // Installed packages loaded only on explicit refresh (manual connect)
 
-            Logger.Info("Main window loaded, splash closed");
-
+            Logger.Info("Main window loaded, closing splash");
             splash.Close();
+
+            // First-run wizard (after splash to avoid z-order overlap)
+            if (!SettingsService.Current.XboxConnection.IsConfigured)
+            {
+                var wizardVm = new SetupWizardViewModel(xboxService);
+                var wizardWin = new Views.SetupWizardWindow { DataContext = wizardVm };
+                wizardVm.CloseAction = () => wizardWin.Close();
+                await wizardWin.ShowDialog(main);
+                if (wizardVm.OpenConnectionAfter && mainViewModel.ShowConnectAction is not null)
+                {
+                    var connected = await mainViewModel.ShowConnectAction();
+                    if (connected)
+                    {
+                        mainViewModel.IsXboxConnected = true;
+                        xboxService.MarkConnected();
+                        mainViewModel.ConnectionStatusText = "Connected";
+                    }
+                }
+            }
         });
     }
 }
