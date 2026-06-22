@@ -31,7 +31,7 @@ public class XboxDeviceService
             ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
             CookieContainer = new CookieContainer()
         };
-        _http = new HttpClient(_handler);
+        _http = new HttpClient(_handler) { Timeout = TimeSpan.FromSeconds(30) };
     }
 
     public void Configure(string baseUrl, string username, string password)
@@ -52,7 +52,7 @@ public class XboxDeviceService
             ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
             CookieContainer = new CookieContainer()
         };
-        var http = new HttpClient(handler);
+        var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
         http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", auth);
         http.BaseAddress = new Uri(baseUrl);
@@ -103,7 +103,7 @@ public class XboxDeviceService
             ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
             CookieContainer = new CookieContainer()
         };
-        _http = new HttpClient(_handler);
+        _http = new HttpClient(_handler) { Timeout = TimeSpan.FromSeconds(30) };
     }
 
     public async Task<ConnectionTestResult> TestConnectionAsync(CancellationToken ct = default)

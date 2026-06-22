@@ -44,7 +44,8 @@
                  HorizontalAlignment="Center"/>
       <StackPanel Spacing="2" Margin="0,4,0,0">
         <TextBlock x:Name="VersionText"
-                   FontSize="11"
+                   FontSize="15"
+                   FontWeight="Bold"
                    Foreground="{StaticResource AccentBrush}"
                    HorizontalAlignment="Center"/>
         <TextBlock Text="Marcelo Frau"
@@ -52,8 +53,9 @@
                    Foreground="#888"
                    HorizontalAlignment="Center"/>
         <TextBlock Text="GPL-3.0-only"
-                   FontSize="11"
-                   Foreground="#888"
+                   FontSize="12"
+                   FontWeight="SemiBold"
+                   Foreground="{StaticResource YellowBrush}"
                    HorizontalAlignment="Center"/>
       </StackPanel>
 
@@ -62,18 +64,34 @@
                  Margin="0,8"
                  HorizontalAlignment="Center"/>
 
-      <Image Source="avares://XBVault/Assets/Views/AboutWindow/about-erlogo.png"
-             Width="140" Height="40"
-             Stretch="Uniform"
-             HorizontalAlignment="Center"/>
-      <TextBlock Text="Catalog powered by Emulation Revival"
-                 FontSize="11"
-                 Foreground="#777"
+      <Button Cursor="Hand"
+              Background="Transparent"
+              BorderThickness="0"
+              HorizontalAlignment="Center"
+              ToolTip.Tip="Visit Emulation Revival website"
+              Click="OnErLinkClick">
+        <StackPanel Spacing="2">
+          <Image Source="avares://XBVault/Assets/Views/AboutWindow/about-erlogo.png"
+                 Width="140" Height="40"
+                 Stretch="Uniform"
                  HorizontalAlignment="Center"/>
-      <TextBlock Text="github.com/marcelofrau/xb-homebrew-vault"
-                 FontSize="11"
-                 Foreground="#999"
-                 HorizontalAlignment="Center"/>
+          <TextBlock Text="Catalog powered by Emulation Revival"
+                     FontSize="11"
+                     Foreground="#777"
+                     HorizontalAlignment="Center"/>
+        </StackPanel>
+      </Button>
+      <Button Cursor="Hand"
+              Background="Transparent"
+              BorderThickness="0"
+              HorizontalAlignment="Center"
+              ToolTip.Tip="Open project on GitHub"
+              Click="OnProjectLinkClick">
+        <TextBlock Text="github.com/marcelofrau/xb-homebrew-vault"
+                   FontSize="11"
+                   Foreground="#999"
+                   HorizontalAlignment="Center"/>
+      </Button>
     </StackPanel>
 
     <Button Grid.Row="1"

@@ -39,7 +39,7 @@ public class PackageInstallService
     {
         _cache = cache;
         _xbox = xbox;
-        _http = new HttpClient();
+        _http = new HttpClient() { Timeout = TimeSpan.FromSeconds(30) };
         _http.DefaultRequestHeaders.Add("User-Agent", $"XB Homebrew Vault/{BuildInfo.Version}");
     }
 

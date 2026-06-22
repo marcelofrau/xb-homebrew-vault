@@ -84,9 +84,10 @@
     </Grid>
 
     <!-- Loading -->
-    <StackPanel Grid.Row="2"
-                IsVisible="{Binding IsLoading}"
-                HorizontalAlignment="Center"
+    <Border Grid.Row="2"
+            IsVisible="{Binding IsLoading}"
+            Background="{StaticResource SurfaceBrush}">
+    <StackPanel HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="12">
       <Image x:Name="SpinnerImage"
@@ -107,11 +108,13 @@
                  FontSize="13"
                  HorizontalAlignment="Center"/>
     </StackPanel>
+    </Border>
 
     <!-- Empty state -->
-    <StackPanel Grid.Row="2"
-                IsVisible="{Binding HasItems, Converter={StaticResource BoolInverse}}"
-                HorizontalAlignment="Center"
+    <Border Grid.Row="2"
+            IsVisible="{Binding HasItems, Converter={StaticResource BoolInverse}}"
+            Background="{StaticResource SurfaceBrush}">
+    <StackPanel HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="8">
       <TextBlock Text="No items found"
@@ -123,6 +126,7 @@
                  Foreground="{StaticResource TextDimBrush}"
                  HorizontalAlignment="Center"/>
     </StackPanel>
+    </Border>
 
     <!-- Catalog Grid -->
     <ListBox Grid.Row="2"

@@ -9,12 +9,12 @@ namespace XBVault.ViewModels;
 
 public partial class RefreshViewModel : ObservableObject
 {
-    private readonly EmulationRevivalService _erService;
+    private readonly CatalogApiService _catalogService;
     private readonly Func<Task>? _onCatalogRefreshed;
 
-    public RefreshViewModel(EmulationRevivalService erService, Func<Task>? onCatalogRefreshed = null)
+    public RefreshViewModel(CatalogApiService catalogService, Func<Task>? onCatalogRefreshed = null)
     {
-        _erService = erService;
+        _catalogService = catalogService;
         _onCatalogRefreshed = onCatalogRefreshed;
         Logger.Debug("RefreshViewModel initialized");
     }
@@ -45,6 +45,7 @@ public partial class RefreshViewModel : ObservableObject
         IsRunning = true;
         Progress = 0;
         OutputLines.Clear();
+        var started = DateTime.UtcNow;
         Logger.Info("Refresh dialog started");
 
         AddLine("Initializing catalog refresh...");
@@ -55,9 +56,6 @@ public partial class RefreshViewModel : ObservableObject
         await Delay(300);
         Progress = 0.1;
 
-        AddLine("Downloading catalog pages...");
-        Progress = 0.15;
-
         try
         {
             var progress = new Progress<(string Status, double Progress)>(p =>
@@ -67,26 +65,31 @@ public partial class RefreshViewModel : ObservableObject
                     AddLine(p.Status);
             });
 
-            AddLine("Fetching emulators, frontends, ports...");
+            AddLine("Fetching catalog data...");
             await Task.Delay(200);
 
-            await _erService.FetchCatalogAsync(forceRefresh: true, progress: progress);
+            var items = await _catalogService.FetchCatalogAsync(forceRefresh: true, progress: progress);
 
             Progress = 0.85;
             AddLine("");
-            AddLine("Parsing and deduplicating...");
-            await Delay(300);
+            AddLine("Processing results...");
+            await Delay(200);
             Progress = 0.9;
 
-            AddLine("Caching results...");
+            AddLine("Updating cache...");
             await Delay(200);
             Progress = 0.95;
 
             AddLine("");
-            AddLine("Catalog refreshed successfully!");
-            AddLine("New data available in Browse.");
+            AddLine($"Catalog refreshed — {items.Count} items available!");
             Progress = 1.0;
-            await Delay(200);
+
+            // Ensure minimum 1 second visible for nostalgia factor
+            var elapsed = DateTime.UtcNow - started;
+            if (elapsed.TotalSeconds < 1.0)
+                await Delay(1000 - (int)elapsed.TotalMilliseconds);
+
+            await Delay(300);
 
             if (_onCatalogRefreshed is not null)
             {

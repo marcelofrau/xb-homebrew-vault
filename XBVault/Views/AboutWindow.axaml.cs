@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia.Controls;
 using XBVault.Helpers;
 using XBVault.Services;
@@ -17,5 +18,17 @@ public partial class AboutWindow : Window
     {
         Logger.Trace("AboutWindow closed");
         Close();
+    }
+
+    private void OnErLinkClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Logger.Info("Opening Emulation Revival website from About window");
+        Process.Start(new ProcessStartInfo("https://emulationrevival.github.io") { UseShellExecute = true });
+    }
+
+    private void OnProjectLinkClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Logger.Info("Opening project GitHub from About window");
+        Process.Start(new ProcessStartInfo("https://github.com/marcelofrau/xb-homebrew-vault") { UseShellExecute = true });
     }
 }

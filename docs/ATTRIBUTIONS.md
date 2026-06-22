@@ -23,6 +23,10 @@ Community-driven hub for Xbox Developer Mode emulation.
 | HtmlAgilityPack | MIT |
 | .NET Runtime | MIT |
 
+## Background Images
+
+Splash window and About window background photos by **Johnson Martin** on Unsplash (https://unsplash.com/@johnsonmartin).
+
 ## Xbox Developer Mode
 
 This application uses the Xbox Device Portal API provided by Microsoft's Xbox Developer Mode.

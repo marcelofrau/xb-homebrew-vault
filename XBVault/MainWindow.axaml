@@ -222,13 +222,20 @@
         </ListBox>
 
         <!-- ER Logo -->
-        <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-erlogo.png"
-               Grid.Row="2"
-               Width="140"
-               Height="40"
-               Stretch="Uniform"
-               HorizontalAlignment="Center"
-               Margin="0,0,0,8"/>
+        <Button Grid.Row="2"
+                Cursor="Hand"
+                Background="Transparent"
+                BorderThickness="0"
+                HorizontalAlignment="Center"
+                Margin="0,0,0,8"
+                ToolTip.Tip="Visit Emulation Revival website"
+                Click="OnErLinkClick">
+          <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-erlogo.png"
+                 Width="140"
+                 Height="40"
+                 Stretch="Uniform"
+                 HorizontalAlignment="Center"/>
+        </Button>
 
         <!-- Connection status + Connect + About -->
         <StackPanel Grid.Row="3" Spacing="4" Margin="16,0,16,16">

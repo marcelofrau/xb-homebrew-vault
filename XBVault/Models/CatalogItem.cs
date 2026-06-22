@@ -35,6 +35,10 @@ public partial class CatalogItem : ObservableObject
 
     // Computed properties for UI visibility
     [JsonIgnore]
+    public bool IsWindowsTool => (DownloadUrl?.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ?? false)
+                              || Downloads.Any(d => d.Url.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+
+    [JsonIgnore]
     public bool HasContributors => Contributors.Count > 0;
 
     [JsonIgnore]

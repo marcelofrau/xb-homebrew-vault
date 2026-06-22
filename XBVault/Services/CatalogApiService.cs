@@ -12,13 +12,13 @@ using XBVault.Models;
 namespace XBVault.Services;
 
 /// <summary>
-/// Fetches catalog from JSON API with HTML scraping fallback.
-/// Cache: 4 hours TTL, persisted to disk.
+/// Fetches catalog from JSON API. Falls back to stale cache on failure.
+/// Cache: 6 hours TTL, persisted to disk.
 /// </summary>
 public partial class CatalogApiService
 {
     private const string JsonApiUrl = "https://emulationrevival.github.io/api/catalog.json";
-    private const int CacheTtlHours = 4;
+    private const int CacheTtlHours = 6;
     private const int ExpectedSchemaVersion = 1;
 
     private static readonly string CacheDir = Path.Combine(
@@ -33,17 +33,15 @@ public partial class CatalogApiService
     private static partial Regex DepPattern();
 
     private readonly HttpClient _http;
-    private readonly EmulationRevivalService _fallbackService;
 
     public CatalogApiService()
     {
-        _http = new HttpClient();
+        _http = new HttpClient() { Timeout = TimeSpan.FromSeconds(30) };
         _http.DefaultRequestHeaders.Add("User-Agent", $"XB Homebrew Vault/{BuildInfo.Version}");
-        _fallbackService = new EmulationRevivalService();
     }
 
     /// <summary>
-    /// Fetch catalog items. Uses JSON API with HTML fallback.
+    /// Fetch catalog items from JSON API. Returns cached data if API fails.
     /// </summary>
     public async Task<List<CatalogItem>> FetchCatalogAsync(
         bool forceRefresh = false,
@@ -63,7 +61,7 @@ public partial class CatalogApiService
             }
         }
 
-        // Try JSON API first
+        // Fetch from JSON API
         progress?.Report(("Fetching catalog...", 0.1));
         var items = await TryFetchJsonApiAsync(progress);
 
@@ -73,10 +71,20 @@ public partial class CatalogApiService
             return items;
         }
 
-        // Fallback to HTML scraping
-        Logger.Warn("JSON API failed, falling back to HTML scraping");
-        progress?.Report(("Falling back to HTML scraping...", 0.2));
-        return await _fallbackService.FetchCatalogAsync(forceRefresh, progress);
+        // JSON API failed — try stale cache as fallback
+        Logger.Warn("JSON API failed, trying stale cache");
+        progress?.Report(("Using cached catalog...", 0.5));
+        var stale = LoadFromCache(ignoreTtl: true);
+        if (stale is not null && stale.Count > 0)
+        {
+            Logger.Warn($"Using stale cache: {stale.Count} items");
+            progress?.Report(($"Using cached catalog ({stale.Count} items)", 1.0));
+            return stale;
+        }
+
+        Logger.Error("Catalog fetch failed — no cache available");
+        progress?.Report(("Failed to load catalog", 1.0));
+        return [];
     }
 
     private async Task<List<CatalogItem>?> TryFetchJsonApiAsync(
@@ -172,7 +180,7 @@ public partial class CatalogApiService
             ReleaseDate = api.ReleaseDate,
             Developer = developer,
             UwpPortBy = uwpPortBy,
-            Category = MapCategory(api.CategorySlug),
+            Category = api.Category,
             Compatibility = api.Compatibility,
             IsExperimental = api.IsExperimental,
             Requirements = api.Requirements,
@@ -194,24 +202,7 @@ public partial class CatalogApiService
         };
     }
 
-    /// <summary>
-    /// Maps category slug to display category
-    /// </summary>
-    private static string MapCategory(string categorySlug)
-    {
-        return categorySlug switch
-        {
-            "emulators" => "Emulator",
-            "frontends" => "Frontend",
-            "ports" => "GamePort",
-            "apps" => "App",
-            "experimental-apps" => "Experimental",
-            "media-apps" => "Media",
-            "utilities" => "Utility",
-            "gzdoom-mods" => "GZDoom",
-            _ => categorySlug
-        };
-    }
+
 
     private void ClassifyDownloads(CatalogItem item)
     {
@@ -269,7 +260,7 @@ public partial class CatalogApiService
         return DownloadType.MainPackage;
     }
 
-    private static List<CatalogItem>? LoadFromCache()
+    private static List<CatalogItem>? LoadFromCache(bool ignoreTtl = false)
     {
         try
         {
@@ -288,15 +279,23 @@ public partial class CatalogApiService
                 return null;
             }
 
-            // Check TTL
-            var age = DateTime.UtcNow - cache.FetchedAt;
-            if (age.TotalHours > CacheTtlHours)
+            // Check TTL unless ignoreTtl (stale fallback)
+            if (!ignoreTtl)
             {
-                Logger.Debug($"Cache expired: {age.TotalHours:F1}h old (TTL: {CacheTtlHours}h)");
-                return null;
-            }
+                var age = DateTime.UtcNow - cache.FetchedAt;
+                if (age.TotalHours > CacheTtlHours)
+                {
+                    Logger.Debug($"Cache expired: {age.TotalHours:F1}h old (TTL: {CacheTtlHours}h)");
+                    return null;
+                }
 
-            Logger.Debug($"Cache valid: {age.TotalMinutes:F0}min old, source={cache.Source}");
+                Logger.Debug($"Cache valid: {age.TotalMinutes:F0}min old, source={cache.Source}");
+            }
+            else
+            {
+                var age = DateTime.UtcNow - cache.FetchedAt;
+                Logger.Warn($"Using stale cache ({age.TotalHours:F1}h old, source={cache.Source})");
+            }
 
             // Convert API items to CatalogItems
             var items = cache.Data.Items

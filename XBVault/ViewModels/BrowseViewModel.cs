@@ -17,7 +17,6 @@ namespace XBVault.ViewModels;
 public partial class BrowseViewModel : ObservableObject
 {
     private readonly CatalogApiService _catalogService;
-    private readonly EmulationRevivalService _erService;
     private readonly PackageInstallService _installService;
     private readonly XboxDeviceService _xboxService;
     private List<CatalogItem> _allItems = [];
@@ -36,29 +35,16 @@ public partial class BrowseViewModel : ObservableObject
 
     private static readonly HttpClient ImageHttp = new();
 
-    public BrowseViewModel(EmulationRevivalService erService, PackageInstallService installService, XboxDeviceService xboxService)
+    public BrowseViewModel(PackageInstallService installService, XboxDeviceService xboxService)
     {
-        _erService = erService;
         _catalogService = new CatalogApiService();
         _installService = installService;
         _xboxService = xboxService;
-        Categories =
-        [
-            "All",
-            "Emulator",
-            "Frontend",
-            "GamePort",
-            "App",
-            "Experimental",
-            "Media",
-            "Utility",
-            "GZDoom"
-        ];
-        Logger.Debug($"BrowseViewModel created, {Categories.Count} categories");
+        Logger.Debug("BrowseViewModel created");
     }
 
     public ObservableCollection<CatalogItem> Items { get; } = [];
-    public List<string> Categories { get; }
+    public ObservableCollection<string> Categories { get; } = ["All"];
 
     [ObservableProperty]
     private string _searchText = string.Empty;
@@ -122,6 +108,10 @@ public partial class BrowseViewModel : ObservableObject
 
     public bool IsNotInstalling => !IsInstalling;
     public bool CanCheckInstalled => !IsInstalling && !IsCheckingInstalled;
+    public bool ShowWindowsToolBanner => SelectedItem?.IsWindowsTool == true;
+    public bool CanInstallXboxItem => IsNotInstalling && !ShowWindowsToolBanner;
+    public bool CanCheckXboxItem => CanCheckInstalled && !ShowWindowsToolBanner;
+    public bool CanRecheckXboxItem => CanRecheck && !ShowWindowsToolBanner;
     public bool ShowDescriptionPanel => !IsInstalling && !InstallComplete && !IsCheckingInstalled && !CheckComplete;
     public bool ShowInstallOverlay => IsInstalling || InstallComplete;
     public bool ShowCheckOverlay => IsCheckingInstalled || CheckComplete;
@@ -135,6 +125,9 @@ public partial class BrowseViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsNotInstalling));
         OnPropertyChanged(nameof(CanCheckInstalled));
+        OnPropertyChanged(nameof(CanInstallXboxItem));
+        OnPropertyChanged(nameof(CanCheckXboxItem));
+        OnPropertyChanged(nameof(CanRecheckXboxItem));
         OnPropertyChanged(nameof(ShowDescriptionPanel));
         OnPropertyChanged(nameof(ShowInstallOverlay));
     }
@@ -150,6 +143,7 @@ public partial class BrowseViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowDescriptionPanel));
         OnPropertyChanged(nameof(ShowCheckOverlay));
         OnPropertyChanged(nameof(CanRecheck));
+        OnPropertyChanged(nameof(CanRecheckXboxItem));
         OnPropertyChanged(nameof(ShowCheckNotInstalled));
         OnPropertyChanged(nameof(ShowCheckNotDetectedHint));
         OnPropertyChanged(nameof(ShowCheckNotConnectedHint));
@@ -164,6 +158,8 @@ public partial class BrowseViewModel : ObservableObject
     partial void OnIsCheckingInstalledChanged(bool value)
     {
         OnPropertyChanged(nameof(CanCheckInstalled));
+        OnPropertyChanged(nameof(CanCheckXboxItem));
+        OnPropertyChanged(nameof(CanRecheckXboxItem));
         OnPropertyChanged(nameof(ShowCheckOverlay));
         OnPropertyChanged(nameof(ShowDescriptionPanel));
         OnPropertyChanged(nameof(CanRecheck));
@@ -189,6 +185,15 @@ public partial class BrowseViewModel : ObservableObject
         CheckResultMessage = null;
         InstallComplete = false;
         Logger.Info($"Checking install status for [{item.Category}] {item.Name}");
+
+        if (item.IsWindowsTool)
+        {
+            CheckComplete = true;
+            CheckResultMessage = "Windows tool — not an Xbox package";
+            Logger.Info("Skipping check for Windows tool");
+            IsCheckingInstalled = false;
+            return;
+        }
 
         if (!_xboxService.IsConfigured)
         {
@@ -253,6 +258,8 @@ public partial class BrowseViewModel : ObservableObject
     {
         if (value is not null)
         {
+            IsInstalling = false;
+            IsCheckingInstalled = false;
             InstallComplete = false;
             InstallSuccess = false;
             InstallProgress = 0;
@@ -262,6 +269,10 @@ public partial class BrowseViewModel : ObservableObject
             CheckInstalled = false;
             CheckError = false;
             CheckResultMessage = null;
+            OnPropertyChanged(nameof(ShowWindowsToolBanner));
+            OnPropertyChanged(nameof(CanInstallXboxItem));
+            OnPropertyChanged(nameof(CanCheckXboxItem));
+            OnPropertyChanged(nameof(CanRecheckXboxItem));
             Logger.Info($"Item selected: [{value.Category}] {value.Name} v{value.Version}");
             if (ShowDetailAction is null)
                 Logger.Info("ShowDetailAction is NULL — detail window will not open");
@@ -288,7 +299,9 @@ public partial class BrowseViewModel : ObservableObject
                 .Select(g => $"{g.Key}={g.Count()}");
             Logger.Debug($"Per category: {string.Join(", ", byCategory)}");
 
+            RebuildCategories();
             ApplyFilters();
+            IsLoading = false;
             _ = LoadThumbnailsAsync();
         }
         catch (Exception ex)
@@ -396,9 +409,21 @@ public partial class BrowseViewModel : ObservableObject
             Logger.Warn($"Install already in progress for {SelectedItem.Name}");
             return;
         }
+        if (SelectedItem?.IsWindowsTool == true)
+        {
+            Logger.Warn($"Refusing install for Windows tool: {SelectedItem.Name}");
+            InstallComplete = true;
+            InstallSuccess = false;
+            InstallResultMessage = "This is a Windows tool — not installable on Xbox.";
+            return;
+        }
         if (!_xboxService.IsConnected)
         {
             Logger.Info("Xbox not connected — cannot install");
+            CheckComplete = false;
+            CheckInstalled = false;
+            CheckError = false;
+            CheckResultMessage = null;
             InstallComplete = true;
             InstallSuccess = false;
             InstallResultMessage = "Not connected. Connect via sidebar first.";
@@ -422,39 +447,71 @@ public partial class BrowseViewModel : ObservableObject
         CurrentFile = "";
         Logger.Info($"Install starting: {itemName} from {itemUrl}");
 
-        var progress = new Progress<InstallProgressInfo>(info =>
+        try
         {
-            InstallProgress = info.Total;
-            PackageProgress = info.File;
-            PackageStatus = info.Status;
-            CurrentFile = info.CurrentFile;
+            var progress = new Progress<InstallProgressInfo>(info =>
+            {
+                InstallProgress = info.Total;
+                PackageProgress = info.File;
+                PackageStatus = info.Status;
+                CurrentFile = info.CurrentFile;
 
-            InstallStatus = info.Status;
-        });
+                InstallStatus = info.Status;
+            });
 
-        Logger.Debug("Calling DownloadAndInstallAsync");
-        var result = await _installService.DownloadAndInstallAsync(SelectedItem!, progress);
+            Logger.Debug("Calling DownloadAndInstallAsync");
+            var result = await _installService.DownloadAndInstallAsync(SelectedItem!, progress);
 
-        if (result)
-        {
-            InstallStatus = "✓ Complete!";
-            InstallComplete = true;
-            InstallSuccess = true;
-            InstallResultMessage = null;
-            Logger.Info($"Install complete: {itemName}");
+            if (result)
+            {
+                InstallStatus = "✓ Complete!";
+                InstallComplete = true;
+                InstallSuccess = true;
+                InstallResultMessage = null;
+                Logger.Info($"Install complete: {itemName}");
+            }
+            else
+            {
+                InstallStatus = "✗ Install failed";
+                InstallComplete = true;
+                InstallSuccess = false;
+                InstallResultMessage = "Install failed";
+                Logger.Error($"Install failed: {itemName}");
+            }
+
+            InstallProgress = result ? 1.0 : 0;
         }
-        else
+        catch (Exception ex)
         {
-            InstallStatus = "✗ Install failed";
+            Logger.Error(ex, $"Install crashed for {itemName}");
             InstallComplete = true;
             InstallSuccess = false;
-            InstallResultMessage = "Install failed";
-            Logger.Error($"Install failed: {itemName}");
+            InstallResultMessage = $"Unexpected error: {ex.Message}";
+            InstallProgress = 0;
         }
+        finally
+        {
+            IsInstalling = false;
+            Logger.Debug("Install flow finished");
+        }
+    }
 
-        InstallProgress = result ? 1.0 : 0;
-        IsInstalling = false;
-        Logger.Debug("Install flow finished");
+    private void RebuildCategories()
+    {
+        var cats = _allItems
+            .Select(i => i.Category)
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Distinct()
+            .OrderBy(c => c)
+            .ToList();
+
+        Categories.Clear();
+        Categories.Add("All");
+        foreach (var cat in cats)
+            Categories.Add(cat);
+
+        SelectedCategory = "All";
+        Logger.Debug($"Categories rebuilt: {Categories.Count - 1} categories loaded");
     }
 
     private void ApplyFilters()

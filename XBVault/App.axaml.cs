@@ -40,12 +40,11 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var xboxService = new XboxDeviceService();
-            var erService = new EmulationRevivalService();
             var cacheService = new CacheService();
             var installService = new PackageInstallService(cacheService, xboxService);
 
             var mainViewModel = new MainViewModel(xboxService);
-            var browseViewModel = new BrowseViewModel(erService, installService, xboxService);
+            var browseViewModel = new BrowseViewModel(installService, xboxService);
             var installedViewModel = new InstalledViewModel(xboxService);
             var fileExplorerViewModel = new FileExplorerViewModel(xboxService);
             var toolsViewModel = new ToolsViewModel(xboxService);
@@ -57,7 +56,7 @@ public partial class App : Application
 
             _ = InitAfterSplashAsync(desktop, splash, mainViewModel, browseViewModel,
                 installedViewModel, fileExplorerViewModel, toolsViewModel,
-                settingsViewModel, xboxService, installService, erService);
+                settingsViewModel, xboxService, installService);
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -120,8 +119,7 @@ public partial class App : Application
         ToolsViewModel toolsViewModel,
         SettingsViewModel settingsViewModel,
         XboxDeviceService xboxService,
-        PackageInstallService installService,
-        EmulationRevivalService erService)
+        PackageInstallService installService)
     {
         Logger.Debug("Splash delay starting (2s)");
         await Task.Delay(2000);
@@ -195,7 +193,7 @@ public partial class App : Application
 
             browseViewModel.ShowRefreshDialogAsync = async () =>
             {
-                var refreshVm = new RefreshViewModel(erService, async () =>
+                var refreshVm = new RefreshViewModel(new CatalogApiService(), async () =>
                 {
                     await Dispatcher.UIThread.InvokeAsync(async () =>
                     {

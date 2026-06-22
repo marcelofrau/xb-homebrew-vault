@@ -29,6 +29,12 @@
 |---|---|
 | **Main Window** — catalog browser with Blades theme | **Browse & Detail View** |
 | ![](docs/screenshots/main.png) | ![](docs/screenshots/detailview-browse.png) |
+
+<details>
+<summary>More screenshots (click to expand)</summary>
+
+| | |
+|---|---|
 | **Installed Packages** | **Installing from Browse** |
 | ![](docs/screenshots/installed.png) | ![](docs/screenshots/installing-from-browse.png) |
 | **Install Complete** | **Custom Install Wizard** |
@@ -44,6 +50,8 @@
 | **Process List** | **Screen Capture** |
 | ![](docs/screenshots/processlist.png) | ![](docs/screenshots/screen%20capture.png) |
 
+</details>
+
 > Tip: click any screenshot to view full size.
 
 ---
@@ -53,30 +61,13 @@
 Download the latest release from the [Releases page](https://github.com/marcelofrau/xb-homebrew-vault/releases).
 
 ```powershell
-# Extract XBVault-v0.8.1-win-x64.zip and run XBVault.exe
+# Extract XBVault-v0.8.5-win-x64.zip and run XBVault.exe
 ```
 
 ## 📋 Prerequisites
 
 - **Windows 10/11** (x64)
 - **Xbox One** or **Xbox Series S|X** in [Developer Mode](https://wiki.sternserv.xyz/docs/xbox-setup/xbox-developer-mode-setup)
-- **.NET 8 SDK** (only for building from source)
-
-## 🏗️ Building from source
-
-```powershell
-# Clone
-git clone https://github.com/marcelofrau/xb-homebrew-vault.git
-cd xb-homebrew-vault
-
-# Run (development)
-.\build\run.ps1
-
-# Build release
-.\build\build-release.ps1 -Version 0.8.1 -Arch x64
-```
-
-The release script produces a self-contained ZIP at `build/dist/XBVault-v<Version>-win-<Arch>.zip`.
 
 ## 🎯 Usage
 
@@ -90,9 +81,8 @@ The release script produces a self-contained ZIP at `build/dist/XBVault-v<Versio
 
 | Action | Description |
 |--------|-------------|
-| **Browse** | Browse Emulation Revival catalog with category filter (Emulators, Apps, Ports, Utilities) |
-| **Search** | Search by name across cached catalog |
-| **Filter** | Filter by compatibility tier |
+| **Browse** | Browse Emulation Revival catalog with dynamic category filter |
+| **Search** | Search by name, description, or developer across cached catalog |
 | **Install** | Select an app → auto-download, dependency analysis, upload to Xbox |
 | **Uninstall** | Remove installed packages via remote API |
 
@@ -125,6 +115,8 @@ Opens from **Browse** or **Tools** panels. Supports local files (`.appx`/`.msix`
 | Xbox Dev Portal | `https://{ip}:11443` |
 | WebSocket (perf) | `wss://{ip}:11443/api/resourcemanager/systemperf` |
 
+---
+
 ## 🧰 Tech Stack
 
 | Layer | Technology |
@@ -132,57 +124,22 @@ Opens from **Browse** or **Tools** panels. Supports local files (`.appx`/`.msix`
 | ⚙️ Runtime | .NET 8 |
 | 🖥️ UI Framework | Avalonia UI 12 (Fluent theme) |
 | 🏗️ Architecture | MVVM (CommunityToolkit.Mvvm, source generators) |
-| 🌐 HTML Parsing | HtmlAgilityPack |
-| 📡 API | Xbox Device Portal API (REST + WebSocket) |
+| 📡 API | Xbox Device Portal API (REST + WebSocket), Emulation Revival JSON API |
 
 ## 🏛️ Project Structure
 
 ```
 XBVault/
-├── Models/               # Data models
+├── Models/               # Data models (CatalogItem, CatalogApi, etc.)
 ├── ViewModels/           # MVVM view models
-│   ├── MainViewModel.cs
-│   ├── BrowseViewModel.cs
-│   ├── InstalledViewModel.cs
-│   ├── ConnectionViewModel.cs
-│   ├── CustomInstallViewModel.cs
-│   ├── SettingsViewModel.cs
-│   ├── ConfirmViewModel.cs
-│   ├── ToolsViewModel.cs
-│   ├── ScreenshotViewModel.cs
-│   ├── SystemInfoViewModel.cs
-│   ├── ProcessesViewModel.cs
-│   ├── NetworkInfoViewModel.cs
-│   ├── PerformanceViewModel.cs
-│   ├── FileExplorerViewModel.cs
-│   ├── LogsViewModel.cs
-│   └── RefreshViewModel.cs
 ├── Views/                # Avalonia UI (AXAML) windows & controls
-│   ├── BrowseView.axaml
-│   ├── InstalledView.axaml
-│   ├── SettingsView.axaml
-│   ├── ToolsView.axaml
-│   ├── FileExplorerView.axaml
-│   ├── LogsView.axaml
-│   ├── ConnectionWindow.axaml
-│   ├── CustomInstallWindow.axaml
-│   ├── ItemDetailWindow.axaml
-│   ├── ConfirmWindow.axaml
-│   ├── ErrorDialog.axaml
-│   ├── ScreenshotWindow.axaml
-│   ├── SystemInfoWindow.axaml
-│   ├── ProcessesWindow.axaml
-│   ├── NetworkInfoWindow.axaml
-│   ├── PerformanceWindow.axaml / PerformanceChart.cs
-│   └── ...
 ├── Services/             # Business logic & API clients
-│   ├── XboxDeviceService.cs     — All Xbox API calls
-│   ├── EmulationRevivalService.cs — Catalog scraper
-│   ├── PackageInstallService.cs  — Package analysis
-│   ├── CacheService.cs          — Catalog cache
-│   ├── SettingsService.cs       — Settings persistence
-│   ├── CryptoService.cs         — Credential obfuscation
-│   └── Logger.cs               — Application logging
+│   ├── XboxDeviceService.cs       — All Xbox API calls
+│   ├── CatalogApiService.cs       — Emulation Revival JSON catalog API
+│   ├── PackageInstallService.cs   — Package analysis & install pipeline
+│   ├── SettingsService.cs         — Settings persistence
+│   ├── CryptoService.cs           — Credential obfuscation
+│   └── Logger.cs                  — Application logging
 ├── Converters/           # Value converters
 ├── Assets/               # Icons, fonts, themes
 └── Controls/             # Custom UI controls
@@ -199,15 +156,39 @@ docs/                     # Documentation
 | 2 — Catalog | ✅ | Emulation Revival browser with search, filters, item details |
 | 3 — Package Management | ✅ | Install/uninstall, dependency resolution, cache, progress bars |
 | 4 — Tools | ✅ | Screenshot, system info, processes, network, performance chart |
-| 5 — Refinement | 🔄 | Error dialogs, exit confirmation, custom install wizard, log viewer |
+| 5 — Refinement | ✅ | Error dialogs, exit confirmation, custom install wizard, log viewer |
 | 6 — Cross-platform | ⏳ | Linux/macOS builds, CI matrix |
 | 7 — Polish | ⏳ | Accessibility, edge cases, localization |
 
 See [docs/PLAN.md](docs/PLAN.md) for detailed versioning and release strategy.
 
+## 🏗️ Building from source
+
+Requires **.NET 8 SDK**.
+
+```powershell
+# Clone
+git clone https://github.com/marcelofrau/xb-homebrew-vault.git
+cd xb-homebrew-vault
+
+# Run (development)
+.\build\run.ps1
+
+# Build release
+.\build\build-release.ps1 -Version 0.8.5 -Arch x64
+```
+
+The release script produces a self-contained ZIP at `build/dist/XBVault-v<Version>-win-<Arch>.zip`.
+
 ## 📦 Release artifacts
 
-Releases are auto-built by GitHub Actions on tag push (`v*`). Each release includes a Windows x64 self-contained ZIP attached to the release page.
+Releases are built on tag push (`v*`). Each release includes a Windows x64 self-contained ZIP.
+
+## 🙏 Thanks
+
+Splash and About window backgrounds by **Johnson Martin** on [Unsplash](https://unsplash.com/@johnsonmartin).
+
+Special thanks to **MewLew** and the [Emulation Revival](https://emulationrevival.github.io) team for their curated catalog JSON API — the same source that powers the Emulation Revival website powers this app's Browse experience. Without their work organizing and maintaining the homebrew catalog, XB Homebrew Vault wouldn't be possible.
 
 ## 🎨 Icons
 

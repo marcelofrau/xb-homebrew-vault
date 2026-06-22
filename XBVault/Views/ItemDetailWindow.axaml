@@ -7,7 +7,7 @@
         x:Class="XBVault.Views.ItemDetailWindow"
         x:DataType="vm:BrowseViewModel"
         Title="Item Details"
-        Width="540" Height="620"
+        Width="540" Height="670"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
         WindowDecorations="None"
@@ -73,12 +73,12 @@
                      TextWrapping="Wrap"/>
 
           <!-- Thumbnail -->
-          <Border Grid.Row="1"
-                  CornerRadius="8"
-                  Background="{StaticResource SurfaceAltBrush}"
-                  Height="180"
-                  HorizontalAlignment="Stretch"
-                  Margin="0,12,0,0">
+                  <Border Grid.Row="1"
+                          CornerRadius="8"
+                          Background="{StaticResource SurfaceAltBrush}"
+                          Height="210"
+                          HorizontalAlignment="Stretch"
+                          Margin="0,16,0,0">
             <Grid>
               <Image Source="{Binding SelectedItem.Thumbnail}"
                      Stretch="UniformToFill"
@@ -91,10 +91,22 @@
           </Border>
 
           <!-- Content area: description scroll OR install overlay -->
-          <Grid Grid.Row="2" Margin="0,12,0,0">
+          <Grid Grid.Row="2" Margin="0,16,0,0">
             <!-- Normal description view -->
             <ScrollViewer IsVisible="{Binding ShowDescriptionPanel}">
               <StackPanel Spacing="16">
+
+                <Border IsVisible="{Binding ShowWindowsToolBanner}"
+                        Background="#2AE74C3C"
+                        BorderBrush="#55E74C3C"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12,8">
+                  <TextBlock Text="⚠ This is a Windows tool — not installable on Xbox"
+                             FontSize="12"
+                             Foreground="#EEE"
+                             TextWrapping="Wrap"/>
+                </Border>
 
                 <TextBlock Text="{Binding SelectedItem.Category}"
                            FontSize="12"
@@ -288,8 +300,9 @@
             </ScrollViewer>
 
             <!-- Install overlay -->
-            <StackPanel IsVisible="{Binding ShowInstallOverlay}"
-                        VerticalAlignment="Center"
+            <Border IsVisible="{Binding ShowInstallOverlay}"
+                    Background="#E01E1E1E">
+            <StackPanel VerticalAlignment="Center"
                         HorizontalAlignment="Center"
                         Spacing="10">
               <Image x:Name="InstallSpinner"
@@ -372,10 +385,12 @@
                           MaxWidth="400"
                           IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
             </StackPanel>
+            </Border>
 
             <!-- Check overlay -->
-            <StackPanel IsVisible="{Binding ShowCheckOverlay}"
-                        VerticalAlignment="Center"
+            <Border IsVisible="{Binding ShowCheckOverlay}"
+                    Background="#E01E1E1E">
+            <StackPanel VerticalAlignment="Center"
                         HorizontalAlignment="Center"
                         Spacing="10">
               <Image x:Name="CheckSpinner"
@@ -446,6 +461,7 @@
                 </StackPanel>
               </StackPanel>
             </StackPanel>
+            </Border>
           </Grid>
 
           <!-- Footer -->
@@ -473,7 +489,7 @@
                           Spacing="8">
                 <Button Padding="16,10"
                         Command="{Binding CheckInstalledCommand}"
-                        IsEnabled="{Binding CanCheckInstalled}"
+                        IsEnabled="{Binding CanCheckXboxItem}"
                         IsVisible="{Binding CheckComplete, Converter={StaticResource BoolInverse}}">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                     <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
@@ -486,7 +502,7 @@
                 </Button>
                 <Button Padding="16,10"
                         Command="{Binding CheckInstalledCommand}"
-                        IsEnabled="{Binding CanRecheck}"
+                        IsEnabled="{Binding CanRecheckXboxItem}"
                         IsVisible="{Binding CheckComplete}">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                     <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
@@ -516,7 +532,7 @@
                       Grid.Column="2"
                       Padding="20,10"
                       Command="{Binding InstallSelectedCommand}"
-                      IsEnabled="{Binding IsNotInstalling}"
+                      IsEnabled="{Binding CanInstallXboxItem}"
                       IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                   <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"

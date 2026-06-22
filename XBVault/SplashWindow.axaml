@@ -46,7 +46,8 @@
                  HorizontalAlignment="Center"/>
       <StackPanel Spacing="2" Margin="0,4,0,0">
         <TextBlock x:Name="VersionText"
-                   FontSize="11"
+                   FontSize="15"
+                   FontWeight="Bold"
                    Foreground="{StaticResource AccentBrush}"
                    HorizontalAlignment="Center"/>
         <TextBlock Text="Marcelo Frau"
@@ -54,8 +55,9 @@
                    Foreground="#888"
                    HorizontalAlignment="Center"/>
         <TextBlock Text="GPL-3.0-only"
-                   FontSize="11"
-                   Foreground="#888"
+                   FontSize="12"
+                   FontWeight="SemiBold"
+                   Foreground="{StaticResource YellowBrush}"
                    HorizontalAlignment="Center"/>
       </StackPanel>
     </StackPanel>
