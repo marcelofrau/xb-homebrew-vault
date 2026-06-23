@@ -316,6 +316,18 @@ public partial class App : Application
                 win.ShowDialog(main);
             };
 
+            toolsViewModel.ShowUsbPermissionAction = () =>
+            {
+                var vm = new UsbPermissionViewModel();
+                var win = new Views.UsbPermissionWindow { DataContext = vm };
+                vm.CloseAction = () => win.Close();
+                win.Opened += async (_, _) =>
+                {
+                    await vm.LoadDrivesCommand.ExecuteAsync(null);
+                };
+                win.ShowDialog(main);
+            };
+
             Action openCustomInstall = () =>
             {
                 if (!xboxService.IsConnected)

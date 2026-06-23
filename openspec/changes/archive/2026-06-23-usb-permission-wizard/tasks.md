@@ -1,7 +1,7 @@
 ## 1. Icons & Assets
 
-- [ ] 1.1 Create `Assets/Views/UsbPermissionWindow/` directory
-- [ ] 1.2 Copy icons from `F:\workspace\icons8-personal-set`:
+- [x] 1.1 Create `Assets/Views/UsbPermissionWindow/` directory
+- [x] 1.2 Copy icons from `F:\workspace\icons8-personal-set`:
   - `icons8-usb-{size}.png` → `usbperm-usb-20.png` (step 0 active, 20px)
   - Grayscale variant → `usbperm-usb-disabled-20.png` (step 0 disabled, 20px via `magick -colorspace Gray`)
   - `icons8-gear-{size}.png` → `usbperm-gear-20.png` (step 1 active, 20px)
@@ -12,18 +12,18 @@
   - `icons8-hdd-{size}.png` → `usbperm-drive-48.png` (drive icon in step 0, 48px)
   - `icons8-checkmark-{size}.png` → `usbperm-success-100.png` (success, 100px)
   - `icons8-error-{size}.png` → `usbperm-failure-100.png` (failure, 100px)
-- [ ] 1.3 Copy close button from `Assets/Views/ConnectionWindow/connection-close-20.png` → `usbperm-close-20.png`
-- [ ] 1.4 If sidebar background image desired, create or reuse gradient placeholder
+- [x] 1.3 Copy close button from `Assets/Views/ConnectionWindow/connection-close-20.png` → `usbperm-close-20.png`
+- [x] 1.4 If sidebar background image desired, create or reuse gradient placeholder
 
 ## 2. Model
 
-- [ ] 2.1 Create record/class `UsbDriveInfo` with: `DriveLetter`, `VolumeLabel`, `SizeBytes`, `FormattedSize`, `FileSystem`, `DriveTypeLabel` (HDD/USB Stick), `DisplayName` (for ComboBox), `IsSystemDrive`
-- [ ] 2.2 Add implicit ordering: non-system USB drives sorted by drive letter
+- [x] 2.1 Create record/class `UsbDriveInfo` with: `DriveLetter`, `VolumeLabel`, `SizeBytes`, `FormattedSize`, `FileSystem`, `DriveTypeLabel` (HDD/USB Stick), `DisplayName` (for ComboBox), `IsSystemDrive`
+- [x] 2.2 Add implicit ordering: non-system USB drives sorted by drive letter
 
 ## 3. WMI / USB Detection
 
-- [ ] 3.1 Add `using System.Management;` — verify it's available in .NET 8 (it's a NuGet reference in some targets, may need `<PackageReference Include="System.Management" />`)
-- [ ] 3.2 Implement static method `ListUsbDrives()` returning `List<UsbDriveInfo>`:
+- [x] 3.1 Add `using System.Management;` — verify it's available in .NET 8 (it's a NuGet reference in some targets, may need `<PackageReference Include="System.Management" />`)
+- [x] 3.2 Implement static method `ListUsbDrives()` returning `List<UsbDriveInfo>`:
   - Query: `SELECT * FROM Win32_DiskDrive WHERE InterfaceType='USB'`
   - For each disk, get partitions via `ASSOCIATORS OF {Win32_DiskDrive.DeviceID='...'} WHERE AssocClass = Win32_DiskDriveToDiskPartition`
   - For each partition, get logical disks via `ASSOCIATORS OF {Win32_DiskPartition.DeviceID='...'} WHERE AssocClass = Win32_LogicalDiskToPartition`
@@ -31,11 +31,11 @@
   - Determine HDD vs USB Stick: check `MediaType` contains "Fixed" or size > 64GB → HDD
   - Filter out system drive: compare `DeviceID` root with `Path.GetPathRoot(Environment.SystemDirectory)`
   - Wrap each operation in try/catch, skip drives that fail WMI queries
-- [ ] 3.3 Add `using System.Diagnostics;` — for `Process.Start("icacls", ...)` permission application
+- [x] 3.3 Add `using System.Diagnostics;` — for `Process.Start("icacls", ...)` permission application
 
 ## 4. ViewModel
 
-- [ ] 4.1 Create `ViewModels/UsbPermissionViewModel.cs`:
+- [x] 4.1 Create `ViewModels/UsbPermissionViewModel.cs`:
   - Inject no services (self-contained)
   - `[ObservableProperty]` fields: `CurrentStep` (0-2), `UsbDrives` (list), `SelectedDriveIndex`, `SelectedDrive`,
     `DriveLetter`, `DriveLabel`, `DriveSize`, `DriveTypeLabel`, `DriveFileSystem`, `IsDriveValid`,
@@ -45,21 +45,21 @@
   - Computed: `IsSelectStep`, `IsApplyStep`, `IsDoneStep`, `IsSuccess`, `IsFailure`
   - `Action? CloseAction`
 
-- [ ] 4.2 Implement `[RelayCommand] LoadDrives()`:
+- [x] 4.2 Implement `[RelayCommand] LoadDrives()`:
   - Run WMI query on background thread
   - Populate `UsbDrives` list, auto-select first if available
   - Handle no-drives case
 
-- [ ] 4.3 Implement `partial void OnSelectedDriveIndexChanged(int value)`:
+- [x] 4.3 Implement `partial void OnSelectedDriveIndexChanged(int value)`:
   - Update all drive info fields from selected `UsbDriveInfo`
   - Validate NTFS → set `IsDriveValid`, `ValidationMessage`
   - Notify `CanGoNext`
 
-- [ ] 4.4 Implement `[RelayCommand] GoNext()` / `[RelayCommand] GoBack()`:
+- [x] 4.4 Implement `[RelayCommand] GoNext()` / `[RelayCommand] GoBack()`:
   - Step navigation with can-go guards
   - `OnCurrentStepChanged` partial → notify computed step bools + `CanGoNext`/`CanGoBack`/`CanCancel`
 
-- [ ] 4.5 Implement `[RelayCommand] async ApplyAsync()`:
+- [x] 4.5 Implement `[RelayCommand] async ApplyAsync()`:
   - Set `IsApplying = true`, `CurrentStep = 1`
   - Build arguments: `<drive>:\ /grant "ALL APPLICATION PACKAGES:(OI)(CI)(F)" /T /Q`
   - Run `Process.Start("icacls", args)` with `RedirectStandardOutput`, `RedirectStandardError`, `UseShellExecute = false`
@@ -69,16 +69,16 @@
   - Handle exceptions (drive removed, access denied, etc.)
   - Set `ApplyComplete = true`, `IsApplying = false`, advance to step 2
 
-- [ ] 4.6 Implement `[RelayCommand] Retry()`:
+- [x] 4.6 Implement `[RelayCommand] Retry()`:
   - Reset all apply/result state
   - `CurrentStep = 0`
 
-- [ ] 4.7 Implement `[RelayCommand] Close()` / `[RelayCommand] Cancel()`:
+- [x] 4.7 Implement `[RelayCommand] Close()` / `[RelayCommand] Cancel()`:
   - Invoke `CloseAction`
 
 ## 5. Views
 
-- [ ] 5.1 Create `Views/UsbPermissionWindow.axaml`:
+- [x] 5.1 Create `Views/UsbPermissionWindow.axaml`:
   - Same template as `CustomInstallWindow.axaml` (green border, title bar, sidebar, content, footer)
   - Step 0 content:
     - Heading: "Select USB Drive"
@@ -96,18 +96,18 @@
     - Failure block: red X icon, "Failed", scrollable error details, Retry button
   - Footer buttons: Back, Cancel, Next (disabled on step 1), Apply (step 1), Retry (step 2 failure), Close (step 2)
 
-- [ ] 5.2 Create `Views/UsbPermissionWindow.axaml.cs`:
+- [x] 5.2 Create `Views/UsbPermissionWindow.axaml.cs`:
   - Constructor: `InitializeComponent()` in try/catch with `Logger`
   - `OnCloseClick`, `OnTitleBarPointerPressed`
   - (No spinner needed — progress is indeterminate bar, not rotating image)
 
 ## 6. Tools tab integration
 
-- [ ] 6.1 Add to `ViewModels/ToolsViewModel.cs`:
+- [x] 6.1 Add to `ViewModels/ToolsViewModel.cs`:
   - `public Action? ShowUsbPermissionAction { get; set; }`
   - `[RelayCommand] void OpenUsbPermission()` — check `IsConnected` (optional, wizard works offline), call `ShowUsbPermissionAction`
 
-- [ ] 6.2 Add to `Views/ToolsView.axaml`:
+- [x] 6.2 Add to `Views/ToolsView.axaml`:
   - New button in MANAGEMENT section, after "Custom Install":
     ```
     <Button Command="{Binding OpenUsbPermissionCommand}" Padding="14,8">
@@ -120,29 +120,38 @@
     ```
   - Copy USB icon from icons8 set → `tools-usb-20.png`
 
-- [ ] 6.3 Wire in `App.axaml.cs`:
+- [x] 6.3 Wire in `App.axaml.cs`:
   - Set `toolsViewModel.ShowUsbPermissionAction = () => { ... new UsbPermissionWindow { DataContext = new UsbPermissionViewModel() }.ShowDialog(main); }`
   - Or resolve via DI if ViewModel has dependencies
 
 ## 7. Admin rights detection
 
-- [ ] 7.1 Add helper `static bool IsAdministrator()`:
+- [x] 7.1 Add helper `static bool IsAdministrator()`:
   - `using System.Security.Principal;`
   - `new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)`
-- [ ] 7.2 If not admin, show warning in step 1 before applying: "XBVault is not running as Administrator. icacls requires admin rights. Click Apply anyway, or restart as Administrator."
+- [x] 7.2 If not admin, show warning in step 1 before applying: "XBVault is not running as Administrator. icacls requires admin rights. Click Apply anyway, or restart as Administrator."
+
+## 7.5 System Volume Information handling
+
+- [x] 7.5.1 Modify `ApplyAsync` to skip protected directories (`System Volume Information`, `$Recycle.Bin`):
+  - Grant root ACL without `/T` first to set inheritance flags
+  - Enumerate top-level items with `Directory.EnumerateFileSystemEntries`
+  - Apply `/T` individually on each item, skipping protected folders
+  - Exit code > 1 treated as real failure; exit code 0/1 with only protected-dir skips = success
+- [x] 7.5.2 Extract `RunIcaclsAsync` helper for reuse
 
 ## 8. Verify
 
-- [ ] 8.1 Verify `System.Management` is available. If not, add `<PackageReference Include="System.Management" />` to csproj
-- [ ] 8.2 Build project with `dotnet build XBVault/XBVault.csproj` — zero errors
-- [ ] 8.3 Run app, open Tools tab — verify "Activate USB Media Drive" button visible
-- [ ] 8.4 Click button — verify wizard opens with correct template
-- [ ] 8.5 Verify USB drives appear in dropdown (connect a USB drive if available)
-- [ ] 8.6 Select a drive — verify info card shows details, NTFS validation works
-- [ ] 8.7 Select non-NTFS drive — verify Next disabled + warning shown
-- [ ] 8.8 Click Apply on NTFS drive — verify progress shown, icacls runs
-- [ ] 8.9 Verify success screen with instructions appears
-- [ ] 8.10 Verify failure screen shows error details (test by removing drive during apply)
-- [ ] 8.11 Verify Close, Cancel, Back, Retry buttons work
-- [ ] 8.12 Verify admin rights detection shows warning
-- [ ] 8.13 Verify no USB drives shows appropriate message
+- [x] 8.1 Verify `System.Management` is available. If not, add `<PackageReference Include="System.Management" />` to csproj
+- [x] 8.2 Build project with `dotnet build XBVault/XBVault.csproj` — zero errors
+- [x] 8.3 Run app, open Tools tab — verify "Activate USB Media Drive" button visible
+- [x] 8.4 Click button — verify wizard opens with correct template
+- [x] 8.5 Verify USB drives appear in dropdown (connect a USB drive if available)
+- [x] 8.6 Select a drive — verify info card shows details, NTFS validation works
+- [x] 8.7 Select non-NTFS drive — verify Next enabled (format is optional) + informational warning shown
+- [x] 8.8 Click Apply on NTFS drive — verify progress shown, icacls runs
+- [x] 8.9 Verify success screen with instructions appears
+- [x] 8.10 Verify failure screen shows error details (test by removing drive during apply)
+- [x] 8.11 Verify Close, Cancel, Back, Retry buttons work
+- [x] 8.12 Verify admin rights detection shows warning
+- [x] 8.13 Verify no USB drives shows appropriate message

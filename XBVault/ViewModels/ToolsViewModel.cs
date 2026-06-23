@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -31,6 +32,7 @@ public partial class ToolsViewModel : ObservableObject
 
     public bool ShowDisconnected => !IsConnected;
     public bool ShowContent => IsConnected;
+    public bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
     partial void OnIsConnectedChanged(bool value)
     {
@@ -45,6 +47,7 @@ public partial class ToolsViewModel : ObservableObject
     public Action? ShowPerformanceAction { get; set; }
     public Action? ShowCustomInstallAction { get; set; }
     public Action? ShowCrashDataAction { get; set; }
+    public Action? ShowUsbPermissionAction { get; set; }
     public Func<string, string, string, string, string?, string?, Task<bool>>? ShowConfirmAsync { get; set; }
 
     [RelayCommand]
@@ -94,6 +97,12 @@ public partial class ToolsViewModel : ObservableObject
     {
         if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         ShowCrashDataAction?.Invoke();
+    }
+
+    [RelayCommand]
+    private void OpenUsbPermission()
+    {
+        ShowUsbPermissionAction?.Invoke();
     }
 
     [RelayCommand]

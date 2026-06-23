@@ -106,6 +106,21 @@
           </StackPanel>
         </Border>
 
+        <Border Classes="Card" Padding="24" IsVisible="{Binding IsWindows}">
+          <StackPanel Spacing="16">
+            <TextBlock Text="WINDOWS ONLY FEATURES" Classes="SectionHeader"/>
+            <Grid ColumnDefinitions="Auto" ColumnSpacing="8">
+              <Button Grid.Column="0" Command="{Binding OpenUsbPermissionCommand}" Padding="14,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-usb-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Activate USB Media Drive" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
         <Border Classes="Card" Padding="24">
           <StackPanel Spacing="16">
             <TextBlock Text="XBOX ACTIONS" Classes="SectionHeader"/>

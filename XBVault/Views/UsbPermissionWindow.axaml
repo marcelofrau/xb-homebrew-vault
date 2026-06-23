@@ -1,0 +1,551 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        x:Class="XBVault.Views.UsbPermissionWindow"
+        x:DataType="vm:UsbPermissionViewModel"
+        Title="USB Media Drive"
+        Width="600" Height="500"
+        MinWidth="600" MinHeight="500"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        WindowDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
+
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
+
+  <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
+    <Grid RowDefinitions="32,*" ColumnDefinitions="160,*">
+
+      <!-- Title Bar -->
+      <Grid Grid.ColumnSpan="2" Height="32"
+            PointerPressed="OnTitleBarPointerPressed">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#447F3E" Offset="0"/>
+            <GradientStop Color="#9ACA3C" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="USB Media Drive"
+                   Foreground="#1A1A1A"
+                   FontSize="14"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"
+                   Margin="12,0"/>
+        <Button Grid.Column="1"
+                Width="32" Height="32"
+                Padding="0"
+                BorderThickness="0"
+                Click="OnCloseClick"
+                Cursor="Hand"
+                ToolTip.Tip="Close">
+          <Image Source="avares://XBVault/Assets/Views/UsbPermissionWindow/usbperm-close-20.png"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
+          <Button.Styles>
+            <Style Selector="Button">
+              <Setter Property="Background" Value="Transparent"/>
+            </Style>
+            <Style Selector="Button:pointerover">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+          </Button.Styles>
+        </Button>
+      </Grid>
+
+      <!-- Left Panel: Wizard sidebar -->
+      <Border Grid.Row="1" Grid.Column="0">
+        <Border.Background>
+          <ImageBrush Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-sidebarbg.png"
+                      Stretch="UniformToFill"/>
+        </Border.Background>
+        <Grid RowDefinitions="Auto,*,Auto" Margin="0,20,0,16">
+
+          <!-- Wizard icon -->
+          <StackPanel HorizontalAlignment="Center">
+            <Image Source="avares://XBVault/Assets/Views/UsbPermissionWindow/usbperm-usb-100.png"
+                   Width="80" Height="80"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center"
+                   Opacity="0.90"/>
+            <StackPanel HorizontalAlignment="Center" Margin="0,4,0,0">
+              <TextBlock Text="USB"
+                         FontSize="13" FontWeight="Bold"
+                         Foreground="{StaticResource AccentBrush}"
+                         HorizontalAlignment="Center"/>
+              <TextBlock Text="PERMISSIONS"
+                         FontSize="11" FontWeight="Bold"
+                         Foreground="{StaticResource AccentBrush}"
+                         HorizontalAlignment="Center"
+                         Margin="0,-2,0,0"/>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Step indicators -->
+          <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="16" Margin="20,0">
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/UsbPermissionWindow/usbperm-rocket-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     Opacity="{Binding IsWelcomeStep, Converter={StaticResource StepActiveOpacity}}"/>
+              <TextBlock Grid.Column="1" Text="Welcome"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsWelcomeStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/UsbPermissionWindow/usbperm-info-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     Opacity="{Binding IsFormatStep, Converter={StaticResource StepActiveOpacity}}"/>
+              <TextBlock Grid.Column="1" Text="Format"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsFormatStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/UsbPermissionWindow/usbperm-usb-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     Opacity="{Binding IsSelectStep, Converter={StaticResource StepActiveOpacity}}"/>
+              <TextBlock Grid.Column="1" Text="Select Drive"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsSelectStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/UsbPermissionWindow/usbperm-gear-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     Opacity="{Binding IsApplyStep, Converter={StaticResource StepActiveOpacity}}"/>
+              <TextBlock Grid.Column="1" Text="Apply"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsApplyStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/UsbPermissionWindow/usbperm-flag-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     Opacity="{Binding IsDoneStep, Converter={StaticResource StepActiveOpacity}}"/>
+              <TextBlock Grid.Column="1" Text="Done"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsDoneStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+          </StackPanel>
+
+          <!-- Bottom branding -->
+          <TextBlock Grid.Row="2"
+                     Text="XB Homebrew Vault"
+                     FontSize="10"
+                     Foreground="#447F3E"
+                     HorizontalAlignment="Center"
+                     Opacity="0.5"/>
+        </Grid>
+      </Border>
+
+      <!-- Right Panel: Step Content -->
+      <Border Grid.Row="1" Grid.Column="1" BorderThickness="0" Background="{StaticResource SurfaceBrush}">
+        <Grid RowDefinitions="*,Auto" Margin="20,16,20,16">
+
+          <!-- Step 0: Welcome -->
+          <StackPanel IsVisible="{Binding IsWelcomeStep}" Spacing="0"
+                      VerticalAlignment="Center" HorizontalAlignment="Center"
+                      MaxWidth="340">
+            <Border Width="64" Height="64" CornerRadius="16"
+                    HorizontalAlignment="Center" Margin="0,0,0,8"
+                    Background="{StaticResource SurfaceAltBrush}">
+              <Image Source="avares://XBVault/Assets/Views/UsbPermissionWindow/usbperm-usb-100.png"
+                     Width="36" Height="36" Stretch="Uniform"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+            <TextBlock Text="Let's get your USB drive ready"
+                       FontSize="17" FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"/>
+
+            <TextBlock FontSize="12" TextWrapping="Wrap"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       Margin="0,6,0,16">
+              3 quick steps to use this drive with your Xbox in Developer Mode.
+            </TextBlock>
+
+            <Border Padding="14,10" CornerRadius="8"
+                    Background="{StaticResource SurfaceAltBrush}">
+              <StackPanel Spacing="10">
+                <StackPanel Spacing="1">
+                  <TextBlock Text="Format advice" FontSize="12" FontWeight="SemiBold"/>
+                  <TextBlock FontSize="11"
+                             Foreground="{StaticResource TextMutedBrush}">
+                    Recommended NTFS settings for Xbox
+                  </TextBlock>
+                </StackPanel>
+
+                <StackPanel Spacing="1">
+                  <TextBlock Text="Select drive" FontSize="12" FontWeight="SemiBold"/>
+                  <TextBlock FontSize="11"
+                             Foreground="{StaticResource TextMutedBrush}">
+                    Pick your USB drive from the list
+                  </TextBlock>
+                </StackPanel>
+
+                <StackPanel Spacing="1">
+                  <TextBlock Text="Apply permissions" FontSize="12" FontWeight="SemiBold"/>
+                  <TextBlock FontSize="11"
+                             Foreground="{StaticResource TextMutedBrush}">
+                    Grants ALL APPLICATION PACKAGES access
+                  </TextBlock>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- Step 1: Format Advice -->
+          <StackPanel IsVisible="{Binding IsFormatStep}" Spacing="12"
+                      MaxWidth="360">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Format Your Drive"
+                         FontSize="16" FontWeight="SemiBold"/>
+              <TextBlock TextWrapping="Wrap" FontSize="12"
+                         Foreground="{StaticResource TextMutedBrush}">
+                Optional — NTFS with Quick Format is the sweet spot for Xbox Dev Mode compatibility.
+              </TextBlock>
+            </StackPanel>
+
+            <Border Padding="14,10" CornerRadius="8"
+                    Background="{StaticResource SurfaceAltBrush}">
+              <StackPanel Spacing="8">
+                <WrapPanel>
+                  <Border Padding="8,4" CornerRadius="4"
+                          Background="#1A447F3E" Margin="0,0,6,4">
+                    <TextBlock Text="NTFS" FontSize="11" FontWeight="Bold"
+                               Foreground="#447F3E"/>
+                  </Border>
+                  <Border Padding="8,4" CornerRadius="4"
+                          Background="#1A447F3E" Margin="0,0,6,4">
+                    <TextBlock Text="Quick Format" FontSize="11" FontWeight="Bold"
+                               Foreground="#447F3E"/>
+                  </Border>
+                  <Border Padding="8,4" CornerRadius="4"
+                          Background="#1A447F3E" Margin="0,0,6,4">
+                    <TextBlock Text="Default allocation unit" FontSize="11" FontWeight="Bold"
+                               Foreground="#447F3E"/>
+                  </Border>
+                </WrapPanel>
+                <TextBlock FontSize="11" Foreground="{StaticResource TextDimBrush}"
+                           TextWrapping="Wrap">
+                  4096 byte allocation unit is the default — no need to change.
+                </TextBlock>
+              </StackPanel>
+            </Border>
+
+            <!-- Windows: Disk Management button -->
+            <StackPanel Spacing="8" IsVisible="{Binding IsWindows}">
+              <TextBlock TextWrapping="Wrap" FontSize="12"
+                         Foreground="{StaticResource TextMutedBrush}">
+                Right-click the partition in Disk Management and select Format.
+              </TextBlock>
+              <Button Classes="Accent" Padding="14,8"
+                      HorizontalAlignment="Left"
+                      Command="{Binding OpenDiskManagementCommand}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-usb-20.png"
+                         Width="16" Height="16" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Open Disk Management"
+                             FontSize="12" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </StackPanel>
+
+            <!-- Linux/Mac: text only -->
+            <TextBlock TextWrapping="Wrap" FontSize="12"
+                       Foreground="{StaticResource TextDimBrush}"
+                       IsVisible="{Binding IsWindows, Converter={StaticResource BoolInverse}}">
+              Format as NTFS before proceeding. Most tools can do this — use Disk Utility (macOS) or GParted (Linux).
+            </TextBlock>
+          </StackPanel>
+
+          <!-- Step 2: Select Drive -->
+          <StackPanel IsVisible="{Binding IsSelectStep}" Spacing="12">
+            <TextBlock Text="Select USB Drive"
+                       FontSize="16" FontWeight="SemiBold"/>
+            <TextBlock Text="Choose the USB drive you want to use with your Xbox in Developer Mode."
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                       TextWrapping="Wrap"/>
+
+            <Separator Height="1" Background="{StaticResource BorderBrush}"/>
+
+            <!-- Drive select or no-drives message -->
+            <StackPanel Spacing="8">
+              <TextBlock Text="Available Drives"
+                         FontSize="13" FontWeight="SemiBold"/>
+
+              <ComboBox ItemsSource="{Binding UsbDriveNames}"
+                        SelectedIndex="{Binding SelectedDriveIndex, Mode=OneWay}"
+                        IsVisible="{Binding IsNoDrives, Converter={StaticResource BoolInverse}}"
+                        SelectionChanged="OnDriveSelectionChanged"/>
+
+              <StackPanel IsVisible="{Binding IsNoDrives}" Spacing="8">
+                <TextBlock Text="No USB drives detected"
+                           FontSize="13"
+                           Foreground="{StaticResource TextDimBrush}"/>
+                <Button Classes="Accent"
+                        Padding="14,8"
+                        HorizontalAlignment="Left"
+                        Command="{Binding LoadDrivesCommand}">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    <Image Source="avares://XBVault/Assets/Views/SetupWizardWindow/setupwizard-close-20.png"
+                           Width="16" Height="16" Stretch="Uniform"/>
+                    <TextBlock Grid.Column="1" Text="Refresh"
+                               FontSize="12" VerticalAlignment="Center"/>
+                  </Grid>
+                </Button>
+              </StackPanel>
+            </StackPanel>
+
+            <!-- Drive info card -->
+            <Border Padding="12,10" CornerRadius="4"
+                    Background="{StaticResource SurfaceAltBrush}"
+                    IsVisible="{Binding IsNoDrives, Converter={StaticResource BoolInverse}}">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="80,*" ColumnSpacing="8">
+                  <TextBlock Text="Drive:" FontSize="12"
+                             Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding DriveLetter}"
+                             FontSize="12" FontWeight="Bold"/>
+                </Grid>
+                <Grid ColumnDefinitions="80,*" ColumnSpacing="8">
+                  <TextBlock Text="Label:" FontSize="12"
+                             Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding DriveLabel}"
+                             FontSize="12" FontWeight="Bold"/>
+                </Grid>
+                <Grid ColumnDefinitions="80,*" ColumnSpacing="8">
+                  <TextBlock Text="Size:" FontSize="12"
+                             Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding DriveSize}"
+                             FontSize="12" FontWeight="Bold"/>
+                </Grid>
+                <Grid ColumnDefinitions="80,*" ColumnSpacing="8">
+                  <TextBlock Text="File System:" FontSize="12"
+                             Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding DriveFileSystem}"
+                             FontSize="12" FontWeight="Bold"/>
+                </Grid>
+                <Grid ColumnDefinitions="80,*" ColumnSpacing="8">
+                  <TextBlock Text="Type:" FontSize="12"
+                             Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding DriveTypeLabel}"
+                             FontSize="12" FontWeight="Bold"/>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- NTFS validation warning -->
+            <Border Padding="10,8" CornerRadius="4"
+                    Background="#1AE74C3C"
+                    IsVisible="{Binding ValidationMessage, Converter={StaticResource StringNotEmpty}}">
+              <TextBlock Text="{Binding ValidationMessage}"
+                         FontSize="12"
+                         Foreground="{StaticResource DangerBrush}"
+                         FontWeight="SemiBold"/>
+            </Border>
+          </StackPanel>
+
+          <!-- Step 3: Apply -->
+          <StackPanel IsVisible="{Binding IsApplyStep}" Spacing="12">
+            <TextBlock Text="Apply Permissions"
+                       FontSize="16" FontWeight="SemiBold"/>
+            <TextBlock Text="Granting ALL APPLICATION PACKAGES access to this drive."
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                       TextWrapping="Wrap"/>
+
+            <Separator Height="1" Background="{StaticResource BorderBrush}"/>
+
+            <!-- Drive summary -->
+            <Border Padding="12,10" CornerRadius="4"
+                    Background="{StaticResource SurfaceAltBrush}">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding DriveSummary}"
+                           FontSize="13" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding DriveSize}"
+                           FontSize="12" Foreground="{StaticResource TextDimBrush}"/>
+              </StackPanel>
+            </Border>
+
+            <!-- Progress -->
+            <StackPanel Spacing="12" IsVisible="{Binding IsApplying}"
+                        HorizontalAlignment="Center">
+              <Image x:Name="ApplySpinner"
+                     Source="avares://XBVault/Assets/Views/InstalledView/installed-spinner-48.png"
+                     Width="48" Height="48"
+                     Stretch="Uniform"
+                     HorizontalAlignment="Center"
+                     RenderTransformOrigin="50% 50%">
+                <Image.RenderTransform>
+                  <RotateTransform Angle="0"/>
+                </Image.RenderTransform>
+              </Image>
+              <ProgressBar IsIndeterminate="True"
+                           Width="220"
+                           Foreground="{StaticResource AccentBrush}"/>
+              <TextBlock Text="{Binding ApplyProgressText}"
+                         FontSize="12"
+                         Foreground="{StaticResource TextDimBrush}"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap"
+                         TextAlignment="Center"/>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Step 4: Done -->
+          <StackPanel IsVisible="{Binding IsDoneStep}" Spacing="12"
+                      VerticalAlignment="Center" HorizontalAlignment="Center">
+            <!-- Success -->
+            <StackPanel Spacing="8" HorizontalAlignment="Center"
+                        IsVisible="{Binding IsSuccess}">
+              <Image Source="avares://XBVault/Assets/Views/UsbPermissionWindow/usbperm-success-100.png"
+                     Width="48" Height="48" Stretch="Uniform"
+                     HorizontalAlignment="Center"/>
+
+              <TextBlock Text="{Binding ResultMessage}"
+                         FontSize="16" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"
+                         Foreground="{StaticResource SuccessBrush}"/>
+              <TextBlock Text="You can now use this drive with your Xbox."
+                         FontSize="12"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Failure -->
+            <StackPanel Spacing="8" HorizontalAlignment="Center"
+                        IsVisible="{Binding IsFailure}">
+              <Image Source="avares://XBVault/Assets/Views/UsbPermissionWindow/usbperm-failure-100.png"
+                     Width="48" Height="48" Stretch="Uniform"
+                     HorizontalAlignment="Center"/>
+
+              <TextBlock Text="{Binding ResultMessage}"
+                         FontSize="16" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"
+                         Foreground="{StaticResource DangerBrush}"/>
+              <TextBlock Text="{Binding ResultDetails}"
+                         FontSize="12"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap"
+                         MaxWidth="300"/>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Footer Buttons -->
+          <Grid Grid.Row="1" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Cancel or Close on the left -->
+            <Button Classes="Danger"
+                    Padding="16,8"
+                    HorizontalAlignment="Left"
+                    Command="{Binding CloseCommand}"
+                    IsVisible="{Binding IsDoneStep}">
+              <TextBlock Text="Close"
+                         FontSize="12" VerticalAlignment="Center"/>
+            </Button>
+            <Button Classes="Danger"
+                    Padding="16,8"
+                    HorizontalAlignment="Left"
+                    Command="{Binding CancelCommand}"
+                    IsVisible="{Binding IsDoneStep, Converter={StaticResource BoolInverse}}">
+              <TextBlock Text="Cancel"
+                         FontSize="12" VerticalAlignment="Center"/>
+            </Button>
+
+            <!-- Navigation on the right -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+              <Button Padding="16,8"
+                      Command="{Binding GoBackCommand}"
+                      IsEnabled="{Binding CanGoBack}"
+                      IsVisible="{Binding IsFormatStep}">
+                <TextBlock Text="Back"
+                           FontSize="13" VerticalAlignment="Center"/>
+              </Button>
+              <Button Padding="16,8"
+                      Command="{Binding GoBackCommand}"
+                      IsEnabled="{Binding CanGoBack}"
+                      IsVisible="{Binding IsSelectStep}">
+                <TextBlock Text="Back"
+                           FontSize="13" VerticalAlignment="Center"/>
+              </Button>
+              <Button Padding="16,8"
+                      Command="{Binding GoBackCommand}"
+                      IsEnabled="{Binding CanGoBack}"
+                      IsVisible="{Binding IsApplyStep}">
+                <TextBlock Text="Back"
+                           FontSize="13" VerticalAlignment="Center"/>
+              </Button>
+
+              <!-- Step 0: Get Started -->
+              <Button Classes="Accent"
+                      Padding="20,8"
+                      Command="{Binding GoNextCommand}"
+                      IsVisible="{Binding IsWelcomeStep}">
+                <TextBlock Text="Get Started"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Button>
+
+              <!-- Step 1: Continue -->
+              <Button Classes="Accent"
+                      Padding="20,8"
+                      Command="{Binding GoNextCommand}"
+                      IsVisible="{Binding IsFormatStep}">
+                <TextBlock Text="Continue"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Button>
+
+              <!-- Step 2: Next -->
+              <Button Classes="Accent"
+                      Padding="20,8"
+                      Command="{Binding GoNextCommand}"
+                      IsVisible="{Binding IsSelectStep}"
+                      IsEnabled="{Binding CanGoNext}">
+                <TextBlock Text="Next"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Button>
+
+              <!-- Step 3: Apply -->
+              <Button Classes="Accent"
+                      Padding="20,8"
+                      Command="{Binding ApplyCommand}"
+                      IsVisible="{Binding IsApplyStep}"
+                      IsEnabled="{Binding IsApplying, Converter={StaticResource BoolInverse}}">
+                <TextBlock Text="Apply"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Button>
+            </StackPanel>
+          </Grid>
+
+        </Grid>
+      </Border>
+
+    </Grid>
+  </Border>
+
+</Window>

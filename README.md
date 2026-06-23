@@ -26,6 +26,7 @@
 | 🌙 | **Blades Theme** | Xbox 360 Blades-inspired dark theme with green accents |
 | 🔐 | **Secure Storage** | Obfuscated credential storage (XOR + Base64) |
 | 📋 | **Activity Log** | Full application log with multi-select, copy, auto-scroll, and configurable log level |
+| 💾 | **USB Media Drive** | Grant `ALL APPLICATION PACKAGES` permissions to a USB drive for Xbox Developer Mode — Windows-only (WMI + icacls), with 5-step wizard, format advice, and Disk Management integration |
 
 ## 📸 Screenshots
 
@@ -70,7 +71,7 @@ Download the latest release from the [Releases page](https://github.com/marcelof
 
 ## 📋 Prerequisites
 
-- **Windows 10/11** (x64)
+- **Windows 10/11** or **macOS** or **Linux** (cross-platform support via Avalonia UI)
 - **Xbox One** or **Xbox Series S|X** in [Developer Mode](https://wiki.sternserv.xyz/docs/xbox-setup/xbox-developer-mode-setup)
 
 ## 🎯 Usage
@@ -111,6 +112,7 @@ Opens from **Browse** or **Tools** panels. Supports local files (`.appx`/`.msix`
 | **Restart** | Restart Xbox remotely (with confirmation) |
 | **Shutdown** | Shut down Xbox remotely (with confirmation) |
 | **Open Dev Portal** | Open Xbox Device Portal in browser (authenticated URL) |
+| **USB Media Drive** | Prepare a USB drive for Xbox Dev Mode — format advice, Disk Management launcher, icacls permission grant (Windows-only, available in the Tools panel) |
 
 ### Connections
 

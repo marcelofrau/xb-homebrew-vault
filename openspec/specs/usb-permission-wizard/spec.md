@@ -1,5 +1,8 @@
-## ADDED Requirements
+# usb-permission-wizard Specification
 
+## Purpose
+TBD - created by archiving change usb-permission-wizard. Update Purpose after archive.
+## Requirements
 ### Requirement: Wizard opens from Tools tab
 
 The system SHALL provide a button labeled "Activate USB Media Drive" in the Tools tab's MANAGEMENT section that opens the USB permission wizard.
@@ -32,8 +35,9 @@ The system SHALL enumerate all USB-attached drives using WMI and display them fo
 #### Scenario: Drive details shown on selection
 - **WHEN** the user selects a drive from the list
 - **THEN** the following details SHALL be displayed: drive letter, volume label, total size (formatted), filesystem type, drive type (HDD/USB Stick)
-- **THEN** if the filesystem is not NTFS, a warning SHALL be shown: "Drive must be formatted as NTFS"
-- **THEN** the "Next" button SHALL be disabled for non-NTFS drives
+- **THEN** if the filesystem is not NTFS, an informational message SHALL be shown: "Drive is not NTFS. Formatting to NTFS is optional but recommended for Xbox compatibility."
+- **THEN** the "Next" button SHALL remain enabled regardless of filesystem type
+- **THEN** the Format step (step 1) SHALL present formatting instructions as optional advice with an "Open Disk Management" shortcut; the user MAY skip it
 
 ### Requirement: Step 2 grants ALL APPLICATION PACKAGES permission
 
@@ -56,6 +60,18 @@ The system SHALL recursively grant `ALL APPLICATION PACKAGES` (SID `S-1-15-2-1`)
 - **WHEN** the user is not running as Administrator
 - **THEN** BEFORE applying, the system SHALL attempt `icacls` and detect access denied
 - **THEN** a message SHALL suggest: "Run XBVault as Administrator to set drive permissions"
+
+#### Scenario: Protected system directories are skipped
+- **WHEN** applying permissions recursively
+- **THEN** the system SHALL skip `System Volume Information` and `$Recycle.Bin` directories to avoid access-denied errors from TrustedInstaller-protected folders
+- **THEN** the root ACL SHALL be set first without recursion to establish inheritance flags
+- **THEN** each top-level item SHALL be processed individually with `/T`, excluding protected directories
+- **THEN** the wizard SHALL NOT fail when only protected directories could not be modified
+
+#### Scenario: Partial success (protected dirs skipped)
+- **WHEN** permissions apply successfully to all user-visible items but protected system directories are skipped
+- **THEN** the wizard SHALL show success (drive is usable for Xbox)
+- **THEN** a note MAY indicate that some system-protected folders were skipped
 
 #### Scenario: Drive becomes unavailable during apply
 - **WHEN** the drive is disconnected during permission application
@@ -111,3 +127,4 @@ The system SHALL show colored step icons for the active step and grayscale versi
 - **THEN** its label SHALL use a muted foreground color
 - **WHEN** a step has been completed (previous step)
 - **THEN** its icon SHALL remain in full color (same as active)
+
