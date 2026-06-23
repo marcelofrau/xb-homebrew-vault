@@ -9,7 +9,7 @@
 > The easiest way to manage homebrew on your Xbox Dev Mode console — browse, install, and control everything wirelessly from your PC.
 
 <p align="center">
-  <img src="docs/social-preview.jpg" alt="XB Homebrew Vault" width="800"/>
+  <img src="docs/social-preview.png" alt="XB Homebrew Vault" width="800"/>
 </p>
 
 <p align="center">
@@ -52,7 +52,7 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 | | |
 |---|---|
 | **Catalog Browser** — Blades theme | **App Detail View** |
-| ![](docs/screenshots/main.png) | ![](docs/screenshots/detailview-browse.png) |
+| ![](docs/screenshots/xbvault-browse.png) | ![](docs/screenshots/xbvault-itemdetailview.png) |
 
 <details>
 <summary>More screenshots</summary>
@@ -60,17 +60,17 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 | | |
 |---|---|
 | **Installed Packages** | **Installing from Browse** |
-| ![](docs/screenshots/installed.png) | ![](docs/screenshots/installing-from-browse.png) |
+| ![](docs/screenshots/xbvault-installed-list.png) | ![](docs/screenshots/xbvault-install-dependencies.png) |
 | **Install Complete** | **Custom Install Wizard** |
-| ![](docs/screenshots/install-complete-from-browse.png) | ![](docs/screenshots/wizard-installcustom.png) |
+| ![](docs/screenshots/xbvault-install-complete.png) | ![](docs/screenshots/xbvault-custom-install-wizard.png) |
 | **Confirm Uninstall** | **Not Connected** |
-| ![](docs/screenshots/confirm-uninstall.png) | ![](docs/screenshots/install-not-connected.png) |
+| ![](docs/screenshots/xbvault-uninstall.png) | ![](docs/screenshots/xbvault-checkinstalled.png) |
 | **Connection Dialog** | **About Window** |
-| ![](docs/screenshots/connecting.png) | ![](docs/screenshots/about-window.png) |
+| ![](docs/screenshots/xbvault-connection.png) | ![](docs/screenshots/xbvault-about.png) |
 | **Dev Tools Panel** | **Performance Monitor** |
-| ![](docs/screenshots/tools.png) | ![](docs/screenshots/performancemonitor.png) |
+| ![](docs/screenshots/xbvault-tools.png) | ![](docs/screenshots/xbvault-performance-monitpr.png) |
 | **Process List** | **Screen Capture** |
-| ![](docs/screenshots/processlist.png) | ![](docs/screenshots/screen%20capture.png) |
+| ![](docs/screenshots/xbvault-process-monitor.png) | ![](docs/screenshots/XBVault_69kMa5zbie.png) |
 
 </details>
 
