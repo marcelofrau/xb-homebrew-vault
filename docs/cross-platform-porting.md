@@ -3,9 +3,13 @@ layout: default
 title: Cross-Platform Porting
 ---
 
-# Plan: Port XBVault to Linux and macOS
+# Porting Log: Linux and macOS
 
-## Objective
+## Status: ✅ Shipped in v0.8.6
+
+Both Linux (x64) and macOS (x64 + arm64) release artifacts are built and published via CI. What follows is the original plan — kept for historical reference.
+
+## Original Objective
 - Enable building, publishing, and running XBVault on Linux and macOS for development and testing (does not cover final packaging like macOS notarization).
 
 ## Verified Assumptions

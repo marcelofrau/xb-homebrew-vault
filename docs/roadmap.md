@@ -107,8 +107,9 @@ gantt
 | UI | Settings redesign | ✅ v0.8.4 |
 | UI | Activity log viewer | ✅ |
 | File Explorer | SSH/SFTP browser | ⏳ in progress |
-| CI | Windows + Ubuntu build matrix | ✅ |
+| CI | Windows + Ubuntu + macOS build matrix | ✅ |
 | CI | Linux release artifact | ✅ |
+| CI | macOS release artifact | ✅ v0.8.6 |
 
 ---
 
@@ -138,8 +139,6 @@ gantt
     System health checks         : 2026-09, 7d
     Enhanced log viewer          : 2026-09, 5d
     Game clip/screenshot manager : 2026-10, 14d
-    section Cross-platform
-    macOS build + CI             : 2026-10, 14d
 ```
 
 ### Next — File Explorer (SSH/SFTP)
@@ -179,7 +178,6 @@ The File Explorer tab is a placeholder today. The planned implementation uses SS
 
 | Feature | Notes |
 |---------|-------|
-| **macOS builds** | Avalonia supports it; `DllImport` in Logger + WMI in UsbDriveDetector need guards |
 | **Media player streaming** | Play Xbox media on PC over network |
 | **Xbox Remote Play** | Stream Xbox screen to PC |
 

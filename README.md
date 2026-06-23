@@ -4,7 +4,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square)](https://dotnet.microsoft.com/download)
 [![Build](https://img.shields.io/github/actions/workflow/status/marcelofrau/xb-homebrew-vault/build.yml?style=flat-square&label=build)](https://github.com/marcelofrau/xb-homebrew-vault/actions)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-0078D6?style=flat-square)](https://github.com/marcelofrau/xb-homebrew-vault/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0078D6?style=flat-square)](https://github.com/marcelofrau/xb-homebrew-vault/releases)
 
 > The easiest way to manage homebrew on your Xbox Dev Mode console — browse, install, and control everything wirelessly from your PC.
 
@@ -81,18 +81,20 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 ### Quick start
 
 1. Download the latest ZIP from the [Releases page](https://github.com/marcelofrau/xb-homebrew-vault/releases)
-2. Extract and run `XBVault.exe` — no install needed, fully self-contained
+2. Extract and run `XBVault` — no install needed, fully self-contained
 3. On first launch, the setup wizard guides you through connecting to your Xbox
 
 **Releases available for:**
 - `XBVault-v{version}-win-x64.zip` — Windows 10/11 x64
 - `XBVault-v{version}-linux-x64.zip` — Linux x64
+- `XBVault-v{version}-osx-x64.zip` — macOS Intel
+- `XBVault-v{version}-osx-arm64.zip` — macOS Apple Silicon
 
 ### Prerequisites
 
 - **Xbox One or Xbox Series S|X** in [Developer Mode](https://wiki.sternserv.xyz/docs/xbox-setup/xbox-developer-mode-setup)
 - Xbox and PC on the **same local network**
-- Windows 10/11 or Linux (x64)
+- Windows 10/11, macOS, or Linux (x64)
 
 ### Connect to your Xbox
 
@@ -170,10 +172,12 @@ docs/              # Documentation + Jekyll site source
 
 ## 📦 Release Artifacts
 
-Releases are built on tag push (`v*`) via GitHub Actions (Windows + Ubuntu matrix). Each release includes:
+Releases are built on tag push (`v*`) via GitHub Actions (Windows + Ubuntu + macOS matrix). Each release includes:
 
 - `XBVault-{version}-win-x64.zip` — Windows self-contained
 - `XBVault-{version}-linux-x64.zip` — Linux self-contained
+- `XBVault-{version}-osx-x64.zip` — macOS Intel
+- `XBVault-{version}-osx-arm64.zip` — macOS Apple Silicon
 
 ## 🙏 Thanks
 

@@ -204,7 +204,7 @@ Two Windows-specific dependencies:
 | `Services/Logger.cs` | `[DllImport("kernel32.dll")]` — call site is guarded with `OperatingSystem.IsWindows()`, but P/Invoke metadata is always emitted |
 | `Services/UsbDriveDetector.cs` | `using System.Management` — runtime guard exists at line 13, but the assembly reference is load-time; if `System.Management` is absent from the Linux publish output, the app may fail to start |
 
-The Linux release artifact in CI publishes with `--self-contained true`, which bundles all referenced assemblies. Verify that `System.Management` (a Windows-only NuGet) is excluded or stubbed in the Linux publish output.
+The Linux and macOS release artifacts in CI publish with `--self-contained true`, which bundles all referenced assemblies. Verify that `System.Management` (a Windows-only NuGet) is excluded or stubbed in the Linux/macOS publish output.
 
 **Fix Logger:** Already functionally guarded. The `DllImport` declaration itself is low risk — no further action required unless P/Invoke metadata size is a concern.
 

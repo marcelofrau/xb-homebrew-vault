@@ -45,8 +45,8 @@ title: Requirements
 | NF02 | UI uses Xbox 360 Blades theme colors | High |
 | NF03 | Application uses MVVM pattern with CommunityToolkit.Mvvm | High |
 | NF04 | Application obfuscates stored passwords (not cryptographic security) | Medium |
-| NF05 | Release builds are self-contained ZIP artifacts for Windows x64 and Linux x64 | High |
-| NF06 | CI runs on every push (Windows + Ubuntu matrix), release artifacts on tag push | High |
+| NF05 | Release builds are self-contained ZIP artifacts for Windows x64/arm64, Linux x64, and macOS x64/arm64 | High |
+| NF06 | CI runs on every push (Windows + Ubuntu + macOS matrix), release artifacts on tag push | High |
 | NF07 | All dialog windows follow a consistent template (green gradient title bar, black border, close button) | High |
 | NF08 | Real-time performance data uses WebSocket instead of polling | Medium |
 | NF09 | USB drive detection uses WMI (`System.Management`) — Windows-only, guarded at runtime | Medium |
@@ -56,6 +56,5 @@ title: Requirements
 | Feature | Notes |
 |---------|-------|
 | File Explorer | Placeholder tab — SSH/SFTP implementation planned next |
-| macOS builds | CI covers Windows + Linux only; macOS needs `DllImport` + WMI guards |
 | XCRD USB (`xcrdutil`) | Requires Xbox hardware testing; deferred to future version |
 | Companion UWP app | Still under consideration for deeper file system access |

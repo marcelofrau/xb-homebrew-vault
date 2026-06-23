@@ -301,9 +301,9 @@ CI runs on every push and PR via GitHub Actions:
 | Job | Runs on | Steps |
 |-----|---------|-------|
 | `build` | Windows + Ubuntu (matrix) | restore → build Release |
-| `release` | Windows (tag push only) | publish win-x64 + linux-x64 → ZIP → GitHub Release |
+| `release` | Windows + Ubuntu + macOS (tag push only) | publish win-x64, win-arm64, linux-x64, osx-x64, osx-arm64 → ZIP → GitHub Release |
 
-Release artifacts: `XBVault-{version}-win-x64.zip` and `XBVault-{version}-linux-x64.zip` (both self-contained).
+Release artifacts: `XBVault-{version}-win-x64.zip`, `XBVault-{version}-linux-x64.zip`, `XBVault-{version}-osx-x64.zip`, and `XBVault-{version}-osx-arm64.zip` (all self-contained).
 
 ---
 
