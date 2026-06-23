@@ -14,12 +14,12 @@ jobs:
         include:
           - os: windows-latest
             rid: win-x64
-            script: powershell -File build/build-release.ps1 -Version $env:VERSION -Installer
+            script: powershell -File build/build-release.ps1 -Version $VERSION -Installer
             artifact-pattern: dist/XBVault-*
 
           - os: windows-latest
             rid: win-arm64
-            script: powershell -File build/build-release.ps1 -Version $env:VERSION -Arch arm64
+            script: powershell -File build/build-release.ps1 -Version $VERSION -Arch arm64
             artifact-pattern: dist/XBVault-*.zip
 
           - os: ubuntu-latest
