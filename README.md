@@ -9,7 +9,7 @@
 > The easiest way to manage homebrew on your Xbox Dev Mode console — browse, install, and control everything wirelessly from your PC.
 
 <p align="center">
-  <img src="docs/social-preview.png" alt="XB Homebrew Vault" width="800"/>
+  <img src="docs/social-preview.jpg" alt="XB Homebrew Vault" width="800"/>
 </p>
 
 <p align="center">
