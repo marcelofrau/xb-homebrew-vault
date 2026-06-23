@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page.title }} | {{ site.title }}</title>
+  <meta name="description" content="{{ site.description }}">
+  <link rel="stylesheet" href="{{ '/assets/css/home.css' | relative_url }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="{{ '/' | relative_url }}">
+        <span class="nav-logo">🎮</span>
+        <span>XB Homebrew Vault</span>
+      </a>
+      <div class="nav-links">
+        <a href="{{ '/architecture' | relative_url }}">Architecture</a>
+        <a href="{{ '/api' | relative_url }}">API</a>
+        <a href="{{ '/roadmap' | relative_url }}">Roadmap</a>
+        <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}" target="_blank" rel="noopener" class="nav-github">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-inner">
+      <div class="hero-badge">Xbox Dev Mode · Free &amp; Open Source</div>
+      <h1 class="hero-title">Your Xbox Dev Mode<br><span class="hero-accent">Homebrew Command Center</span></h1>
+      <p class="hero-sub">Browse, install, and manage emulators and apps on your Xbox — all from a sleek desktop app. No commands, no hassle.</p>
+      <div class="hero-actions">
+        <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}/releases/latest" class="btn btn-primary" target="_blank" rel="noopener">
+          ⬇️ Download Latest Release
+        </a>
+        <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}" class="btn btn-secondary" target="_blank" rel="noopener">
+          View on GitHub
+        </a>
+      </div>
+      <p class="hero-note">Windows 10/11 · .NET 8 self-contained · No install required</p>
+    </div>
+    <div class="hero-screenshot">
+      <div class="screenshot-frame">
+        <img src="{{ '/screenshots/main.png' | relative_url }}" alt="XB Homebrew Vault main window" />
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features">
+    <div class="container">
+      <h2 class="section-title">Everything you need to manage your Xbox</h2>
+      <p class="section-sub">One app. All the tools. No Xbox dev experience required.</p>
+      <div class="features-grid">
+
+        <div class="feature-card">
+          <div class="feature-icon">🔍</div>
+          <h3>Catalog Browser</h3>
+          <p>Browse the full <a href="https://emulationrevival.github.io" target="_blank" rel="noopener">Emulation Revival</a> catalog — emulators, apps, ports, and utilities. Search, filter by category, and see compatibility at a glance.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📦</div>
+          <h3>One-Click Install</h3>
+          <p>Select any app and hit install. XBVault handles downloading, dependency resolution, and wireless upload to your Xbox automatically.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⬇️</div>
+          <h3>Custom Install Wizard</h3>
+          <p>Got your own <code>.appx</code>, <code>.msix</code>, or <code>.zip</code>? The wizard guides you through analysis, dependency check, and install — local files or URLs.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🛠️</div>
+          <h3>Dev Tools Panel</h3>
+          <p>Screenshot capture, system info, process manager, network config, and a real-time CPU/GPU/RAM performance chart — all via the Device Portal API.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📁</div>
+          <h3>File Explorer</h3>
+          <p>Browse the Xbox file system remotely. Navigate directories, inspect files — without touching the physical console.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔐</div>
+          <h3>Secure Credentials</h3>
+          <p>Your Xbox IP and password are stored locally with obfuscated encryption. No cloud, no accounts, no telemetry.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREENSHOTS -->
+  <section class="screenshots">
+    <div class="container">
+      <h2 class="section-title">See it in action</h2>
+      <div class="screenshots-grid">
+        <div class="ss-item ss-main">
+          <img src="{{ '/screenshots/main.png' | relative_url }}" alt="Catalog Browser" />
+          <span class="ss-caption">Catalog Browser</span>
+        </div>
+        <div class="ss-item">
+          <img src="{{ '/screenshots/detailview-browse.png' | relative_url }}" alt="App Detail View" />
+          <span class="ss-caption">App Detail View</span>
+        </div>
+        <div class="ss-item">
+          <img src="{{ '/screenshots/installed.png' | relative_url }}" alt="Installed Packages" />
+          <span class="ss-caption">Installed Packages</span>
+        </div>
+        <div class="ss-item">
+          <img src="{{ '/screenshots/tools.png' | relative_url }}" alt="Dev Tools Panel" />
+          <span class="ss-caption">Dev Tools Panel</span>
+        </div>
+        <div class="ss-item">
+          <img src="{{ '/screenshots/performancemonitor.png' | relative_url }}" alt="Performance Monitor" />
+          <span class="ss-caption">Performance Monitor</span>
+        </div>
+        <div class="ss-item">
+          <img src="{{ '/screenshots/wizard-installcustom.png' | relative_url }}" alt="Custom Install Wizard" />
+          <span class="ss-caption">Custom Install Wizard</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="howto">
+    <div class="container">
+      <h2 class="section-title">Up and running in 3 steps</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Enable Developer Mode</h3>
+          <p>Put your Xbox in <a href="https://wiki.sternserv.xyz/docs/xbox-setup/xbox-developer-mode-setup" target="_blank" rel="noopener">Developer Mode</a> via the Xbox Dev Mode app. Takes about 5 minutes.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Open XB Homebrew Vault</h3>
+          <p>Download, extract, and run <code>XBVault.exe</code>. Enter your Xbox's IP and Dev Mode password in Settings.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Browse &amp; Install</h3>
+          <p>Click Connect, browse the catalog, pick an emulator or app, and hit Install. That's it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BOTTOM -->
+  <section class="cta-bottom">
+    <div class="container">
+      <h2>Ready to unlock your Xbox?</h2>
+      <p>Free, open source, and no install required. Just download and run.</p>
+      <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}/releases/latest" class="btn btn-primary btn-large" target="_blank" rel="noopener">
+        ⬇️ Download XB Homebrew Vault
+      </a>
+      <p class="cta-note">GPL v3 · Windows 10/11 · Xbox One &amp; Series S|X</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="{{ '/architecture' | relative_url }}">Architecture</a>
+        <a href="{{ '/api' | relative_url }}">API Docs</a>
+        <a href="{{ '/roadmap' | relative_url }}">Roadmap</a>
+        <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}/issues" target="_blank" rel="noopener">Issues</a>
+        <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+      </div>
+      <p class="footer-note">Not affiliated with Microsoft, Xbox, or Emulation Revival. · Splash backgrounds by <a href="https://unsplash.com/@johnsonmartin" target="_blank" rel="noopener">Johnson Martin</a> on Unsplash.</p>
+    </div>
+  </footer>
+
+</body>
+</html>
