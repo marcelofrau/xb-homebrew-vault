@@ -58,9 +58,9 @@
   <!-- FEATURES -->
   <section class="features">
     <div class="container">
-      <h2 class="section-title">Everything you need to manage your Xbox</h2>
-      <p class="section-sub">One app. All the tools. No Xbox dev experience required.</p>
-      <div class="features-grid">
+      <h2 class="section-title" data-reveal="up">Everything you need to manage your Xbox</h2>
+      <p class="section-sub" data-reveal="up">One app. All the tools. No Xbox dev experience required.</p>
+      <div class="features-grid" data-stagger>
 
         <div class="feature-card">
           <div class="feature-icon">🔍</div>
@@ -105,31 +105,31 @@
   <!-- SCREENSHOTS -->
   <section class="screenshots">
     <div class="container">
-      <h2 class="section-title">See it in action</h2>
-      <div class="screenshots-grid">
-        <div class="ss-item ss-main">
+      <h2 class="section-title" data-reveal="up">See it in action</h2>
+      <div class="screenshots-grid" data-stagger>
+        <div class="ss-item ss-main" data-lightbox="{{ '/screenshots/main.png' | relative_url }}" data-caption="Catalog Browser">
           <img src="{{ '/screenshots/main.png' | relative_url }}" alt="Catalog Browser" />
-          <span class="ss-caption">Catalog Browser</span>
+          <span class="ss-caption">Catalog Browser <span class="ss-zoom">🔍</span></span>
         </div>
-        <div class="ss-item">
+        <div class="ss-item" data-lightbox="{{ '/screenshots/detailview-browse.png' | relative_url }}" data-caption="App Detail View">
           <img src="{{ '/screenshots/detailview-browse.png' | relative_url }}" alt="App Detail View" />
-          <span class="ss-caption">App Detail View</span>
+          <span class="ss-caption">App Detail View <span class="ss-zoom">🔍</span></span>
         </div>
-        <div class="ss-item">
+        <div class="ss-item" data-lightbox="{{ '/screenshots/installed.png' | relative_url }}" data-caption="Installed Packages">
           <img src="{{ '/screenshots/installed.png' | relative_url }}" alt="Installed Packages" />
-          <span class="ss-caption">Installed Packages</span>
+          <span class="ss-caption">Installed Packages <span class="ss-zoom">🔍</span></span>
         </div>
-        <div class="ss-item">
+        <div class="ss-item" data-lightbox="{{ '/screenshots/tools.png' | relative_url }}" data-caption="Dev Tools Panel">
           <img src="{{ '/screenshots/tools.png' | relative_url }}" alt="Dev Tools Panel" />
-          <span class="ss-caption">Dev Tools Panel</span>
+          <span class="ss-caption">Dev Tools Panel <span class="ss-zoom">🔍</span></span>
         </div>
-        <div class="ss-item">
+        <div class="ss-item" data-lightbox="{{ '/screenshots/performancemonitor.png' | relative_url }}" data-caption="Performance Monitor">
           <img src="{{ '/screenshots/performancemonitor.png' | relative_url }}" alt="Performance Monitor" />
-          <span class="ss-caption">Performance Monitor</span>
+          <span class="ss-caption">Performance Monitor <span class="ss-zoom">🔍</span></span>
         </div>
-        <div class="ss-item">
+        <div class="ss-item" data-lightbox="{{ '/screenshots/wizard-installcustom.png' | relative_url }}" data-caption="Custom Install Wizard">
           <img src="{{ '/screenshots/wizard-installcustom.png' | relative_url }}" alt="Custom Install Wizard" />
-          <span class="ss-caption">Custom Install Wizard</span>
+          <span class="ss-caption">Custom Install Wizard <span class="ss-zoom">🔍</span></span>
         </div>
       </div>
     </div>
@@ -138,21 +138,21 @@
   <!-- HOW IT WORKS -->
   <section class="howto">
     <div class="container">
-      <h2 class="section-title">Up and running in 3 steps</h2>
+      <h2 class="section-title" data-reveal="up">Up and running in 3 steps</h2>
       <div class="steps">
-        <div class="step">
+        <div class="step" data-reveal="up">
           <div class="step-num">1</div>
           <h3>Enable Developer Mode</h3>
           <p>Put your Xbox in <a href="https://wiki.sternserv.xyz/docs/xbox-setup/xbox-developer-mode-setup" target="_blank" rel="noopener">Developer Mode</a> via the Xbox Dev Mode app. Takes about 5 minutes.</p>
         </div>
-        <div class="step-arrow">→</div>
-        <div class="step">
+        <div class="step-arrow" data-reveal="fade">→</div>
+        <div class="step" data-reveal="up">
           <div class="step-num">2</div>
           <h3>Open XB Homebrew Vault</h3>
           <p>Download, extract, and run <code>XBVault.exe</code>. Enter your Xbox's IP and Dev Mode password in Settings.</p>
         </div>
-        <div class="step-arrow">→</div>
-        <div class="step">
+        <div class="step-arrow" data-reveal="fade">→</div>
+        <div class="step" data-reveal="up">
           <div class="step-num">3</div>
           <h3>Browse &amp; Install</h3>
           <p>Click Connect, browse the catalog, pick an emulator or app, and hit Install. That's it.</p>
@@ -164,12 +164,14 @@
   <!-- CTA BOTTOM -->
   <section class="cta-bottom">
     <div class="container">
-      <h2>Ready to unlock your Xbox?</h2>
-      <p>Free, open source, and no install required. Just download and run.</p>
-      <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}/releases/latest" class="btn btn-primary btn-large" target="_blank" rel="noopener">
-        ⬇️ Download XB Homebrew Vault
-      </a>
-      <p class="cta-note">GPL v3 · Windows 10/11 · Xbox One &amp; Series S|X</p>
+      <h2 data-reveal="up">Ready to unlock your Xbox?</h2>
+      <p data-reveal="up">Free, open source, and no install required. Just download and run.</p>
+      <div data-reveal="scale">
+        <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}/releases/latest" class="btn btn-primary btn-large" target="_blank" rel="noopener">
+          ⬇️ Download XB Homebrew Vault
+        </a>
+      </div>
+      <p class="cta-note" data-reveal="fade">GPL v3 · Windows 10/11 · Xbox One &amp; Series S|X</p>
     </div>
   </section>
 
@@ -187,6 +189,241 @@
       <p class="footer-note">Not affiliated with Microsoft, Xbox, or Emulation Revival. · Splash backgrounds by <a href="https://unsplash.com/@johnsonmartin" target="_blank" rel="noopener">Johnson Martin</a> on Unsplash.</p>
     </div>
   </footer>
+
+  <!-- LIGHTBOX -->
+  <div class="lb-overlay" id="lb" role="dialog" aria-modal="true" aria-label="Screenshot viewer">
+    <button class="lb-close" id="lb-close" aria-label="Close">✕</button>
+    <button class="lb-nav lb-prev" id="lb-prev" aria-label="Previous">&#8249;</button>
+    <button class="lb-nav lb-next" id="lb-next" aria-label="Next">&#8250;</button>
+    <div class="lb-content">
+      <img class="lb-img" id="lb-img" src="" alt="" />
+      <p class="lb-caption" id="lb-caption"></p>
+    </div>
+    <p class="lb-hint">ESC or click outside to close · ← → to navigate</p>
+  </div>
+
+  <style>
+    /* ── Lightbox ─────────────────────────────────────────── */
+    .ss-item { cursor: zoom-in; }
+    .ss-zoom { font-size: .7em; opacity: .6; }
+
+    .lb-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(10,12,15,.96);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      animation: lb-fade .18s ease;
+    }
+    .lb-overlay.open { display: flex; }
+
+    @keyframes lb-fade {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .lb-content {
+      max-width: min(92vw, 1200px);
+      max-height: 82vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      animation: lb-pop .2s cubic-bezier(.22,1,.36,1);
+    }
+    @keyframes lb-pop {
+      from { transform: scale(.94); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    .lb-img {
+      max-width: 100%;
+      max-height: 78vh;
+      object-fit: contain;
+      border: 1px solid #4A7A20;
+      border-radius: 2px;
+      box-shadow: 0 0 80px rgba(68,127,62,.25), 0 24px 80px rgba(0,0,0,.8);
+      display: block;
+    }
+
+    .lb-caption {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: #6B8F2A;
+      text-align: center;
+    }
+
+    .lb-hint {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: .68rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: #3A3D42;
+      text-align: center;
+      position: fixed;
+      bottom: 20px;
+      left: 0; right: 0;
+    }
+
+    .lb-close {
+      position: fixed;
+      top: 18px; right: 22px;
+      background: transparent;
+      border: 1px solid #2A2D33;
+      color: #8B8D91;
+      font-size: 1.1rem;
+      width: 36px; height: 36px;
+      border-radius: 2px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color .15s, color .15s, background .15s;
+      z-index: 1;
+    }
+    .lb-close:hover { border-color: #E74C3C; color: #E74C3C; background: rgba(231,76,60,.08); }
+
+    .lb-nav {
+      position: fixed;
+      top: 50%; transform: translateY(-50%);
+      background: rgba(10,12,15,.7);
+      border: 1px solid #2A2D33;
+      color: #8B8D91;
+      font-size: 2rem;
+      width: 44px; height: 60px;
+      border-radius: 2px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color .15s, color .15s, background .15s;
+      z-index: 1;
+      line-height: 1;
+    }
+    .lb-nav:hover { border-color: #9ACA3C; color: #9ACA3C; background: rgba(154,202,60,.06); }
+    .lb-prev { left: 16px; }
+    .lb-next { right: 16px; }
+    .lb-nav:disabled { opacity: .2; cursor: default; pointer-events: none; }
+  </style>
+
+  <script>
+    /* ── Nav scroll ─────────────────────────────────────── */
+    const nav = document.querySelector('.nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 40);
+    }, { passive: true });
+
+    /* ── Parallax hero bg ───────────────────────────────── */
+    const heroBg = document.querySelector('.hero-bg');
+    const heroScreenshot = document.querySelector('.hero-screenshot');
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      if (heroBg)         heroBg.style.transform         = `translateY(${y * 0.18}px)`;
+      if (heroScreenshot) heroScreenshot.style.transform = `translateY(${y * 0.08}px)`;
+    }, { passive: true });
+
+    /* ── Scroll reveal (IntersectionObserver) ───────────── */
+    const revealObs = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+          revealObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('[data-reveal]').forEach(el => revealObs.observe(el));
+
+    /* ── Stagger reveal ─────────────────────────────────── */
+    const staggerObs = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const children = Array.from(entry.target.children);
+        children.forEach((child, i) => {
+          setTimeout(() => child.classList.add('revealed'), i * 90);
+        });
+        staggerObs.unobserve(entry.target);
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+
+    document.querySelectorAll('[data-stagger]').forEach(el => staggerObs.observe(el));
+
+    /* ── Typing effect on hero title accent ─────────────── */
+    const accent = document.querySelector('.hero-accent');
+    if (accent) {
+      const full = accent.textContent.trim();
+      accent.textContent = '';
+      accent.style.opacity = '1';
+      let i = 0;
+      const cursor = document.createElement('span');
+      cursor.style.cssText = 'opacity:1;animation:blink .7s step-end infinite;border-right:2px solid #9ACA3C;margin-left:2px';
+      accent.appendChild(cursor);
+      const style = document.createElement('style');
+      style.textContent = '@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}';
+      document.head.appendChild(style);
+      // start after hero-title animation delay (~150ms)
+      setTimeout(() => {
+        const type = () => {
+          if (i <= full.length) {
+            accent.textContent = full.slice(0, i);
+            accent.appendChild(cursor);
+            i++;
+            setTimeout(type, i < full.length ? 38 : 800);
+          } else {
+            cursor.style.animation = 'none';
+            cursor.style.opacity = '0';
+          }
+        };
+        type();
+      }, 300);
+    }
+  </script>
+
+  <script>
+    (function () {
+      const items = Array.from(document.querySelectorAll('[data-lightbox]'));
+      const lb    = document.getElementById('lb');
+      const img   = document.getElementById('lb-img');
+      const cap   = document.getElementById('lb-caption');
+      const prev  = document.getElementById('lb-prev');
+      const next  = document.getElementById('lb-next');
+      let   cur   = 0;
+
+      function open(idx) {
+        cur = idx;
+        img.src = items[idx].dataset.lightbox;
+        img.alt = items[idx].dataset.caption;
+        cap.textContent = items[idx].dataset.caption;
+        prev.disabled = idx === 0;
+        next.disabled = idx === items.length - 1;
+        lb.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function close() {
+        lb.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+
+      items.forEach((el, i) => el.addEventListener('click', () => open(i)));
+
+      document.getElementById('lb-close').addEventListener('click', close);
+      prev.addEventListener('click', () => cur > 0 && open(cur - 1));
+      next.addEventListener('click', () => cur < items.length - 1 && open(cur + 1));
+
+      lb.addEventListener('click', e => { if (e.target === lb) close(); });
+
+      document.addEventListener('keydown', e => {
+        if (!lb.classList.contains('open')) return;
+        if (e.key === 'Escape')      close();
+        if (e.key === 'ArrowLeft'  && cur > 0)              open(cur - 1);
+        if (e.key === 'ArrowRight' && cur < items.length-1) open(cur + 1);
+      });
+    })();
+  </script>
 
 </body>
 </html>
