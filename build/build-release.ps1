@@ -26,8 +26,8 @@ $Version = $Version -replace '^v', ''
 Write-Host "Building XBVault v$Version for $rid..." -ForegroundColor Green
 
 # Prefer dotnet on PATH, fallback to default install path
-$dotnet = (Get-Command "dotnet" -ErrorAction SilentlyContinue)?.Source
-if (-not $dotnet) { $dotnet = "C:\Program Files\dotnet\dotnet.exe" }
+$dotnet = (Get-Command "dotnet" -ErrorAction SilentlyContinue).Source
+if ([string]::IsNullOrEmpty($dotnet)) { $dotnet = "C:\Program Files\dotnet\dotnet.exe" }
 
 # Publish (skip PublishReadyToRun for arm64 cross-compile)
 $r2r = if ($Arch -eq "arm64") { "false" } else { "true" }
