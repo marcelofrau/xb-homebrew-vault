@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page.title }} | {{ site.title }}</title>
+  <meta name="description" content="{{ page.description | default: site.description }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ '/assets/css/home.css' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/css/docs.css' | relative_url }}">
+</head>
+<body class="docs-page">
+
+  <!-- NAV (same as homepage) -->
+  <nav class="nav" id="main-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="{{ '/' | relative_url }}">
+        <span class="nav-logo">
+          <img src="https://github.com/marcelofrau/xb-homebrew-vault/raw/main/docs/social-preview.jpg" alt="XB Homebrew Vault" />
+        </span>
+        <span>XB Homebrew Vault</span>
+      </a>
+      <div class="nav-links">
+        <a href="{{ '/docs' | relative_url }}" {% if page.url contains '/docs' %}class="nav-active"{% endif %}>Docs</a>
+        <a href="{{ '/architecture' | relative_url }}" {% if page.url contains 'architecture' %}class="nav-active"{% endif %}>Architecture</a>
+        <a href="{{ '/roadmap' | relative_url }}" {% if page.url contains 'roadmap' %}class="nav-active"{% endif %}>Roadmap</a>
+        <a href="{{ '/tech-debt' | relative_url }}" {% if page.url contains 'tech-debt' %}class="nav-active"{% endif %}>Tech Debt</a>
+        <a href="{{ '/api' | relative_url }}" {% if page.url contains '/api' %}class="nav-active"{% endif %}>API</a>
+        <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}" target="_blank" rel="noopener" class="nav-github">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          GitHub
+        </a>
+      </div>
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <!-- mobile menu -->
+    <div class="nav-mobile" id="nav-mobile">
+      <a href="{{ '/' | relative_url }}">Home</a>
+      <a href="{{ '/docs' | relative_url }}">Docs</a>
+      <a href="{{ '/architecture' | relative_url }}">Architecture</a>
+      <a href="{{ '/roadmap' | relative_url }}">Roadmap</a>
+      <a href="{{ '/tech-debt' | relative_url }}">Tech Debt</a>
+      <a href="{{ '/api' | relative_url }}">API</a>
+      <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </nav>
+
+  <!-- DOCS LAYOUT -->
+  <div class="docs-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="docs-sidebar" id="docs-sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Overview</div>
+        <a href="{{ '/' | relative_url }}" class="sidebar-link">Home</a>
+        <a href="{{ '/docs' | relative_url }}" class="sidebar-link {% if page.url == '/xb-homebrew-vault/docs/' or page.url == '/docs/' %}active{% endif %}">Documentation Index</a>
+        <a href="{{ '/requirements' | relative_url }}" class="sidebar-link {% if page.url contains 'requirements' %}active{% endif %}">Requirements</a>
+        <a href="{{ '/roadmap' | relative_url }}" class="sidebar-link {% if page.url contains 'roadmap' %}active{% endif %}">Roadmap</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Architecture</div>
+        <a href="{{ '/architecture' | relative_url }}" class="sidebar-link {% if page.url contains 'architecture' %}active{% endif %}">Architecture</a>
+        <a href="{{ '/api' | relative_url }}" class="sidebar-link {% if page.url contains '/api' %}active{% endif %}">API Reference</a>
+        <a href="{{ '/data-sources' | relative_url }}" class="sidebar-link {% if page.url contains 'data-sources' %}active{% endif %}">Data Sources</a>
+        <a href="{{ '/theme' | relative_url }}" class="sidebar-link {% if page.url contains 'theme' %}active{% endif %}">Blades Theme</a>
+        <a href="{{ '/window-template' | relative_url }}" class="sidebar-link {% if page.url contains 'window-template' %}active{% endif %}">Window Template</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Development</div>
+        <a href="{{ '/tech-debt' | relative_url }}" class="sidebar-link {% if page.url contains 'tech-debt' %}active{% endif %}">Tech Debt</a>
+        <a href="{{ '/branching-and-versioning' | relative_url }}" class="sidebar-link {% if page.url contains 'branching' %}active{% endif %}">Branching & Versioning</a>
+        <a href="{{ '/assets-guide' | relative_url }}" class="sidebar-link {% if page.url contains 'assets-guide' %}active{% endif %}">Assets Guide</a>
+        <a href="{{ '/cross-platform-porting' | relative_url }}" class="sidebar-link {% if page.url contains 'cross-platform' %}active{% endif %}">Cross-Platform Porting</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Features</div>
+        <a href="{{ '/feature-file-explorer' | relative_url }}" class="sidebar-link {% if page.url contains 'file-explorer' %}active{% endif %}">File Explorer (SSH/SFTP)</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Other</div>
+        <a href="{{ '/attributions' | relative_url }}" class="sidebar-link {% if page.url contains 'attributions' %}active{% endif %}">Attributions</a>
+        <a href="{{ '/icon-set-sync' | relative_url }}" class="sidebar-link {% if page.url contains 'icon-set' %}active{% endif %}">Icon Set Sync</a>
+      </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="docs-content">
+      <div class="docs-body">
+        {{ content }}
+      </div>
+      <footer class="docs-footer">
+        <div class="footer-links">
+          <a href="{{ '/' | relative_url }}">Home</a>
+          <a href="{{ '/docs' | relative_url }}">Docs</a>
+          <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}/issues" target="_blank" rel="noopener">Issues</a>
+          <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+        </div>
+        <p class="footer-note">Not affiliated with Microsoft, Xbox, or Emulation Revival.</p>
+      </footer>
+    </main>
+
+  </div>
+
+  <!-- Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        background:       '#0D1117',
+        primaryColor:     '#1A1D23',
+        primaryTextColor: '#F0F0F0',
+        primaryBorderColor: '#4A7A20',
+        lineColor:        '#6B8F2A',
+        secondaryColor:   '#1E2128',
+        tertiaryColor:    '#252830',
+        edgeLabelBackground: '#1A1D23',
+        clusterBkg:       '#161B22',
+        titleColor:       '#9ACA3C',
+        nodeTextColor:    '#F0F0F0',
+        fontFamily:       'Rajdhani, sans-serif',
+      }
+    });
+  </script>
+
+  <!-- Nav scroll + mobile toggle -->
+  <script>
+    const nav = document.getElementById('main-nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20);
+    }, { passive: true });
+
+    document.getElementById('nav-hamburger').addEventListener('click', () => {
+      document.getElementById('nav-mobile').classList.toggle('open');
+    });
+  </script>
+
+</body>
+</html>
