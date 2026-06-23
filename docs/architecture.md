@@ -1,8 +1,11 @@
+---
+layout: default
+title: Architecture
+---
+
 # Architecture
 
-## Overview
-
-XB Homebrew Vault uses the **MVVM** pattern with **CommunityToolkit.Mvvm** and **Avalonia UI**. It is a Windows desktop client communicating with an Xbox console in Developer Mode via the Windows Device Portal (WDP) REST API and WebSocket.
+XB Homebrew Vault uses the **MVVM** pattern with **CommunityToolkit.Mvvm** and **Avalonia UI 12**. It targets Windows and Linux via .NET 8, communicating with an Xbox console in Developer Mode via the Windows Device Portal (WDP) REST API and WebSocket.
 
 ## Layered Architecture
 
@@ -11,6 +14,7 @@ graph TD
     subgraph Views["Views (Avalonia XAML)"]
         MW[MainWindow]
         SW[SplashWindow]
+        SetupW[SetupWizardWindow]
         BV[BrowseView]
         IV[InstalledView]
         SV[SettingsView]
@@ -23,7 +27,7 @@ graph TD
         SIW[SystemInfoWindow]
         CDW[CrashDataWindow]
         PerfW[PerformanceWindow]
-        SS[SetupWindow — removed dead]
+        UsbW[UsbPermissionWindow]
     end
 
     subgraph ViewModels["ViewModels (CommunityToolkit.Mvvm)"]
@@ -41,15 +45,19 @@ graph TD
         RVM[RefreshViewModel]
         ConfVM[ConfirmViewModel]
         CIWM[CustomInstallViewModel]
+        SWVM[SetupWizardViewModel]
+        USBVM[UsbPermissionViewModel]
     end
 
     subgraph Services["Services"]
         XS[XboxDeviceService]
-        ERS[EmulationRevivalService]
+        CAS[CatalogApiService]
         PS[PackageInstallService]
         SSvc[SettingsService]
         CS[CryptoService]
         CSvc[CacheService]
+        UDD[UsbDriveDetector]
+        AH[AdminHelper]
         L[Logger]
     end
 
@@ -64,6 +72,7 @@ graph TD
         XC[XboxConnection]
         AS[AppSettings]
         IPI[InstallProgressInfo]
+        UDI[UsbDriveInfo]
     end
 
     Views --> ViewModels
@@ -71,7 +80,14 @@ graph TD
     Services --> Models
 ```
 
-## Data flow
+| Layer | Responsibility |
+|-------|---------------|
+| **Views** | Avalonia AXAML windows and user controls — purely declarative |
+| **ViewModels** | Commands, observable state, business-logic orchestration |
+| **Services** | All I/O: HTTP, WebSocket, file system, settings, crypto, caching, WMI |
+| **Models** | Plain data classes — `CatalogItem`, `InstalledPackage`, `PerformanceSnapshot`, etc. |
+
+## Data Flow
 
 ```mermaid
 flowchart LR
@@ -85,7 +101,7 @@ flowchart LR
     V -->|Render| U
 ```
 
-## App startup flow
+## App Startup
 
 ```mermaid
 sequenceDiagram
@@ -93,14 +109,16 @@ sequenceDiagram
     participant App as App.axaml.cs
     participant Splash as SplashWindow
     participant SSvc as SettingsService
+    participant Setup as SetupWizardWindow
     participant Main as MainWindow
 
     User->>App: Launch
     App->>Splash: Show()
     Splash->>App: 2s delay
     App->>SSvc: Load settings
-    alt No settings
-        App->>App: Show connection window
+    alt First run (no settings)
+        App->>Setup: ShowDialog() — 3-step wizard
+        Setup->>App: credentials captured
     end
     App->>Main: new MainWindow
     App->>Splash: Close()
@@ -109,13 +127,27 @@ sequenceDiagram
     User->>Main: Interact
 ```
 
-## ViewModel → Service dependency map
+## Services
+
+| Service | Responsibility |
+|---------|---------------|
+| `XboxDeviceService` | All Xbox Device Portal API calls (REST + WebSocket). God class — split planned. 1038 lines. |
+| `CatalogApiService` | Fetches and parses the Emulation Revival `catalog.json` API. Replaced the former HTML scraper. |
+| `PackageInstallService` | Package analysis, dependency resolution, install pipeline |
+| `SettingsService` | Persists `AppSettings` to `%APPDATA%/XBVault/settings.json` |
+| `CryptoService` | XOR + Base64 credential obfuscation |
+| `CacheService` | In-memory catalog cache with expiry |
+| `UsbDriveDetector` | Lists USB drives via WMI (`System.Management`) — Windows-only |
+| `AdminHelper` | Elevation helpers for operations requiring admin rights |
+| `Logger` | File + console logging (`AttachConsole` via `DllImport` — Windows-only) |
+
+## ViewModel → Service Dependency Map
 
 ```mermaid
 graph LR
     MVM[MainViewModel] --> XS
     MVM --> SSvc
-    BVM[BrowseViewModel] --> ERS
+    BVM[BrowseViewModel] --> CAS
     BVM --> CSvc
     IVM[InstalledViewModel] --> XS
     SVM[SettingsViewModel] --> SSvc
@@ -127,12 +159,26 @@ graph LR
     SIVM[SystemInfoViewModel] --> XS
     CDVM[CrashDataViewModel] --> XS
     PerfVM[PerformanceViewModel] --> XS
-    RVM[RefreshViewModel] --> ERS
+    RVM[RefreshViewModel] --> CAS
     RVM --> CSvc
     CIWM[CustomInstallViewModel] --> XS
     CIWM --> PS
     ConfVM[ConfirmViewModel] --> XS
+    USBVM[UsbPermissionViewModel] --> UDD
+    SWVM[SetupWizardViewModel] --> SSvc
+    SWVM --> CS
 ```
+
+| ViewModel | Window/View | Key services |
+|-----------|-------------|-------------|
+| `BrowseViewModel` | BrowseView | CatalogApiService, CacheService |
+| `InstalledViewModel` | InstalledView | XboxDeviceService |
+| `ToolsViewModel` | ToolsView | XboxDeviceService |
+| `CustomInstallViewModel` | CustomInstallWindow | XboxDeviceService, PackageInstallService |
+| `PerformanceViewModel` | PerformanceWindow | XboxDeviceService (WebSocket) |
+| `SettingsViewModel` | SettingsView | SettingsService, CryptoService |
+| `UsbPermissionViewModel` | UsbPermissionWindow | UsbDriveDetector |
+| `SetupWizardViewModel` | SetupWizardWindow | SettingsService, CryptoService |
 
 ## Navigation
 
@@ -144,9 +190,10 @@ flowchart TD
     SB -->|SelectedTab=2| TV[ToolsView]
     SB -->|SelectedTab=3| SV[SettingsView]
     SB -->|SelectedTab=4| LV[LogsView]
-    SB -->|SelectedTab=5| FV[FileExplorerView]
+    SB -->|SelectedTab=5| FV[FileExplorerView — placeholder]
     MW -->|Dialogs| Dialogs
     subgraph Dialogs["Dialog Windows"]
+        SetupW[SetupWizardWindow]
         CW[ConnectionWindow]
         NIW[NetworkInfoWindow]
         PW[ProcessesWindow]
@@ -160,12 +207,19 @@ flowchart TD
         AW[AboutWindow]
         SS[ScreenshotWindow]
         ID[ItemDetailWindow]
+        UsbW[UsbPermissionWindow]
     end
 ```
+
+Dialogs are opened via registered delegate actions in `App.axaml.cs`.
+
+> **Note:** `FileExplorerView` (tab 5) is currently a placeholder — "Not implemented yet". Full SSH/SFTP-based file explorer is planned as the next major feature.
 
 ## Xbox WDP API Integration
 
 `XboxDeviceService` communicates with the Xbox Developer Mode Device Portal:
+
+Base URL: `https://{xbox-ip}:11443` · Auth: HTTP Basic
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
@@ -189,9 +243,18 @@ flowchart TD
 | `/api/screenshot` | GET | Capture screenshot |
 | `/api/system/restart` | POST | Restart Xbox |
 | `/api/system/shutdown` | POST | Shutdown Xbox |
-| `/api/resourcemanager/processes` | GET | Performance data |
 
-Authentication: HTTP Basic Auth (username/password set in Xbox Dev Mode).
+## Catalog API
+
+`CatalogApiService` fetches the Emulation Revival catalog from a single JSON endpoint:
+
+```
+https://emulationrevival.github.io/catalog.json
+```
+
+The JSON is parsed into `CatalogItem` models covering categories: Emulator, Frontend, GamePort, App, Experimental, Media, Utility. Results are cached by `CacheService`.
+
+> **Previously:** the catalog was scraped from 7 individual HTML pages using HtmlAgilityPack. That approach was replaced when Emulation Revival published the `catalog.json` API, which provides more reliable and structured data.
 
 ## Performance WebSocket
 
@@ -201,34 +264,47 @@ Authentication: HTTP Basic Auth (username/password set in Xbox Dev Mode).
 wss://{xbox-ip}:11443/api/resourcemanager/processes
 ```
 
-Receives JSON frames with `PerformanceSnapshot` data (CPU, memory, GPU, temperature per core).
-
-## Emulation Revival Scraping
-
-`EmulationRevivalService` fetches catalog from 7 static HTML pages on `https://emulationrevival.github.io/`:
-
-- `/xbox-dev-mode/emulators.html`
-- `/xbox-dev-mode/frontends.html`
-- `/xbox-dev-mode/ports.html`
-- `/xbox-dev-mode/apps.html`
-- `/xbox-dev-mode/experimental-apps.html`
-- `/xbox-dev-mode/media-apps.html`
-- `/xbox-dev-mode/utilities.html`
-
-Each page is parsed via HtmlAgilityPack into `CatalogItem` models. Results are cached by `CacheService`.
+Receives JSON frames with `PerformanceSnapshot` data (CPU, memory, GPU clock, temperature per core). Rendered by `PerformanceViewModel`.
 
 ## Settings Persistence
 
-`SettingsService` stores configuration JSON at `%APPDATA%/XBVault/settings.json`. Passwords are obfuscated using salt+XOR+Base64 via `CryptoService`.
+`SettingsService` reads/writes `%APPDATA%/XBVault/settings.json`. Passwords obfuscated by `CryptoService` (salt + XOR + Base64) — not encryption, just obfuscation to avoid plaintext in JSON.
 
-## Window pattern
+## USB Permission Wizard
 
-All dialog windows use a shared template:
+`UsbPermissionViewModel` + `UsbDriveDetector` implement a Windows-only wizard that:
+
+1. Lists USB drives via WMI (`System.Management`)
+2. Grants `ALL APPLICATION PACKAGES` NTFS permissions via `icacls`
+3. Includes a spinner, 1-second minimum delay, and skips protected system directories
+
+This allows Xbox Dev Mode to read ROM/media files from USB drives.
+
+## Window Pattern
+
+All dialog windows share a common template:
 
 - `WindowDecorations="None"` — no OS chrome
-- `Background="{StaticResource SurfaceBrush}"` — dark gray #1A1D23
+- `Background="{StaticResource SurfaceBrush}"` — dark gray `#1A1D23`
 - Root `<Border>` with `BorderBrush="#447F3E" BorderThickness="2" Margin="1"` — green border + 1px gap
-- Title bar with green gradient + close button (red hover #CC3333)
-- Content area padded at 20px
+- Title bar: `LinearGradientBrush` from `#447F3E` → `#9ACA3C`
+- Close button: transparent default, `#CC3333` on hover
+- Content area: 20px padding
 - Drag via `PointerPressed="OnTitleBarPointerPressed"` + `BeginMoveDrag()`
-- Close via `OnCloseClick` + `Close()`
+
+See [Window Template](window-template) for the full AXAML template.
+
+## CI / Build
+
+CI runs on every push and PR via GitHub Actions:
+
+| Job | Runs on | Steps |
+|-----|---------|-------|
+| `build` | Windows + Ubuntu (matrix) | restore → build Release |
+| `release` | Windows (tag push only) | publish win-x64 + linux-x64 → ZIP → GitHub Release |
+
+Release artifacts: `XBVault-{version}-win-x64.zip` and `XBVault-{version}-linux-x64.zip` (both self-contained).
+
+---
+
+[← Home](.) · [API Docs →](api)

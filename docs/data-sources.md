@@ -1,3 +1,8 @@
+---
+layout: default
+title: Data Sources
+---
+
 # Data Sources
 
 ## Emulation Revival

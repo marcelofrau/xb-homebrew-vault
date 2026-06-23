@@ -1,3 +1,8 @@
+---
+layout: default
+title: Cross-Platform Porting
+---
+
 # Plan: Port XBVault to Linux and macOS
 
 ## Objective

@@ -1,3 +1,8 @@
+---
+layout: default
+title: Assets Guide
+---
+
 # Assets Guide
 
 ## Directory structure

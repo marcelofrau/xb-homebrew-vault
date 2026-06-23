@@ -1,3 +1,8 @@
+---
+layout: default
+title: Window Template
+---
+
 # Window Template Guide
 
 How to create a new window matching the existing XBVault look and feel.

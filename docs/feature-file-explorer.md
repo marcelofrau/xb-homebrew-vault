@@ -1,3 +1,8 @@
+---
+layout: default
+title: Feature - File Explorer
+---
+
 # File Explorer — SSH/SFTP Browser
 
 ## Goal

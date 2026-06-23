@@ -1,3 +1,8 @@
+---
+layout: default
+title: Icon Set Sync
+---
+
 Icon set sync (personal icons)
 
 When you need to bring developer's personal Icons8-derived set into this repository for local testing or build-time assets, follow one of these approaches. Only do this when you have explicit permission to redistribute the icons.

@@ -1,3 +1,8 @@
+---
+layout: default
+title: Blades Theme
+---
+
 # Xbox 360 Blades Theme
 
 ## Color Palette

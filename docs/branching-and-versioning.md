@@ -1,3 +1,8 @@
+---
+layout: default
+title: Branching & Versioning
+---
+
 # Branching & Versioning
 
 ## Semantic Versioning (SEMVER)
