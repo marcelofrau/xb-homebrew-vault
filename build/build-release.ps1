@@ -7,6 +7,9 @@ param(
     [switch]$Installer
 )
 
+# Strip leading v prefix if present
+$Version = $Version -replace '^v', ''
+
 $root = Split-Path -Parent $PSScriptRoot
 $proj = Join-Path $root $Project
 $dist = Join-Path $root $OutputDir
@@ -19,9 +22,6 @@ if (-not (Test-Path $proj)) {
     Write-Error "Project not found: $proj"
     exit 1
 }
-
-# Strip leading v prefix if present
-$Version = $Version -replace '^v', ''
 
 Write-Host "Building XBVault v$Version for $rid..." -ForegroundColor Green
 
