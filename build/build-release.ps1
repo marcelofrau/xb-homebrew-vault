@@ -20,6 +20,9 @@ if (-not (Test-Path $proj)) {
     exit 1
 }
 
+# Strip leading v prefix if present
+$Version = $Version -replace '^v', ''
+
 Write-Host "Building XBVault v$Version for $rid..." -ForegroundColor Green
 
 # Prefer dotnet on PATH, fallback to default install path

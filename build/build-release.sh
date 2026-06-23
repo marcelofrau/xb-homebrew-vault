@@ -7,6 +7,9 @@ ARCH="${2:-x64}"
 PROJECT="${3:-XBVault}"
 OUTPUT_DIR="${4:-dist}"
 
+# Strip leading v prefix if present
+VERSION="${VERSION#v}"
+
 # Detect OS for RID
 case "$(uname -s)" in
   Darwin) OS="osx" ;;
