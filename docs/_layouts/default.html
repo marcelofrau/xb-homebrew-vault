@@ -109,24 +109,36 @@
   <!-- Mermaid -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script>
+    // Jekyll renders ```mermaid as <pre><code class="language-mermaid">
+    // Mermaid needs <pre class="mermaid"> — convert before init
+    document.querySelectorAll('pre > code.language-mermaid').forEach(code => {
+      const pre = code.parentElement;
+      const div = document.createElement('pre');
+      div.className = 'mermaid';
+      div.textContent = code.textContent;
+      pre.replaceWith(div);
+    });
+
     mermaid.initialize({
-      startOnLoad: true,
+      startOnLoad: false,
       theme: 'base',
       themeVariables: {
-        background:       '#0D1117',
-        primaryColor:     '#1A1D23',
-        primaryTextColor: '#F0F0F0',
-        primaryBorderColor: '#4A7A20',
-        lineColor:        '#6B8F2A',
-        secondaryColor:   '#1E2128',
-        tertiaryColor:    '#252830',
+        background:          '#0D1117',
+        primaryColor:        '#1A1D23',
+        primaryTextColor:    '#F0F0F0',
+        primaryBorderColor:  '#4A7A20',
+        lineColor:           '#6B8F2A',
+        secondaryColor:      '#1E2128',
+        tertiaryColor:       '#252830',
         edgeLabelBackground: '#1A1D23',
-        clusterBkg:       '#161B22',
-        titleColor:       '#9ACA3C',
-        nodeTextColor:    '#F0F0F0',
-        fontFamily:       'Rajdhani, sans-serif',
+        clusterBkg:          '#161B22',
+        titleColor:          '#9ACA3C',
+        nodeTextColor:       '#F0F0F0',
+        fontFamily:          'Rajdhani, sans-serif',
       }
     });
+
+    mermaid.run({ querySelector: '.mermaid' });
   </script>
 
   <!-- Nav scroll + mobile toggle -->
