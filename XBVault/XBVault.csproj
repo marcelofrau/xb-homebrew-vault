@@ -3,7 +3,7 @@
     <OutputType Condition="$([MSBuild]::IsOSPlatform('windows'))">WinExe</OutputType>
     <OutputType Condition="!$([MSBuild]::IsOSPlatform('windows'))">Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BuiltInComInteropSupport Condition="$([MSBuild]::IsOSPlatform('windows'))">true</BuiltInComInteropSupport>

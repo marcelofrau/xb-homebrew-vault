@@ -4,9 +4,16 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VERSION="${1:?Usage: $0 <version> [arch]}"
 ARCH="${2:-x64}"
-RID="linux-$ARCH"
 PROJECT="${3:-XBVault}"
 OUTPUT_DIR="${4:-dist}"
+
+# Detect OS for RID
+case "$(uname -s)" in
+  Darwin) OS="osx" ;;
+  Linux)  OS="linux" ;;
+  *)      echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;
+esac
+RID="$OS-$ARCH"
 
 DIST_DIR="$ROOT/$OUTPUT_DIR"
 PROJ_DIR="$ROOT/$PROJECT"
@@ -26,7 +33,6 @@ dotnet publish "$PROJ_DIR" \
     -c Release \
     -r "$RID" \
     --self-contained true \
-    -p:PublishReadyToRun=true \
     -p:Version="$VERSION" \
     -o "$PUBLISH_DIR"
 
