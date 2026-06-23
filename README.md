@@ -179,7 +179,11 @@ Releases are built on tag push (`v*`) via GitHub Actions (Windows + Ubuntu matri
 
 Splash and About window backgrounds by **Johnson Martin** on [Unsplash](https://unsplash.com/@johnsonmartin).
 
-Special thanks to **MewLew** and the [Emulation Revival](https://emulationrevival.github.io) team for their catalog JSON API.
+### Emulation Revival
+
+A heartfelt thank you to **MewLew** and the entire [Emulation Revival](https://emulationrevival.github.io) team.
+
+XB Homebrew Vault wouldn't exist without their work. They built and maintain the whole infrastructure that makes Xbox Dev Mode homebrew accessible — curating the catalog, tracking compatibility, hosting the JSON API, and keeping everything up to date as new releases come out. The Browse experience in XBVault is powered entirely by what they built. If you find this app useful, go give their project some love too.
 
 ## 🎨 Icons
 

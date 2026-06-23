@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ page.title }} | {{ site.title }}</title>
   <meta name="description" content="{{ site.description }}">
-  <link rel="stylesheet" href="{{ '/assets/css/home.css' | relative_url }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ '/assets/css/home.css' | relative_url }}">
 </head>
 <body>
 
@@ -16,7 +16,9 @@
   <nav class="nav">
     <div class="nav-inner">
       <a class="nav-brand" href="{{ '/' | relative_url }}">
-        <span class="nav-logo">🎮</span>
+        <span class="nav-logo">
+          <img src="https://github.com/marcelofrau/xb-homebrew-vault/raw/main/docs/social-preview.jpg" alt="XB Homebrew Vault" />
+        </span>
         <span>XB Homebrew Vault</span>
       </a>
       <div class="nav-links">
@@ -26,7 +28,7 @@
         <a href="{{ '/tech-debt' | relative_url }}">Tech Debt</a>
         <a href="{{ '/api' | relative_url }}">API</a>
         <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}" target="_blank" rel="noopener" class="nav-github">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
           GitHub
         </a>
       </div>
@@ -52,7 +54,7 @@
     </div>
     <div class="hero-screenshot">
       <div class="screenshot-frame">
-        <img src="{{ '/screenshots/main.png' | relative_url }}" alt="XB Homebrew Vault main window" />
+        <img src="https://github.com/marcelofrau/xb-homebrew-vault/raw/main/docs/social-preview.jpg" alt="XB Homebrew Vault" />
       </div>
     </div>
   </section>
@@ -89,9 +91,9 @@
         </div>
 
         <div class="feature-card">
-          <div class="feature-icon">📁</div>
-          <h3>File Explorer</h3>
-          <p>Browse the Xbox file system remotely. Navigate directories, inspect files — without touching the physical console.</p>
+          <div class="feature-icon">💾</div>
+          <h3>USB Permission Wizard</h3>
+          <p>Prepare a USB drive for Xbox Dev Mode automatically — detect drives via WMI, apply NTFS permissions with icacls. No manual commands.</p>
         </div>
 
         <div class="feature-card">
@@ -140,36 +142,37 @@
   <!-- ABOUT -->
   <section class="about">
     <div class="container">
-      <div class="about-inner">
-        <div class="about-avatar" data-reveal="scale">
-          <img src="https://github.com/marcelofrau.png" alt="Marcelo Frau" />
+      <h2 class="section-title" data-reveal="up">About the Developer</h2>
+      <div class="about-card" data-reveal="up">
+        <div class="about-card-left">
+          <img class="about-avatar" src="https://github.com/marcelofrau.png" alt="Marcelo Frau" />
+          <div class="about-card-links">
+            <a href="https://marcelofrau.com" target="_blank" rel="noopener" class="about-link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              marcelofrau.com
+            </a>
+            <a href="https://github.com/marcelofrau" target="_blank" rel="noopener" class="about-link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+              github.com/marcelofrau
+            </a>
+            <a href="https://github.com/marcelofrau/xb-homebrew-vault" target="_blank" rel="noopener" class="about-link about-link-star">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .587l3.668 7.568L24 9.423l-6 5.847 1.417 8.253L12 19.005l-7.417 4.518L6 15.27 0 9.423l8.332-1.268z"/></svg>
+              Star on GitHub
+            </a>
+          </div>
         </div>
-        <div class="about-text">
-          <p class="about-tag" data-reveal="up">Built by</p>
-          <h2 class="about-name" data-reveal="up">Marcelo Frau</h2>
-          <p class="about-bio" data-reveal="up">
+        <div class="about-card-right">
+          <p class="about-tag">Built by</p>
+          <h3 class="about-name">Marcelo Frau</h3>
+          <p class="about-bio">
             Developer, retro gaming enthusiast, and Xbox Dev Mode tinkerer.
             XB Homebrew Vault started as a personal tool to manage emulators on an Xbox Series S
             without touching the Device Portal web UI every time — and grew from there.
           </p>
-          <p class="about-bio" data-reveal="up">
-            Built with .NET 8 + Avalonia UI, fully open source under GPL-3.0.
+          <p class="about-bio">
+            Built with .NET 8 + Avalonia UI, fully open source under GPL&#8209;3.0.
             If it scratches your itch too, a ⭐ on GitHub goes a long way.
           </p>
-          <div class="about-links" data-reveal="up">
-            <a href="https://marcelofrau.com" target="_blank" rel="noopener" class="about-link">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              marcelofrau.com
-            </a>
-            <a href="https://github.com/marcelofrau" target="_blank" rel="noopener" class="about-link">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-              github.com/marcelofrau
-            </a>
-            <a href="https://github.com/marcelofrau/xb-homebrew-vault" target="_blank" rel="noopener" class="about-link about-link-star">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .587l3.668 7.568L24 9.423l-6 5.847 1.417 8.253L12 19.005l-7.417 4.518L6 15.27 0 9.423l8.332-1.268z"/></svg>
-              Star on GitHub
-            </a>
-          </div>
         </div>
       </div>
     </div>
@@ -219,9 +222,11 @@
   <footer class="footer">
     <div class="container">
       <div class="footer-links">
+        <a href="{{ '/docs' | relative_url }}">Docs</a>
         <a href="{{ '/architecture' | relative_url }}">Architecture</a>
         <a href="{{ '/api' | relative_url }}">API Docs</a>
         <a href="{{ '/roadmap' | relative_url }}">Roadmap</a>
+        <a href="{{ '/tech-debt' | relative_url }}">Tech Debt</a>
         <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}" target="_blank" rel="noopener">GitHub</a>
         <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}/issues" target="_blank" rel="noopener">Issues</a>
         <a href="https://github.com/{{ site.github_username }}/{{ site.repository | split: '/' | last }}/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
@@ -246,106 +251,27 @@
     /* ── Lightbox ─────────────────────────────────────────── */
     .ss-item { cursor: zoom-in; }
     .ss-zoom { font-size: .7em; opacity: .6; }
-
     .lb-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
+      display: none; position: fixed; inset: 0; z-index: 9999;
       background: rgba(10,12,15,.96);
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 16px;
-      animation: lb-fade .18s ease;
+      align-items: center; justify-content: center; flex-direction: column; gap: 16px;
     }
-    .lb-overlay.open { display: flex; }
-
-    @keyframes lb-fade {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-
+    .lb-overlay.open { display: flex; animation: lb-fade .18s ease; }
+    @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
     .lb-content {
-      max-width: min(92vw, 1200px);
-      max-height: 82vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
+      max-width: min(92vw, 1200px); max-height: 82vh;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
       animation: lb-pop .2s cubic-bezier(.22,1,.36,1);
     }
-    @keyframes lb-pop {
-      from { transform: scale(.94); opacity: 0; }
-      to   { transform: scale(1);   opacity: 1; }
-    }
-
-    .lb-img {
-      max-width: 100%;
-      max-height: 78vh;
-      object-fit: contain;
-      border: 1px solid #4A7A20;
-      border-radius: 2px;
-      box-shadow: 0 0 80px rgba(68,127,62,.25), 0 24px 80px rgba(0,0,0,.8);
-      display: block;
-    }
-
-    .lb-caption {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: .75rem;
-      font-weight: 700;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: #6B8F2A;
-      text-align: center;
-    }
-
-    .lb-hint {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: .68rem;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      color: #3A3D42;
-      text-align: center;
-      position: fixed;
-      bottom: 20px;
-      left: 0; right: 0;
-    }
-
-    .lb-close {
-      position: fixed;
-      top: 18px; right: 22px;
-      background: transparent;
-      border: 1px solid #2A2D33;
-      color: #8B8D91;
-      font-size: 1.1rem;
-      width: 36px; height: 36px;
-      border-radius: 2px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: border-color .15s, color .15s, background .15s;
-      z-index: 1;
-    }
+    @keyframes lb-pop { from { transform: scale(.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .lb-img { max-width: 100%; max-height: 78vh; object-fit: contain; border: 1px solid #4A7A20; border-radius: 2px; box-shadow: 0 0 80px rgba(68,127,62,.25), 0 24px 80px rgba(0,0,0,.8); display: block; }
+    .lb-caption { font-family: 'Rajdhani', sans-serif; font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6B8F2A; text-align: center; }
+    .lb-hint { font-family: 'Rajdhani', sans-serif; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: #3A3D42; text-align: center; position: fixed; bottom: 20px; left: 0; right: 0; }
+    .lb-close { position: fixed; top: 18px; right: 22px; background: transparent; border: 1px solid #2A2D33; color: #8B8D91; font-size: 1.1rem; width: 36px; height: 36px; border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color .15s, color .15s, background .15s; z-index: 1; }
     .lb-close:hover { border-color: #E74C3C; color: #E74C3C; background: rgba(231,76,60,.08); }
-
-    .lb-nav {
-      position: fixed;
-      top: 50%; transform: translateY(-50%);
-      background: rgba(10,12,15,.7);
-      border: 1px solid #2A2D33;
-      color: #8B8D91;
-      font-size: 2rem;
-      width: 44px; height: 60px;
-      border-radius: 2px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: border-color .15s, color .15s, background .15s;
-      z-index: 1;
-      line-height: 1;
-    }
+    .lb-nav { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(10,12,15,.7); border: 1px solid #2A2D33; color: #8B8D91; font-size: 2rem; width: 44px; height: 60px; border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color .15s, color .15s, background .15s; z-index: 1; line-height: 1; }
     .lb-nav:hover { border-color: #9ACA3C; color: #9ACA3C; background: rgba(154,202,60,.06); }
-    .lb-prev { left: 16px; }
-    .lb-next { right: 16px; }
+    .lb-prev { left: 16px; } .lb-next { right: 16px; }
     .lb-nav:disabled { opacity: .2; cursor: default; pointer-events: none; }
   </style>
 
@@ -358,40 +284,30 @@
 
     /* ── Parallax hero bg ───────────────────────────────── */
     const heroBg = document.querySelector('.hero-bg');
-    const heroScreenshot = document.querySelector('.hero-screenshot');
+    const heroShot = document.querySelector('.hero-screenshot');
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
-      if (heroBg)         heroBg.style.transform         = `translateY(${y * 0.18}px)`;
-      if (heroScreenshot) heroScreenshot.style.transform = `translateY(${y * 0.08}px)`;
+      if (heroBg)   heroBg.style.transform   = `translateY(${y * 0.18}px)`;
+      if (heroShot) heroShot.style.transform = `translateY(${y * 0.08}px)`;
     }, { passive: true });
 
-    /* ── Scroll reveal (IntersectionObserver) ───────────── */
-    const revealObs = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('revealed');
-          revealObs.unobserve(entry.target);
-        }
-      });
+    /* ── Scroll reveal ──────────────────────────────────── */
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('revealed'); revealObs.unobserve(e.target); } });
     }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-
     document.querySelectorAll('[data-reveal]').forEach(el => revealObs.observe(el));
 
     /* ── Stagger reveal ─────────────────────────────────── */
-    const staggerObs = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        const children = Array.from(entry.target.children);
-        children.forEach((child, i) => {
-          setTimeout(() => child.classList.add('revealed'), i * 90);
-        });
-        staggerObs.unobserve(entry.target);
+    const staggerObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        Array.from(e.target.children).forEach((c, i) => setTimeout(() => c.classList.add('revealed'), i * 90));
+        staggerObs.unobserve(e.target);
       });
     }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
-
     document.querySelectorAll('[data-stagger]').forEach(el => staggerObs.observe(el));
 
-    /* ── Typing effect on hero title accent ─────────────── */
+    /* ── Typing effect ──────────────────────────────────── */
     const accent = document.querySelector('.hero-accent');
     if (accent) {
       const full = accent.textContent.trim();
@@ -399,68 +315,49 @@
       accent.style.opacity = '1';
       let i = 0;
       const cursor = document.createElement('span');
-      cursor.style.cssText = 'opacity:1;animation:blink .7s step-end infinite;border-right:2px solid #9ACA3C;margin-left:2px';
+      cursor.style.cssText = 'border-right:2px solid #9ACA3C;margin-left:2px;animation:blink .7s step-end infinite';
       accent.appendChild(cursor);
-      const style = document.createElement('style');
-      style.textContent = '@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}';
-      document.head.appendChild(style);
-      // start after hero-title animation delay (~150ms)
+      document.head.insertAdjacentHTML('beforeend', '<style>@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}</style>');
       setTimeout(() => {
         const type = () => {
-          if (i <= full.length) {
-            accent.textContent = full.slice(0, i);
-            accent.appendChild(cursor);
-            i++;
-            setTimeout(type, i < full.length ? 38 : 800);
-          } else {
-            cursor.style.animation = 'none';
-            cursor.style.opacity = '0';
-          }
+          accent.textContent = full.slice(0, i);
+          accent.appendChild(cursor);
+          if (i++ < full.length) setTimeout(type, 38);
+          else { cursor.style.animation = 'none'; cursor.style.opacity = '0'; }
         };
         type();
       }, 300);
     }
-  </script>
 
-  <script>
+    /* ── Lightbox ───────────────────────────────────────── */
     (function () {
       const items = Array.from(document.querySelectorAll('[data-lightbox]'));
-      const lb    = document.getElementById('lb');
-      const img   = document.getElementById('lb-img');
-      const cap   = document.getElementById('lb-caption');
-      const prev  = document.getElementById('lb-prev');
-      const next  = document.getElementById('lb-next');
-      let   cur   = 0;
-
+      const lb = document.getElementById('lb');
+      const img = document.getElementById('lb-img');
+      const cap = document.getElementById('lb-caption');
+      const prev = document.getElementById('lb-prev');
+      const next = document.getElementById('lb-next');
+      let cur = 0;
       function open(idx) {
         cur = idx;
         img.src = items[idx].dataset.lightbox;
-        img.alt = items[idx].dataset.caption;
-        cap.textContent = items[idx].dataset.caption;
+        img.alt = cap.textContent = items[idx].dataset.caption;
         prev.disabled = idx === 0;
         next.disabled = idx === items.length - 1;
         lb.classList.add('open');
         document.body.style.overflow = 'hidden';
       }
-
-      function close() {
-        lb.classList.remove('open');
-        document.body.style.overflow = '';
-      }
-
+      function close() { lb.classList.remove('open'); document.body.style.overflow = ''; }
       items.forEach((el, i) => el.addEventListener('click', () => open(i)));
-
       document.getElementById('lb-close').addEventListener('click', close);
       prev.addEventListener('click', () => cur > 0 && open(cur - 1));
       next.addEventListener('click', () => cur < items.length - 1 && open(cur + 1));
-
       lb.addEventListener('click', e => { if (e.target === lb) close(); });
-
       document.addEventListener('keydown', e => {
         if (!lb.classList.contains('open')) return;
-        if (e.key === 'Escape')      close();
-        if (e.key === 'ArrowLeft'  && cur > 0)              open(cur - 1);
-        if (e.key === 'ArrowRight' && cur < items.length-1) open(cur + 1);
+        if (e.key === 'Escape') close();
+        if (e.key === 'ArrowLeft' && cur > 0) open(cur - 1);
+        if (e.key === 'ArrowRight' && cur < items.length - 1) open(cur + 1);
       });
     })();
   </script>
