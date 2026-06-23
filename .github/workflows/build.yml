@@ -40,44 +40,64 @@ jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            script: powershell -File build/build-release.ps1 -Version $VERSION -Installer
+          - os: windows-latest
+            rid: win-arm64
+            script: powershell -File build/build-release.ps1 -Version $VERSION -Arch arm64
+          - os: ubuntu-latest
+            rid: linux-x64
+            script: bash build/build-release.sh $VERSION x64
+          - os: macos-13
+            rid: osx-x64
+            script: bash build/build-release.sh $VERSION x64
+          - os: macos-latest
+            rid: osx-arm64
+            script: bash build/build-release.sh $VERSION arm64
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+    - uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
 
-    - name: Publish win-x64
-      shell: pwsh
-      run: |
-        $ver = "${{ github.ref_name }}" -replace '^v', ''
-        dotnet publish XBVault/XBVault.csproj -c Release -r win-x64 --self-contained true -p:PublishReadyToRun=true -p:Version=$ver -o publish-win
+    - name: Install Inno Setup (Windows)
+      if: matrix.os == 'windows-latest'
+      run: choco install innosetup --no-progress
 
-    - name: Package win-x64
-      shell: pwsh
-      run: |
-        $ver = "${{ github.ref_name }}" -replace '^v', ''
-        Compress-Archive -Path publish-win/* -DestinationPath "XBVault-$ver-win-x64.zip"
+    - name: Build release
+      shell: bash
+      env:
+        VERSION: ${{ github.ref_name }}
+      run: ${{ matrix.script }}
 
-    - name: Publish linux-x64
-      shell: pwsh
-      run: |
-        $ver = "${{ github.ref_name }}" -replace '^v', ''
-        dotnet publish XBVault/XBVault.csproj -c Release -r linux-x64 --self-contained true -p:PublishReadyToRun=false -p:Version=$ver -o publish-linux
-
-    - name: Package linux-x64
-      shell: pwsh
-      run: |
-        $ver = "${{ github.ref_name }}" -replace '^v', ''
-        Compress-Archive -Path publish-linux/* -DestinationPath "XBVault-$ver-linux-x64.zip"
-
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
+    - uses: actions/upload-artifact@v4
       with:
-        files: |
-          XBVault-*-win-x64.zip
-          XBVault-*-linux-x64.zip
-        generate_release_notes: false
+        name: release-${{ matrix.rid }}
+        path: dist/XBVault-*
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: release-*
+        merge-multiple: true
+        path: dist
+
+    - name: Display structure
+      run: ls -lh dist/
+
+    - uses: softprops/action-gh-release@v2
+      with:
+        files: dist/*
+        fail_on_unmatched_files: false
