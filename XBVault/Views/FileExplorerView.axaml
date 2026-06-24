@@ -1,7 +1,14 @@
 <UserControl xmlns="https://github.com/avaloniaui"
               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
               xmlns:models="using:XBVault.Models"
+              xmlns:controls="using:XBVault.Controls"
                x:Class="XBVault.Views.FileExplorerView">
+
+  <UserControl.Styles>
+    <Style Selector="TreeViewItem">
+      <Setter Property="(controls:TreeViewItemProperties.IsLastChild)" Value="{ReflectionBinding IsLastChild}" />
+    </Style>
+  </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="32,32,32,16">
 

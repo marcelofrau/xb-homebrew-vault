@@ -268,8 +268,15 @@ public partial class FileExplorerViewModel : ObservableObject
         });
     }
 
+    private static void SetIsLastChild(List<SftpEntry> entries)
+    {
+        for (int i = 0; i < entries.Count; i++)
+            entries[i].IsLastChild = i >= entries.Count - 1;
+    }
+
     private async Task<List<SftpEntry>> DetectDrivesAsync()
     {
+        List<SftpEntry> drives;
         try
         {
             var result = await _sftpService.RunShellCommandAsync("fsutil fsinfo drives");
@@ -283,7 +290,7 @@ public partial class FileExplorerViewModel : ObservableObject
                         .Select(d => d.TrimEnd('\\').TrimEnd(':'))
                         .Where(l => l.Length == 1);
 
-                    return letters.Select(l =>
+                    drives = letters.Select(l =>
                     {
                         var e = new SftpEntry
                         {
@@ -296,6 +303,8 @@ public partial class FileExplorerViewModel : ObservableObject
                         e.Children.Add(new SftpEntry { Name = "" });
                         return e;
                     }).ToList();
+                    SetIsLastChild(drives);
+                    return drives;
                 }
             }
         }
@@ -305,7 +314,7 @@ public partial class FileExplorerViewModel : ObservableObject
         }
 
         var fallback = new[] { "C", "D", "E", "Q" };
-        return fallback.Select(l =>
+        drives = fallback.Select(l =>
         {
             var e = new SftpEntry
             {
@@ -318,6 +327,8 @@ public partial class FileExplorerViewModel : ObservableObject
             e.Children.Add(new SftpEntry { Name = "" });
             return e;
         }).ToList();
+        SetIsLastChild(drives);
+        return drives;
     }
 
     [RelayCommand]
@@ -332,8 +343,11 @@ public partial class FileExplorerViewModel : ObservableObject
             target.HasLoaded = true;
             target.Children.Clear();
 
-            foreach (var c in children)
-                target.Children.Add(c);
+            for (int i = 0; i < children.Count; i++)
+            {
+                children[i].IsLastChild = i >= children.Count - 1;
+                target.Children.Add(children[i]);
+            }
         }
         catch (Exception ex)
         {

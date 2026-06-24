@@ -26,6 +26,18 @@ public class SftpEntry : INotifyPropertyChanged
         }
     }
 
+    private bool _isLastChild;
+    public bool IsLastChild
+    {
+        get => _isLastChild;
+        set
+        {
+            if (_isLastChild == value) return;
+            _isLastChild = value;
+            Notify();
+        }
+    }
+
     private static readonly Dictionary<string, Bitmap> _iconCache = [];
 
     private Bitmap? _iconPath;
