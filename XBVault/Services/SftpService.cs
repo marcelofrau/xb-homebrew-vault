@@ -322,13 +322,13 @@ public class SftpService : IDisposable
                 result.Error = cmd.Error;
                 result.Success = cmd.ExitStatus == 0;
 
-                Logger.Debug($"Shell command exit: {cmd.ExitStatus}");
+                Logger.Debug($"SFTP shell command exit: {cmd.ExitStatus}");
                 if (!string.IsNullOrEmpty(cmd.Error))
-                    Logger.Warn($"Shell command stderr: {cmd.Error}");
+                    Logger.Warn($"SFTP shell command stderr: {cmd.Error}");
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, $"Shell command failed: {command}");
+                Logger.Error(ex, $"SFTP shell command failed: {command}");
                 result.Success = false;
                 result.Error = ex.Message;
             }

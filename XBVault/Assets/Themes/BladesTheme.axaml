@@ -100,7 +100,7 @@
                        Margin="{TemplateBinding Level, Mode=OneWay, Converter={StaticResource TreeViewItemLeftMarginConverter}}"
                        HorizontalAlignment="Left"
                        Fill="{StaticResource TreeViewItemLineColor}"
-                       RenderTransform="TranslateX(9px)"
+                       RenderTransform="TranslateX(5px)"
                        ZIndex="99"/>
 
             <Border Name="PART_LayoutRoot"
@@ -120,13 +120,14 @@
                        Width="35">
                   <StackPanel Orientation="Horizontal">
                     <!-- Horizontal connector line -->
-                    <Border Width="8" Height="16"
+                    <Border Name="LineHoriz"
+                            Width="8" Height="16"
                             Margin="0,0,4,0"
                             VerticalAlignment="Top"
                             BorderBrush="{StaticResource TreeViewItemLineColor}"
                             BorderThickness="1,0,0,1"
                             CornerRadius="0,0,0,8"
-                            RenderTransform="TranslateX(5px)"/>
+                            RenderTransform="Translate(0px, -2px)"/>
                     <ToggleButton Name="PART_ExpandCollapseChevron"
                                   Width="12"
                                   Height="12"
@@ -159,6 +160,19 @@
       <Style Selector="^[(controls|TreeViewItemProperties.IsLastChild)=True] /template/ Rectangle#LineVert">
         <Setter Property="Height" Value="10"/>
         <Setter Property="VerticalAlignment" Value="Top"/>
+      </Style>
+
+      <!-- Root level (drives): no connector lines -->
+      <Style Selector="^[Level=0] /template/ Rectangle#LineVert">
+        <Setter Property="IsVisible" Value="False"/>
+      </Style>
+      <Style Selector="^[Level=0] /template/ Border#LineHoriz">
+        <Setter Property="IsVisible" Value="False"/>
+      </Style>
+      <!-- Root chevron offset to align with child levels -->
+      <Style Selector="^[Level=0] /template/ Panel#PART_ExpandCollapseChevronContainer">
+        <Setter Property="Margin" Value="12,0,0,0"/>
+        <Setter Property="Width" Value="23"/>
       </Style>
     </ControlTheme>
   </Styles.Resources>

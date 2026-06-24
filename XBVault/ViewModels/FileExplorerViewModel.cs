@@ -28,7 +28,6 @@ public partial class FileExplorerViewModel : ObservableObject
 
     public Func<SftpEntry, Task<bool>>? ShowDeleteConfirmAsync { get; set; }
     public Func<SftpEntry, Task<string?>>? ShowRenamePromptAsync { get; set; }
-    public Func<Task<string?>>? ShowCreateFolderPromptAsync { get; set; }
     public Func<SftpEntry, Task<string?>>? ShowSaveFileDialogAsync { get; set; }
     public Action<string, string>? ShowToast { get; set; }
     public Func<string, string, string, int, Task>? ShowConnectionInfoAsync { get; set; }
@@ -155,7 +154,6 @@ public partial class FileExplorerViewModel : ObservableObject
     public bool ShowPromptContent => IsConnected && !IsLoading && !_sftpService.IsConnected;
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
     public bool CanBrowse => IsConnected && !IsLoading;
-    public bool CanCreateFolder => IsConnected && !IsLoading && _sftpService.IsConnected;
     public bool CanRefresh => _sftpService.IsConnected && TreeRoots.Count > 0;
     public bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
@@ -186,7 +184,6 @@ public partial class FileExplorerViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowReadyContent));
         OnPropertyChanged(nameof(ShowPromptContent));
         OnPropertyChanged(nameof(CanBrowse));
-        OnPropertyChanged(nameof(CanCreateFolder));
         OnPropertyChanged(nameof(CanRefresh));
     }
 
@@ -274,61 +271,24 @@ public partial class FileExplorerViewModel : ObservableObject
             entries[i].IsLastChild = i >= entries.Count - 1;
     }
 
-    private async Task<List<SftpEntry>> DetectDrivesAsync()
+    private static Task<List<SftpEntry>> DetectDrivesAsync()
     {
-        List<SftpEntry> drives;
-        try
-        {
-            var result = await _sftpService.RunShellCommandAsync("fsutil fsinfo drives");
-            if (result.Success && !string.IsNullOrEmpty(result.Output))
-            {
-                var match = System.Text.RegularExpressions.Regex.Match(result.Output, @"Drives:\s*(.+?)(?:\r|$)");
-                if (match.Success)
-                {
-                    var letters = match.Groups[1].Value
-                        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(d => d.TrimEnd('\\').TrimEnd(':'))
-                        .Where(l => l.Length == 1);
-
-                    drives = letters.Select(l =>
-                    {
-                        var e = new SftpEntry
-                        {
-                            Name = $"{l}:\\",
-                            FullPath = $"{l}:\\",
-                            IsDirectory = true,
-                            IsDrive = true,
-                            LastModified = DateTime.MinValue
-                        };
-                        e.Children.Add(new SftpEntry { Name = "" });
-                        return e;
-                    }).ToList();
-                    SetIsLastChild(drives);
-                    return drives;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Warn($"Drive detection via fsutil failed: {ex.Message}. Falling back to common drives.");
-        }
-
-        var fallback = new[] { "C", "D", "E", "Q" };
-        drives = fallback.Select(l =>
+        var drives = new[] { "C", "D", "E", "Q" }.Select(l =>
         {
             var e = new SftpEntry
             {
                 Name = $"{l}:\\",
                 FullPath = $"{l}:\\",
                 IsDirectory = true,
-                IsJunction = false,
-                LastModified = DateTime.MinValue
+                IsDrive = true,
+                LastModified = DateTime.MinValue,
+                ToolTip = l == "E" ? "Usually external drive" : null
             };
             e.Children.Add(new SftpEntry { Name = "" });
             return e;
         }).ToList();
         SetIsLastChild(drives);
-        return drives;
+        return Task.FromResult(drives);
     }
 
     [RelayCommand]
@@ -343,10 +303,23 @@ public partial class FileExplorerViewModel : ObservableObject
             target.HasLoaded = true;
             target.Children.Clear();
 
-            for (int i = 0; i < children.Count; i++)
+            if (children.Count == 0)
             {
-                children[i].IsLastChild = i >= children.Count - 1;
-                target.Children.Add(children[i]);
+                target.Children.Add(new SftpEntry
+                {
+                    Name = "<empty>",
+                    FullPath = "",
+                    IsDirectory = false,
+                    IsLastChild = true
+                });
+            }
+            else
+            {
+                for (int i = 0; i < children.Count; i++)
+                {
+                    children[i].IsLastChild = i >= children.Count - 1;
+                    target.Children.Add(children[i]);
+                }
             }
         }
         catch (Exception ex)
@@ -589,27 +562,6 @@ public partial class FileExplorerViewModel : ObservableObject
         {
             Logger.Error(ex, $"Rename failed: {entry.Name}");
             ShowToast?.Invoke("Rename Failed", ex.Message);
-        }
-    }
-
-    [RelayCommand]
-    private async Task CreateFolderAsync()
-    {
-        var createTask = ShowCreateFolderPromptAsync?.Invoke();
-        var folderName = createTask is not null ? await createTask : null;
-        if (string.IsNullOrEmpty(folderName)) return;
-
-        try
-        {
-            var newPath = CurrentPath.TrimEnd('\\') + "\\" + folderName;
-            await _sftpService.CreateDirectoryAsync(newPath);
-            ShowToast?.Invoke("Folder Created", folderName);
-            await RefreshAsync();
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, $"Create folder failed: {folderName}");
-            ShowToast?.Invoke("Create Failed", ex.Message);
         }
     }
 

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using XBVault.Models;
 using XBVault.Services;
 
 namespace XBVault.ViewModels;
@@ -13,6 +14,7 @@ public partial class ConnectionViewModel : ObservableObject
 {
     private readonly XboxDeviceService _xboxService;
     private CancellationTokenSource? _cts;
+    private static readonly Random _memeRng = new();
 
     public ConnectionViewModel(XboxDeviceService xboxService)
     {
@@ -69,6 +71,32 @@ public partial class ConnectionViewModel : ObservableObject
         return null;
     }
 
+    private static readonly string[] CortanaLines =
+    {
+        "Cortana: Slipspace connection active. Welcome back, Spartan.",
+        "Cortana: AI handshake complete. Transmitting coordinates.",
+        "Cortana: I've got the maps. Ready when you are.",
+        "Cortana: Network secured. Link established.",
+        "Cortana: Welcome home, Spartan. Connection stable.",
+        "Cortana: AI protocol v1.0 — Handshake successful.",
+        "Cortana: UNSC network bridge active.",
+        "Cortana: Connection authenticated. Signal secure.",
+        "Cortana: Slipspace buffer calibrated. Engaging link.",
+        "Cortana: Sending your coordinates. Stay safe out there."
+    };
+
+    private async Task MaybeMeme(CancellationToken ct)
+    {
+        if (_memeRng.NextDouble() >= 0.5) return;
+        var lines = MemeLines.All;
+        var count = _memeRng.Next(1, 3);
+        for (int i = 0; i < count; i++)
+        {
+            await Task.Delay(_memeRng.Next(150, 400), ct);
+            AddLine(lines[_memeRng.Next(lines.Length)]);
+        }
+    }
+
     [RelayCommand]
     private void Cancel()
     {
@@ -103,10 +131,12 @@ public partial class ConnectionViewModel : ObservableObject
         {
             AddLine("ATDT " + settings.Address);
             await Task.Delay(300, ct);
+            await MaybeMeme(ct);
 
             AddLine("Initializing modem...");
             Progress = 0.1;
             await Task.Delay(500, ct);
+            await MaybeMeme(ct);
 
             AddLine("Dialing " + settings.BaseUrl + "...");
             await Task.Delay(400, ct);
@@ -114,6 +144,7 @@ public partial class ConnectionViewModel : ObservableObject
             AddLine("Waiting for carrier...");
             Progress = 0.25;
             await Task.Delay(600, ct);
+            await MaybeMeme(ct);
 
             var baseUrl = settings.BaseUrl;
             var pw = string.IsNullOrEmpty(settings.EncryptedPassword)
@@ -143,9 +174,10 @@ public partial class ConnectionViewModel : ObservableObject
                 var linkSpeed = await TryGetLinkSpeedAsync();
 
                 AddLine("");
-                AddLine("RING... RING...");
+                AddLine(CortanaLines[_memeRng.Next(CortanaLines.Length)]);
                 Progress = 0.3;
                 await Task.Delay(300, ct);
+                await MaybeMeme(ct);
 
                 AddLine("CONNECT " + (linkSpeed ?? "1 Gbps"));
                 Progress = 0.35;
@@ -155,9 +187,15 @@ public partial class ConnectionViewModel : ObservableObject
                 Progress = 0.4;
                 await Task.Delay(250, ct);
 
+                AddLine("TCP handshake: SYN sent... SYN-ACK received... ACK sent.");
+                Progress = 0.45;
+                await Task.Delay(300, ct);
+                await MaybeMeme(ct);
+
                 AddLine("Negotiating handshake...");
                 Progress = 0.5;
                 await Task.Delay(350, ct);
+                await MaybeMeme(ct);
 
                 AddLine("Authenticating...");
                 Progress = 0.65;

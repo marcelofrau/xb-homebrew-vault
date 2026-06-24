@@ -51,6 +51,7 @@ public class SftpEntry : INotifyPropertyChanged
     public string? Extension { get; set; }
     public bool IsJunction { get; set; }
     public bool IsDrive { get; set; }
+    public string? ToolTip { get; set; }
 
     public string FormattedSize => IsDirectory ? "" : FormatSize(Size);
 

@@ -27,7 +27,6 @@ public partial class FileExplorerView : UserControl
         {
             _vm.ShowDeleteConfirmAsync = null;
             _vm.ShowRenamePromptAsync = null;
-            _vm.ShowCreateFolderPromptAsync = null;
             _vm.ShowSaveFileDialogAsync = null;
             _vm.ShowToast = null;
             _vm.ShowConnectionInfoAsync = null;
@@ -42,7 +41,6 @@ public partial class FileExplorerView : UserControl
 
         _vm.ShowDeleteConfirmAsync = ShowDeleteConfirmAsync;
         _vm.ShowRenamePromptAsync = ShowRenamePromptAsync;
-        _vm.ShowCreateFolderPromptAsync = ShowCreateFolderPromptAsync;
         _vm.ShowSaveFileDialogAsync = ShowSaveFileDialogAsync;
         _vm.ShowToast = ShowToast;
         _vm.ShowConnectionInfoAsync = ShowConnectionInfoAsync;
@@ -132,23 +130,6 @@ public partial class FileExplorerView : UserControl
             await win.ShowDialog(owner);
 
         return vm.Confirmed ? entry.Name : null;
-    }
-
-    private async Task<string?> ShowCreateFolderPromptAsync()
-    {
-        var vm = new ConfirmViewModel(
-            "New Folder",
-            "Enter folder name:",
-            "Create", "Cancel",
-            "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-new-folder-24.png",
-            "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-new-folder-24.png");
-
-        var win = new ConfirmWindow { DataContext = vm };
-        var owner = TopLevel.GetTopLevel(this) as Window;
-        if (owner is not null)
-            await win.ShowDialog(owner);
-
-        return vm.Confirmed ? "New Folder" : null;
     }
 
     private async Task<string?> ShowSaveFileDialogAsync(SftpEntry entry)
