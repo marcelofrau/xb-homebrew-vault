@@ -29,7 +29,6 @@ public partial class FileExplorerViewModel : ObservableObject
     }
 
     public Func<SftpEntry, Task<bool>>? ShowDeleteConfirmAsync { get; set; }
-    public Func<SftpEntry, Task<string?>>? ShowRenamePromptAsync { get; set; }
     public Func<SftpEntry, Task<string?>>? ShowSaveFileDialogAsync { get; set; }
     public Action<string, string>? ShowToast { get; set; }
     public Func<string, string, string, int, Task>? ShowConnectionInfoAsync { get; set; }
@@ -158,8 +157,11 @@ public partial class FileExplorerViewModel : ObservableObject
         NotifyStateDependentProperties();
     }
 
+    public bool HasSelectedEntry => SelectedEntry is not null && !SelectedEntry.IsPlaceholder;
+
     partial void OnSelectedEntryChanged(SftpEntry? value)
     {
+        OnPropertyChanged(nameof(HasSelectedEntry));
         if (value?.IsDirectory == true && !value.IsDrive)
         {
             NavigateToPathCommand.Execute(value.FullPath);
@@ -632,7 +634,7 @@ public partial class FileExplorerViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteEntryAsync(SftpEntry? entry)
     {
-        if (entry is null) return;
+        if (entry is null || entry.IsDrive) return;
 
         var confirmTask = ShowDeleteConfirmAsync?.Invoke(entry);
         var confirmed = confirmTask is not null ? await confirmTask : false;
@@ -656,26 +658,104 @@ public partial class FileExplorerViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task RenameEntryAsync(SftpEntry? entry)
+    private void CreateFolder()
     {
-        if (entry is null) return;
+        var parentPath = SelectedEntry?.IsDirectory == true
+            ? SelectedEntry.FullPath
+            : CurrentPath;
+        var parent = FindEntry(TreeRoots, parentPath);
+        if (parent is null) return;
 
-        var renameTask = ShowRenamePromptAsync?.Invoke(entry);
-        var newName = renameTask is not null ? await renameTask : null;
-        if (string.IsNullOrEmpty(newName) || newName == entry.Name) return;
+        var folder = new SftpEntry
+        {
+            Name = "New Folder",
+            FullPath = parentPath.TrimEnd('\\') + "\\",
+            IsDirectory = true,
+            IsEditing = true,
+            IsNewFolder = true,
+            OriginalName = ""
+        };
+        folder.Children.Add(new SftpEntry { Name = "" });
+
+        parent.Children.Insert(0, folder);
+        parent.IsExpanded = true;
+        ScrollToEntry?.Invoke(folder);
+    }
+
+    public void CommitEntryEdit(SftpEntry entry)
+    {
+        if (string.IsNullOrWhiteSpace(entry.Name))
+        {
+            CancelEntryEdit(entry);
+            return;
+        }
+
+        if (entry.IsNewFolder)
+            _ = CreateFolderOnServerAsync(entry);
+        else
+            _ = RenameEntryOnServerAsync(entry);
+    }
+
+    public void CancelEntryEdit(SftpEntry entry)
+    {
+        if (entry.IsNewFolder)
+        {
+            var parent = FindParent(TreeRoots, entry);
+            parent?.Children.Remove(entry);
+        }
+        else
+        {
+            entry.Name = entry.OriginalName;
+            entry.IsEditing = false;
+        }
+    }
+
+    private async Task CreateFolderOnServerAsync(SftpEntry entry)
+    {
+        try
+        {
+            var dir = entry.FullPath.TrimEnd('\\') + "\\" + entry.Name;
+            await _sftpService.CreateDirectoryAsync(dir);
+            ShowToast?.Invoke("Folder created", entry.Name);
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"Create folder failed: {entry.Name}");
+            ShowToast?.Invoke("Create Failed", ex.Message);
+            CancelEntryEdit(entry);
+        }
+    }
+
+    [RelayCommand]
+    private void RenameEntry(SftpEntry? entry)
+    {
+        if (entry is null || entry.IsPlaceholder || entry.IsDrive) return;
+        entry.OriginalName = entry.Name;
+        entry.IsEditing = true;
+    }
+
+    private async Task RenameEntryOnServerAsync(SftpEntry entry)
+    {
+        if (entry.Name == entry.OriginalName)
+        {
+            entry.IsEditing = false;
+            return;
+        }
 
         try
         {
             var parentDir = Path.GetDirectoryName(entry.FullPath)?.Replace('/', '\\') ?? "";
-            var newPath = parentDir.TrimEnd('\\') + "\\" + newName;
+            var newPath = parentDir.TrimEnd('\\') + "\\" + entry.Name;
             await _sftpService.RenameAsync(entry.FullPath, newPath);
-            ShowToast?.Invoke("Renamed", $"{entry.Name} → {newName}");
+            ShowToast?.Invoke("Renamed", $"{entry.OriginalName} \\u2192 {entry.Name}");
             await RefreshAsync();
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Rename failed: {entry.Name}");
             ShowToast?.Invoke("Rename Failed", ex.Message);
+            CancelEntryEdit(entry);
         }
     }
 
@@ -777,6 +857,22 @@ public partial class FileExplorerViewModel : ObservableObject
             if (e.Children.Count > 0)
             {
                 var found = FindEntry(e.Children, path);
+                if (found is not null)
+                    return found;
+            }
+        }
+        return null;
+    }
+
+    private static SftpEntry? FindParent(ObservableCollection<SftpEntry> entries, SftpEntry target)
+    {
+        foreach (var e in entries)
+        {
+            if (e.Children.Contains(target))
+                return e;
+            if (e.Children.Count > 0)
+            {
+                var found = FindParent(e.Children, target);
                 if (found is not null)
                     return found;
             }

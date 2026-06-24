@@ -3,7 +3,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using XBVault.Models;
 using XBVault.Services;
 using XBVault.ViewModels;
@@ -13,6 +16,9 @@ namespace XBVault.Views;
 public partial class FileExplorerView : UserControl
 {
     private FileExplorerViewModel? _vm;
+    private DispatcherTimer? _cdTimer;
+    private double _cdAngle;
+    private SftpEntry? _pendingFocusEntry;
 
     public FileExplorerView()
     {
@@ -25,8 +31,8 @@ public partial class FileExplorerView : UserControl
 
         if (_vm is not null)
         {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
             _vm.ShowDeleteConfirmAsync = null;
-            _vm.ShowRenamePromptAsync = null;
             _vm.ShowSaveFileDialogAsync = null;
             _vm.ShowToast = null;
             _vm.ShowConnectionInfoAsync = null;
@@ -41,7 +47,6 @@ public partial class FileExplorerView : UserControl
         if (_vm is null) return;
 
         _vm.ShowDeleteConfirmAsync = ShowDeleteConfirmAsync;
-        _vm.ShowRenamePromptAsync = ShowRenamePromptAsync;
         _vm.ShowSaveFileDialogAsync = ShowSaveFileDialogAsync;
         _vm.ShowToast = ShowToast;
         _vm.ShowConnectionInfoAsync = ShowConnectionInfoAsync;
@@ -50,7 +55,43 @@ public partial class FileExplorerView : UserControl
         _vm.ShowWinScpNotFoundDialog = ShowWinScpNotFoundDialog;
         _vm.ScrollToEntry = ScrollToEntry;
 
+        _vm.PropertyChanged += OnVmPropertyChanged;
+
         BrowseFilesBtn.Click += OnBrowseFilesClick;
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(FileExplorerViewModel.ShowActivity))
+        {
+            if (_vm?.ShowActivity == true)
+                StartCdSpinner();
+            else
+                StopCdSpinner();
+        }
+    }
+
+    private void StartCdSpinner()
+    {
+        if (_cdTimer is not null) return;
+        _cdAngle = 0;
+        _cdTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+        _cdTimer.Tick += OnCdTimerTick;
+        _cdTimer.Start();
+    }
+
+    private void StopCdSpinner()
+    {
+        if (_cdTimer is null) return;
+        _cdTimer.Stop();
+        _cdTimer.Tick -= OnCdTimerTick;
+        _cdTimer = null;
+    }
+
+    private void OnCdTimerTick(object? sender, EventArgs e)
+    {
+        _cdAngle = (_cdAngle + 6) % 360;
+        CdSpinnerImage.RenderTransform = new RotateTransform(_cdAngle);
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -61,6 +102,20 @@ public partial class FileExplorerView : UserControl
         {
             treeView.AddHandler(TreeViewItem.ExpandedEvent, OnTreeItemExpanded);
             treeView.SelectionChanged += OnTreeSelectionChanged;
+            treeView.AddHandler(TextBox.KeyDownEvent, OnFolderTreeKeyDown, RoutingStrategies.Tunnel);
+        }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        StopCdSpinner();
+        var treeView = this.FindControl<TreeView>("FolderTree");
+        if (treeView is not null)
+        {
+            treeView.RemoveHandler(TreeViewItem.ExpandedEvent, OnTreeItemExpanded);
+            treeView.SelectionChanged -= OnTreeSelectionChanged;
+            treeView.RemoveHandler(TextBox.KeyDownEvent, OnFolderTreeKeyDown);
         }
     }
 
@@ -70,8 +125,8 @@ public partial class FileExplorerView : UserControl
             if (added is SftpEntry entry)
             {
                 entry.IsSelected = true;
-                if (entry.IsDirectory && _vm is not null)
-                    _vm.CurrentPath = entry.FullPath;
+                if (_vm is not null)
+                    _vm.SelectedEntry = entry;
             }
 
         foreach (var removed in e.RemovedItems)
@@ -124,21 +179,21 @@ public partial class FileExplorerView : UserControl
         return vm.Confirmed;
     }
 
-    private async Task<string?> ShowRenamePromptAsync(SftpEntry entry)
+    private void OnFolderTreeKeyDown(object? sender, KeyEventArgs e)
     {
-        var vm = new ConfirmViewModel(
-            "Rename",
-            $"Enter new name for {entry.Name}:",
-            "Rename", "Cancel",
-            "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-rename-24.png",
-            "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-rename-24.png");
+        if (e.Source is not TextBox tb || tb.DataContext is not SftpEntry entry) return;
+        if (_vm is null) return;
 
-        var win = new ConfirmWindow { DataContext = vm };
-        var owner = TopLevel.GetTopLevel(this) as Window;
-        if (owner is not null)
-            await win.ShowDialog(owner);
-
-        return vm.Confirmed ? entry.Name : null;
+        if (e.Key == Key.Enter)
+        {
+            _vm.CommitEntryEdit(entry);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            _vm.CancelEntryEdit(entry);
+            e.Handled = true;
+        }
     }
 
     private async Task<string?> ShowSaveFileDialogAsync(SftpEntry entry)
@@ -215,6 +270,31 @@ public partial class FileExplorerView : UserControl
     {
         var treeView = this.FindControl<TreeView>("FolderTree");
         treeView?.ScrollIntoView(entry);
+        _pendingFocusEntry = entry;
+        TryFocusEditingEntry(entry, treeView, 5);
+    }
+
+    private static void TryFocusEditingEntry(SftpEntry entry, TreeView? treeView, int retries)
+    {
+        if (treeView is null || retries <= 0) return;
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!entry.IsEditing) return;
+            var tvi = treeView.ContainerFromItem(entry) as TreeViewItem;
+            if (tvi is null)
+            {
+                TryFocusEditingEntry(entry, treeView, retries - 1);
+                return;
+            }
+            var textBox = tvi.GetVisualDescendants().OfType<TextBox>().FirstOrDefault();
+            if (textBox is null)
+            {
+                TryFocusEditingEntry(entry, treeView, retries - 1);
+                return;
+            }
+            textBox.Focus();
+            textBox.SelectAll();
+        }, DispatcherPriority.Background);
     }
 
     private static void ShowToast(string title, string message)

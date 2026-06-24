@@ -15,6 +15,9 @@ public class SftpService : IDisposable
     private static string NormalizePath(string path) =>
         path.Replace('\\', '/');
 
+    private static string ShellPath(string path) =>
+        path.Replace('/', '\\');
+
     public async Task ConnectAsync(string host, int port, string user, string pass)
     {
         Logger.Debug($"SftpService.ConnectAsync: connecting to {host}:{port} as {user}");
@@ -72,80 +75,67 @@ public class SftpService : IDisposable
 
     public Task<List<SftpEntry>> ListDirectoryAsync(string path)
     {
-        Logger.Debug($"ListDirectoryAsync: '{path}' (via shell)");
+        Logger.Debug($"ListDirectoryAsync: '{path}' (via shell dir /b)");
         return Task.Run(async () =>
         {
             if (_ssh is null || !_ssh.IsConnected)
                 throw new InvalidOperationException("SSH not connected");
 
-            // Xbox Dev Mode SFTP doesn't support SSH_FXP_OPENDIR,
-            // so we use CMD's dir command instead
-            var result = await RunShellCommandAsync($"dir \"{path}\" /a /-c");
-            if (!result.Success)
-                throw new Exception($"dir failed: {result.Error}");
+            // Use dir /b (bare) — just names, no headers/metadata to parse
+            var parent = path.TrimEnd('\\');
 
-            return ParseDirOutput(result.Output, path);
-        });
-    }
+            // Get directories
+            var dirResult = await RunShellCommandAsync($"dir \"{path}\" /b /ad");
+            var dirNames = dirResult.Success
+                ? dirResult.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(l => l.Trim('\r', ' ', '\t'))
+                    .Where(n => n.Length > 0)
+                : Array.Empty<string>();
 
-    private static List<SftpEntry> ParseDirOutput(string output, string parentPath)
-    {
-        var entries = new List<SftpEntry>();
-        var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            // Get files
+            var fileResult = await RunShellCommandAsync($"dir \"{path}\" /b /a-d");
+            var fileNames = fileResult.Success
+                ? fileResult.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(l => l.Trim('\r', ' ', '\t'))
+                    .Where(n => n.Length > 0)
+                : Array.Empty<string>();
 
-        foreach (var line in lines)
-        {
-            var trimmed = line.Trim('\r', ' ');
-            // Skip headers, footers, blank lines, dot entries
-            if (string.IsNullOrEmpty(trimmed) ||
-                trimmed.StartsWith("Volume", StringComparison.OrdinalIgnoreCase) ||
-                trimmed.StartsWith("Directory of", StringComparison.OrdinalIgnoreCase) ||
-                trimmed.Contains("File(s)") ||
-                trimmed.Contains("Dir(s)") ||
-                trimmed == "." || trimmed == ".." ||
-                trimmed == ".")
-                continue;
+            var entries = new List<SftpEntry>(dirNames.Count() + fileNames.Count());
 
-            // Skip summary lines in any locale: "<count> <unit>(s) ..." (e.g. "0 arquivo(s) 0 bytes")
-            if (System.Text.RegularExpressions.Regex.IsMatch(trimmed,
-                    @"^\d+\s+\w+\(s\)", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-                continue;
-
-            // Match: flexible date prefix <DIR>|size name
-            // Date handles MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD, etc.
-            var match = System.Text.RegularExpressions.Regex.Match(trimmed,
-                @"^(\d{1,4}[/.-]\d{1,2}[/.-]\d{1,4}\s+\d{1,2}:\d{2}(?:\s*[AP]M)?)\s+(<DIR>|\d+)\s+(.+)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (!match.Success) continue;
-
-            var name = match.Groups[3].Value.Trim();
-            if (string.IsNullOrEmpty(name) || name == "." || name == "..")
-                continue;
-
-            var isDir = match.Groups[2].Value == "<DIR>";
-            var size = isDir ? 0 : long.TryParse(match.Groups[2].Value, out var s) ? s : 0;
-
-            var fullPath = parentPath.TrimEnd('\\') + "\\" + name;
-            var entry = new SftpEntry
+            foreach (var name in dirNames)
             {
-                Name = name,
-                FullPath = fullPath,
-                IsDirectory = isDir,
-                Size = size,
-                LastModified = DateTime.MinValue
-            };
-            if (isDir)
-                entry.Children.Add(new SftpEntry { Name = "" });
-            entries.Add(entry);
-        }
+                var fullPath = parent + "\\" + name;
+                entries.Add(new SftpEntry
+                {
+                    Name = name,
+                    FullPath = fullPath,
+                    IsDirectory = true,
+                    Children = { new SftpEntry { Name = "" } }
+                });
+            }
 
-        entries.Sort((a, b) =>
-        {
-            if (a.IsDirectory != b.IsDirectory)
-                return a.IsDirectory ? -1 : 1;
-            return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+            foreach (var name in fileNames)
+            {
+                var fullPath = parent + "\\" + name;
+                entries.Add(new SftpEntry
+                {
+                    Name = name,
+                    FullPath = fullPath,
+                    IsDirectory = false,
+                    Size = 0,
+                    LastModified = DateTime.MinValue
+                });
+            }
+
+            entries.Sort((a, b) =>
+            {
+                if (a.IsDirectory != b.IsDirectory)
+                    return a.IsDirectory ? -1 : 1;
+                return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+            });
+
+            return entries;
         });
-
-        return entries;
     }
 
     public Task<List<SftpEntry>> RecursiveListAsync(string path)
@@ -155,73 +145,56 @@ public class SftpService : IDisposable
             if (_ssh is null || !_ssh.IsConnected)
                 throw new InvalidOperationException("SSH not connected");
 
-            var result = await RunShellCommandAsync($"dir \"{path}\" /s /-c");
+            // dir /s /b /a-d: all file paths recursively, bare format
+            var result = await RunShellCommandAsync($"dir \"{path}\" /s /b /a-d");
             if (!result.Success)
-                throw new Exception($"dir /s failed: {result.Error}");
+                throw new Exception($"dir /s /b /a-d failed: {result.Error}");
 
-            return ParseDirOutputRecursive(result.Output);
-        });
-    }
+            var parent = path.TrimEnd('\\');
+            var entries = new List<SftpEntry>();
+            var seenDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-    private static List<SftpEntry> ParseDirOutputRecursive(string output)
-    {
-        var entries = new List<SftpEntry>();
-        var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        string? currentDir = null;
-
-        foreach (var line in lines)
-        {
-            var trimmed = line.Trim('\r', ' ');
-            if (string.IsNullOrEmpty(trimmed)) continue;
-
-            var dirMatch = System.Text.RegularExpressions.Regex.Match(trimmed,
-                @"^Directory\s+of\s+(.+)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (dirMatch.Success)
+            foreach (var line in result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
-                currentDir = dirMatch.Groups[1].Value.Trim();
-                continue;
+                var fullPath = line.Trim('\r', ' ', '\t');
+                if (fullPath.Length == 0) continue;
+
+                entries.Add(new SftpEntry
+                {
+                    Name = Path.GetFileName(fullPath),
+                    FullPath = fullPath,
+                    IsDirectory = false
+                });
+
+                // Derive parent directories from file paths
+                var dir = Path.GetDirectoryName(fullPath);
+                while (dir != null && dir.Length > parent.Length && seenDirs.Add(dir))
+                {
+                    entries.Add(new SftpEntry
+                    {
+                        Name = Path.GetFileName(dir),
+                        FullPath = dir,
+                        IsDirectory = true
+                    });
+                    dir = Path.GetDirectoryName(dir);
+                }
             }
 
-            if (trimmed.StartsWith("Volume", StringComparison.OrdinalIgnoreCase) ||
-                trimmed.Contains("File(s)") ||
-                trimmed.Contains("Dir(s)") ||
-                trimmed == "." || trimmed == "..")
-                continue;
-
-            var match = System.Text.RegularExpressions.Regex.Match(trimmed,
-                @"^(\S+\s+\S+)\s+(<DIR>|\d+)\s+(.+)$");
-            if (!match.Success) continue;
-
-            var name = match.Groups[3].Value.Trim();
-            if (string.IsNullOrEmpty(name) || name == "." || name == "..")
-                continue;
-
-            var isDir = match.Groups[2].Value == "<DIR>";
-            var size = isDir ? 0 : long.TryParse(match.Groups[2].Value, out var s) ? s : 0;
-
-            var fullPath = (currentDir ?? "").TrimEnd('\\') + "\\" + name;
-            entries.Add(new SftpEntry
-            {
-                Name = name,
-                FullPath = fullPath,
-                IsDirectory = isDir,
-                Size = size,
-                LastModified = DateTime.MinValue
-            });
-        }
-
-        return entries;
+            return entries;
+        });
     }
 
     public Task UploadFileAsync(Stream source, string remotePath, IProgress<double>? progress)
     {
         var norm = NormalizePath(remotePath);
+        Logger.Debug($"UploadFileAsync: -> '{norm}'");
         return Task.Run(() =>
         {
             if (_sftp is null || !_sftp.IsConnected)
                 throw new InvalidOperationException("SFTP not connected");
 
             var totalBytes = source.Length;
+            Logger.Debug($"UploadFileAsync: '{norm}' size={totalBytes}");
             long uploadedBytes = 0;
             var buffer = new byte[32768];
             var bytesRead = 0;
@@ -240,12 +213,14 @@ public class SftpService : IDisposable
     public Task DownloadFileAsync(string remotePath, Stream destination, IProgress<double>? progress)
     {
         var norm = NormalizePath(remotePath);
+        Logger.Debug($"DownloadFileAsync: '{norm}'");
         return Task.Run(() =>
         {
             if (_sftp is null || !_sftp.IsConnected)
                 throw new InvalidOperationException("SFTP not connected");
 
             var fileSize = _sftp.GetAttributes(norm).Size;
+            Logger.Debug($"DownloadFileAsync: '{norm}' size={fileSize}");
             long downloadedBytes = 0;
             var buffer = new byte[32768];
             var bytesRead = 0;
@@ -264,6 +239,7 @@ public class SftpService : IDisposable
     public Task DeleteFileAsync(string path)
     {
         var norm = NormalizePath(path);
+        Logger.Debug($"DeleteFileAsync: '{norm}'");
         return Task.Run(() =>
         {
             if (_sftp is null || !_sftp.IsConnected)
@@ -275,6 +251,7 @@ public class SftpService : IDisposable
     public Task DeleteDirectoryAsync(string path)
     {
         var norm = NormalizePath(path);
+        Logger.Debug($"DeleteDirectoryAsync: '{norm}'");
         return Task.Run(() =>
         {
             if (_sftp is null || !_sftp.IsConnected)
@@ -286,11 +263,32 @@ public class SftpService : IDisposable
     public Task CreateDirectoryAsync(string path)
     {
         var norm = NormalizePath(path);
+        Logger.Debug($"CreateDirectoryAsync: '{norm}'");
         return Task.Run(() =>
         {
             if (_sftp is null || !_sftp.IsConnected)
                 throw new InvalidOperationException("SFTP not connected");
-            _sftp.CreateDirectory(norm);
+            try
+            {
+                _sftp.CreateDirectory(norm);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"SFTP mkdir failed: {ex.Message}, trying shell fallback");
+                var winPath = ShellPath(path);
+                var shellResult = ShellExec($"if not exist \"{winPath}\" mkdir \"{winPath}\"");
+                if (!shellResult.Success)
+                {
+                    var err = shellResult.Error ?? ex.Message;
+                    if (err.Contains("already exists", StringComparison.OrdinalIgnoreCase) ||
+                        err.Contains("Já existe", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Logger.Warn($"Directory already exists (expected): '{path}'");
+                        return;
+                    }
+                    throw new InvalidOperationException($"mkdir failed: {err}");
+                }
+            }
         });
     }
 
@@ -298,12 +296,49 @@ public class SftpService : IDisposable
     {
         var oldNorm = NormalizePath(oldPath);
         var newNorm = NormalizePath(newPath);
+        Logger.Debug($"RenameAsync: '{oldNorm}' -> '{newNorm}'");
         return Task.Run(() =>
         {
             if (_sftp is null || !_sftp.IsConnected)
                 throw new InvalidOperationException("SFTP not connected");
-            _sftp.RenameFile(oldNorm, newNorm);
+            try
+            {
+                _sftp.RenameFile(oldNorm, newNorm);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"SFTP rename failed: {ex.Message}, trying shell fallback");
+                var winOld = ShellPath(oldPath);
+                var winNew = ShellPath(newPath);
+                var shellResult = ShellExec($"rename \"{winOld}\" \"{Path.GetFileName(newPath)}\"");
+                if (!shellResult.Success)
+                    throw;
+            }
         });
+    }
+
+    private SftpShellResult ShellExec(string command)
+    {
+        if (_ssh is null || !_ssh.IsConnected)
+            return new SftpShellResult { Success = false, Error = "SSH not connected" };
+        try
+        {
+            using var cmd = _ssh.RunCommand(command);
+            Logger.Debug($"ShellExec: '{command}' exit: {cmd.ExitStatus}");
+            if (!string.IsNullOrEmpty(cmd.Error))
+                Logger.Warn($"ShellExec stderr: {cmd.Error}");
+            return new SftpShellResult
+            {
+                Success = cmd.ExitStatus == 0,
+                Output = cmd.Result ?? string.Empty,
+                Error = cmd.Error
+            };
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"ShellExec failed: '{command}'");
+            return new SftpShellResult { Success = false, Error = ex.Message };
+        }
     }
 
     public Task<SftpShellResult> RunShellCommandAsync(string command)

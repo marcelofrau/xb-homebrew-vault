@@ -88,6 +88,23 @@ public class SftpEntry : INotifyPropertyChanged
         }
     }
 
+    private bool _isEditing;
+    public bool IsEditing
+    {
+        get => _isEditing;
+        set
+        {
+            if (_isEditing == value) return;
+            _isEditing = value;
+            Notify();
+            Notify(nameof(IsNotEditing));
+        }
+    }
+    public bool IsNotEditing => !IsEditing;
+
+    public bool IsNewFolder { get; set; }
+    public string OriginalName { get; set; } = string.Empty;
+
     public bool HasLoaded { get; set; }
     public bool IsPlaceholder { get; set; }
     public bool ShowIcon => !IsPlaceholder;
