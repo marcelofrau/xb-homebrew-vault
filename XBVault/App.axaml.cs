@@ -215,7 +215,8 @@ public partial class App : Application
                     "Are you sure you want to exit?",
                     "Exit", "Cancel",
                     "avares://XBVault/Assets/Views/ConfirmWindow/fluentui-collision-20.png",
-                    "avares://XBVault/Assets/Views/ConfirmWindow/confirmwindow-exit-48.png");
+                    "avares://XBVault/Assets/Views/ConfirmWindow/confirmwindow-exit-48.png",
+                    isDestructive: true);
                 var confirmWindow = new Views.ConfirmWindow { DataContext = confirmVm };
                 await confirmWindow.ShowDialog(main);
                 if (confirmVm.Confirmed)
@@ -236,7 +237,8 @@ public partial class App : Application
                     $"Are you sure you want to uninstall {pkg.Name}?",
                     "Uninstall", "Cancel",
                     "avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png",
-                    "avares://XBVault/Assets/Views/ErrorDialog/errordialog-trash-48.png");
+                    "avares://XBVault/Assets/Views/ErrorDialog/errordialog-trash-48.png",
+                    isDestructive: true);
                 var confirmWindow = new Views.ConfirmWindow { DataContext = confirmVm };
                 await confirmWindow.ShowDialog(main);
                 return confirmVm.Confirmed;

@@ -1,4 +1,6 @@
 using Renci.SshNet;
+using Renci.SshNet.Common;
+using Renci.SshNet.Sftp;
 using XBVault.Models;
 
 namespace XBVault.Services;
@@ -12,8 +14,13 @@ public class SftpService : IDisposable
 
     public event EventHandler<bool>? ConnectionChanged;
 
-    private static string NormalizePath(string path) =>
-        path.Replace('\\', '/');
+    private static string NormalizePath(string path)
+    {
+        path = path.Replace('\\', '/');
+        if (path.Length >= 2 && path[1] == ':' && !path.StartsWith('/'))
+            path = "/" + path;
+        return path;
+    }
 
     private static string ShellPath(string path) =>
         path.Replace('/', '\\');
@@ -55,13 +62,14 @@ public class SftpService : IDisposable
 
     public void Disconnect()
     {
+        Logger.Debug("SftpService.Disconnect: starting...");
         if (_sftp?.IsConnected == true)
         {
-            try { _sftp.Disconnect(); } catch { }
+            try { _sftp.Disconnect(); Logger.Trace("SFTP client disconnected"); } catch { }
         }
         if (_ssh?.IsConnected == true)
         {
-            try { _ssh.Disconnect(); } catch { }
+            try { _ssh.Disconnect(); Logger.Trace("SSH client disconnected"); } catch { }
         }
 
         _sftp?.Dispose();
@@ -70,7 +78,7 @@ public class SftpService : IDisposable
         _ssh = null;
 
         ConnectionChanged?.Invoke(this, false);
-        Logger.Debug("SFTP disconnected");
+        Logger.Debug("SftpService.Disconnect: complete");
     }
 
     public Task<List<SftpEntry>> ListDirectoryAsync(string path)
@@ -81,10 +89,8 @@ public class SftpService : IDisposable
             if (_ssh is null || !_ssh.IsConnected)
                 throw new InvalidOperationException("SSH not connected");
 
-            // Use dir /b (bare) — just names, no headers/metadata to parse
             var parent = path.TrimEnd('\\');
 
-            // Get directories
             var dirResult = await RunShellCommandAsync($"dir \"{path}\" /b /ad");
             var dirNames = dirResult.Success
                 ? dirResult.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
@@ -92,7 +98,6 @@ public class SftpService : IDisposable
                     .Where(n => n.Length > 0)
                 : Array.Empty<string>();
 
-            // Get files
             var fileResult = await RunShellCommandAsync($"dir \"{path}\" /b /a-d");
             var fileNames = fileResult.Success
                 ? fileResult.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
@@ -134,6 +139,7 @@ public class SftpService : IDisposable
                 return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
             });
 
+            Logger.Debug($"ListDirectoryAsync: '{path}' returned {entries.Count} entries");
             return entries;
         });
     }
@@ -198,6 +204,7 @@ public class SftpService : IDisposable
             long uploadedBytes = 0;
             var buffer = new byte[32768];
             var bytesRead = 0;
+            var chunkCount = 0;
 
             using var remoteStream = _sftp.OpenWrite(norm);
 
@@ -205,8 +212,11 @@ public class SftpService : IDisposable
             {
                 remoteStream.Write(buffer, 0, bytesRead);
                 uploadedBytes += bytesRead;
+                chunkCount++;
                 progress?.Report((double)uploadedBytes / totalBytes);
             }
+
+            Logger.Debug($"UploadFileAsync: '{norm}' done — {chunkCount} chunks, {uploadedBytes}B");
         });
     }
 
@@ -219,20 +229,54 @@ public class SftpService : IDisposable
             if (_sftp is null || !_sftp.IsConnected)
                 throw new InvalidOperationException("SFTP not connected");
 
-            var fileSize = _sftp.GetAttributes(norm).Size;
-            Logger.Debug($"DownloadFileAsync: '{norm}' size={fileSize}");
+            long fileSize = -1;
+            try
+            {
+                fileSize = _sftp.GetAttributes(norm).Size;
+                Logger.Debug($"DownloadFileAsync: GetAttributes OK '{norm}' size={fileSize}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"DownloadFileAsync: GetAttributes failed for '{norm}': {ex.Message}");
+            }
+
+            // Try forward-slash first; fall back to backslash
+            string usePath = norm;
+            SftpFileStream remoteStream;
+            try
+            {
+                Logger.Debug($"DownloadFileAsync: OpenRead '{usePath}'");
+                remoteStream = _sftp.OpenRead(usePath);
+            }
+            catch (SftpPathNotFoundException)
+            {
+                usePath = ShellPath(remotePath);
+                Logger.Warn($"DownloadFileAsync: OpenRead forward-slash failed, trying backslash '{usePath}'");
+                remoteStream = _sftp.OpenRead(usePath);
+            }
+
+            Logger.Debug($"DownloadFileAsync: '{usePath}' opened OK, size={fileSize}");
             long downloadedBytes = 0;
             var buffer = new byte[32768];
-            var bytesRead = 0;
+            int bytesRead;
+            var chunkCount = 0;
 
-            using var remoteStream = _sftp.OpenRead(norm);
-
-            while ((bytesRead = remoteStream.Read(buffer, 0, buffer.Length)) > 0)
+            using (remoteStream)
             {
-                destination.Write(buffer, 0, bytesRead);
-                downloadedBytes += bytesRead;
-                progress?.Report((double)downloadedBytes / fileSize);
+                Logger.Trace($"DownloadFileAsync: '{usePath}' starting read loop");
+                while ((bytesRead = remoteStream.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    destination.Write(buffer, 0, bytesRead);
+                    downloadedBytes += bytesRead;
+                    chunkCount++;
+                    if (fileSize > 0)
+                        progress?.Report((double)downloadedBytes / fileSize);
+                    if (chunkCount % 100 == 0)
+                        Logger.Trace($"DownloadFileAsync: '{usePath}' chunk#{chunkCount} total={downloadedBytes}B");
+                }
             }
+
+            Logger.Debug($"DownloadFileAsync: '{usePath}' done — {chunkCount} chunks, {downloadedBytes}B");
         });
     }
 
@@ -244,7 +288,18 @@ public class SftpService : IDisposable
         {
             if (_sftp is null || !_sftp.IsConnected)
                 throw new InvalidOperationException("SFTP not connected");
-            _sftp.DeleteFile(norm);
+            try
+            {
+                _sftp.DeleteFile(norm);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"DeleteFileAsync: SFTP rm failed: {ex.Message}, trying shell fallback");
+                var winPath = ShellPath(path);
+                var shellResult = ShellExec($"del /f /q \"{winPath}\"");
+                if (!shellResult.Success)
+                    throw new InvalidOperationException($"del failed: {shellResult.Error ?? ex.Message}");
+            }
         });
     }
 
@@ -256,7 +311,22 @@ public class SftpService : IDisposable
         {
             if (_sftp is null || !_sftp.IsConnected)
                 throw new InvalidOperationException("SFTP not connected");
-            _sftp.DeleteDirectory(norm);
+            try
+            {
+                _sftp.DeleteDirectory(norm);
+                Logger.Debug($"DeleteDirectoryAsync: SFTP rmdir OK '{norm}'");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"DeleteDirectoryAsync: SFTP rmdir failed: {ex.Message}, trying shell fallback");
+                var winPath = ShellPath(path);
+                Logger.Debug($"DeleteDirectoryAsync: shell rmdir /s /q \"{winPath}\"");
+                var shellResult = ShellExec($"rmdir /s /q \"{winPath}\"");
+                if (shellResult.Success)
+                    Logger.Debug($"DeleteDirectoryAsync: shell rmdir OK '{norm}'");
+                else
+                    throw new InvalidOperationException($"rmdir failed: {shellResult.Error ?? ex.Message}");
+            }
         });
     }
 

@@ -17,7 +17,11 @@ public partial class ConfirmWindow : Window
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
         if (DataContext is ConfirmViewModel vm)
+        {
             vm.Completed += OnCompleted;
+            if (vm.IsDestructive)
+                ConfirmBtn.Classes.Add("Danger");
+        }
     }
 
     private void OnCompleted(bool success)

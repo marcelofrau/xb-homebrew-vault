@@ -28,26 +28,31 @@ public partial class FileExplorerViewModel : ObservableObject
         Logger.Debug("FileExplorerViewModel initialized");
     }
 
-    public Func<SftpEntry, Task<bool>>? ShowDeleteConfirmAsync { get; set; }
+    public Func<IReadOnlyList<SftpEntry>, Task<bool>>? ShowDeleteConfirmAsync { get; set; }
     public Func<SftpEntry, Task<string?>>? ShowSaveFileDialogAsync { get; set; }
-    public Action<string, string>? ShowToast { get; set; }
     public Func<string, string, string, int, Task>? ShowConnectionInfoAsync { get; set; }
     public Func<Task<bool>>? ShowConnectAction { get; set; }
     public Func<Task<string?>>? ShowFolderPickerAsync { get; set; }
     public Action<SftpEntry>? ScrollToEntry { get; set; }
+    public Action? FocusFileList { get; set; }
     public Action<string, string, string>? ShowErrorDialog { get; set; }
+    public Func<string, string, string, string?, Task<string?>>? ShowInputDialogAsync { get; set; }
 
     private void OnBoxConnectionChanged(bool connected)
     {
+        Logger.Trace($"OnBoxConnectionChanged: connected={connected}");
         Dispatcher.UIThread.Post(() =>
         {
             IsConnected = connected;
+            if (!connected)
+                _sftpService.Disconnect();
             UpdateStatusText();
         });
     }
 
     private void OnSftpConnectionChanged(object? sender, bool connected)
     {
+        Logger.Trace($"OnSftpConnectionChanged: connected={connected}");
         Dispatcher.UIThread.Post(() =>
         {
             if (!connected)
@@ -76,8 +81,23 @@ public partial class FileExplorerViewModel : ObservableObject
     [ObservableProperty]
     private SftpEntry? _selectedEntry;
 
+    public ObservableCollection<SftpEntry> SelectedEntries { get; } = [];
+
+    public bool CanDeleteMultiple => SelectedEntries.Count > 0;
+    public bool CanDownloadMultiple => SelectedEntries.Count(e => !e.IsDirectory && !e.IsDrive) > 0;
+    public bool CanRenameSingle => SelectedEntries.Count == 1;
+
     [ObservableProperty]
     private string _currentPath = @"D:\";
+
+    public bool CanGoUp => GetParentPath(CurrentPath) is not null;
+
+    public void NotifySelectionChanged()
+    {
+        OnPropertyChanged(nameof(CanDeleteMultiple));
+        OnPropertyChanged(nameof(CanDownloadMultiple));
+        OnPropertyChanged(nameof(CanRenameSingle));
+    }
 
     [ObservableProperty]
     private string _uploadStatusText = string.Empty;
@@ -140,6 +160,7 @@ public partial class FileExplorerViewModel : ObservableObject
 
     partial void OnIsConnectedChanged(bool value)
     {
+        Logger.Trace($"OnIsConnectedChanged: value={value}");
         UpdateStatusText();
         if (!value)
         {
@@ -154,6 +175,7 @@ public partial class FileExplorerViewModel : ObservableObject
 
     partial void OnIsLoadingChanged(bool value)
     {
+        Logger.Trace($"OnIsLoadingChanged: value={value}");
         NotifyStateDependentProperties();
     }
 
@@ -161,18 +183,25 @@ public partial class FileExplorerViewModel : ObservableObject
 
     partial void OnSelectedEntryChanged(SftpEntry? value)
     {
+        Logger.Trace($"OnSelectedEntryChanged: '{value?.FullPath ?? "null"}'");
         OnPropertyChanged(nameof(HasSelectedEntry));
-        if (value?.IsDirectory == true && !value.IsDrive)
-        {
-            NavigateToPathCommand.Execute(value.FullPath);
-        }
     }
 
     partial void OnCurrentPathChanged(string value)
     {
+        Logger.Trace($"OnCurrentPathChanged: '{value}'");
         OnPropertyChanged(nameof(BreadcrumbSegments));
+        OnPropertyChanged(nameof(CanGoUp));
         StatusSeverity = ToolbarStatusSeverity.None;
         StatusMessage = string.Empty;
+    }
+
+    [RelayCommand]
+    private void NavigateToParent()
+    {
+        var parent = GetParentPath(CurrentPath);
+        if (parent is not null)
+            NavigateToPathCommand.Execute(parent);
     }
 
     public bool ShowDisconnectedContent => !IsConnected;
@@ -260,6 +289,38 @@ public partial class FileExplorerViewModel : ObservableObject
             StatusText = "Ready to browse";
     }
 
+    private static void InsertSorted(ObservableCollection<SftpEntry> list, SftpEntry entry)
+    {
+        var i = 0;
+        for (; i < list.Count; i++)
+        {
+            var e = list[i];
+            if (e.IsPlaceholder) continue;
+            if (entry.IsDirectory && !e.IsDirectory) break;
+            if (!entry.IsDirectory && e.IsDirectory) continue;
+            if (string.Compare(entry.Name, e.Name, StringComparison.OrdinalIgnoreCase) < 0) break;
+        }
+        list.Insert(i, entry);
+        UpdateLastChildFlag(list);
+    }
+
+    private static void UpdateLastChildFlag(ObservableCollection<SftpEntry> entries)
+    {
+        for (int i = 0; i < entries.Count; i++)
+            entries[i].IsLastChild = i >= entries.Count - 1;
+    }
+
+    private static void UpdateChildrenPathsRecursive(SftpEntry entry, string oldPath)
+    {
+        foreach (var child in entry.Children)
+        {
+            if (child.IsPlaceholder) continue;
+            child.FullPath = child.FullPath.Replace(oldPath, entry.FullPath);
+            if (child.IsDirectory)
+                UpdateChildrenPathsRecursive(child, oldPath);
+        }
+    }
+
     [RelayCommand]
     private async Task ConnectAsync()
     {
@@ -319,12 +380,15 @@ public partial class FileExplorerViewModel : ObservableObject
 
     private async Task LoadTreeRootsAsync()
     {
+        Logger.Debug("LoadTreeRootsAsync: detecting drives...");
         var drives = await DetectDrivesAsync();
         Dispatcher.UIThread.Post(() =>
         {
             TreeRoots.Clear();
             foreach (var d in drives)
                 TreeRoots.Add(d);
+            Logger.Debug($"LoadTreeRootsAsync: added {drives.Count} drive roots");
+            OnPropertyChanged(nameof(CanRefresh));
         });
     }
 
@@ -357,18 +421,25 @@ public partial class FileExplorerViewModel : ObservableObject
     [RelayCommand]
     private async Task ExpandFolderAsync(string path)
     {
+        Logger.Debug($"ExpandFolderAsync: '{path}'");
         SftpEntry? target = null;
         try
         {
             target = FindEntry(TreeRoots, path);
-            if (target is null || target.HasLoaded) return;
+            if (target is null || target.HasLoaded)
+            {
+                Logger.Trace($"ExpandFolderAsync: '{path}' skipped (found={target is not null}, loaded={target?.HasLoaded})");
+                return;
+            }
 
             target.HasLoaded = true;
             target.Children.Clear();
 
             var children = await _sftpService.ListDirectoryAsync(path);
+            var folders = children.Where(c => c.IsDirectory).ToList();
 
-            if (children.Count == 0)
+            Logger.Debug($"ExpandFolderAsync: '{path}' got {children.Count} children, {folders.Count} folders");
+            if (folders.Count == 0)
             {
                 target.Children.Add(new SftpEntry
                 {
@@ -381,16 +452,16 @@ public partial class FileExplorerViewModel : ObservableObject
             }
             else
             {
-                for (int i = 0; i < children.Count; i++)
+                for (int i = 0; i < folders.Count; i++)
                 {
-                    children[i].IsLastChild = i >= children.Count - 1;
-                    target.Children.Add(children[i]);
+                    folders[i].IsLastChild = i >= folders.Count - 1;
+                    target.Children.Add(folders[i]);
                 }
             }
         }
         catch (Exception ex)
         {
-            Logger.Warn($"Could not list folder: {path} — {ex.Message}");
+            Logger.Warn($"ExpandFolderAsync: could not list '{path}' — {ex.Message}");
             target?.Children.Add(new SftpEntry
             {
                 Name = "<unavailable>",
@@ -405,9 +476,11 @@ public partial class FileExplorerViewModel : ObservableObject
     [RelayCommand]
     private async Task NavigateToPathAsync(string? path)
     {
+        Logger.Debug($"NavigateToPathAsync: '{path}'");
         if (string.IsNullOrWhiteSpace(path))
         {
-            ShowToast?.Invoke("Navigation failed", "Path is empty");
+            StatusSeverity = ToolbarStatusSeverity.Warning;
+            StatusMessage = "Navigation failed: path is empty";
             return;
         }
 
@@ -421,12 +494,29 @@ public partial class FileExplorerViewModel : ObservableObject
             Dispatcher.UIThread.Post(() =>
             {
                 CurrentEntries.Clear();
+                var parentDir = GetParentPath(path);
+                if (parentDir is not null)
+                {
+                    CurrentEntries.Add(new SftpEntry
+                    {
+                        Name = "..",
+                        FullPath = parentDir,
+                        IsDirectory = true,
+                        IsPlaceholder = true,
+                        IsLastChild = true
+                    });
+                }
                 foreach (var e in entries)
                     CurrentEntries.Add(e);
+                Logger.Debug($"NavigateToPathAsync: loaded {entries.Count} entries for '{path}'");
                 OnPropertyChanged(nameof(CanRefresh));
             });
 
-            await ExpandTreeToPathAsync(path);
+            Dispatcher.UIThread.Post(() =>
+            {
+                Logger.Trace("NavigateToPathAsync: post-nav focus");
+                FocusFileList?.Invoke();
+            });
 
             var targetEntry = FindEntry(TreeRoots, path);
             if (targetEntry is not null)
@@ -434,14 +524,15 @@ public partial class FileExplorerViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Logger.Warn($"Could not navigate to: {path} — {ex.Message}");
+            Logger.Warn($"NavigateToPathAsync: could not navigate to '{path}' — {ex.Message}");
             StatusSeverity = ToolbarStatusSeverity.Warning;
             StatusMessage = $"Could not open: {path}";
         }
     }
 
-    private async Task ExpandTreeToPathAsync(string path)
+    public async Task ExpandTreeToPathAsync(string path)
     {
+        Logger.Debug($"ExpandTreeToPathAsync: '{path}'");
         var norm = path.TrimEnd('\\');
         var parts = norm.Split('\\', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0) return;
@@ -449,10 +540,15 @@ public partial class FileExplorerViewModel : ObservableObject
         var built = parts[0] + "\\";
         var current = TreeRoots.FirstOrDefault(e =>
             e.FullPath.Equals(built, StringComparison.OrdinalIgnoreCase));
-        if (current is null) return;
+        if (current is null)
+        {
+            Logger.Trace($"ExpandTreeToPathAsync: no root matched '{built}'");
+            return;
+        }
 
         for (int i = 1; i < parts.Length; i++)
         {
+            Logger.Trace($"ExpandTreeToPathAsync: level {i}, expanding '{built}'");
             if (!current.HasLoaded)
                 await ExpandFolderAsync(built);
 
@@ -461,7 +557,11 @@ public partial class FileExplorerViewModel : ObservableObject
             built = built.TrimEnd('\\') + "\\" + parts[i];
             current = current.Children.FirstOrDefault(e =>
                 e.FullPath.Equals(built, StringComparison.OrdinalIgnoreCase));
-            if (current is null) break;
+            if (current is null)
+            {
+                Logger.Trace($"ExpandTreeToPathAsync: path break at '{built}'");
+                break;
+            }
         }
 
         if (current is not null && current.IsDirectory)
@@ -470,13 +570,76 @@ public partial class FileExplorerViewModel : ObservableObject
                 await ExpandFolderAsync(built);
             current.IsExpanded = true;
         }
+
+        Logger.Debug($"ExpandTreeToPathAsync: done for '{path}'");
     }
 
     [RelayCommand]
     private async Task RefreshAsync()
     {
-        if (!string.IsNullOrEmpty(CurrentPath))
-            await NavigateToPathAsync(CurrentPath);
+        Logger.Debug($"RefreshAsync: CurrentPath='{CurrentPath}'");
+        if (string.IsNullOrWhiteSpace(CurrentPath)) return;
+
+        try
+        {
+            StatusSeverity = ToolbarStatusSeverity.None;
+            StatusMessage = string.Empty;
+
+            // Save expanded paths before clearing tree cache
+            var expandedPaths = CollectExpandedPaths(TreeRoots);
+            ClearTreeCache(TreeRoots);
+            Logger.Debug($"RefreshAsync: {expandedPaths.Count} expanded paths saved, cache cleared");
+
+            // Reload current file list
+            var entries = await _sftpService.ListDirectoryAsync(CurrentPath);
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                CurrentEntries.Clear();
+                foreach (var e in entries)
+                    CurrentEntries.Add(e);
+                Logger.Debug($"RefreshAsync: reloaded {entries.Count} entries");
+                OnPropertyChanged(nameof(CanRefresh));
+            });
+
+            // Re-expand previously expanded paths (parents before children)
+            expandedPaths.Sort((a, b) => a.Length.CompareTo(b.Length));
+            foreach (var path in expandedPaths)
+            {
+                await ExpandTreeToPathAsync(path);
+            }
+
+            Logger.Debug("RefreshAsync: tree refreshed");
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"RefreshAsync: failed for '{CurrentPath}' — {ex.Message}");
+            StatusSeverity = ToolbarStatusSeverity.Warning;
+            StatusMessage = $"Refresh failed: {CurrentPath}";
+        }
+    }
+
+    private static List<string> CollectExpandedPaths(ObservableCollection<SftpEntry> entries)
+    {
+        var paths = new List<string>();
+        foreach (var e in entries)
+        {
+            if (e.IsExpanded)
+                paths.Add(e.FullPath);
+            if (e.IsExpanded && e.Children.Count > 0)
+                paths.AddRange(CollectExpandedPaths(e.Children));
+        }
+        return paths;
+    }
+
+    private static void ClearTreeCache(ObservableCollection<SftpEntry> entries)
+    {
+        foreach (var e in entries)
+        {
+            e.HasLoaded = false;
+            if (e.Children.Count > 0)
+                ClearTreeCache(e.Children);
+        }
     }
 
     [RelayCommand]
@@ -506,29 +669,94 @@ public partial class FileExplorerViewModel : ObservableObject
                 });
 
                 await _sftpService.UploadFileAsync(stream, remotePath, progress);
-                ShowToast?.Invoke("Upload Complete", $"{fileName} uploaded successfully");
+
+                var newEntry = new SftpEntry
+                {
+                    Name = fileName,
+                    FullPath = remotePath,
+                    IsDirectory = false,
+                    Size = 0,
+                    LastModified = DateTime.MinValue
+                };
+
+                var existing = CurrentEntries.FirstOrDefault(e => !e.IsDirectory && e.Name == fileName);
+                if (existing is not null) CurrentEntries.Remove(existing);
+                var ph = CurrentEntries.FirstOrDefault(e => e.IsPlaceholder);
+                if (ph is not null) CurrentEntries.Remove(ph);
+                InsertSorted(CurrentEntries, newEntry);
+
+                var parentNode = FindEntry(TreeRoots, CurrentPath);
+                if (parentNode is not null && parentNode.HasLoaded)
+                {
+                    var existing2 = parentNode.Children.FirstOrDefault(e => !e.IsDirectory && e.Name == fileName);
+                    if (existing2 is not null) parentNode.Children.Remove(existing2);
+                    var ph2 = parentNode.Children.FirstOrDefault(e => e.IsPlaceholder);
+                    if (ph2 is not null) parentNode.Children.Remove(ph2);
+                    InsertSorted(parentNode.Children, newEntry);
+                }
+
+                StatusSeverity = ToolbarStatusSeverity.Success;
+                StatusMessage = $"{fileName} uploaded";
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, $"Upload failed: {filePath}");
-                ShowToast?.Invoke("Upload Failed", $"{Path.GetFileName(filePath)}: {ex.Message}");
+                StatusSeverity = ToolbarStatusSeverity.Error;
+                StatusMessage = $"Upload failed: {Path.GetFileName(filePath)}: {ex.Message}";
             }
         }
 
         IsUploading = false;
         UploadStatusText = string.Empty;
-        await RefreshAsync();
     }
 
     [RelayCommand]
-    private async Task DownloadFileAsync(SftpEntry? entry)
+    private async Task DownloadSelectedAsync()
     {
-        if (entry is null) return;
+        var entries = SelectedEntries.Where(e => !e.IsDirectory && !e.IsDrive).ToList();
+        if (entries.Count == 0) return;
 
-        if (entry.IsDirectory)
-            await DownloadFolderAsync(entry);
-        else
-            await DownloadSingleFileAsync(entry);
+        // If single file, use save-file dialog; if multiple, use folder picker
+        string? localDir = null;
+        if (entries.Count == 1)
+        {
+            await DownloadSingleFileAsync(entries[0]);
+            return;
+        }
+
+        localDir = ShowFolderPickerAsync is not null ? await ShowFolderPickerAsync() : null;
+        if (string.IsNullOrEmpty(localDir)) return;
+
+        Directory.CreateDirectory(localDir);
+
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            try
+            {
+                IsDownloading = true;
+                DownloadProgress = 0;
+                DownloadStatusText = $"Downloading {entry.Name}... ({i + 1}/{entries.Count})";
+
+                var localPath = Path.Combine(localDir, entry.Name);
+                await using var stream = File.Create(localPath);
+                await _sftpService.DownloadFileAsync(entry.FullPath, stream, null);
+
+                DownloadProgress = (double)(i + 1) / entries.Count;
+                StatusSeverity = ToolbarStatusSeverity.Success;
+                StatusMessage = $"{entry.Name} downloaded ({i + 1}/{entries.Count})";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Download failed: {entry.Name}");
+                StatusSeverity = ToolbarStatusSeverity.Error;
+                StatusMessage = $"Download failed: {entry.Name}: {ex.Message}";
+            }
+        }
+
+        IsDownloading = false;
+        DownloadProgress = 0;
+        DownloadStatusText = string.Empty;
     }
 
     private async Task DownloadSingleFileAsync(SftpEntry entry)
@@ -553,12 +781,14 @@ public partial class FileExplorerViewModel : ObservableObject
             });
 
             await _sftpService.DownloadFileAsync(entry.FullPath, stream, progress);
-            ShowToast?.Invoke("Download Complete", $"{entry.Name} saved");
+            StatusSeverity = ToolbarStatusSeverity.Success;
+            StatusMessage = $"{entry.Name} downloaded";
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Download failed: {entry.Name}");
-            ShowToast?.Invoke("Download Failed", ex.Message);
+            StatusSeverity = ToolbarStatusSeverity.Error;
+            StatusMessage = $"Download failed: {entry.Name}: {ex.Message}";
         }
         finally
         {
@@ -585,7 +815,8 @@ public partial class FileExplorerViewModel : ObservableObject
 
             if (totalFiles == 0)
             {
-                ShowToast?.Invoke("Download Complete", "Empty folder");
+                StatusSeverity = ToolbarStatusSeverity.Info;
+                StatusMessage = "Empty folder — nothing to download";
                 return;
             }
 
@@ -616,12 +847,14 @@ public partial class FileExplorerViewModel : ObservableObject
                 });
             }
 
-            ShowToast?.Invoke("Download Complete", $"{totalFiles} files saved");
+            StatusSeverity = ToolbarStatusSeverity.Success;
+            StatusMessage = $"{totalFiles} files downloaded";
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Folder download failed: {entry.Name}");
-            ShowToast?.Invoke("Download Failed", ex.Message);
+            StatusSeverity = ToolbarStatusSeverity.Error;
+            StatusMessage = $"Folder download failed: {entry.Name}: {ex.Message}";
         }
         finally
         {
@@ -631,131 +864,176 @@ public partial class FileExplorerViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private async Task DeleteEntryAsync(SftpEntry? entry)
+    private void RemoveFromTreeAndList(SftpEntry entry)
     {
-        if (entry is null || entry.IsDrive) return;
-
-        var confirmTask = ShowDeleteConfirmAsync?.Invoke(entry);
-        var confirmed = confirmTask is not null ? await confirmTask : false;
-        if (!confirmed) return;
-
-        try
+        var treeEntry = FindEntry(TreeRoots, entry.FullPath);
+        if (treeEntry is not null)
         {
-            if (entry.IsDirectory)
-                await _sftpService.DeleteDirectoryAsync(entry.FullPath);
-            else
-                await _sftpService.DeleteFileAsync(entry.FullPath);
-
-            ShowToast?.Invoke("Deleted", $"{entry.Name} deleted");
-            await RefreshAsync();
+            var parent = FindParent(TreeRoots, treeEntry);
+            if (parent is not null)
+            {
+                parent.Children.Remove(treeEntry);
+                if (parent.Children.Count == 0)
+                {
+                    parent.Children.Add(new SftpEntry
+                    {
+                        Name = "<empty>", FullPath = "",
+                        IsDirectory = false, IsPlaceholder = true, IsLastChild = true
+                    });
+                }
+                else
+                {
+                    UpdateLastChildFlag(parent.Children);
+                }
+            }
         }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, $"Delete failed: {entry.Name}");
-            ShowToast?.Invoke("Delete Failed", ex.Message);
-        }
+        var listEntry = CurrentEntries.FirstOrDefault(e => e.FullPath == entry.FullPath);
+        if (listEntry is not null)
+            CurrentEntries.Remove(listEntry);
     }
 
     [RelayCommand]
-    private void CreateFolder()
+    private async Task DeleteSelectedAsync()
+    {
+        var entries = SelectedEntries.ToList();
+        if (entries.Count == 0) return;
+
+        var confirmed = ShowDeleteConfirmAsync is not null
+            ? await ShowDeleteConfirmAsync(entries)
+            : false;
+        if (!confirmed) return;
+
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            try
+            {
+                StatusSeverity = ToolbarStatusSeverity.None;
+                StatusMessage = $"Deleting {entry.Name}... ({i + 1}/{entries.Count})";
+
+                if (entry.IsDirectory)
+                    await _sftpService.DeleteDirectoryAsync(entry.FullPath);
+                else
+                    await _sftpService.DeleteFileAsync(entry.FullPath);
+
+                RemoveFromTreeAndList(entry);
+
+                StatusSeverity = ToolbarStatusSeverity.Success;
+                StatusMessage = $"{entry.Name} deleted ({i + 1}/{entries.Count})";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Delete failed: {entry.Name}");
+                StatusSeverity = ToolbarStatusSeverity.Error;
+                StatusMessage = $"Delete failed: {entry.Name}: {ex.Message}";
+            }
+        }
+
+        StatusMessage = $"{entries.Count} item(s) deleted";
+    }
+
+    [RelayCommand]
+    private async Task CreateFolderAsync()
     {
         var parentPath = SelectedEntry?.IsDirectory == true
             ? SelectedEntry.FullPath
             : CurrentPath;
-        var parent = FindEntry(TreeRoots, parentPath);
-        if (parent is null) return;
+        Logger.Debug($"CreateFolderAsync: parentPath='{parentPath}'");
 
-        var folder = new SftpEntry
-        {
-            Name = "New Folder",
-            FullPath = parentPath.TrimEnd('\\') + "\\",
-            IsDirectory = true,
-            IsEditing = true,
-            IsNewFolder = true,
-            OriginalName = ""
-        };
-        folder.Children.Add(new SftpEntry { Name = "" });
+        var name = ShowInputDialogAsync is not null
+            ? await ShowInputDialogAsync("New Folder", $"Enter folder name:\nLocation: {parentPath}", "New Folder",
+                "avares://XBVault/Assets/Views/InputDialog/inputdialog-newfolder-48.png")
+            : null;
 
-        parent.Children.Insert(0, folder);
-        parent.IsExpanded = true;
-        ScrollToEntry?.Invoke(folder);
-    }
+        if (string.IsNullOrWhiteSpace(name)) return;
 
-    public void CommitEntryEdit(SftpEntry entry)
-    {
-        if (string.IsNullOrWhiteSpace(entry.Name))
-        {
-            CancelEntryEdit(entry);
-            return;
-        }
-
-        if (entry.IsNewFolder)
-            _ = CreateFolderOnServerAsync(entry);
-        else
-            _ = RenameEntryOnServerAsync(entry);
-    }
-
-    public void CancelEntryEdit(SftpEntry entry)
-    {
-        if (entry.IsNewFolder)
-        {
-            var parent = FindParent(TreeRoots, entry);
-            parent?.Children.Remove(entry);
-        }
-        else
-        {
-            entry.Name = entry.OriginalName;
-            entry.IsEditing = false;
-        }
-    }
-
-    private async Task CreateFolderOnServerAsync(SftpEntry entry)
-    {
         try
         {
-            var dir = entry.FullPath.TrimEnd('\\') + "\\" + entry.Name;
+            var dir = parentPath.TrimEnd('\\') + "\\" + name;
             await _sftpService.CreateDirectoryAsync(dir);
-            ShowToast?.Invoke("Folder created", entry.Name);
-            await RefreshAsync();
+
+            var newFolder = new SftpEntry
+            {
+                Name = name, FullPath = dir,
+                IsDirectory = true,
+                Children = { new SftpEntry { Name = "" } }
+            };
+
+            if (parentPath == CurrentPath)
+            {
+                var ph = CurrentEntries.FirstOrDefault(e => e.IsPlaceholder);
+                if (ph is not null) CurrentEntries.Remove(ph);
+                InsertSorted(CurrentEntries, newFolder);
+            }
+
+            var parentNode = FindEntry(TreeRoots, parentPath);
+            if (parentNode is not null && parentNode.HasLoaded)
+            {
+                var ph = parentNode.Children.FirstOrDefault(e => e.IsPlaceholder);
+                if (ph is not null) parentNode.Children.Remove(ph);
+                InsertSorted(parentNode.Children, newFolder);
+            }
+
+            StatusSeverity = ToolbarStatusSeverity.Success;
+            StatusMessage = $"Folder \"{name}\" created";
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, $"Create folder failed: {entry.Name}");
-            ShowToast?.Invoke("Create Failed", ex.Message);
-            CancelEntryEdit(entry);
+            Logger.Error(ex, $"Create folder failed: {name}");
+            StatusSeverity = ToolbarStatusSeverity.Error;
+            StatusMessage = $"Create folder failed: {name}: {ex.Message}";
         }
     }
 
     [RelayCommand]
-    private void RenameEntry(SftpEntry? entry)
+    private async Task RenameEntryAsync()
     {
+        var entry = SelectedEntries.Count == 1 ? SelectedEntries[0] : null;
+        entry ??= SelectedEntry;
+        Logger.Debug($"RenameEntryAsync: '{entry?.FullPath}'");
         if (entry is null || entry.IsPlaceholder || entry.IsDrive) return;
-        entry.OriginalName = entry.Name;
-        entry.IsEditing = true;
-    }
 
-    private async Task RenameEntryOnServerAsync(SftpEntry entry)
-    {
-        if (entry.Name == entry.OriginalName)
-        {
-            entry.IsEditing = false;
-            return;
-        }
+        var newName = ShowInputDialogAsync is not null
+            ? await ShowInputDialogAsync("Rename", $"Enter new name for \"{entry.Name}\":", entry.Name,
+                "avares://XBVault/Assets/Views/InputDialog/inputdialog-rename-48.png")
+            : null;
+
+        if (string.IsNullOrWhiteSpace(newName) || newName == entry.Name) return;
 
         try
         {
             var parentDir = Path.GetDirectoryName(entry.FullPath)?.Replace('/', '\\') ?? "";
-            var newPath = parentDir.TrimEnd('\\') + "\\" + entry.Name;
+            var newPath = parentDir.TrimEnd('\\') + "\\" + newName;
+            var oldPath = entry.FullPath;
             await _sftpService.RenameAsync(entry.FullPath, newPath);
-            ShowToast?.Invoke("Renamed", $"{entry.OriginalName} \\u2192 {entry.Name}");
-            await RefreshAsync();
+
+            entry.Name = newName;
+            entry.FullPath = newPath;
+
+            if (entry.IsDirectory)
+                UpdateChildrenPathsRecursive(entry, oldPath);
+
+            var parentNode = FindParent(TreeRoots, entry);
+            if (parentNode is not null)
+            {
+                parentNode.Children.Remove(entry);
+                InsertSorted(parentNode.Children, entry);
+            }
+
+            if (CurrentEntries.Contains(entry))
+            {
+                CurrentEntries.Remove(entry);
+                InsertSorted(CurrentEntries, entry);
+            }
+
+            StatusSeverity = ToolbarStatusSeverity.Success;
+            StatusMessage = $"Renamed to \"{newName}\"";
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Rename failed: {entry.Name}");
-            ShowToast?.Invoke("Rename Failed", ex.Message);
-            CancelEntryEdit(entry);
+            StatusSeverity = ToolbarStatusSeverity.Error;
+            StatusMessage = $"Rename failed: {entry.Name}: {ex.Message}";
         }
     }
 
@@ -850,10 +1128,14 @@ public partial class FileExplorerViewModel : ObservableObject
 
     private static SftpEntry? FindEntry(ObservableCollection<SftpEntry> entries, string path)
     {
+        Logger.Trace($"FindEntry: searching for '{path}' in {entries.Count} root entries");
         foreach (var e in entries)
         {
             if (e.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.Trace($"FindEntry: found '{e.FullPath}'");
                 return e;
+            }
             if (e.Children.Count > 0)
             {
                 var found = FindEntry(e.Children, path);
@@ -861,7 +1143,16 @@ public partial class FileExplorerViewModel : ObservableObject
                     return found;
             }
         }
+        Logger.Trace($"FindEntry: not found '{path}'");
         return null;
+    }
+
+    private static string? GetParentPath(string path)
+    {
+        var trimmed = path.TrimEnd('\\');
+        var idx = trimmed.LastIndexOf('\\');
+        if (idx <= 0) return null;
+        return trimmed[..idx] + "\\";
     }
 
     private static SftpEntry? FindParent(ObservableCollection<SftpEntry> entries, SftpEntry target)

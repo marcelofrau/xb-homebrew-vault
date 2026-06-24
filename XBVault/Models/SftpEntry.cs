@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Renci.SshNet.Sftp;
+using XBVault.Services;
 
 namespace XBVault.Models;
 
@@ -11,8 +12,11 @@ public class SftpEntry : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private void Notify([CallerMemberName] string prop = "") =>
+    private void Notify([CallerMemberName] string prop = "")
+    {
+        Logger.Trace($"SftpEntry.Notify: {prop} on '{FullPath ?? "<new>"}'");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
+    }
 
     private bool _isSelected;
     public bool IsSelected
@@ -88,23 +92,6 @@ public class SftpEntry : INotifyPropertyChanged
         }
     }
 
-    private bool _isEditing;
-    public bool IsEditing
-    {
-        get => _isEditing;
-        set
-        {
-            if (_isEditing == value) return;
-            _isEditing = value;
-            Notify();
-            Notify(nameof(IsNotEditing));
-        }
-    }
-    public bool IsNotEditing => !IsEditing;
-
-    public bool IsNewFolder { get; set; }
-    public string OriginalName { get; set; } = string.Empty;
-
     public bool HasLoaded { get; set; }
     public bool IsPlaceholder { get; set; }
     public bool ShowIcon => !IsPlaceholder;
@@ -120,9 +107,13 @@ public class SftpEntry : INotifyPropertyChanged
     private static Bitmap LoadIcon(string name)
     {
         if (_iconCache.TryGetValue(name, out var cached))
+        {
+            Logger.Trace($"LoadIcon: cache hit '{name}'");
             return cached;
+        }
 
         var uri = $"avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-{name}-24.png";
+        Logger.Trace($"LoadIcon: cache miss '{name}', loading from {uri}");
         var bitmap = new Bitmap(AssetLoader.Open(new Uri(uri)));
         _iconCache[name] = bitmap;
         return bitmap;
@@ -142,6 +133,7 @@ public class SftpEntry : INotifyPropertyChanged
         };
         if (entry.IsDirectory)
             entry.Children.Add(new SftpEntry { Name = "" });
+        Logger.Debug($"FromSftpFile: '{entry.FullPath}' dir={entry.IsDirectory} size={entry.Size}");
         return entry;
     }
 

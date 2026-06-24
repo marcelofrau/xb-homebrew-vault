@@ -6,12 +6,11 @@
 
   <UserControl.Styles>
     <Style Selector="TreeViewItem">
-      <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded}"/>
+      <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded, Mode=TwoWay}"/>
       <Setter Property="(controls:TreeViewItemProperties.IsLastChild)" Value="{ReflectionBinding IsLastChild}" />
+      <Setter Property="Padding" Value="1,0"/>
     </Style>
-    <Style Selector="TreeViewItem:empty">
-      <Setter Property="Padding" Value="3,0,0,0"/>
-    </Style>
+
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="32,32,32,16">
@@ -205,11 +204,16 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="12">
-      <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-folder-64.png"
-             Width="64" Height="64"
+      <Image x:Name="LoadingSpinnerImage"
+             Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-cd-48.png"
+             Width="48" Height="48"
              Stretch="Uniform"
              HorizontalAlignment="Center"
-             Opacity="0.4"/>
+             RenderTransformOrigin="50% 50%">
+        <Image.RenderTransform>
+          <RotateTransform Angle="0"/>
+        </Image.RenderTransform>
+      </Image>
       <TextBlock Text="{ReflectionBinding InitStepText}"
                  Foreground="{StaticResource TextMutedBrush}"
                  FontSize="13"
@@ -220,16 +224,17 @@
     <Grid Grid.Row="2"
           IsVisible="{ReflectionBinding ShowReadyContent}"
           RowDefinitions="Auto,*,Auto"
-          ColumnDefinitions="*,Auto">
+          ColumnDefinitions="Auto,*,Auto">
 
-      <!-- Row 0: Location bar -->
-      <Grid Grid.ColumnSpan="2"
-            ColumnDefinitions="*,Auto" ColumnSpacing="4"
+      <!-- Row 0: Location bar (colspan 3) -->
+      <Grid Grid.ColumnSpan="3"
+            ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4"
             Margin="0,0,4,0">
         <TextBox Text="{ReflectionBinding CurrentPath}"
                  FontSize="13"
                  Padding="8,6"
                  VerticalContentAlignment="Center"/>
+        <!-- Go button -->
         <Button Grid.Column="1"
                 Command="{ReflectionBinding NavigateToPathCommand}"
                 CommandParameter="{ReflectionBinding CurrentPath}"
@@ -240,10 +245,22 @@
                  Width="16" Height="16"
                  Stretch="Uniform"/>
         </Button>
+        <!-- Up button -->
+        <Button Grid.Column="2"
+                Command="{ReflectionBinding NavigateToParentCommand}"
+                IsEnabled="{ReflectionBinding CanGoUp}"
+                Width="32" Height="32"
+                Padding="0"
+                ToolTip.Tip="Go up one level">
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-collapse-16.png"
+                 Width="16" Height="16"
+                 Stretch="Uniform"/>
+        </Button>
       </Grid>
 
-      <!-- Row 1, Col 0: TreeView -->
+      <!-- Row 1, Col 0: TreeView (folders only) -->
       <Border Grid.Row="1"
+              MinWidth="180"
               BorderBrush="{StaticResource BorderBrush}"
               BorderThickness="1"
               CornerRadius="4"
@@ -257,28 +274,131 @@
           <TreeView.DataTemplates>
             <TreeDataTemplate DataType="models:SftpEntry"
                               ItemsSource="{ReflectionBinding Children}">
-              <StackPanel Orientation="Horizontal" Spacing="6"
-                          ToolTip.Tip="{ReflectionBinding ToolTip}">
-                <Image Width="24" Height="24" Stretch="Uniform"
+              <StackPanel Orientation="Horizontal" Spacing="4"
+                          ToolTip.Tip="{ReflectionBinding Name}">
+                <Image Width="20" Height="20" Stretch="Uniform"
                        Source="{ReflectionBinding TreeIconPath}"
                        IsVisible="{ReflectionBinding ShowIcon}"/>
                 <TextBlock Text="{ReflectionBinding Name}"
-                           FontSize="14"
-                           VerticalAlignment="Center"
-                           IsVisible="{ReflectionBinding IsNotEditing}"/>
-                <TextBox Text="{ReflectionBinding Name}"
-                         FontSize="14"
-                         VerticalAlignment="Center"
-                         MinWidth="120"
-                         IsVisible="{ReflectionBinding IsEditing}"/>
+                           FontSize="13"
+                           VerticalAlignment="Center"/>
               </StackPanel>
             </TreeDataTemplate>
           </TreeView.DataTemplates>
         </TreeView>
       </Border>
 
+      <!-- Row 1, Col 1: ListBox (file list) -->
+      <Border Grid.Row="1" Grid.Column="1"
+              BorderBrush="{StaticResource BorderBrush}"
+              BorderThickness="1"
+              CornerRadius="4"
+              Margin="0,4,4,4">
+        <ListBox x:Name="FileListBox"
+                 ItemsSource="{ReflectionBinding CurrentEntries}"
+                 SelectionMode="Multiple"
+                 BorderThickness="0"
+                 Background="Transparent"
+                 Foreground="White">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="2,0"/>
+            </Style>
+          </ListBox.Styles>
+          <ListBox.DataTemplates>
+            <DataTemplate DataType="models:SftpEntry">
+              <StackPanel Orientation="Horizontal" Spacing="4"
+                          ToolTip.Tip="{ReflectionBinding Name}">
+                <Image Width="20" Height="20" Stretch="Uniform"
+                       Source="{ReflectionBinding IconPath}"/>
+                <TextBlock Text="{ReflectionBinding Name}"
+                           FontSize="13"
+                           VerticalAlignment="Center"/>
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.DataTemplates>
+        </ListBox>
+      </Border>
+
+      <!-- Row 1, Col 2: Action buttons -->
+      <StackPanel Grid.Row="1" Grid.Column="2"
+                  Spacing="6"
+                  Margin="0,4,0,0"
+                  VerticalAlignment="Bottom">
+        <Button Command="{ReflectionBinding CreateFolderCommand}"
+                IsEnabled="{ReflectionBinding HasSelectedEntry}"
+                Padding="6,4"
+                Width="110"
+                HorizontalContentAlignment="Stretch">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-newfolder-32.png"
+                   Width="24" Height="24"
+                   Stretch="Uniform"/>
+            <TextBlock Text="New Folder"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+        <Button Command="{ReflectionBinding UploadFilesCommand}"
+                Padding="6,4"
+                Width="110"
+                HorizontalContentAlignment="Stretch"
+                x:Name="UploadButton">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-upload-48.png"
+                   Width="24" Height="24"
+                   Stretch="Uniform"/>
+            <TextBlock Text="Upload"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+        <Button Command="{ReflectionBinding DownloadSelectedCommand}"
+                IsEnabled="{ReflectionBinding CanDownloadMultiple}"
+                Padding="6,4"
+                Width="110"
+                HorizontalContentAlignment="Stretch">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-download-32.png"
+                   Width="24" Height="24"
+                   Stretch="Uniform"/>
+            <TextBlock Text="Download"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+        <Button Command="{ReflectionBinding DeleteSelectedCommand}"
+                IsEnabled="{ReflectionBinding CanDeleteMultiple}"
+                Padding="6,4"
+                Width="110"
+                HorizontalContentAlignment="Stretch">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-delete-32.png"
+                   Width="24" Height="24"
+                   Stretch="Uniform"/>
+            <TextBlock Text="Delete"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+        <Button Command="{ReflectionBinding RenameEntryCommand}"
+                IsEnabled="{ReflectionBinding CanRenameSingle}"
+                Padding="6,4"
+                Width="110"
+                HorizontalContentAlignment="Stretch">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-rename-32.png"
+                   Width="24" Height="24"
+                   Stretch="Uniform"/>
+            <TextBlock Text="Rename"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+      </StackPanel>
+
       <!-- Row 2: Drop zone / Progress card -->
-      <Border Grid.Row="2" Grid.ColumnSpan="2"
+      <Border Grid.Row="2" Grid.ColumnSpan="3"
               Padding="10"
               CornerRadius="8"
               BorderThickness="2"
@@ -362,72 +482,6 @@
           </StackPanel>
         </Grid>
       </Border>
-
-      <!-- Row 1, Col 1: Action buttons -->
-      <StackPanel Grid.Row="1" Grid.Column="1"
-                  Spacing="6"
-                  Margin="0,4,0,0"
-                  VerticalAlignment="Bottom">
-        <Button Command="{ReflectionBinding CreateFolderCommand}"
-                IsEnabled="{ReflectionBinding HasSelectedEntry}"
-                Padding="8,6"
-                Width="140"
-                HorizontalContentAlignment="Stretch">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-newfolder-32.png"
-                   Width="32" Height="32"
-                   Stretch="Uniform"/>
-            <TextBlock Text="New Folder"
-                       FontSize="14"
-                       VerticalAlignment="Center"/>
-          </StackPanel>
-        </Button>
-        <Button Command="{ReflectionBinding DownloadFileCommand}"
-                CommandParameter="{ReflectionBinding SelectedEntry}"
-                IsEnabled="{ReflectionBinding HasSelectedEntry}"
-                Padding="8,6"
-                Width="140"
-                HorizontalContentAlignment="Stretch">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-download-32.png"
-                   Width="32" Height="32"
-                   Stretch="Uniform"/>
-            <TextBlock Text="Download"
-                       FontSize="14"
-                       VerticalAlignment="Center"/>
-          </StackPanel>
-        </Button>
-        <Button Command="{ReflectionBinding DeleteEntryCommand}"
-                CommandParameter="{ReflectionBinding SelectedEntry}"
-                IsEnabled="{ReflectionBinding HasSelectedEntry}"
-                Padding="8,6"
-                Width="140"
-                HorizontalContentAlignment="Stretch">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-delete-32.png"
-                   Width="32" Height="32"
-                   Stretch="Uniform"/>
-            <TextBlock Text="Delete"
-                       FontSize="14"
-                       VerticalAlignment="Center"/>
-          </StackPanel>
-        </Button>
-        <Button Command="{ReflectionBinding RenameEntryCommand}"
-                CommandParameter="{ReflectionBinding SelectedEntry}"
-                IsEnabled="{ReflectionBinding HasSelectedEntry}"
-                Padding="8,6"
-                Width="140"
-                HorizontalContentAlignment="Stretch">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-rename-32.png"
-                   Width="32" Height="32"
-                   Stretch="Uniform"/>
-            <TextBlock Text="Rename"
-                       FontSize="14"
-                       VerticalAlignment="Center"/>
-          </StackPanel>
-        </Button>
-      </StackPanel>
     </Grid>
 
   </Grid>

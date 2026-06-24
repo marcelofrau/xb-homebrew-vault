@@ -1,9 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:XBVault.ViewModels"
-        x:Class="XBVault.Views.ConfirmWindow"
-        x:DataType="vm:ConfirmViewModel"
-        Title="{Binding Title}"
+        x:Class="XBVault.Views.InputDialog"
+        Title="Input"
         WindowStartupLocation="CenterOwner"
         Width="380"
         SizeToContent="Height"
@@ -30,7 +28,7 @@
           </LinearGradientBrush>
         </Grid.Background>
         <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
-        <TextBlock Text="{Binding Title}"
+        <TextBlock x:Name="TitleText"
                    Foreground="#1A1A1A"
                    FontSize="14"
                    FontWeight="Bold"
@@ -64,41 +62,41 @@
         <StackPanel Margin="20,16,20,20" Spacing="16">
 
           <Grid ColumnDefinitions="48,*" ColumnSpacing="14">
-            <Image Source="{Binding MessageIcon}"
+            <Image x:Name="DialogIcon"
                    Width="48" Height="48"
                    Stretch="Uniform"
-                   VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="1"
-                       Text="{Binding Message}"
+                   VerticalAlignment="Center"
+                   IsVisible="False"/>
+            <TextBlock x:Name="MessageText"
+                       Grid.Column="1"
                        FontSize="14"
                        Foreground="{StaticResource TextBrush}"
                        TextWrapping="Wrap"
                        VerticalAlignment="Center"/>
           </Grid>
 
+          <TextBox x:Name="InputTextBox"
+                   FontSize="14"
+                   Padding="8,6"
+                   PlaceholderText="Type here..."
+                   KeyDown="OnInputKeyDown"/>
+
           <StackPanel Orientation="Horizontal"
                       Spacing="8"
                       HorizontalAlignment="Right">
-            <Button Command="{Binding CancelCommand}"
+            <Button Click="OnCancelClick"
                     Padding="12,8"
                     MinWidth="90">
-              <TextBlock Text="{Binding CancelText}"
+              <TextBlock Text="Cancel"
                          VerticalAlignment="Center"
                          HorizontalAlignment="Center"/>
             </Button>
-            <Button x:Name="ConfirmBtn"
-                    Command="{Binding ConfirmCommand}"
+            <Button Click="OnOkClick"
                     Padding="12,8"
                     MinWidth="90">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <Image Source="{Binding Icon}"
-                       Width="20" Height="20"
-                       Stretch="Uniform"
-                       IsVisible="{Binding HasIcon}"/>
-                <TextBlock Text="{Binding ConfirmText}"
-                           VerticalAlignment="Center"
-                           HorizontalAlignment="Center"/>
-              </StackPanel>
+              <TextBlock Text="OK"
+                         VerticalAlignment="Center"
+                         HorizontalAlignment="Center"/>
             </Button>
           </StackPanel>
 
@@ -107,5 +105,4 @@
 
     </Grid>
   </Border>
-
 </Window>

@@ -10,12 +10,13 @@ public partial class ConfirmViewModel : ObservableObject
 {
     private static readonly Uri DefaultMessageIconUri = new("avares://XBVault/Assets/Views/ErrorDialog/errordialog-warn-48.png");
 
-    public ConfirmViewModel(string title, string message, string confirmText, string cancelText, string? iconSource = null, string? messageIconSource = null)
+    public ConfirmViewModel(string title, string message, string confirmText, string cancelText, string? iconSource = null, string? messageIconSource = null, bool isDestructive = false)
     {
         Title = title;
         Message = message;
         ConfirmText = confirmText;
         CancelText = cancelText;
+        IsDestructive = isDestructive;
 
         if (!string.IsNullOrEmpty(iconSource))
             Icon = new Bitmap(AssetLoader.Open(new Uri(iconSource)));
@@ -35,6 +36,7 @@ public partial class ConfirmViewModel : ObservableObject
     public Bitmap? Icon { get; }
     public Bitmap MessageIcon { get; }
     public bool HasIcon => Icon is not null;
+    public bool IsDestructive { get; }
     public bool Confirmed { get; private set; }
     public event Action<bool>? Completed;
 
