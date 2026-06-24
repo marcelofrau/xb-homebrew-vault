@@ -1,17 +1,118 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:XBVault.ViewModels"
-             x:Class="XBVault.Views.FileExplorerView"
-             x:DataType="vm:FileExplorerViewModel">
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:models="using:XBVault.Models"
+               x:Class="XBVault.Views.FileExplorerView">
 
-  <Grid Margin="32">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="32,32,32,16">
 
-    <!-- Disconnected overlay -->
-    <StackPanel IsVisible="{Binding ShowDisconnected}"
+    <!-- Row 0: Header -->
+    <Grid Grid.Row="0" Margin="0,14,0,16" ColumnDefinitions="*,Auto">
+      <StackPanel>
+        <TextBlock Text="FILE EXPLORER"
+                   Classes="PageTitle"/>
+        <TextBlock Text="Browse and manage files on your Xbox"
+                   Classes="Muted"
+                   FontSize="14"
+                   Margin="0,4,0,0"/>
+      </StackPanel>
+      <TextBlock Grid.Column="1"
+                 FontSize="11"
+                 Foreground="{StaticResource TextMutedBrush}"
+                 VerticalAlignment="Top"/>
+    </Grid>
+
+    <!-- Row 1: Toolbar -->
+    <Grid Grid.Row="1"
+          ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto"
+          Margin="0,0,0,16">
+
+      <Button Grid.Column="0"
+              Command="{ReflectionBinding InitializeCommand}"
+              IsEnabled="{ReflectionBinding CanBrowse}"
+              Padding="10,6">
+        <StackPanel Orientation="Horizontal" Spacing="5">
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-folder-20.png"
+                 Width="18" Height="18"
+                 Stretch="Uniform"/>
+          <TextBlock Text="Browse"
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
+
+      <Button Grid.Column="1"
+              Command="{ReflectionBinding CreateFolderCommand}"
+              IsEnabled="{ReflectionBinding CanCreateFolder}"
+              Padding="10,6"
+              Margin="6,0,0,0">
+        <StackPanel Orientation="Horizontal" Spacing="5">
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-new-folder-20.png"
+                 Width="18" Height="18"
+                 Stretch="Uniform"/>
+          <TextBlock Text="New Folder"
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
+
+      <Button Grid.Column="2"
+              Command="{ReflectionBinding RefreshCommand}"
+              IsEnabled="{ReflectionBinding CanRefresh}"
+              Padding="10,6"
+              Margin="6,0,0,0">
+        <StackPanel Orientation="Horizontal" Spacing="5">
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-refresh-20.png"
+                 Width="18" Height="18"
+                 Stretch="Uniform"/>
+          <TextBlock Text="Refresh"
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
+
+      <!-- SFTP info -->
+      <Button Grid.Column="3"
+              Command="{ReflectionBinding OpenConnectionInfoCommand}"
+              IsEnabled="{ReflectionBinding IsConnected}"
+              Padding="10,6"
+              Margin="6,0,0,0">
+        <StackPanel Orientation="Horizontal" Spacing="5">
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-network-20.png"
+                 Width="18" Height="18"
+                 Stretch="Uniform"/>
+          <TextBlock Text="SFTP Info"
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
+
+      <!-- Open in WinSCP -->
+      <Button Grid.Column="4"
+              Command="{ReflectionBinding OpenWinScpCommand}"
+              Padding="10,6"
+              Margin="6,0,0,0"
+              IsVisible="{ReflectionBinding IsWindows}"
+              IsEnabled="{ReflectionBinding IsConnected}">
+        <StackPanel Orientation="Horizontal" Spacing="5">
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-winscp-24.png"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
+          <TextBlock Text="WinSCP"
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
+
+    </Grid>
+
+    <!-- Row 2: Content area -->
+    <!-- Disconnected -->
+    <StackPanel Grid.Row="2"
+                IsVisible="{ReflectionBinding ShowDisconnectedContent}"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="12">
-      <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-disconnected-64.png"
+      <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-disconnected-64.png"
              Width="64" Height="64"
              Stretch="Uniform"
              HorizontalAlignment="Center"
@@ -21,44 +122,192 @@
                  FontWeight="SemiBold"
                  Foreground="{StaticResource TextMutedBrush}"
                  HorizontalAlignment="Center"/>
-      <TextBlock Text="Connect via sidebar to browse Xbox files"
+      <TextBlock Text="Connect to browse Xbox files"
                  FontSize="13"
                  Foreground="{StaticResource TextDimBrush}"
                  HorizontalAlignment="Center"/>
+      <Button Command="{ReflectionBinding ConnectCommand}"
+              Padding="16,8"
+              FontSize="14"
+              HorizontalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <TextBlock Text="Connect" VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
     </StackPanel>
 
-    <!-- Connected placeholder -->
-    <Border IsVisible="{Binding ShowContent}"
-            Background="{StaticResource SurfaceAltBrush}"
-            CornerRadius="8"
-            Padding="32"
-            VerticalAlignment="Center"
-            HorizontalAlignment="Center">
-      <StackPanel Spacing="12" HorizontalAlignment="Center">
-        <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-fileexplorer-32.png"
-               Width="48" Height="48"
-               Stretch="Uniform"
-               HorizontalAlignment="Center"
-               Opacity="0.5"/>
-        <TextBlock Text="FILE EXPLORER"
-                   FontSize="20"
-                   FontWeight="Bold"
-                   Foreground="{StaticResource AccentBrush}"
-                   LetterSpacing="2"
-                   TextAlignment="Center"/>
-        <TextBlock Text="Browse and manage files on your Xbox"
-                   FontSize="13"
-                   Foreground="{StaticResource TextMutedBrush}"
-                   TextAlignment="Center"/>
-        <TextBlock Text="Not implemented yet — coming in a future version"
-                   FontSize="11"
-                   Foreground="{StaticResource TextDimBrush}"
-                   TextAlignment="Center"
-                   TextWrapping="Wrap"
-                   MaxWidth="260"
-                   FontStyle="Italic"/>
-      </StackPanel>
-    </Border>
+    <!-- Prompt -->
+    <StackPanel Grid.Row="2"
+                IsVisible="{ReflectionBinding ShowPromptContent}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12">
+      <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-empty-64.png"
+             Width="64" Height="64"
+             Stretch="Uniform"
+             HorizontalAlignment="Center"
+             Opacity="0.6"/>
+      <TextBlock Text="Ready to browse"
+                 FontSize="16"
+                 FontWeight="SemiBold"
+                 Foreground="{StaticResource TextMutedBrush}"
+                 HorizontalAlignment="Center"/>
+      <TextBlock Text="Click Browse to explore Xbox file system"
+                 FontSize="13"
+                 Foreground="{StaticResource TextDimBrush}"
+                 HorizontalAlignment="Center"/>
+      <Button Command="{ReflectionBinding InitializeCommand}"
+              Padding="16,8"
+              FontSize="14"
+              HorizontalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-folder-20.png"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
+          <TextBlock Text="Browse Files" VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
+    </StackPanel>
+
+    <!-- Loading -->
+    <StackPanel Grid.Row="2"
+                IsVisible="{ReflectionBinding IsLoading}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12">
+      <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-folder-64.png"
+             Width="64" Height="64"
+             Stretch="Uniform"
+             HorizontalAlignment="Center"
+             Opacity="0.4"/>
+      <TextBlock Text="{ReflectionBinding InitStepText}"
+                 Foreground="{StaticResource TextMutedBrush}"
+                 FontSize="13"
+                 HorizontalAlignment="Center"/>
+    </StackPanel>
+
+    <!-- Main content: connected + initialized -->
+    <Grid Grid.Row="2"
+          IsVisible="{ReflectionBinding ShowReadyContent}"
+          RowDefinitions="Auto,*,Auto">
+
+      <!-- Location bar -->
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4"
+            Margin="0,0,4,0">
+        <TextBox Text="{ReflectionBinding CurrentPath}"
+                 FontSize="13"
+                 Padding="8,6"
+                 VerticalContentAlignment="Center"/>
+        <Button Grid.Column="1"
+                Command="{ReflectionBinding NavigateToPathCommand}"
+                CommandParameter="{ReflectionBinding CurrentPath}"
+                Width="32" Height="32"
+                Padding="0"
+                ToolTip.Tip="Navigate">
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-go-20.png"
+                 Width="16" Height="16"
+                 Stretch="Uniform"/>
+        </Button>
+      </Grid>
+
+      <!-- TreeView - full width, fills remaining space -->
+      <Border Grid.Row="1"
+              BorderBrush="{StaticResource BorderBrush}"
+              BorderThickness="1"
+              CornerRadius="4"
+              Margin="0,4">
+        <TreeView x:Name="FolderTree"
+                  ItemsSource="{ReflectionBinding TreeRoots}"
+                  BorderThickness="0"
+                  Background="Transparent"
+                  HorizontalAlignment="Stretch"
+                  Foreground="White">
+          <TreeView.DataTemplates>
+            <TreeDataTemplate DataType="models:SftpEntry"
+                              ItemsSource="{ReflectionBinding Children}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Image Width="24" Height="24" Stretch="Uniform"
+                       Source="{ReflectionBinding TreeIconPath}"/>
+                <TextBlock Text="{ReflectionBinding Name}"
+                           FontSize="14"
+                           VerticalAlignment="Center"/>
+              </StackPanel>
+            </TreeDataTemplate>
+          </TreeView.DataTemplates>
+        </TreeView>
+      </Border>
+
+      <!-- Drop zone / Activity monitor -->
+      <Border Grid.Row="2"
+              Padding="10"
+              CornerRadius="8"
+              BorderThickness="2"
+              Background="#0dffffff"
+              BorderBrush="#33ffffff"
+              Margin="0,4,0,0"
+              x:Name="DropZoneBorder">
+        <Grid RowDefinitions="Auto, Auto" ColumnDefinitions="Auto, *">
+          <ProgressBar Grid.Row="0" Grid.ColumnSpan="2"
+                       IsVisible="{ReflectionBinding ShowActivity}"
+                       Value="{ReflectionBinding ActivityProgress}"
+                       Minimum="0" Maximum="1"
+                       Height="4"
+                       Foreground="{StaticResource AccentBrush}"
+                       Margin="0,0,0,6"/>
+          <Image Grid.Row="1" Grid.Column="0"
+                 Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-upload-48.png"
+                 Width="48" Height="48"
+                 Stretch="Uniform"
+                 VerticalAlignment="Center"
+                 Margin="4,0,12,0"
+                 Opacity="0.25"/>
+          <!-- Activity status -->
+          <StackPanel Grid.Row="1" Grid.Column="1"
+                      IsVisible="{ReflectionBinding ShowActivity}"
+                      Spacing="4"
+                      VerticalAlignment="Center">
+            <TextBlock Text="{ReflectionBinding ActivityText}"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource TextMutedBrush}"/>
+            <TextBlock Text="{ReflectionBinding ActivityProgress, StringFormat={}{0:P0}}"
+                       FontSize="12"
+                       Foreground="{StaticResource TextDimBrush}"/>
+          </StackPanel>
+          <!-- Drop prompt (idle) -->
+          <StackPanel Grid.Row="1" Grid.Column="1"
+                      IsVisible="{ReflectionBinding ShowIdle}"
+                      Spacing="2"
+                      VerticalAlignment="Center">
+            <TextBlock Text="Drop files here to upload"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource TextMutedBrush}"/>
+            <TextBlock Text="{ReflectionBinding CurrentPath, StringFormat='Destination: {0}'}"
+                       FontSize="12"
+                       Foreground="{StaticResource TextDimBrush}"/>
+            <TextBlock Text="Drag &amp; drop multiple files from your PC"
+                       FontSize="11"
+                       Foreground="{StaticResource TextDimBrush}"/>
+            <Button Padding="8,4"
+                    FontSize="12"
+                    HorizontalAlignment="Left"
+                    Margin="0,4,0,0"
+                    x:Name="BrowseFilesBtn">
+              <StackPanel Orientation="Horizontal" Spacing="5">
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-add-file-20.png"
+                        Width="16" Height="16"
+                        Stretch="Uniform"
+                        Opacity="0.7"/>
+                <TextBlock Text="Browse Files" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
 
   </Grid>
 

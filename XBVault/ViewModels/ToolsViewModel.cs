@@ -40,6 +40,7 @@ public partial class ToolsViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowContent));
     }
 
+    public Func<Task<bool>>? ShowConnectAction { get; set; }
     public Action? ShowScreenshotAction { get; set; }
     public Action? ShowSystemInfoAction { get; set; }
     public Action? ShowProcessesAction { get; set; }
@@ -49,6 +50,17 @@ public partial class ToolsViewModel : ObservableObject
     public Action? ShowCrashDataAction { get; set; }
     public Action? ShowUsbPermissionAction { get; set; }
     public Func<string, string, string, string, string?, string?, Task<bool>>? ShowConfirmAsync { get; set; }
+
+    [RelayCommand]
+    private async Task ConnectAsync()
+    {
+        if (ShowConnectAction is not null)
+        {
+            var ok = await ShowConnectAction();
+            if (ok)
+                _xboxService.MarkConnected();
+        }
+    }
 
     [RelayCommand]
     private void OpenScreenshot()

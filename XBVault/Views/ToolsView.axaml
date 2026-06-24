@@ -4,27 +4,40 @@
               x:Class="XBVault.Views.ToolsView"
               x:DataType="vm:ToolsViewModel">
 
-  <Grid Margin="32">
+  <Grid RowDefinitions="Auto,*" Margin="32">
 
-    <StackPanel IsVisible="{Binding ShowDisconnected}"
+    <!-- Row 0: Header -->
+    <StackPanel Grid.Row="0" Margin="0,14,0,16">
+      <TextBlock Text="TOOLS" Classes="PageTitle"/>
+      <TextBlock Text="Utilities and system management"
+                 Classes="Muted" FontSize="14" Margin="0,4,0,0"/>
+    </StackPanel>
+
+    <!-- Row 1: Content -->
+    <StackPanel Grid.Row="1"
+                IsVisible="{Binding ShowDisconnected}"
                 HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
       <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-disconnected-64.png"
              Width="64" Height="64" Stretch="Uniform"
              HorizontalAlignment="Center" Opacity="0.6"/>
       <TextBlock Text="Not connected" FontSize="16" FontWeight="SemiBold"
                  Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-      <TextBlock Text="Connect via sidebar to use Xbox tools"
+      <TextBlock Text="Connect to access Xbox tools"
                  FontSize="13" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
+      <Button Command="{Binding ConnectCommand}"
+              Padding="16,8"
+              FontSize="14"
+              HorizontalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <TextBlock Text="Connect" VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
     </StackPanel>
 
-    <ScrollViewer IsVisible="{Binding ShowContent}">
+    <ScrollViewer Grid.Row="1" IsVisible="{Binding ShowContent}">
       <StackPanel Spacing="16" MaxWidth="680">
-
-        <StackPanel Margin="0,24,0,0">
-          <TextBlock Text="TOOLS" Classes="PageTitle"/>
-          <TextBlock Text="Utilities and system management"
-                     Classes="Muted" FontSize="14" Margin="0,4,0,0"/>
-        </StackPanel>
 
         <Border IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
                 Background="#1AE74C3C" BorderBrush="{StaticResource DangerBrush}"

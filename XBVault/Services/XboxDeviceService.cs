@@ -23,6 +23,7 @@ public class XboxDeviceService
     private string? _baseUrl;
     private string? _username;
     private string? _password;
+    private string? _smbPassword;
 
     public XboxDeviceService()
     {
@@ -70,6 +71,43 @@ public class XboxDeviceService
 
     public bool IsConfigured => _configured;
     public bool IsConnected => _connected;
+    public string? SmbPassword => _smbPassword;
+
+    public SshConnectionInfo GetSshCredentials()
+    {
+        if (string.IsNullOrEmpty(_baseUrl))
+            throw new InvalidOperationException("Xbox not configured");
+
+        var pw = _smbPassword ?? _password;
+        if (string.IsNullOrEmpty(pw))
+            throw new InvalidOperationException("No password available");
+
+        var uri = new Uri(_baseUrl);
+        Logger.Debug($"GetSshCredentials: host={uri.Host}, user=DevToolsUser, hasSmbPw={_smbPassword is not null}");
+        return new SshConnectionInfo(uri.Host, 22, "DevToolsUser", pw);
+    }
+
+    public async Task<string?> FetchSmbPasswordAsync()
+    {
+        try
+        {
+            var response = await _http.GetAsync("/ext/smb/developerfolder");
+            var body = await response.Content.ReadAsStringAsync();
+            Logger.Debug($"SMB endpoint returned: {response.StatusCode}");
+            if (!response.IsSuccessStatusCode) return null;
+
+            using var doc = JsonDocument.Parse(body);
+            var pw = doc.RootElement.GetProperty("Password").GetString();
+            _smbPassword = pw;
+            Logger.Debug("SMB password fetched successfully");
+            return pw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to fetch SMB password");
+            return null;
+        }
+    }
 
     public string? GetDevPortalUrl()
     {
@@ -1149,6 +1187,8 @@ internal class PackagesResponse
 {
     public List<InstalledPackage> InstalledPackages { get; set; } = [];
 }
+
+public record SshConnectionInfo(string Host, int Port, string Username, string Password);
 
 public class ConnectionTestResult
 {

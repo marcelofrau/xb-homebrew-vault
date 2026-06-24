@@ -11,8 +11,13 @@
     <converters:LogLevelToIconConverter x:Key="LevelToIcon"/>
   </UserControl.Resources>
 
-  <Grid RowDefinitions="Auto,*" Margin="16" RowSpacing="8">
-    <Border Grid.Row="0" Padding="8,6" CornerRadius="6" Background="{StaticResource SurfaceAltBrush}">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="32,22,32,32" RowSpacing="12">
+    <StackPanel Grid.Row="0">
+      <TextBlock Text="LOGS" Classes="PageTitle"/>
+      <TextBlock Text="View application log output"
+                 Classes="Muted" FontSize="14" Margin="0,4,0,0"/>
+    </StackPanel>
+    <Border Grid.Row="1" Padding="8,6" CornerRadius="6" Background="{StaticResource SurfaceAltBrush}">
       <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
         <StackPanel Orientation="Horizontal" Spacing="4">
           <CheckBox IsChecked="{Binding AutoScroll}"
@@ -47,7 +52,7 @@
         </Button>
       </Grid>
     </Border>
-    <Border Grid.Row="1" Background="{StaticResource SurfaceAltBrush}" CornerRadius="6" Padding="12">
+    <Border Grid.Row="2" Background="{StaticResource SurfaceAltBrush}" CornerRadius="6" Padding="12">
       <ScrollViewer Name="LogScrollViewer">
         <ListBox Name="LogListBox"
                  ItemsSource="{Binding Logs}"

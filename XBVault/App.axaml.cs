@@ -42,11 +42,12 @@ public partial class App : Application
             var xboxService = new XboxDeviceService();
             var cacheService = new CacheService();
             var installService = new PackageInstallService(cacheService, xboxService);
+            var sftpService = new SftpService();
 
             var mainViewModel = new MainViewModel(xboxService);
             var browseViewModel = new BrowseViewModel(installService, xboxService);
             var installedViewModel = new InstalledViewModel(xboxService);
-            var fileExplorerViewModel = new FileExplorerViewModel(xboxService);
+            var fileExplorerViewModel = new FileExplorerViewModel(xboxService, sftpService);
             var toolsViewModel = new ToolsViewModel(xboxService);
             var settingsViewModel = new SettingsViewModel(xboxService, cacheService);
 
@@ -224,7 +225,9 @@ public partial class App : Application
                 }
             };
 
+            Logger.Info("Creating BrowseView");
             var browseView = new Views.BrowseView { DataContext = browseViewModel };
+            Logger.Info("BrowseView created");
 
             installedViewModel.ConfirmUninstallAsync = async pkg =>
             {
@@ -239,7 +242,33 @@ public partial class App : Application
                 return confirmVm.Confirmed;
             };
 
+            toolsViewModel.ShowConnectAction = async () =>
+            {
+                var connVm = new ConnectionViewModel(xboxService);
+                var connWindow = new Views.ConnectionWindow { DataContext = connVm };
+                await connWindow.ShowDialog(main);
+                return connVm.IsSuccess;
+            };
+
+            fileExplorerViewModel.ShowConnectAction = async () =>
+            {
+                var connVm = new ConnectionViewModel(xboxService);
+                var connWindow = new Views.ConnectionWindow { DataContext = connVm };
+                await connWindow.ShowDialog(main);
+                return connVm.IsSuccess;
+            };
+
+            installedViewModel.ShowConnectAction = async () =>
+            {
+                var connVm = new ConnectionViewModel(xboxService);
+                var connWindow = new Views.ConnectionWindow { DataContext = connVm };
+                await connWindow.ShowDialog(main);
+                return connVm.IsSuccess;
+            };
+
+            Logger.Info("Creating InstalledView");
             var installedView = new Views.InstalledView { DataContext = installedViewModel };
+            Logger.Info("InstalledView created");
             settingsViewModel.ShowConnectDialogAsync = async () =>
             {
                 var connVm = new ConnectionViewModel(xboxService);
@@ -248,8 +277,14 @@ public partial class App : Application
                 return connVm.IsSuccess;
             };
 
-            var fileExplorerView = new Views.FileExplorerView { DataContext = fileExplorerViewModel };
+            Logger.Info("Creating FileExplorerView");
+            var fileExplorerView = new Views.FileExplorerView();
+            Logger.Info("Setting FileExplorerView DataContext");
+            fileExplorerView.DataContext = fileExplorerViewModel;
+            Logger.Info("FileExplorerView created");
+            Logger.Info("Creating ToolsView");
             var toolsView = new Views.ToolsView { DataContext = toolsViewModel };
+            Logger.Info("ToolsView created");
 
             toolsViewModel.ShowScreenshotAction = () =>
             {
@@ -415,7 +450,9 @@ public partial class App : Application
                 return vm.Confirmed;
             };
 
+            Logger.Info("Creating SettingsView");
             var settingsView = new Views.SettingsView { DataContext = settingsViewModel };
+            Logger.Info("Creating LogsView");
             var logsView = new Views.LogsView { DataContext = new LogsViewModel() };
 
             main.ViewCarousel.Items.Add(browseView);
@@ -428,6 +465,8 @@ public partial class App : Application
             // kick off background loads
             _ = browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
             // Installed packages loaded only on explicit refresh (manual connect)
+
+            // File explorer: manual init via Browse button
 
             Logger.Info("Main window loaded, closing splash");
             splash.Close();
@@ -444,6 +483,7 @@ public partial class App : Application
                     var connected = await mainViewModel.ShowConnectAction();
                     if (connected)
                     {
+                        await xboxService.FetchSmbPasswordAsync();
                         mainViewModel.IsXboxConnected = true;
                         xboxService.MarkConnected();
                         mainViewModel.ConnectionStatusText = "Connected";

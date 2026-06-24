@@ -20,7 +20,16 @@ public partial class InstalledViewModel : ObservableObject
     public InstalledViewModel(XboxDeviceService xboxService)
     {
         _xboxService = xboxService;
+        _xboxService.ConnectionChanged += OnConnectionChanged;
+        IsConnected = _xboxService.IsConnected;
         Logger.Debug("InstalledViewModel initialized");
+    }
+
+    private void OnConnectionChanged(bool connected)
+    {
+        IsConnected = connected;
+        if (connected)
+            StatusMessage = null;
     }
 
     private DispatcherTimer? _pollTimer;
@@ -92,16 +101,31 @@ public partial class InstalledViewModel : ObservableObject
         HasPackages = Packages.Count > 0;
     }
 
-    public bool ShowGrid => HasPackages && !IsLoading;
-    public bool ShowRefreshPrompt => !IsLoading && !HasPackages && string.IsNullOrEmpty(StatusMessage);
+    [ObservableProperty]
+    private bool _isConnected;
+
+    public bool ShowDisconnected => !IsConnected && !IsLoading;
+    public bool ShowStatus => IsConnected && !string.IsNullOrEmpty(StatusMessage);
+    public bool ShowGrid => HasPackages && !IsLoading && IsConnected;
+    public bool ShowRefreshPrompt => !IsLoading && !HasPackages && string.IsNullOrEmpty(StatusMessage) && IsConnected;
 
     partial void OnStatusMessageChanged(string? value)
     {
         OnPropertyChanged(nameof(ShowRefreshPrompt));
+        OnPropertyChanged(nameof(ShowStatus));
+    }
+
+    partial void OnIsConnectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowDisconnected));
+        OnPropertyChanged(nameof(ShowStatus));
+        OnPropertyChanged(nameof(ShowRefreshPrompt));
+        OnPropertyChanged(nameof(ShowGrid));
     }
 
     partial void OnIsLoadingChanged(bool value)
     {
+        OnPropertyChanged(nameof(ShowDisconnected));
         OnPropertyChanged(nameof(ShowRefreshPrompt));
         OnPropertyChanged(nameof(ShowGrid));
     }
@@ -134,6 +158,19 @@ public partial class InstalledViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsPackageRunning));
         OnPropertyChanged(nameof(IsPackageNotRunning));
+    }
+
+    public Func<Task<bool>>? ShowConnectAction { get; set; }
+
+    [RelayCommand]
+    private async Task ConnectAsync()
+    {
+        if (ShowConnectAction is not null)
+        {
+            var ok = await ShowConnectAction();
+            if (ok)
+                _xboxService.MarkConnected();
+        }
     }
 
     [RelayCommand]
@@ -223,7 +260,6 @@ public partial class InstalledViewModel : ObservableObject
         if (!_xboxService.IsConnected)
         {
             Logger.Info("Xbox not connected — skipping package refresh");
-            StatusMessage = "Not connected. Connect via sidebar first.";
             return;
         }
 

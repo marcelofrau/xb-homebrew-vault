@@ -14,8 +14,15 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel(XboxDeviceService xboxService)
     {
         _xboxService = xboxService;
+        _xboxService.ConnectionChanged += OnConnectionChanged;
         Logger.Debug("MainViewModel initialized");
         UpdateConnectionStatus();
+    }
+
+    private void OnConnectionChanged(bool connected)
+    {
+        IsXboxConnected = connected;
+        ConnectionStatusText = connected ? "Connected" : "Disconnected";
     }
 
     public Action? ShowAboutAction { get; set; }

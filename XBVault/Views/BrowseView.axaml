@@ -9,9 +9,9 @@
   <Grid RowDefinitions="Auto,Auto,*" Margin="32">
 
     <!-- Header Row: title left, checkbox + refresh right -->
-    <Grid Grid.Row="0"
+      <Grid Grid.Row="0"
           ColumnDefinitions="*,Auto"
-          Margin="0,24,0,16">
+          Margin="0,14,0,16">
       <StackPanel>
         <TextBlock Text="BROWSE"
                    Classes="PageTitle"/>

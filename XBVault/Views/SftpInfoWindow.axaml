@@ -1,0 +1,176 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="XBVault.Views.SftpInfoWindow"
+        Title="SFTP Connection"
+        Width="400"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
+
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
+
+  <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
+    <Grid RowDefinitions="Auto,*">
+
+      <!-- Title Bar -->
+      <Grid Height="32"
+            PointerPressed="OnTitleBarPointerPressed">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#447F3E" Offset="0"/>
+            <GradientStop Color="#9ACA3C" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="SFTP Connection"
+                   Foreground="#1A1A1A"
+                   FontSize="14"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"
+                   Margin="12,0"/>
+        <Button Grid.Column="1"
+                Width="32" Height="32"
+                Padding="0"
+                BorderThickness="0"
+                Click="OnCloseClick"
+                Cursor="Hand"
+                ToolTip.Tip="Close">
+          <Image Source="avares://XBVault/Assets/Views/SftpInfoWindow/sftpinfo-close-20.png"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
+          <Button.Styles>
+            <Style Selector="Button">
+              <Setter Property="Background" Value="Transparent"/>
+            </Style>
+            <Style Selector="Button:pointerover">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+          </Button.Styles>
+        </Button>
+      </Grid>
+
+      <!-- Content -->
+      <Border Grid.Row="1" BorderThickness="0">
+        <StackPanel Margin="12" Spacing="12">
+
+          <!-- Banner -->
+          <Image Source="avares://XBVault/Assets/Views/SftpInfoWindow/sftpinfo-banner.png"
+                 Stretch="None"
+                 HorizontalAlignment="Center"/>
+
+          <!-- Credentials card -->
+          <Border Background="{StaticResource SurfaceAltBrush}"
+                  CornerRadius="6"
+                  Padding="12">
+            <StackPanel Spacing="8">
+              <Grid ColumnDefinitions="70,*">
+                <TextBlock Text="Host:"
+                           FontSize="13"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+                <TextBlock Grid.Column="1"
+                           x:Name="HostText"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis"/>
+              </Grid>
+              <Grid ColumnDefinitions="70,*">
+                <TextBlock Text="Port:"
+                           FontSize="13"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+                <TextBlock Grid.Column="1"
+                           x:Name="PortText"
+                           FontSize="13"
+                           FontWeight="SemiBold"/>
+              </Grid>
+              <Grid ColumnDefinitions="70,*,Auto">
+                <TextBlock Text="User:"
+                           FontSize="13"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+                <TextBlock Grid.Column="1"
+                           x:Name="UserText"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis"/>
+                <Button Grid.Column="2"
+                        FontSize="11" Padding="6,2"
+                        Margin="8,0,0,0"
+                        Click="OnCopyUserClick"
+                        Background="Transparent"
+                        BorderThickness="1">
+                  <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Image Source="avares://XBVault/Assets/Views/SftpInfoWindow/sftpinfo-copy-20.png"
+                           Width="14" Height="14" Stretch="Uniform"/>
+                    <TextBlock Text="Copy"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource TextMutedBrush}"/>
+                  </StackPanel>
+                </Button>
+              </Grid>
+              <Grid ColumnDefinitions="70,*,Auto">
+                <TextBlock Text="Password:"
+                           FontSize="13"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+                <TextBlock Grid.Column="1"
+                           x:Name="PasswordText"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis"/>
+                <Button Grid.Column="2"
+                        FontSize="11" Padding="6,2"
+                        Margin="8,0,0,0"
+                        Click="OnCopyPasswordClick"
+                        Background="Transparent"
+                        BorderThickness="1">
+                  <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Image Source="avares://XBVault/Assets/Views/SftpInfoWindow/sftpinfo-copy-20.png"
+                           Width="14" Height="14" Stretch="Uniform"/>
+                    <TextBlock Text="Copy"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource TextMutedBrush}"/>
+                  </StackPanel>
+                </Button>
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <!-- Hint -->
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                   Width="16" Height="16"
+                   Stretch="Uniform"
+                   VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1"
+                       FontSize="11"
+                       Foreground="{StaticResource TextDimBrush}"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Center"
+                       Text="Credentials from Xbox Dev Mode SMB endpoint. Use with any SFTP client."/>
+          </Grid>
+
+          <!-- Close button -->
+          <Button Content="Close"
+                  HorizontalAlignment="Right"
+                  Padding="16,6"
+                  Click="OnCloseClick"/>
+
+        </StackPanel>
+      </Border>
+
+    </Grid>
+  </Border>
+
+</Window>

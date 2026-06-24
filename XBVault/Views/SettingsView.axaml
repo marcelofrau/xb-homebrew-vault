@@ -7,7 +7,7 @@
   <Grid RowDefinitions="Auto,*" Margin="32">
 
     <!-- Header -->
-    <StackPanel Grid.Row="0" Margin="0,24,0,16">
+    <StackPanel Grid.Row="0" Margin="0,14,0,16">
       <TextBlock Text="SETTINGS"
                  Classes="PageTitle"/>
       <TextBlock Text="Configure Xbox Dev Mode connection"

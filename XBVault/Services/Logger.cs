@@ -53,7 +53,8 @@ public static class Logger
 {
     private static readonly object _lock = new();
     private static bool _consoleAttached;
-    private static LogLevel _minLevel = LogLevel.Info;
+    private static LogLevel _minLevel = LogLevel.Trace;
+    private static StreamWriter? _fileWriter;
 
     public static LogLevel MinLevel
     {
@@ -125,6 +126,14 @@ public static class Logger
             try { Entries.Add(entry); } catch { }
             try { OnLog?.Invoke(entry); } catch { }
             try { WriteConsole(entry); } catch { }
+            try
+            {
+                _fileWriter ??= new StreamWriter(
+                    Path.Combine(Path.GetTempPath(), "XBVault.log"), append: false)
+                    { AutoFlush = true };
+                _fileWriter.WriteLine(entry.ToString());
+            }
+            catch { }
         }
     }
 

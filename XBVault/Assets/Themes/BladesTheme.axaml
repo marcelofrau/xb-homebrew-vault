@@ -313,6 +313,21 @@
     <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
   </Style>
 
+  <!-- TreeView -->
+  <Style Selector="TreeViewItem">
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+  <Style Selector="TreeViewItem:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+  </Style>
+  <Style Selector="TreeViewItem:selected">
+    <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
+  </Style>
+  <Style Selector="TreeViewItem /template/ ToggleButton#PART_ExpandCollapseChevron">
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+  </Style>
+
   <!-- ComboBox -->
   <Style Selector="ComboBox">
     <Setter Property="Background" Value="{StaticResource ComboBoxBgBrush}"/>

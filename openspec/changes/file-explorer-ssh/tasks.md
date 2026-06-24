@@ -1,7 +1,7 @@
 ## 1. Icons & Assets
 
-- [ ] 1.1 Create `Assets/Views/FileExplorerView/` directory
-- [ ] 1.2 Copy icons from `F:\workspace\icons8-personal-set`:
+- [x] 1.1 Create `Assets/Views/FileExplorerView/` directory
+- [x] 1.2 Copy icons from `F:\workspace\icons8-personal-set`:
   - `icons8-folder-{size}.png` → `fileexplorer-folder-16.png` (tree folder closed, 16px)
   - `icons8-opened-folder-{size}.png` → `fileexplorer-folder-open-16.png` (tree folder open, 16px)
   - `icons8-file-2d-{size}.png` → `fileexplorer-file-16.png` (tree file, 16px)
@@ -16,17 +16,17 @@
   - `icons8-rename-2d-{size}.png` → `fileexplorer-rename-16.png` (rename context, 16px)
   - `icons8-upload-3d-48.png` → `fileexplorer-upload-48.png` (drop zone icon, 48px)
   - `icons8-folder-tree-2d-{size}.png` → `fileexplorer-empty-64.png` (empty state, resize to 64px)
-- [ ] 1.3 Copy close button from `Assets/Views/ConnectionWindow/connection-close-20.png` → `fileexplorer-close-20.png`
+- [x] 1.3 Copy close button from `Assets/Views/ConnectionWindow/connection-close-20.png` → `fileexplorer-close-20.png`
 
 ## 2. Model
 
-- [ ] 2.1 Create `Models/SftpEntry.cs` with: `Name`, `FullPath`, `IsDirectory`, `Size`, `LastModified`, `Extension`, computed `FormattedSize`, `IsJunction`
-- [ ] 2.2 Add implicit ordering: directories first, then files, alphabetical within groups
+- [x] 2.1 Create `Models/SftpEntry.cs` with: `Name`, `FullPath`, `IsDirectory`, `Size`, `LastModified`, `Extension`, computed `FormattedSize`, `IsJunction`
+- [x] 2.2 Add implicit ordering: directories first, then files, alphabetical within groups
 
 ## 3. Service
 
-- [ ] 3.1 Add `Renci.SshNet` NuGet package to `XBVault.csproj`
-- [ ] 3.2 Create `Services/SftpService.cs` implementing `IDisposable`:
+- [x] 3.1 Add `Renci.SshNet` NuGet package to `XBVault.csproj`
+- [x] 3.2 Create `Services/SftpService.cs` implementing `IDisposable`:
   - Private fields: `SshClient? _ssh`, `SftpClient? _sftp`
   - `Task ConnectAsync(string host, int port, string user, string pass)` — create clients, connect, handle `ssh-dss` key exchange
   - `void Disconnect()` — dispose clients
@@ -43,33 +43,33 @@
 
 ## 4. XboxDeviceService changes
 
-- [ ] 4.1 Add `SshConnectionInfo GetSshCredentials()` method returning `(string Host, int Port, string Username, string Password)` — reuse stored IP and SMB credentials
-- [ ] 4.2 Add `SshConnectionInfo` record struct (or use existing pattern) as a return type
+- [x] 4.1 Add `SshConnectionInfo GetSshCredentials()` method returning `(string Host, int Port, string Username, string Password)` — reuse stored IP and SMB credentials
+- [x] 4.2 Add `SshConnectionInfo` record struct (or use existing pattern) as a return type
 
 ## 5. ViewModel
 
-- [ ] 5.1 Rewrite `ViewModels/FileExplorerViewModel.cs`:
+- [x] 5.1 Rewrite `ViewModels/FileExplorerViewModel.cs`:
   - Inject `XboxDeviceService` and `SftpService` via constructor
   - `[ObservableProperty]` fields: `IsConnected`, `IsLoading`, `SelectedEntry`, `CurrentPath` (default `D:\DevelopmentFiles\`), `UploadStatusText`, `UploadProgress`, `IsUploading`, `ErrorMessage`
   - `ObservableCollection<SftpEntry> TreeRoots`
   - `ObservableCollection<SftpEntry> CurrentEntries`
   - Computed: `ShowDisconnected => !IsConnected`, `ShowContent => IsConnected`, `CanMountDrives => IsConnected`, `CanCreateFolder => IsConnected`
-- [ ] 5.2 Implement `partial void OnIsConnectedChanged(bool value)` — notify computed properties (+ TreeRoots/CurrentEntries clear)
-- [ ] 5.3 Implement `[RelayCommand] async InitializeAsync()` — if connected call `ConnectAsync` + `LoadTreeRootsAsync`
-- [ ] 5.4 Implement `async Task LoadTreeRootsAsync()` — call `SftpService.ListDirectoryAsync(CurrentPath)`, populate `TreeRoots`
-- [ ] 5.5 Implement `[RelayCommand] async ExpandFolderAsync(string path)` — load child entries, single-expand logic (track expanded root, collapse previous)
-- [ ] 5.6 Implement `[RelayCommand] async NavigateToPathAsync(string path)` — update CurrentPath, load CurrentEntries
-- [ ] 5.7 Implement `[RelayCommand] async RefreshAsync()` — reload current path
-- [ ] 5.8 Implement `[RelayCommand] async UploadFilesAsync(string[] filePaths)` — iterate files, upload with progress, refresh on complete
-- [ ] 5.9 Implement `[RelayCommand] async DownloadFileAsync(SftpEntry entry)` — show SaveFileDialog, download, show result
-- [ ] 5.10 Implement `[RelayCommand] async DeleteEntryAsync(SftpEntry entry)` — show ConfirmWindow, delete, refresh
-- [ ] 5.11 Implement `[RelayCommand] async RenameEntryAsync(SftpEntry entry)` — prompt new name, rename, refresh
-- [ ] 5.12 Implement `[RelayCommand] async CreateFolderAsync()` — prompt name, create, refresh
-- [ ] 5.13 Implement `[RelayCommand] async MountDrivesAsync()` — run `mklink /J` for C:, D:, E: via shell, parse output, show success/error per drive
+- [x] 5.2 Implement `partial void OnIsConnectedChanged(bool value)` — notify computed properties (+ TreeRoots/CurrentEntries clear)
+- [x] 5.3 Implement `[RelayCommand] async InitializeAsync()` — if connected call `ConnectAsync` + `LoadTreeRootsAsync`
+- [x] 5.4 Implement `async Task LoadTreeRootsAsync()` — call `SftpService.ListDirectoryAsync(CurrentPath)`, populate `TreeRoots`
+- [x] 5.5 Implement `[RelayCommand] async ExpandFolderAsync(string path)` — load child entries, single-expand logic (track expanded root, collapse previous)
+- [x] 5.6 Implement `[RelayCommand] async NavigateToPathAsync(string path)` — update CurrentPath, load CurrentEntries
+- [x] 5.7 Implement `[RelayCommand] async RefreshAsync()` — reload current path
+- [x] 5.8 Implement `[RelayCommand] async UploadFilesAsync(string[] filePaths)` — iterate files, upload with progress, refresh on complete
+- [x] 5.9 Implement `[RelayCommand] async DownloadFileAsync(SftpEntry entry)` — show SaveFileDialog, download, show result
+- [x] 5.10 Implement `[RelayCommand] async DeleteEntryAsync(SftpEntry entry)` — show ConfirmWindow, delete, refresh
+- [x] 5.11 Implement `[RelayCommand] async RenameEntryAsync(SftpEntry entry)` — prompt new name, rename, refresh
+- [x] 5.12 Implement `[RelayCommand] async CreateFolderAsync()` — prompt name, create, refresh
+- [x] 5.13 Implement `[RelayCommand] async MountDrivesAsync()` — run `mklink /J` for C:, D:, E: via shell, parse output, show success/error per drive
 
 ## 6. Views
 
-- [ ] 6.1 Rewrite `Views/FileExplorerView.axaml` with layout:
+- [x] 6.1 Rewrite `Views/FileExplorerView.axaml` with layout:
   - Row 0: Header bar with title + toolbar buttons (Mount Drives, New Folder, Refresh)
   - Row 1: Two-column split (GridSplitter between)
     - Left: TreeView with single-expand behavior, item template with icon + name
@@ -79,18 +79,18 @@
   - "Not connected" overlay when ShowDisconnected is true
   - Bind all commands, visibilities, and collections
 
-- [ ] 6.2 Rewrite `Views/FileExplorerView.axaml.cs`:
+- [x] 6.2 Rewrite `Views/FileExplorerView.axaml.cs`:
   - Drag-drop event handlers (`OnDragOver`, `OnDrop`) on upload card
   - Wire `ListBox` right-click context menu
   - Register for `SftpService.ConnectionChanged` for cleanup
 
 ## 7. Documentation
 
-- [ ] 7.1 Rewrite `docs/FEATURE-FILE-EXPLORER.md` with SSH/SFTP architecture, new layout, API reference for SftpService, icon mapping
+- [x] 7.1 Rewrite `docs/FEATURE-FILE-EXPLORER.md` with SSH/SFTP architecture, new layout, API reference for SftpService, icon mapping
 
 ## 8. Verify
 
-- [ ] 8.1 Build project with `dotnet build XBVault/XBVault.csproj` — zero errors
+- [x] 8.1 Build project with `dotnet build XBVault/XBVault.csproj` — zero errors
 - [ ] 8.2 Run app, connect to Xbox, open File Explorer tab — verify tree loads `D:\DevelopmentFiles\`
 - [ ] 8.3 Expand folders, verify lazy loading and single-expand behavior
 - [ ] 8.4 Click "Mount Drives" — verify junctions created (check via SSH)

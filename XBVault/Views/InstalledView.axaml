@@ -28,7 +28,7 @@
   <Grid RowDefinitions="Auto,Auto,*" Margin="32">
 
     <!-- Header -->
-    <Grid Grid.Row="0" Margin="0,24,0,16" ColumnDefinitions="*,Auto,Auto">
+    <Grid Grid.Row="0" Margin="0,14,0,16" ColumnDefinitions="*,Auto,Auto">
       <StackPanel>
         <TextBlock Text="INSTALLED"
                    Classes="PageTitle"/>
@@ -176,9 +176,41 @@
                  HorizontalAlignment="Center"/>
     </StackPanel>
 
-    <!-- Status message -->
+    <!-- Disconnected -->
     <StackPanel Grid.Row="2"
-                IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
+                IsVisible="{Binding ShowDisconnected}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12">
+      <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-disconnected-64.png"
+             Width="64" Height="64"
+             Stretch="Uniform"
+             HorizontalAlignment="Center"
+             Opacity="0.6"/>
+      <TextBlock Text="Not connected"
+                 FontSize="16"
+                 FontWeight="SemiBold"
+                 Foreground="{StaticResource TextMutedBrush}"
+                 HorizontalAlignment="Center"/>
+      <TextBlock Text="Connect to access installed packages"
+                 FontSize="13"
+                 Foreground="{StaticResource TextDimBrush}"
+                 HorizontalAlignment="Center"/>
+      <Button Command="{Binding ConnectCommand}"
+              Padding="16,8"
+              FontSize="14"
+              HorizontalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <TextBlock Text="Connect" VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
+    </StackPanel>
+
+    <!-- Status/Error message -->
+    <StackPanel Grid.Row="2"
+                IsVisible="{Binding ShowStatus}"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="12">
@@ -209,13 +241,16 @@
                  FontWeight="SemiBold"
                  Foreground="{StaticResource TextMutedBrush}"
                  HorizontalAlignment="Center"/>
-      <TextBlock Text="Click the Refresh button above to load installed packages"
-                 FontSize="13"
-                 Foreground="{StaticResource TextDimBrush}"
-                 HorizontalAlignment="Center"
-                 TextWrapping="Wrap"
-                 MaxWidth="320"
-                 TextAlignment="Center"/>
+      <Button Command="{Binding RefreshPackagesCommand}"
+              Padding="16,8"
+              FontSize="14"
+              HorizontalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-refresh-20.png"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <TextBlock Text="Refresh" VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
     </StackPanel>
 
     <!-- Package grid -->
