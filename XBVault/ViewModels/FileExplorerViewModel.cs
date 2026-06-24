@@ -294,14 +294,16 @@ public partial class FileExplorerViewModel : ObservableObject
     [RelayCommand]
     private async Task ExpandFolderAsync(string path)
     {
+        SftpEntry? target = null;
         try
         {
-            var target = FindEntry(TreeRoots, path);
+            target = FindEntry(TreeRoots, path);
             if (target is null || target.HasLoaded) return;
 
-            var children = await _sftpService.ListDirectoryAsync(path);
             target.HasLoaded = true;
             target.Children.Clear();
+
+            var children = await _sftpService.ListDirectoryAsync(path);
 
             if (children.Count == 0)
             {
@@ -310,6 +312,7 @@ public partial class FileExplorerViewModel : ObservableObject
                     Name = "<empty>",
                     FullPath = "",
                     IsDirectory = false,
+                    IsPlaceholder = true,
                     IsLastChild = true
                 });
             }
@@ -324,14 +327,27 @@ public partial class FileExplorerViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, $"Failed to expand folder: {path}");
-            ErrorMessage = $"Failed to load folder: {ex.Message}";
+            Logger.Warn($"Could not list folder: {path} — {ex.Message}");
+            target?.Children.Add(new SftpEntry
+            {
+                Name = "<unavailable>",
+                FullPath = "",
+                IsDirectory = false,
+                IsPlaceholder = true,
+                IsLastChild = true
+            });
         }
     }
 
     [RelayCommand]
-    private async Task NavigateToPathAsync(string path)
+    private async Task NavigateToPathAsync(string? path)
     {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            ShowToast?.Invoke("Navigation failed", "Path is empty");
+            return;
+        }
+
         try
         {
             IsLoading = true;
@@ -344,15 +360,49 @@ public partial class FileExplorerViewModel : ObservableObject
                     CurrentEntries.Add(e);
                 OnPropertyChanged(nameof(CanRefresh));
             });
+
+            await ExpandTreeToPathAsync(path);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, $"Failed to navigate to: {path}");
-            ErrorMessage = $"Failed to load: {ex.Message}";
+            Logger.Warn($"Could not navigate to: {path} — {ex.Message}");
+            ShowToast?.Invoke("Navigation failed", $"Could not open: {path}");
         }
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    private async Task ExpandTreeToPathAsync(string path)
+    {
+        var norm = path.TrimEnd('\\');
+        var parts = norm.Split('\\', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return;
+
+        var built = parts[0] + "\\";
+        var current = TreeRoots.FirstOrDefault(e =>
+            e.FullPath.Equals(built, StringComparison.OrdinalIgnoreCase));
+        if (current is null) return;
+
+        for (int i = 1; i < parts.Length; i++)
+        {
+            if (!current.HasLoaded)
+                await ExpandFolderAsync(built);
+
+            current.IsExpanded = true;
+
+            built = built.TrimEnd('\\') + "\\" + parts[i];
+            current = current.Children.FirstOrDefault(e =>
+                e.FullPath.Equals(built, StringComparison.OrdinalIgnoreCase));
+            if (current is null) break;
+        }
+
+        if (current is not null && current.IsDirectory)
+        {
+            if (!current.HasLoaded && current.Children.Count > 0)
+                await ExpandFolderAsync(built);
+            current.IsExpanded = true;
         }
     }
 

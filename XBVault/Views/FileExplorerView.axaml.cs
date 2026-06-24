@@ -66,7 +66,11 @@ public partial class FileExplorerView : UserControl
     {
         foreach (var added in e.AddedItems)
             if (added is SftpEntry entry)
+            {
                 entry.IsSelected = true;
+                if (entry.IsDirectory && _vm is not null)
+                    _vm.CurrentPath = entry.FullPath;
+            }
 
         foreach (var removed in e.RemovedItems)
             if (removed is SftpEntry entry)
@@ -77,7 +81,10 @@ public partial class FileExplorerView : UserControl
     {
         if (_vm is null) return;
         if (e.Source is TreeViewItem tvi && tvi.DataContext is SftpEntry entry)
+        {
+            _vm.CurrentPath = entry.FullPath;
             await _vm.ExpandFolderCommand.ExecuteAsync(entry.FullPath);
+        }
     }
 
     private async void OnBrowseFilesClick(object? sender, RoutedEventArgs e)

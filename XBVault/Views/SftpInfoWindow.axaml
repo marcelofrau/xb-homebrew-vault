@@ -73,7 +73,7 @@
                   CornerRadius="6"
                   Padding="12">
             <StackPanel Spacing="8">
-              <Grid ColumnDefinitions="70,*">
+              <Grid ColumnDefinitions="70,*,Auto">
                 <TextBlock Text="Host:"
                            FontSize="13"
                            VerticalAlignment="Center"
@@ -83,8 +83,22 @@
                            FontSize="13"
                            FontWeight="SemiBold"
                            TextTrimming="CharacterEllipsis"/>
+                <Button Grid.Column="2"
+                        FontSize="11" Padding="6,2"
+                        Margin="8,0,0,0"
+                        Click="OnCopyHostClick"
+                        Background="Transparent"
+                        BorderThickness="1">
+                  <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Image Source="avares://XBVault/Assets/Views/SftpInfoWindow/sftpinfo-copy-20.png"
+                           Width="14" Height="14" Stretch="Uniform"/>
+                    <TextBlock Text="Copy"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource TextMutedBrush}"/>
+                  </StackPanel>
+                </Button>
               </Grid>
-              <Grid ColumnDefinitions="70,*">
+              <Grid ColumnDefinitions="70,*,Auto">
                 <TextBlock Text="Port:"
                            FontSize="13"
                            VerticalAlignment="Center"
@@ -93,6 +107,20 @@
                            x:Name="PortText"
                            FontSize="13"
                            FontWeight="SemiBold"/>
+                <Button Grid.Column="2"
+                        FontSize="11" Padding="6,2"
+                        Margin="8,0,0,0"
+                        Click="OnCopyPortClick"
+                        Background="Transparent"
+                        BorderThickness="1">
+                  <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Image Source="avares://XBVault/Assets/Views/SftpInfoWindow/sftpinfo-copy-20.png"
+                           Width="14" Height="14" Stretch="Uniform"/>
+                    <TextBlock Text="Copy"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource TextMutedBrush}"/>
+                  </StackPanel>
+                </Button>
               </Grid>
               <Grid ColumnDefinitions="70,*,Auto">
                 <TextBlock Text="User:"

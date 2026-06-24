@@ -68,14 +68,29 @@ public class SftpEntry : INotifyPropertyChanged
     {
         get
         {
+            if (IsPlaceholder) return null;
             _treeIconPath ??= LoadIcon(GetTreeIconName());
             return _treeIconPath;
         }
     }
 
     public ObservableCollection<SftpEntry> Children { get; set; } = [];
-    public bool IsExpanded { get; set; }
+
+    private bool _isExpanded;
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set
+        {
+            if (_isExpanded == value) return;
+            _isExpanded = value;
+            Notify();
+        }
+    }
+
     public bool HasLoaded { get; set; }
+    public bool IsPlaceholder { get; set; }
+    public bool ShowIcon => !IsPlaceholder;
 
     public SftpEntry()
     {

@@ -20,6 +20,30 @@ public partial class SftpInfoWindow : Window
         PasswordText.Text = password;
     }
 
+    private async void OnCopyHostClick(object? sender, RoutedEventArgs e)
+    {
+        if (Clipboard is { } cb)
+        {
+            var item = new DataTransferItem();
+            item.Set(DataFormat.Text, HostText.Text ?? "");
+            var transfer = new DataTransfer();
+            transfer.Add(item);
+            await cb.SetDataAsync(transfer);
+        }
+    }
+
+    private async void OnCopyPortClick(object? sender, RoutedEventArgs e)
+    {
+        if (Clipboard is { } cb)
+        {
+            var item = new DataTransferItem();
+            item.Set(DataFormat.Text, PortText.Text ?? "");
+            var transfer = new DataTransfer();
+            transfer.Add(item);
+            await cb.SetDataAsync(transfer);
+        }
+    }
+
     private async void OnCopyUserClick(object? sender, RoutedEventArgs e)
     {
         if (Clipboard is { } cb)
