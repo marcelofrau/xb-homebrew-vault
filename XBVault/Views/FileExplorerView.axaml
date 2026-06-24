@@ -9,6 +9,9 @@
       <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded}"/>
       <Setter Property="(controls:TreeViewItemProperties.IsLastChild)" Value="{ReflectionBinding IsLastChild}" />
     </Style>
+    <Style Selector="TreeViewItem:empty">
+      <Setter Property="Padding" Value="3,0,0,0"/>
+    </Style>
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="32,32,32,16">
@@ -40,7 +43,7 @@
               Padding="10,6">
         <StackPanel Orientation="Horizontal" Spacing="5">
           <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-folder-20.png"
-                 Width="18" Height="18"
+                 Width="20" Height="20"
                  Stretch="Uniform"/>
           <TextBlock Text="Browse"
                      FontSize="13"
@@ -55,7 +58,7 @@
               Margin="6,0,0,0">
         <StackPanel Orientation="Horizontal" Spacing="5">
           <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-refresh-20.png"
-                 Width="18" Height="18"
+                 Width="20" Height="20"
                  Stretch="Uniform"/>
           <TextBlock Text="Refresh"
                      FontSize="13"
@@ -71,7 +74,7 @@
               Margin="6,0,0,0">
         <StackPanel Orientation="Horizontal" Spacing="5">
           <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-network-20.png"
-                 Width="18" Height="18"
+                 Width="20" Height="20"
                  Stretch="Uniform"/>
           <TextBlock Text="SFTP Info"
                      FontSize="13"
@@ -95,6 +98,38 @@
                      VerticalAlignment="Center"/>
         </StackPanel>
       </Button>
+
+      <!-- Status block: error/warning/success/info -->
+      <Border Grid.Column="4"
+              IsVisible="{ReflectionBinding HasStatus}"
+              CornerRadius="6"
+              Padding="8,4"
+              BorderThickness="1"
+              BorderBrush="{ReflectionBinding StatusBorderBrush}"
+              Background="{ReflectionBinding StatusBackground}"
+              VerticalAlignment="Center"
+              HorizontalAlignment="Right">
+        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+          <Image Width="16" Height="16" Stretch="Uniform"
+                 Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-error-20.png"
+                 IsVisible="{ReflectionBinding IsStatusError}"/>
+          <Image Width="16" Height="16" Stretch="Uniform"
+                 Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-warning-20.png"
+                 IsVisible="{ReflectionBinding IsStatusWarning}"/>
+          <Image Width="16" Height="16" Stretch="Uniform"
+                 Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-success-20.png"
+                 IsVisible="{ReflectionBinding IsStatusSuccess}"/>
+          <Image Width="16" Height="16" Stretch="Uniform"
+                 Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-info-20.png"
+                 IsVisible="{ReflectionBinding IsStatusInfo}"/>
+          <TextBlock Text="{ReflectionBinding StatusMessage}"
+                     Foreground="{ReflectionBinding StatusForeground}"
+                     FontSize="14"
+                     VerticalAlignment="Center"
+                     TextWrapping="NoWrap"
+                     TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+      </Border>
 
     </Grid>
 
@@ -199,7 +234,7 @@
                 Width="32" Height="32"
                 Padding="0"
                 ToolTip.Tip="Navigate">
-          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-go-20.png"
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-go-16.png"
                  Width="16" Height="16"
                  Stretch="Uniform"/>
         </Button>

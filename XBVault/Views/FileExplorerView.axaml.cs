@@ -33,6 +33,7 @@ public partial class FileExplorerView : UserControl
             _vm.ShowFolderPickerAsync = null;
             _vm.ShowErrorDialog = null;
             _vm.ShowWinScpNotFoundDialog = null;
+            _vm.ScrollToEntry = null;
         }
 
         _vm = DataContext as FileExplorerViewModel;
@@ -47,6 +48,7 @@ public partial class FileExplorerView : UserControl
         _vm.ShowFolderPickerAsync = ShowFolderPickerAsync;
         _vm.ShowErrorDialog = ShowErrorDialog;
         _vm.ShowWinScpNotFoundDialog = ShowWinScpNotFoundDialog;
+        _vm.ScrollToEntry = ScrollToEntry;
 
         BrowseFilesBtn.Click += OnBrowseFilesClick;
     }
@@ -207,6 +209,12 @@ public partial class FileExplorerView : UserControl
         };
 
         win.ShowDialog(owner);
+    }
+
+    private void ScrollToEntry(SftpEntry entry)
+    {
+        var treeView = this.FindControl<TreeView>("FolderTree");
+        treeView?.ScrollIntoView(entry);
     }
 
     private static void ShowToast(string title, string message)

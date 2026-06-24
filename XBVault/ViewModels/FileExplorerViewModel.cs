@@ -9,6 +9,8 @@ using XBVault.Services;
 
 namespace XBVault.ViewModels;
 
+public enum ToolbarStatusSeverity { None, Info, Success, Warning, Error }
+
 public partial class FileExplorerViewModel : ObservableObject
 {
     private readonly XboxDeviceService _xboxService;
@@ -33,6 +35,7 @@ public partial class FileExplorerViewModel : ObservableObject
     public Func<string, string, string, int, Task>? ShowConnectionInfoAsync { get; set; }
     public Func<Task<bool>>? ShowConnectAction { get; set; }
     public Func<Task<string?>>? ShowFolderPickerAsync { get; set; }
+    public Action<SftpEntry>? ScrollToEntry { get; set; }
     public Action<string, string, string>? ShowErrorDialog { get; set; }
 
     private void OnBoxConnectionChanged(bool connected)
@@ -53,6 +56,8 @@ public partial class FileExplorerViewModel : ObservableObject
                 TreeRoots.Clear();
                 CurrentEntries.Clear();
                 ErrorMessage = null;
+                StatusSeverity = ToolbarStatusSeverity.None;
+                StatusMessage = string.Empty;
                 StatusText = "Ready to browse";
             }
             else
@@ -109,6 +114,21 @@ public partial class FileExplorerViewModel : ObservableObject
     private string? _errorMessage;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStatus))]
+    [NotifyPropertyChangedFor(nameof(IsStatusError))]
+    [NotifyPropertyChangedFor(nameof(IsStatusWarning))]
+    [NotifyPropertyChangedFor(nameof(IsStatusSuccess))]
+    [NotifyPropertyChangedFor(nameof(IsStatusInfo))]
+    [NotifyPropertyChangedFor(nameof(StatusIconPath))]
+    [NotifyPropertyChangedFor(nameof(StatusBackground))]
+    [NotifyPropertyChangedFor(nameof(StatusBorderBrush))]
+    [NotifyPropertyChangedFor(nameof(StatusForeground))]
+    private ToolbarStatusSeverity _statusSeverity = ToolbarStatusSeverity.None;
+
+    [ObservableProperty]
+    private string _statusMessage = string.Empty;
+
+    [ObservableProperty]
     private string _statusText = "Not connected";
 
     [ObservableProperty]
@@ -127,6 +147,8 @@ public partial class FileExplorerViewModel : ObservableObject
             TreeRoots.Clear();
             CurrentEntries.Clear();
             ErrorMessage = null;
+            StatusSeverity = ToolbarStatusSeverity.None;
+            StatusMessage = string.Empty;
         }
         NotifyStateDependentProperties();
     }
@@ -147,12 +169,51 @@ public partial class FileExplorerViewModel : ObservableObject
     partial void OnCurrentPathChanged(string value)
     {
         OnPropertyChanged(nameof(BreadcrumbSegments));
+        StatusSeverity = ToolbarStatusSeverity.None;
+        StatusMessage = string.Empty;
     }
 
     public bool ShowDisconnectedContent => !IsConnected;
     public bool ShowReadyContent => IsConnected && !IsLoading && _sftpService.IsConnected;
     public bool ShowPromptContent => IsConnected && !IsLoading && !_sftpService.IsConnected;
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
+    public bool HasStatus => StatusSeverity != ToolbarStatusSeverity.None;
+    public bool IsStatusError => StatusSeverity == ToolbarStatusSeverity.Error;
+    public bool IsStatusWarning => StatusSeverity == ToolbarStatusSeverity.Warning;
+    public bool IsStatusSuccess => StatusSeverity == ToolbarStatusSeverity.Success;
+    public bool IsStatusInfo => StatusSeverity == ToolbarStatusSeverity.Info;
+    public string StatusIconPath => StatusSeverity switch
+    {
+        ToolbarStatusSeverity.Error => "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-error-20.png",
+        ToolbarStatusSeverity.Warning => "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-warning-20.png",
+        ToolbarStatusSeverity.Success => "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-success-20.png",
+        ToolbarStatusSeverity.Info => "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-info-20.png",
+        _ => string.Empty
+    };
+    public string StatusBackground => StatusSeverity switch
+    {
+        ToolbarStatusSeverity.Error => "#33FF5555",
+        ToolbarStatusSeverity.Warning => "#33FFAA33",
+        ToolbarStatusSeverity.Success => "#3355FF55",
+        ToolbarStatusSeverity.Info => "#333399FF",
+        _ => "Transparent"
+    };
+    public string StatusBorderBrush => StatusSeverity switch
+    {
+        ToolbarStatusSeverity.Error => "#55FF5555",
+        ToolbarStatusSeverity.Warning => "#55FFAA33",
+        ToolbarStatusSeverity.Success => "#5555FF55",
+        ToolbarStatusSeverity.Info => "#553399FF",
+        _ => "Transparent"
+    };
+    public string StatusForeground => StatusSeverity switch
+    {
+        ToolbarStatusSeverity.Error => "#FF5555",
+        ToolbarStatusSeverity.Warning => "#FFAA33",
+        ToolbarStatusSeverity.Success => "#55FF55",
+        ToolbarStatusSeverity.Info => "#3399FF",
+        _ => "Transparent"
+    };
     public bool CanBrowse => IsConnected && !IsLoading;
     public bool CanRefresh => _sftpService.IsConnected && TreeRoots.Count > 0;
     public bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
@@ -350,9 +411,11 @@ public partial class FileExplorerViewModel : ObservableObject
 
         try
         {
-            IsLoading = true;
+            StatusSeverity = ToolbarStatusSeverity.None;
+            StatusMessage = string.Empty;
             CurrentPath = path;
             var entries = await _sftpService.ListDirectoryAsync(path);
+
             Dispatcher.UIThread.Post(() =>
             {
                 CurrentEntries.Clear();
@@ -362,15 +425,16 @@ public partial class FileExplorerViewModel : ObservableObject
             });
 
             await ExpandTreeToPathAsync(path);
+
+            var targetEntry = FindEntry(TreeRoots, path);
+            if (targetEntry is not null)
+                ScrollToEntry?.Invoke(targetEntry);
         }
         catch (Exception ex)
         {
             Logger.Warn($"Could not navigate to: {path} — {ex.Message}");
-            ShowToast?.Invoke("Navigation failed", $"Could not open: {path}");
-        }
-        finally
-        {
-            IsLoading = false;
+            StatusSeverity = ToolbarStatusSeverity.Warning;
+            StatusMessage = $"Could not open: {path}";
         }
     }
 
