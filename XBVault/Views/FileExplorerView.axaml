@@ -252,7 +252,7 @@
                 Width="32" Height="32"
                 Padding="0"
                 ToolTip.Tip="Go up one level">
-          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-collapse-16.png"
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-up-16.png"
                  Width="16" Height="16"
                  Stretch="Uniform"/>
         </Button>
@@ -290,6 +290,7 @@
 
       <!-- Row 1, Col 1: ListBox (file list) -->
       <Border Grid.Row="1" Grid.Column="1"
+              MinWidth="220"
               BorderBrush="{StaticResource BorderBrush}"
               BorderThickness="1"
               CornerRadius="4"
@@ -307,14 +308,22 @@
           </ListBox.Styles>
           <ListBox.DataTemplates>
             <DataTemplate DataType="models:SftpEntry">
-              <StackPanel Orientation="Horizontal" Spacing="4"
-                          ToolTip.Tip="{ReflectionBinding Name}">
+              <Grid ColumnDefinitions="20,*,Auto" Margin="0,0,6,0">
                 <Image Width="20" Height="20" Stretch="Uniform"
                        Source="{ReflectionBinding IconPath}"/>
-                <TextBlock Text="{ReflectionBinding Name}"
+                <TextBlock Grid.Column="1"
+                           Text="{ReflectionBinding Name}"
                            FontSize="13"
-                           VerticalAlignment="Center"/>
-              </StackPanel>
+                           VerticalAlignment="Center"
+                           Margin="4,0,8,0"
+                           TextTrimming="None"/>
+                <TextBlock Grid.Column="2"
+                           Text="{ReflectionBinding FormattedSize}"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextDimBrush}"
+                           TextAlignment="Right"/>
+              </Grid>
             </DataTemplate>
           </ListBox.DataTemplates>
         </ListBox>
@@ -405,7 +414,8 @@
               Background="#0dffffff"
               BorderBrush="#33ffffff"
               Margin="0,4,0,0"
-              x:Name="DropZoneBorder">
+              x:Name="DropZoneBorder"
+              DragDrop.AllowDrop="True">
         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,Auto,*">
           <!-- Progress bar -->
           <ProgressBar Grid.Row="0" Grid.ColumnSpan="3"
@@ -451,6 +461,19 @@
                        FontSize="12"
                        Foreground="{StaticResource TextDimBrush}"/>
           </StackPanel>
+          <!-- Cancel button -->
+          <Button Grid.Row="1" Grid.Column="2"
+                  IsVisible="{ReflectionBinding ShowActivity}"
+                  Command="{ReflectionBinding CancelTransferCommand}"
+                  Width="28" Height="28"
+                  Padding="0"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center"
+                  ToolTip.Tip="Cancel">
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-cancel-16.png"
+                   Width="14" Height="14"
+                   Stretch="Uniform"/>
+          </Button>
           <!-- Drop prompt (idle) -->
           <StackPanel Grid.Row="1" Grid.Column="1"
                       IsVisible="{ReflectionBinding ShowIdle}"

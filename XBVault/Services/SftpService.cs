@@ -2,6 +2,7 @@ using Renci.SshNet;
 using Renci.SshNet.Common;
 using Renci.SshNet.Sftp;
 using XBVault.Models;
+using System.Text.RegularExpressions;
 
 namespace XBVault.Services;
 
@@ -105,6 +106,27 @@ public class SftpService : IDisposable
                     .Where(n => n.Length > 0)
                 : Array.Empty<string>();
 
+            // dir /a-d (verbose) to extract file sizes
+            var sizeResult = await RunShellCommandAsync($"dir \"{path}\" /a-d");
+            var sizeByName = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+            if (sizeResult.Success)
+            {
+                foreach (var line in sizeResult.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var trimmed = line.Trim('\r');
+                    var match = Regex.Match(trimmed, @"^\s*\d+[/-]\d+[/-]\d+\s+\d+:\d+\s+(?:AM|PM)?\s*([\d,.\s]+)\s+(.+)$", RegexOptions.IgnoreCase);
+                    if (match.Success)
+                    {
+                        var clean = Regex.Replace(match.Groups[1].Value, @"[^\d]", "");
+                        if (long.TryParse(clean, out var sz))
+                        {
+                            var name = match.Groups[2].Value.Trim();
+                            sizeByName[name] = sz;
+                        }
+                    }
+                }
+            }
+
             var entries = new List<SftpEntry>(dirNames.Count() + fileNames.Count());
 
             foreach (var name in dirNames)
@@ -127,7 +149,7 @@ public class SftpService : IDisposable
                     Name = name,
                     FullPath = fullPath,
                     IsDirectory = false,
-                    Size = 0,
+                    Size = sizeByName.TryGetValue(name, out var s) ? s : 0,
                     LastModified = DateTime.MinValue
                 });
             }
@@ -190,7 +212,7 @@ public class SftpService : IDisposable
         });
     }
 
-    public Task UploadFileAsync(Stream source, string remotePath, IProgress<double>? progress)
+    public Task UploadFileAsync(Stream source, string remotePath, IProgress<double>? progress, CancellationToken ct = default)
     {
         var norm = NormalizePath(remotePath);
         Logger.Debug($"UploadFileAsync: -> '{norm}'");
@@ -210,6 +232,7 @@ public class SftpService : IDisposable
 
             while ((bytesRead = source.Read(buffer, 0, buffer.Length)) > 0)
             {
+                ct.ThrowIfCancellationRequested();
                 remoteStream.Write(buffer, 0, bytesRead);
                 uploadedBytes += bytesRead;
                 chunkCount++;
@@ -217,14 +240,14 @@ public class SftpService : IDisposable
             }
 
             Logger.Debug($"UploadFileAsync: '{norm}' done — {chunkCount} chunks, {uploadedBytes}B");
-        });
+        }, ct);
     }
 
-    public Task DownloadFileAsync(string remotePath, Stream destination, IProgress<double>? progress)
+    public Task<long> DownloadFileAsync(string remotePath, Stream destination, IProgress<double>? progress, CancellationToken ct = default)
     {
         var norm = NormalizePath(remotePath);
         Logger.Debug($"DownloadFileAsync: '{norm}'");
-        return Task.Run(() =>
+        return Task.Run<long>(() =>
         {
             if (_sftp is null || !_sftp.IsConnected)
                 throw new InvalidOperationException("SFTP not connected");
@@ -266,6 +289,7 @@ public class SftpService : IDisposable
                 Logger.Trace($"DownloadFileAsync: '{usePath}' starting read loop");
                 while ((bytesRead = remoteStream.Read(buffer, 0, buffer.Length)) > 0)
                 {
+                    ct.ThrowIfCancellationRequested();
                     destination.Write(buffer, 0, bytesRead);
                     downloadedBytes += bytesRead;
                     chunkCount++;
@@ -277,7 +301,8 @@ public class SftpService : IDisposable
             }
 
             Logger.Debug($"DownloadFileAsync: '{usePath}' done — {chunkCount} chunks, {downloadedBytes}B");
-        });
+            return fileSize;
+        }, ct);
     }
 
     public Task DeleteFileAsync(string path)

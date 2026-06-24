@@ -202,6 +202,12 @@ public partial class FileExplorerView : UserControl
             Logger.Warn("OnAttachedToVisualTree: FileListBox not found");
         }
 
+        Logger.Trace("OnAttachedToVisualTree: setting up drag-drop");
+        DragDrop.AddDragOverHandler(DropZoneBorder, OnDropZoneDragOver);
+        DragDrop.AddDragLeaveHandler(DropZoneBorder, OnDropZoneDragLeave);
+        DragDrop.AddDropHandler(DropZoneBorder, OnDropZoneDrop);
+        Logger.Trace("OnAttachedToVisualTree: drag-drop handlers attached");
+
         Logger.Debug("FileExplorerView.OnAttachedToVisualTree: done");
     }
 
@@ -230,6 +236,10 @@ public partial class FileExplorerView : UserControl
             listBox.RemoveHandler(InputElement.PointerPressedEvent, OnListBoxPointerPressed);
             listBox.RemoveHandler(InputElement.KeyDownEvent, OnListBoxKeyDown);
         }
+
+        DragDrop.RemoveDragOverHandler(DropZoneBorder, OnDropZoneDragOver);
+        DragDrop.RemoveDragLeaveHandler(DropZoneBorder, OnDropZoneDragLeave);
+        DragDrop.RemoveDropHandler(DropZoneBorder, OnDropZoneDrop);
     }
 
     private void OnTreeSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -527,6 +537,45 @@ public partial class FileExplorerView : UserControl
         if (owner is not null)
             await win.ShowDialog(owner);
         return win.Value;
+    }
+
+    private void OnDropZoneDragOver(object? sender, DragEventArgs e)
+    {
+        if (e.DataTransfer.Formats.Contains(DataFormat.File) && _vm?.ShowIdle == true)
+        {
+            e.DragEffects = DragDropEffects.Copy;
+            DropZoneBorder.Background = new SolidColorBrush(Color.FromArgb(60, 0, 120, 215));
+            DropZoneBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(180, 0, 120, 215));
+        }
+        else
+        {
+            e.DragEffects = DragDropEffects.None;
+        }
+    }
+
+    private void OnDropZoneDragLeave(object? sender, DragEventArgs e)
+    {
+        DropZoneBorder.Background = new SolidColorBrush(Color.FromArgb(13, 255, 255, 255));
+        DropZoneBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(51, 255, 255, 255));
+    }
+
+    private async void OnDropZoneDrop(object? sender, DragEventArgs e)
+    {
+        OnDropZoneDragLeave(sender, e);
+
+        if (_vm is null) return;
+        var dropped = e.DataTransfer.TryGetFiles();
+        if (dropped is null) return;
+        var files = dropped.ToList();
+
+        var paths = files
+            .Select(f => f.TryGetLocalPath())
+            .Where(p => p is not null)
+            .Cast<string>()
+            .ToArray();
+
+        if (paths.Length > 0)
+            await _vm.UploadFilesCommand.ExecuteAsync(paths);
     }
 
 }
