@@ -121,7 +121,7 @@ public partial class FileExplorerViewModel : ObservableObject
         return $" {bps:F0} B/s";
     }
 
-    public bool CanCancelTransfer => IsUploading || IsDownloading;
+    public bool CanCancelTransfer => IsUploading || IsDownloading || IsDeleting;
 
     [RelayCommand]
     private void CancelTransfer()
@@ -149,17 +149,29 @@ public partial class FileExplorerViewModel : ObservableObject
     [ObservableProperty]
     private string _downloadStatusText = string.Empty;
 
-    public bool ShowActivity => IsUploading || IsDownloading;
+    [ObservableProperty]
+    private bool _isDeleting;
+
+    [ObservableProperty]
+    private double _deleteProgress;
+
+    [ObservableProperty]
+    private string _deleteStatusText = string.Empty;
+
+    public bool ShowActivity => IsUploading || IsDownloading || IsDeleting;
     public bool ShowIdle => !ShowActivity;
-    public double ActivityProgress => IsUploading ? UploadProgress : DownloadProgress;
-    public string ActivityText => IsUploading ? UploadStatusText : DownloadStatusText;
+    public double ActivityProgress => IsDeleting ? DeleteProgress : IsUploading ? UploadProgress : DownloadProgress;
+    public string ActivityText => IsDeleting ? DeleteStatusText : IsUploading ? UploadStatusText : DownloadStatusText;
 
     partial void OnIsUploadingChanged(bool value) { OnPropertyChanged(nameof(ShowActivity)); OnPropertyChanged(nameof(ShowIdle)); OnPropertyChanged(nameof(CanCancelTransfer)); }
     partial void OnIsDownloadingChanged(bool value) { OnPropertyChanged(nameof(ShowActivity)); OnPropertyChanged(nameof(ShowIdle)); OnPropertyChanged(nameof(CanCancelTransfer)); }
+    partial void OnIsDeletingChanged(bool value) { OnPropertyChanged(nameof(ShowActivity)); OnPropertyChanged(nameof(ShowIdle)); OnPropertyChanged(nameof(CanCancelTransfer)); }
     partial void OnUploadProgressChanged(double value) => OnPropertyChanged(nameof(ActivityProgress));
     partial void OnDownloadProgressChanged(double value) => OnPropertyChanged(nameof(ActivityProgress));
+    partial void OnDeleteProgressChanged(double value) => OnPropertyChanged(nameof(ActivityProgress));
     partial void OnUploadStatusTextChanged(string value) => OnPropertyChanged(nameof(ActivityText));
     partial void OnDownloadStatusTextChanged(string value) => OnPropertyChanged(nameof(ActivityText));
+    partial void OnDeleteStatusTextChanged(string value) => OnPropertyChanged(nameof(ActivityText));
 
     [ObservableProperty]
     private string? _errorMessage;
@@ -1490,34 +1502,60 @@ public partial class FileExplorerViewModel : ObservableObject
         if (!confirmed) return;
 
         Logger.Info($"DeleteSelectedAsync: deleting {entries.Count} item(s)");
-        for (int i = 0; i < entries.Count; i++)
+
+        _currentTransferCts = new CancellationTokenSource();
+        var ct = _currentTransferCts.Token;
+
+        try
         {
-            var entry = entries[i];
-            Logger.Trace($"DeleteSelectedAsync: [{i + 1}/{entries.Count}] '{entry.FullPath}' (IsDir={entry.IsDirectory})");
-            try
+            IsDeleting = true;
+            DeleteProgress = 0;
+            DeleteStatusText = string.Empty;
+
+            for (int i = 0; i < entries.Count; i++)
             {
-                StatusSeverity = ToolbarStatusSeverity.None;
-                StatusMessage = $"Deleting {entry.Name}... ({i + 1}/{entries.Count})";
+                ct.ThrowIfCancellationRequested();
 
-                if (entry.IsDirectory)
-                    await _sftpService.DeleteDirectoryAsync(entry.FullPath);
-                else
-                    await _sftpService.DeleteFileAsync(entry.FullPath);
+                var entry = entries[i];
+                Logger.Trace($"DeleteSelectedAsync: [{i + 1}/{entries.Count}] '{entry.FullPath}' (IsDir={entry.IsDirectory})");
+                DeleteStatusText = $"Deleting {entry.Name}... ({i + 1}/{entries.Count})";
+                DeleteProgress = (double)i / entries.Count;
 
-                RemoveFromTreeAndList(entry);
+                try
+                {
+                    if (entry.IsDirectory)
+                        await _sftpService.DeleteDirectoryAsync(entry.FullPath);
+                    else
+                        await _sftpService.DeleteFileAsync(entry.FullPath);
 
-                StatusSeverity = ToolbarStatusSeverity.Success;
-                StatusMessage = $"{entry.Name} deleted ({i + 1}/{entries.Count})";
+                    RemoveFromTreeAndList(entry);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"Delete failed: {entry.Name}");
+                    StatusSeverity = ToolbarStatusSeverity.Error;
+                    StatusMessage = $"Delete failed: {entry.Name}: {ex.Message}";
+                }
             }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Delete failed: {entry.Name}");
-                StatusSeverity = ToolbarStatusSeverity.Error;
-                StatusMessage = $"Delete failed: {entry.Name}: {ex.Message}";
-            }
+
+            DeleteProgress = 1;
+            StatusSeverity = ToolbarStatusSeverity.Success;
+            StatusMessage = $"{entries.Count} item(s) deleted";
         }
-
-        StatusMessage = $"{entries.Count} item(s) deleted";
+        catch (OperationCanceledException)
+        {
+            Logger.Warn("DeleteSelectedAsync cancelled");
+            StatusSeverity = ToolbarStatusSeverity.None;
+            StatusMessage = "Delete cancelled";
+        }
+        finally
+        {
+            IsDeleting = false;
+            DeleteProgress = 0;
+            DeleteStatusText = string.Empty;
+            _currentTransferCts?.Dispose();
+            _currentTransferCts = null;
+        }
     }
 
     [RelayCommand]
