@@ -88,9 +88,11 @@ public partial class FileExplorerViewModel : ObservableObject
 
     public ObservableCollection<SftpEntry> SelectedEntries { get; } = [];
 
-    public bool CanDeleteMultiple => SelectedEntries.Count > 0;
-    public bool CanDownloadMultiple => SelectedEntries.Count(e => !e.IsDrive) > 0;
-    public bool CanRenameSingle => SelectedEntries.Count == 1;
+    public bool CanModifyFiles => !ShowActivity;
+    public bool CanDeleteMultiple => SelectedEntries.Count > 0 && CanModifyFiles;
+    public bool CanDownloadMultiple => SelectedEntries.Count(e => !e.IsDrive) > 0 && CanModifyFiles;
+    public bool CanRenameSingle => SelectedEntries.Count == 1 && CanModifyFiles;
+    public string OperationLockedTooltip => ShowActivity ? "Waiting for current operation to finish..." : string.Empty;
 
     [ObservableProperty]
     private string _currentPath = @"D:\";
@@ -163,9 +165,20 @@ public partial class FileExplorerViewModel : ObservableObject
     public double ActivityProgress => IsDeleting ? DeleteProgress : IsUploading ? UploadProgress : DownloadProgress;
     public string ActivityText => IsDeleting ? DeleteStatusText : IsUploading ? UploadStatusText : DownloadStatusText;
 
-    partial void OnIsUploadingChanged(bool value) { OnPropertyChanged(nameof(ShowActivity)); OnPropertyChanged(nameof(ShowIdle)); OnPropertyChanged(nameof(CanCancelTransfer)); }
-    partial void OnIsDownloadingChanged(bool value) { OnPropertyChanged(nameof(ShowActivity)); OnPropertyChanged(nameof(ShowIdle)); OnPropertyChanged(nameof(CanCancelTransfer)); }
-    partial void OnIsDeletingChanged(bool value) { OnPropertyChanged(nameof(ShowActivity)); OnPropertyChanged(nameof(ShowIdle)); OnPropertyChanged(nameof(CanCancelTransfer)); }
+    private void NotifyFileLockProperties()
+    {
+        OnPropertyChanged(nameof(CanModifyFiles));
+        OnPropertyChanged(nameof(CanDeleteMultiple));
+        OnPropertyChanged(nameof(CanDownloadMultiple));
+        OnPropertyChanged(nameof(CanRenameSingle));
+        OnPropertyChanged(nameof(OperationLockedTooltip));
+        OnPropertyChanged(nameof(CanBrowse));
+        OnPropertyChanged(nameof(CanRefresh));
+    }
+
+    partial void OnIsUploadingChanged(bool value) { OnPropertyChanged(nameof(ShowActivity)); OnPropertyChanged(nameof(ShowIdle)); OnPropertyChanged(nameof(CanCancelTransfer)); NotifyFileLockProperties(); }
+    partial void OnIsDownloadingChanged(bool value) { OnPropertyChanged(nameof(ShowActivity)); OnPropertyChanged(nameof(ShowIdle)); OnPropertyChanged(nameof(CanCancelTransfer)); NotifyFileLockProperties(); }
+    partial void OnIsDeletingChanged(bool value) { OnPropertyChanged(nameof(ShowActivity)); OnPropertyChanged(nameof(ShowIdle)); OnPropertyChanged(nameof(CanCancelTransfer)); NotifyFileLockProperties(); }
     partial void OnUploadProgressChanged(double value) => OnPropertyChanged(nameof(ActivityProgress));
     partial void OnDownloadProgressChanged(double value) => OnPropertyChanged(nameof(ActivityProgress));
     partial void OnDeleteProgressChanged(double value) => OnPropertyChanged(nameof(ActivityProgress));
@@ -289,8 +302,8 @@ public partial class FileExplorerViewModel : ObservableObject
         ToolbarStatusSeverity.Info => "#3399FF",
         _ => "Transparent"
     };
-    public bool CanBrowse => IsConnected && !IsLoading;
-    public bool CanRefresh => _sftpService.IsConnected && TreeRoots.Count > 0;
+    public bool CanBrowse => IsConnected && !IsLoading && CanModifyFiles;
+    public bool CanRefresh => _sftpService.IsConnected && TreeRoots.Count > 0 && CanModifyFiles;
     public bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
     public string[] BreadcrumbSegments
@@ -953,7 +966,7 @@ public partial class FileExplorerViewModel : ObservableObject
                     {
                         ct.ThrowIfCancellationRequested();
                         var relative = filePath.Substring(folderRoot.Length).TrimStart('\\');
-                        var remotePath = CurrentPath.TrimEnd('\\') + "\\" + relative;
+                        var remotePath = CurrentPath.TrimEnd('\\') + "\\" + folderName + "\\" + relative;
                         var remoteDir = Path.GetDirectoryName(remotePath)!.Replace('\\', '/');
 
                         Logger.Trace($"UploadMixedAsync: [{index + 1}/{totalItems}] '{filePath}' → '{remotePath}'");

@@ -354,10 +354,12 @@
                        VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
-      <Button Padding="6,4"
+      <Button IsEnabled="{ReflectionBinding CanModifyFiles}"
+              Padding="6,4"
               Width="110"
               HorizontalContentAlignment="Stretch"
-              x:Name="UploadButton">
+              x:Name="UploadButton"
+              ToolTip.Tip="{ReflectionBinding OperationLockedTooltip}">
         <Button.Flyout>
           <MenuFlyout>
             <MenuItem Header="Upload Files" x:Name="UploadFilesMenuItem">
@@ -393,7 +395,8 @@
                 IsEnabled="{ReflectionBinding CanDownloadMultiple}"
                 Padding="6,4"
                 Width="110"
-                HorizontalContentAlignment="Stretch">
+                HorizontalContentAlignment="Stretch"
+                ToolTip.Tip="{ReflectionBinding OperationLockedTooltip}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-download-32.png"
                    Width="24" Height="24"
@@ -407,7 +410,8 @@
                 IsEnabled="{ReflectionBinding CanDeleteMultiple}"
                 Padding="6,4"
                 Width="110"
-                HorizontalContentAlignment="Stretch">
+                HorizontalContentAlignment="Stretch"
+                ToolTip.Tip="{ReflectionBinding OperationLockedTooltip}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-delete-32.png"
                    Width="24" Height="24"
@@ -421,7 +425,8 @@
                 IsEnabled="{ReflectionBinding CanRenameSingle}"
                 Padding="6,4"
                 Width="110"
-                HorizontalContentAlignment="Stretch">
+                HorizontalContentAlignment="Stretch"
+                ToolTip.Tip="{ReflectionBinding OperationLockedTooltip}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-rename-32.png"
                    Width="24" Height="24"
