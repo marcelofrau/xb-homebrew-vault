@@ -746,7 +746,7 @@ public partial class FileExplorerViewModel : ObservableObject
                     InsertSorted(CurrentEntries, newEntry);
 
                     var parentNode = FindEntry(TreeRoots, CurrentPath);
-                    if (parentNode is not null && parentNode.HasLoaded)
+                    if (parentNode is not null && parentNode.HasLoaded && newEntry.IsDirectory)
                     {
                     var existing2 = parentNode.Children.FirstOrDefault(e => !e.IsDirectory && e.Name == fileName);
                     if (existing2 is not null) parentNode.Children.Remove(existing2);
@@ -1036,14 +1036,17 @@ public partial class FileExplorerViewModel : ObservableObject
         if (ph is not null) { CurrentEntries.Remove(ph); Logger.Trace("AddToCurrentAndTree: removed placeholder from CurrentEntries"); }
         InsertSorted(CurrentEntries, newEntry);
 
-        var parentNode = FindEntry(TreeRoots, CurrentPath);
-        if (parentNode is not null && parentNode.HasLoaded)
+        if (newEntry.IsDirectory)
         {
-            var existing2 = parentNode.Children.FirstOrDefault(e => !e.IsPlaceholder && e.Name == newEntry.Name && e.IsDirectory == newEntry.IsDirectory);
-            if (existing2 is not null) { parentNode.Children.Remove(existing2); Logger.Trace($"AddToCurrentAndTree: removed existing '{existing2.FullPath}' from tree children"); }
-            var ph2 = parentNode.Children.FirstOrDefault(e => e.IsPlaceholder);
-            if (ph2 is not null) { parentNode.Children.Remove(ph2); Logger.Trace("AddToCurrentAndTree: removed placeholder from tree children"); }
-            InsertSorted(parentNode.Children, newEntry);
+            var parentNode = FindEntry(TreeRoots, CurrentPath);
+            if (parentNode is not null && parentNode.HasLoaded)
+            {
+                var existing2 = parentNode.Children.FirstOrDefault(e => !e.IsPlaceholder && e.Name == newEntry.Name && e.IsDirectory == newEntry.IsDirectory);
+                if (existing2 is not null) { parentNode.Children.Remove(existing2); Logger.Trace($"AddToCurrentAndTree: removed existing '{existing2.FullPath}' from tree children"); }
+                var ph2 = parentNode.Children.FirstOrDefault(e => e.IsPlaceholder);
+                if (ph2 is not null) { parentNode.Children.Remove(ph2); Logger.Trace("AddToCurrentAndTree: removed placeholder from tree children"); }
+                InsertSorted(parentNode.Children, newEntry);
+            }
         }
         Logger.Trace($"AddToCurrentAndTree: '{newEntry.FullPath}' inserted");
     }
@@ -1183,6 +1186,11 @@ public partial class FileExplorerViewModel : ObservableObject
     private async Task DownloadSelectedAsync()
     {
         var entries = SelectedEntries.Where(e => !e.IsDrive && !e.IsPlaceholder).ToList();
+        if (entries.Count == 0 && SelectedEntry is not null && !SelectedEntry.IsPlaceholder)
+        {
+            Logger.Debug($"DownloadSelectedAsync: using TreeView SelectedEntry '{SelectedEntry.FullPath}'");
+            entries = [SelectedEntry];
+        }
         if (entries.Count == 0)
         {
             var trimmed = CurrentPath.TrimEnd('\\');
@@ -1506,8 +1514,17 @@ public partial class FileExplorerViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteSelectedAsync()
     {
-        var entries = SelectedEntries.ToList();
-        if (entries.Count == 0) return;
+        var entries = SelectedEntries.Where(e => !e.IsPlaceholder).ToList();
+        if (entries.Count == 0 && SelectedEntry is not null && !SelectedEntry.IsPlaceholder && !SelectedEntry.IsDrive)
+        {
+            Logger.Debug($"DeleteSelectedAsync: no ListBox entries, using TreeView SelectedEntry '{SelectedEntry.FullPath}'");
+            entries = [SelectedEntry];
+        }
+        if (entries.Count == 0)
+        {
+            Logger.Trace("DeleteSelectedAsync: no valid entries to delete");
+            return;
+        }
 
         var confirmed = ShowDeleteConfirmAsync is not null
             ? await ShowDeleteConfirmAsync(entries)

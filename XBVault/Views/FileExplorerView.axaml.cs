@@ -73,7 +73,10 @@ public partial class FileExplorerView : UserControl
             }
             if (FileListBox is null) return;
             if (FileListBox.ItemCount > 0)
+            {
+                Logger.Trace("FocusFileList: selecting index 0 (..)");
                 FileListBox.SelectedIndex = 0;
+            }
             FileListBox.Focus();
         };
         _vm.ShowInputDialogAsync = ShowInputDialogAsync;
@@ -279,7 +282,6 @@ public partial class FileExplorerView : UserControl
             Logger.Debug($"OnTreeItemExpanded: '{entry.FullPath}'");
             entry.IsExpanded = true;
             await _vm.ExpandFolderCommand.ExecuteAsync(entry.FullPath);
-            _vm.NavigateToPathCommand.Execute(entry.FullPath);
         }
     }
 
@@ -454,7 +456,6 @@ public partial class FileExplorerView : UserControl
         {
             Logger.Debug($"OnTreeViewDoubleClick: double-click on '{entry.FullPath}'");
             entry.IsExpanded = true;
-            _vm.NavigateToPathCommand.Execute(entry.FullPath);
             e.Handled = true;
         }
     }
@@ -468,7 +469,9 @@ public partial class FileExplorerView : UserControl
         foreach (SftpEntry entry in FileListBox.SelectedItems!)
             _vm.SelectedEntries.Add(entry);
         _vm.NotifySelectionChanged();
-        Logger.Trace($"OnListBoxSelectionChanged: {_vm.SelectedEntries.Count} selected, first=[{_vm.SelectedEntries.FirstOrDefault()?.Name}]");
+        var first = _vm.SelectedEntries.FirstOrDefault();
+        var isPlaceholder = first?.IsPlaceholder == true;
+        Logger.Debug($"OnListBoxSelectionChanged: {_vm.SelectedEntries.Count} selected, first=[{first?.Name}] IsPlaceholder={isPlaceholder} FullPath=[{first?.FullPath}]");
     }
 
     private void OnListBoxPointerPressed(object? sender, PointerPressedEventArgs e)

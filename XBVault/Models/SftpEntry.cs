@@ -63,7 +63,7 @@ public class SftpEntry : INotifyPropertyChanged
     {
         get
         {
-            _iconPath ??= LoadIcon(IsDirectory ? "folder" : "file");
+            _iconPath ??= LoadIcon(IsDirectory ? "folder" : GetFileIconName());
             return _iconPath;
         }
     }
@@ -103,6 +103,23 @@ public class SftpEntry : INotifyPropertyChanged
     }
 
     private string GetTreeIconName() => IsDrive || IsJunction ? "drive" : IsDirectory ? "folder" : "file";
+
+    private string GetFileIconName()
+    {
+        if (Extension is null) return "file";
+        var ext = Extension.TrimStart('.').ToLowerInvariant();
+        return ext switch
+        {
+            "iso" => "disc",
+            "zip" or "7z" or "rar" or "tar" or "gz" => "archive",
+            "xex" or "xbe" or "exe" => "game",
+            "jpg" or "jpeg" or "png" or "gif" or "bmp" or "webp" => "image",
+            "mp3" or "wav" or "flac" or "ogg" or "wma" or "aac" or "m4a" => "audio",
+            "mp4" or "avi" or "mkv" or "wmv" or "mov" or "webm" or "m4v" => "video",
+
+            _ => "file"
+        };
+    }
 
     private static Bitmap LoadIcon(string name)
     {

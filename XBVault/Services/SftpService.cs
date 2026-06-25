@@ -150,7 +150,8 @@ public class SftpService : IDisposable
                     FullPath = fullPath,
                     IsDirectory = false,
                     Size = sizeByName.TryGetValue(name, out var s) ? s : 0,
-                    LastModified = DateTime.MinValue
+                    LastModified = DateTime.MinValue,
+                    Extension = Path.GetExtension(name)
                 });
             }
 
