@@ -29,31 +29,6 @@ title: Blades Theme
 | `BladesInputBorder` | `#4A7A20` | Input border |
 | `BladesInputBorderHover` | `#6B8F2A` | Input border hover |
 
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'background': '#0D1117'}}}%%
-packedBubble
-    titleColors
-    BladesBg_0D1117: #0D1117
-    BladesSurface_1A1D23: #1A1D23
-    BladesSurfaceAlt_252830: #252830
-    BladesSurfaceHover_2F333A: #2F333A
-    BladesAccent_9ACA3C: #9ACA3C
-    BladesAccentDim_6B8F2A: #6B8F2A
-    BladesAccentGlow_B5E665: #B5E665
-    BladesText_F0F0F0: #F0F0F0
-    BladesTextMuted_8B8D91: #8B8D91
-    BladesTextDim_5A5C60: #5A5C60
-    BladesDanger_E74C3C: #E74C3C
-    BladesSuccess_2ECC71: #2ECC71
-    BladesWarning_F39C12: #F39C12
-    BladesBorder_2A2D33: #2A2D33
-    BladesCardBg_1E2128: #1E2128
-    BladesSidebarBg_0A0C0F: #0A0C0F
-    BladesInputBg_0F1F0F: #0F1F0F
-    BladesInputBorder_4A7A20: #4A7A20
-    BladesInputBorderHover_6B8F2A: #6B8F2A
-```
-
 ## Title bar gradient
 
 All dialog windows use the same gradient on the title bar:

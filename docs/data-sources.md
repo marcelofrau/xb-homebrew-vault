@@ -5,52 +5,114 @@ title: Data Sources
 
 # Data Sources
 
-## Emulation Revival
+> **Single source of truth:** the app consumes a generated **JSON catalog API** (`CatalogApiService`). This is the same `catalog.json` that builds the Emulation Revival website, so the desktop app and the site never drift apart.
 
-### Base URL
+## Emulation Revival Catalog API
+
+`CatalogApiService` fetches a single generated JSON document (HTTP GET, 30s timeout):
 
 ```
-https://emulationrevival.github.io
+https://emulationrevival.github.io/api/catalog.json
 ```
 
-### Catalog Pages
+On success, items are parsed, classified, and written to disk cache (see [Catalog Cache](#catalog-cache)).
 
-| Page | URL | Category |
-|------|-----|----------|
-| Emulators | `/xbox-dev-mode/emulators.html` | Emulator |
-| Frontends | `/xbox-dev-mode/frontends.html` | Frontend |
-| Game Ports | `/xbox-dev-mode/ports.html` | GamePort |
-| Apps | `/xbox-dev-mode/apps.html` | App |
-| Experimental | `/xbox-dev-mode/experimental-apps.html` | Experimental |
-| Media | `/xbox-dev-mode/media-apps.html` | Media |
-| Utilities | `/xbox-dev-mode/utilities.html` | Utility |
+### catalog.json structure
 
-### Card Data Extracted Per Item
+Top-level envelope (`CatalogApiResponse`):
 
-| Field | HTML Source |
-|-------|-------------|
-| Name | `h3` inside card |
-| Description | First paragraph after h3 |
-| Version | List item: "Version:" text |
-| Release date | List item: "Release date:" text |
-| Developer | List item: "Developer:" text |
-| Download URL | `a[href]` with download text |
-| Source URL | GitHub icon link |
-| Compatibility | List item: "Compatibility:" text |
-| Requirements | List item: "Requires:" text |
-| Features | List item: "Features:" text |
-| Image | `img` inside card |
+```json
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-20T08:00:00Z",
+  "items": [ /* CatalogApiItem[] */ ]
+}
+```
 
-### Parsing Method
+Each item (`CatalogApiItem`):
 
-HtmlAgilityPack with XPath/CSS selectors targeting the card structure. Pages use a consistent HTML pattern.
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | string | Stable identifier |
+| `title` | string | Display name |
+| `description` | string | Summary text |
+| `category` / `categorySlug` | string | e.g. `Emulator` / `emulator` |
+| `version` | string | Latest version |
+| `releaseDate` | string? | Release date |
+| `compatibility` | string | Console compatibility note |
+| `isExperimental` | bool | Flags experimental apps |
+| `imageUrl` / `pageUrl` | string? | Card image, source page |
+| `downloadUrl` | string? | Fallback primary download |
+| `sourceCodeUrl` / `setupGuideUrl` / `tutorialUrl` / `releaseNotesUrl` | string? | External links |
+| `requirements` | string[] | Listed requirements |
+| `features` | string[] | Listed features |
+| `contributors` | object | Developers / porters / maintainers / mod authors / prebuilt-by |
+| `downloads` | array | Download assets (see below) |
+
+### Download classification
+
+Each entry in `downloads[]` is `{ url, label, assetId }`. `CatalogApiService.ClassifyDownloads` tags each as **main**, **dependency**, or **external** so the installer knows what to upload to the console:
+
+- **Dependency** — URL/label matches the dependency regex (e.g. `VCLibs`, framework packages).
+- **External** — not an installable package (`.appx` / `.msix` / `.zip` / `.msixbundle` / `.appxbundle`); e.g. mod links, ModDB, or non-release GitHub pages.
+- **Main** — the first remaining installable package.
+
+The primary `downloadUrl` resolves to the first non-dependency asset, falling back to the item's `downloadUrl` field. See [Package Installation Flow](integration-package-installation-flow) for how these feed the installer.
+
+## Catalog Cache
+
+Parsed results are cached to disk so the app starts instantly and works offline:
+
+```
+%APPDATA%\XBVault\cache\catalog-api.json
+```
+
+Cache envelope (`CatalogCache`): `{ fetchedAt, source, data }`, where `data` is the full `catalog.json` payload.
+
+| Property | Value |
+|----------|-------|
+| TTL | **6 hours** (`CacheTtlHours = 6`) |
+| Location | `%APPDATA%\XBVault\cache\catalog-api.json` |
+| Stale fallback | Used (TTL ignored) when the API is unreachable |
+| Manual refresh | `CatalogApiService.ClearCache()` / force-refresh in the UI |
+
+### Fetch flow
+
+```mermaid
+flowchart TD
+    Start["FetchCatalogAsync()"] --> Force{forceRefresh?}
+    Force -->|No| Cache{"Cache fresh?<br/>age ≤ 6h"}
+    Cache -->|Yes| ReturnCache["Return cached items"]
+    Cache -->|No| Fetch
+    Force -->|Yes| Fetch["GET catalog.json"]
+    Fetch --> Ok{"HTTP 200<br/>+ parsed?"}
+    Ok -->|Yes| Save["Save to cache<br/>(fetchedAt = now)"]
+    Save --> ReturnFresh["Return fresh items"]
+    Ok -->|No| Stale{"Stale cache<br/>exists?"}
+    Stale -->|Yes| ReturnStale["Return stale items<br/>(TTL ignored)"]
+    Stale -->|No| Fail["Return empty<br/>+ error"]
+
+    style Start fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style ReturnCache fill:#9ACA3C,stroke:#447F3E,color:#000
+    style ReturnFresh fill:#9ACA3C,stroke:#447F3E,color:#000
+    style ReturnStale fill:#FF9900,stroke:#447F3E,color:#000
+    style Fail fill:#CC3333,stroke:#447F3E,color:#fff
+    style Force fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style Cache fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style Fetch fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style Ok fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style Stale fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style Save fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+```
 
 ## Package Cache
+
+> Distinct from the [Catalog Cache](#catalog-cache) above (catalog metadata in `%APPDATA%`). This cache holds the **downloaded package files** in `%TEMP%`.
 
 Downloaded packages are stored in `%TEMP%/XBVault/cache/`:
 
 ```mermaid
-graph
+graph TD
     root["%TEMP%/XBVault/cache/"]
     dolphin["dolphin/"]
     retroarch["retroarch/"]
@@ -68,6 +130,18 @@ graph
 
     pcsx2 --> p1["pcsx2-v1.0.0-xbox.msix"]
     pcsx2 --> pm["manifest.json"]
+    
+    style root fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style dolphin fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style retroarch fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style pcsx2 fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style d1 fill:#9ACA3C,stroke:#447F3E,color:#000
+    style dm fill:#9ACA3C,stroke:#447F3E,color:#000
+    style r1 fill:#9ACA3C,stroke:#447F3E,color:#000
+    style r2 fill:#9ACA3C,stroke:#447F3E,color:#000
+    style rm fill:#9ACA3C,stroke:#447F3E,color:#000
+    style p1 fill:#9ACA3C,stroke:#447F3E,color:#000
+    style pm fill:#9ACA3C,stroke:#447F3E,color:#000
 ```
 
 `manifest.json` stores parsed metadata and dependency info so reinstalls don't need re-download:
@@ -82,3 +156,14 @@ graph
   "sourceUrl": "https://emulationrevival.github.io/..."
 }
 ```
+
+---
+
+**Related:**
+- [Package Installation Flow](integration-package-installation-flow) — how cached files and dependencies feed the installer
+- [API Reference](api) — Device Portal endpoints
+- [Architecture](architecture) — where `CatalogApiService` sits in the service layer
+
+---
+
+[← API](api) · [Architecture →](architecture)

@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ page.title }} | {{ site.title }}</title>
   <meta name="description" content="{{ site.description }}">
+  <link rel="icon" type="image/png" href="{{ site.app_icon | relative_url }}">
+  <link rel="apple-touch-icon" href="{{ site.app_icon | relative_url }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,9 +19,9 @@
     <div class="nav-inner">
       <a class="nav-brand" href="{{ '/' | relative_url }}">
         <span class="nav-logo">
-          <img src="https://github.com/marcelofrau/xb-homebrew-vault/raw/main/docs/social-preview.jpg" alt="XB Homebrew Vault" />
+          <img src="{{ site.app_icon | relative_url }}" alt="XB Homebrew Vault App Icon" />
         </span>
-        <span>XB Homebrew Vault</span>
+        <span class="nav-brand-text"><span class="brand-green">XB Homebrew</span> <span class="brand-white">Vault</span></span>
       </a>
       <div class="nav-links">
         <a href="{{ '/docs' | relative_url }}">Docs</a>

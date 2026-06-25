@@ -77,7 +77,6 @@ a:hover { text-decoration: underline; }
   height: 36px;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid var(--border-accent);
   flex-shrink: 0;
 }
 .nav-logo img {
@@ -85,6 +84,17 @@ a:hover { text-decoration: underline; }
   height: 100%;
   object-fit: cover;
   object-position: center;
+}
+.nav-brand-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.brand-green {
+  color: var(--green);
+}
+.brand-white {
+  color: var(--text);
 }
 
 .nav-links {

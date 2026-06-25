@@ -30,6 +30,18 @@ Everything you need to understand, build, and contribute to XB Homebrew Vault.
 
 ---
 
+## How It Works
+
+Deep-dives into the trickier integration challenges — how the app actually talks to the Xbox.
+
+| Document | Description |
+|----------|-------------|
+| [Package Installation Flow](integration-package-installation-flow) | Dependency detection, main package + dependency install, registration, wait/retry logic, and how failures are handled |
+| [SSH/SFTP & Path Handling](integration-ssh-sftp-challenges) | Path handling over SFTP, the `cmd.exe` shell layer, `dir`-style command quirks, and USB drive discovery |
+| [USB Device Discovery](integration-usb-device-discovery) | WMI-based drive detection, permission setup with `icacls`, and the Windows-side discovery flow |
+
+---
+
 ## Development
 
 | Document | Description |
@@ -43,9 +55,7 @@ Everything you need to understand, build, and contribute to XB Homebrew Vault.
 
 ## Feature Specs
 
-| Document | Description |
-|----------|-------------|
-| [File Explorer — SSH/SFTP](feature-file-explorer) | Design spec for the next major feature: browse Xbox filesystem over SSH, mount drives, upload/download |
+_No published feature specs yet — coming in a future update._
 
 ---
 
@@ -54,7 +64,6 @@ Everything you need to understand, build, and contribute to XB Homebrew Vault.
 | Document | Description |
 |----------|-------------|
 | [Attributions](attributions) | Credits for icons, data sources, frameworks, and background images |
-| [Icon Set Sync](icon-set-sync) | How to sync the personal Icons8 set into the repo for development |
 
 ---
 

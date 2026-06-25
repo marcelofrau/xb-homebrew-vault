@@ -38,3 +38,9 @@ AGENTS.md
 
 # Orphaned legacy assets
 XBVault/Assets/_Backup/
+
+# Jekyll docs build output
+docs/_site/
+docs/.jekyll-cache/
+docs/.jekyll-metadata
+docs/.sass-cache/

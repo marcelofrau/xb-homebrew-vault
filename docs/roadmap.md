@@ -7,9 +7,9 @@ title: Roadmap
 
 ## Current Status
 
-**Latest release: v0.8.6** · [Download](https://github.com/marcelofrau/xb-homebrew-vault/releases/latest)
+**Latest release: v0.8.6** · [Download](https://github.com/marcelofrau/xb-homebrew-vault/releases/latest) · **v0.8.7 shipping soon**
 
-The app is feature-complete for daily Xbox Dev Mode homebrew management. Core flows — first-run setup, browse, install, uninstall, dev tools, USB permissions — are all shipping and stable. File Explorer tab exists as a placeholder pending the SSH/SFTP implementation.
+The app is feature-complete for daily Xbox Dev Mode homebrew management. Core flows — first-run setup, browse, install, uninstall, dev tools, USB permissions — are all shipping and stable. **v0.8.7 (shipping soon) brings a functional File Explorer** (SSH/SFTP browser), replacing the former placeholder tab.
 
 ---
 
@@ -28,6 +28,7 @@ timeline
     v0.8.4 : Settings redesign, live screenshot, item-detail overlay, theme polish
     v0.8.5 : catalog.json migration, UWP Port field, cache expiry, confirm dialogs
     v0.8.6 : First-run setup wizard, USB permission wizard, spinner polish
+    v0.8.7 : Functional File Explorer (SSH/SFTP browser, upload/download, drive mounting)
 ```
 
 ## What's Shipped
@@ -43,6 +44,7 @@ timeline
 | Polish | v0.8.4 | Settings redesign, live screenshot capture, item-detail overlay, theme tweaks |
 | Catalog API | v0.8.5 | Migrated from HTML scraping to `catalog.json`, UWP Port field, cache expiry, confirm dialogs, dependency selection in wizard |
 | Setup & USB | v0.8.6 | First-run setup wizard (3-step), USB permission wizard with WMI detection + icacls, spinner + min-delay polish |
+| File Explorer | v0.8.7 | Functional SSH/SFTP file browser — browse, upload/download with progress, drive mounting via `mklink` |
 
 ### Feature Delivery Timeline
 
@@ -78,6 +80,10 @@ gantt
     Xbox 360 Blades theme        :done, 2026-01, 2026-01
     Settings redesign            :done, 2026-06, 2026-06
     Item-detail overlay          :done, 2026-06, 2026-06
+    section File Explorer
+    SSH/SFTP file browser        :done, 2026-07, 2026-07
+    Upload/download with progress:done, 2026-07, 2026-07
+    Drive mounting via mklink    :done, 2026-07, 2026-07
 ```
 
 ### Feature Breakdown
@@ -106,7 +112,9 @@ gantt
 | UI | Xbox 360 Blades dark theme | ✅ |
 | UI | Settings redesign | ✅ v0.8.4 |
 | UI | Activity log viewer | ✅ |
-| File Explorer | SSH/SFTP browser | ⏳ in progress |
+| File Explorer | SSH/SFTP file browser | ✅ v0.8.7 |
+| File Explorer | Upload / download with progress | ✅ v0.8.7 |
+| File Explorer | Drive mounting via `mklink` | ✅ v0.8.7 |
 | CI | Windows + Ubuntu + macOS build matrix | ✅ |
 | CI | Linux release artifact | ✅ |
 | CI | macOS release artifact | ✅ v0.8.6 |
@@ -119,41 +127,38 @@ gantt
 
 ```mermaid
 gantt
-    title Ideas for v0.9 / v1.0+
+    title Road to v1.0
     dateFormat  YYYY-MM-DD
-    section File Explorer
-    SSH/SFTP file browser        : 2026-07, 21d
-    Mount drives via mklink      : 2026-07, 7d
-    Upload/download with progress: 2026-07, 7d
-    section Tech debt
-    Extract XboxDeviceService    : 2026-08, 14d
-    Theme gradient as resource   : 2026-08, 3d
-    ConfigureAwait pass          : 2026-08, 3d
-    async void fix               : 2026-08, 2d
-    section Ecosystem
-    Community catalog            : 2026-09, 21d
-    Enhanced version checker     : 2026-09, 5d
-    Scheduled tasks              : 2026-09, 10d
-    section Features
-    Storage analyzer             : 2026-09, 10d
-    System health checks         : 2026-09, 7d
-    Enhanced log viewer          : 2026-09, 5d
-    Game clip/screenshot manager : 2026-10, 14d
+    section v0.9.0 — File Explorer
+    Context operations (rename/delete) : 2026-07, 7d
+    Edge cases & error handling        : 2026-07, 10d
+    UX polish & keyboard navigation    : 2026-08, 7d
+    section v0.9.x → v1.0.0 — Stabilization
+    Split XboxDeviceService     : 2026-08, 14d
+    Theme gradient as resource  : 2026-08, 3d
+    ConfigureAwait pass         : 2026-08, 3d
+    async void fix              : 2026-08, 2d
+    Bugfix & refactor sweep     : 2026-09, 21d
+    section Beyond v1.0
+    Community catalog           : 2026-10, 21d
+    Enhanced version checker    : 2026-10, 5d
+    Storage analyzer            : 2026-11, 10d
 ```
 
-### Next — File Explorer (SSH/SFTP)
+### v0.9.0 — File Explorer Consolidation
 
-The File Explorer tab is a placeholder today. The planned implementation uses SSH.NET to connect on port 22 (same credentials as WDP) — no companion app required.
+The functional File Explorer ships in **v0.8.7** (SSH/SFTP browse, upload/download, drive mounting via SSH.NET on port 22 — same credentials as WDP, no companion app). **v0.9.0** is the milestone that marks it complete and polished.
 
-| Feature | Description |
-|---------|-------------|
-| SSH/SFTP browser | TreeView + file list, lazy-load on expand |
-| Mount drives | `mklink /J` via SSH shell to expose `C:\`, `D:\`, `E:\` through SFTP |
-| Upload | Drag-and-drop + file picker, progress per file |
-| Download | Right-click → download to PC |
-| Operations | Delete, rename from context menu |
+| Item | Description |
+|------|-------------|
+| Context operations | Rename, delete, new folder from the context menu |
+| Error handling | Graceful handling of permission errors, disconnects, large directories |
+| UX polish | Keyboard navigation, breadcrumb path bar, drag-and-drop refinements |
+| Performance | Lazy-load + virtualization for directories with many entries |
 
-### v0.9 — Tech Debt & Polish
+### v0.9.x → v1.0.0 — Stabilization
+
+The road from v0.9.0 to **v1.0.0** is dedicated to **bugfixing, refactoring, and tech debt reduction** — no major new features, just hardening toward a stable 1.0.
 
 | Item | Description |
 |------|-------------|
@@ -161,11 +166,16 @@ The File Explorer tab is a placeholder today. The planned implementation uses SS
 | **Theme resources** | Extract duplicated title bar gradient + close button into shared `StaticResource` / UserControl (currently copy-pasted in 14+ windows) |
 | **`ConfigureAwait(false)` audit** | Add to all service-layer `await` calls |
 | **Remove `async void`** | Fix fire-and-forget event handlers that can crash the process on unhandled exceptions |
+| **Bugfix & refactor sweep** | Address open issues, reduce duplication, tighten error handling across the app |
 
-### v1.0 — Ecosystem
+### v1.0.0 — First Stable Release
 
-| Feature | Description |
-|---------|-------------|
+Marks the completion of the stabilization pass: feature-complete, refactored, and tech-debt-reduced.
+
+### Beyond v1.0 (v1.x+) — Ecosystem & Features
+
+| Feature | Notes |
+|---------|-------|
 | Community catalog | Curated homebrew repo, click-to-install beyond Emulation Revival |
 | Enhanced version checker | Compare installed vs catalog version, 1-click update all |
 | Scheduled tasks | Recurring restart/shutdown/catalog refresh/backup |
@@ -173,13 +183,8 @@ The File Explorer tab is a placeholder today. The planned implementation uses SS
 | System health checks | Ping latency, storage, memory overview dashboard |
 | Enhanced log viewer | Real-time Xbox logs, filter, search, export to file |
 | Game clip manager | Browse and download Xbox screenshots and game captures |
-
-### Future (v1.x+)
-
-| Feature | Notes |
-|---------|-------|
-| **Media player streaming** | Play Xbox media on PC over network |
-| **Xbox Remote Play** | Stream Xbox screen to PC |
+| Media player streaming | Play Xbox media on PC over network |
+| Xbox Remote Play | Stream Xbox screen to PC |
 
 ---
 

@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ page.title }} | {{ site.title }}</title>
   <meta name="description" content="{{ page.description | default: site.description }}">
+  <link rel="icon" type="image/png" href="{{ site.app_icon | relative_url }}">
+  <link rel="apple-touch-icon" href="{{ site.app_icon | relative_url }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,9 +20,9 @@
     <div class="nav-inner">
       <a class="nav-brand" href="{{ '/' | relative_url }}">
         <span class="nav-logo">
-          <img src="https://github.com/marcelofrau/xb-homebrew-vault/raw/main/docs/social-preview.jpg" alt="XB Homebrew Vault" />
+          <img src="{{ site.app_icon | relative_url }}" alt="XB Homebrew Vault App Icon" />
         </span>
-        <span>XB Homebrew Vault</span>
+        <span class="nav-brand-text"><span class="brand-green">XB Homebrew</span> <span class="brand-white">Vault</span></span>
       </a>
       <div class="nav-links">
         <a href="{{ '/docs' | relative_url }}" {% if page.url contains '/docs' %}class="nav-active"{% endif %}>Docs</a>
@@ -70,6 +72,12 @@
         <a href="{{ '/window-template' | relative_url }}" class="sidebar-link {% if page.url contains 'window-template' %}active{% endif %}">Window Template</a>
       </div>
       <div class="sidebar-section">
+        <div class="sidebar-label">How It Works</div>
+        <a href="{{ '/integration-package-installation-flow' | relative_url }}" class="sidebar-link {% if page.url contains 'package-installation' %}active{% endif %}">Package Installation</a>
+        <a href="{{ '/integration-ssh-sftp-challenges' | relative_url }}" class="sidebar-link {% if page.url contains 'ssh-sftp' %}active{% endif %}">SSH/SFTP & Path Handling</a>
+        <a href="{{ '/integration-usb-device-discovery' | relative_url }}" class="sidebar-link {% if page.url contains 'usb-device' %}active{% endif %}">USB Device Discovery</a>
+      </div>
+      <div class="sidebar-section">
         <div class="sidebar-label">Development</div>
         <a href="{{ '/tech-debt' | relative_url }}" class="sidebar-link {% if page.url contains 'tech-debt' %}active{% endif %}">Tech Debt</a>
         <a href="{{ '/branching-and-versioning' | relative_url }}" class="sidebar-link {% if page.url contains 'branching' %}active{% endif %}">Branching & Versioning</a>
@@ -77,13 +85,8 @@
         <a href="{{ '/cross-platform-porting' | relative_url }}" class="sidebar-link {% if page.url contains 'cross-platform' %}active{% endif %}">Cross-Platform Porting</a>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-label">Features</div>
-        <a href="{{ '/feature-file-explorer' | relative_url }}" class="sidebar-link {% if page.url contains 'file-explorer' %}active{% endif %}">File Explorer (SSH/SFTP)</a>
-      </div>
-      <div class="sidebar-section">
         <div class="sidebar-label">Other</div>
         <a href="{{ '/attributions' | relative_url }}" class="sidebar-link {% if page.url contains 'attributions' %}active{% endif %}">Attributions</a>
-        <a href="{{ '/icon-set-sync' | relative_url }}" class="sidebar-link {% if page.url contains 'icon-set' %}active{% endif %}">Icon Set Sync</a>
       </div>
     </aside>
 
@@ -109,19 +112,39 @@
   <!-- Mermaid -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script>
+    // Store original Mermaid codes in a Map before rendering
+    const mermaidCodeMap = new Map();
+
     // Jekyll renders ```mermaid as <pre><code class="language-mermaid">
     // Mermaid needs <pre class="mermaid"> — convert before init
     document.querySelectorAll('pre > code.language-mermaid').forEach(code => {
       const pre = code.parentElement;
       const div = document.createElement('pre');
       div.className = 'mermaid';
-      div.textContent = code.textContent;
+      const codeContent = code.textContent;
+      div.textContent = codeContent;
+      
+      // Store original code with unique ID
+      const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+      div.id = id;
+      mermaidCodeMap.set(id, codeContent);
+      
       pre.replaceWith(div);
     });
 
     mermaid.initialize({
       startOnLoad: false,
       theme: 'base',
+      securityLevel: 'loose',
+      flowchart: {
+        curve: 'basis',
+        nodeSpacing: 55,
+        rankSpacing: 70,
+        padding: 16,
+        useMaxWidth: true,
+        htmlLabels: true,
+        diagramPadding: 12,
+      },
       themeVariables: {
         background:          '#0D1117',
         primaryColor:        '#1A1D23',
@@ -129,16 +152,201 @@
         primaryBorderColor:  '#4A7A20',
         lineColor:           '#6B8F2A',
         secondaryColor:      '#1E2128',
+        secondaryTextColor:  '#F0F0F0',
+        secondaryBorderColor:'#4A7A20',
         tertiaryColor:       '#252830',
+        tertiaryTextColor:   '#F0F0F0',
+        tertiaryBorderColor: '#2A2D33',
         edgeLabelBackground: '#1A1D23',
         clusterBkg:          '#161B22',
+        clusterBorder:       '#2A2D33',
         titleColor:          '#9ACA3C',
         nodeTextColor:       '#F0F0F0',
+        textColor:           '#F0F0F0',
         fontFamily:          'Rajdhani, sans-serif',
+
+        /* Timeline / journey color scale — force dark fills + light labels */
+        cScale0:  '#1A1D23', cScale1:  '#1E2128', cScale2:  '#252830',
+        cScale3:  '#161B22', cScale4:  '#20242B', cScale5:  '#1A2417',
+        cScale6:  '#22281A', cScale7:  '#1E2128', cScale8:  '#1A1D23',
+        cScale9:  '#252830', cScale10: '#161B22', cScale11: '#20242B',
+        cScaleLabel0:  '#F0F0F0', cScaleLabel1:  '#F0F0F0', cScaleLabel2:  '#F0F0F0',
+        cScaleLabel3:  '#F0F0F0', cScaleLabel4:  '#F0F0F0', cScaleLabel5:  '#F0F0F0',
+        cScaleLabel6:  '#F0F0F0', cScaleLabel7:  '#F0F0F0', cScaleLabel8:  '#F0F0F0',
+        cScaleLabel9:  '#F0F0F0', cScaleLabel10: '#F0F0F0', cScaleLabel11: '#F0F0F0',
+
+        /* Gantt */
+        sectionBkgColor:        '#161B22',
+        altSectionBkgColor:     '#0D1117',
+        sectionBkgColor2:       '#1A1D23',
+        taskBkgColor:           '#1E2128',
+        taskBorderColor:        '#4A7A20',
+        taskTextColor:          '#F0F0F0',
+        taskTextLightColor:     '#F0F0F0',
+        taskTextDarkColor:      '#F0F0F0',
+        taskTextOutsideColor:   '#F0F0F0',
+        activeTaskBkgColor:     '#447F3E',
+        activeTaskBorderColor:  '#9ACA3C',
+        doneTaskBkgColor:       '#252830',
+        doneTaskBorderColor:    '#6B8F2A',
+        critBkgColor:           '#3A1A1A',
+        critBorderColor:        '#C0533F',
+        gridColor:              '#2A2D33',
+        todayLineColor:         '#9ACA3C',
       }
     });
 
-    mermaid.run({ querySelector: '.mermaid' });
+    const runResult = mermaid.run({ querySelector: '.mermaid' });
+
+    function initMermaidLightbox() {
+      const diagrams = Array.from(document.querySelectorAll('.docs-body .mermaid'));
+      if (!diagrams.length) return;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'mermaid-lightbox';
+      overlay.innerHTML = `
+        <div class="mermaid-lightbox-toolbar">
+          <button type="button" class="mermaid-lightbox-button" data-action="reset">Reset Zoom</button>
+          <button type="button" class="mermaid-lightbox-button" data-action="close">Close</button>
+        </div>
+        <div class="mermaid-lightbox-viewport">
+          <div class="mermaid-lightbox-stage"></div>
+        </div>
+        <div class="mermaid-lightbox-hint">Scroll to zoom • Drag to pan • Esc to close</div>
+      `;
+      document.body.appendChild(overlay);
+
+      const viewport = overlay.querySelector('.mermaid-lightbox-viewport');
+      const stage = overlay.querySelector('.mermaid-lightbox-stage');
+      const closeBtn = overlay.querySelector('[data-action="close"]');
+      const resetBtn = overlay.querySelector('[data-action="reset"]');
+
+      let isOpen = false;
+      let scale = 1;
+      let fitScale = 1;
+      let offsetX = 0;
+      let offsetY = 0;
+      let dragging = false;
+      let startX = 0;
+      let startY = 0;
+      const minScale = 0.05;
+      const maxScale = 60;
+
+      function applyTransform() {
+        stage.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${scale})`;
+      }
+
+      function fitToViewport() {
+        const svg = stage.querySelector('svg');
+        if (!svg) return 1;
+        const vb = svg.viewBox && svg.viewBox.baseVal;
+        let w = vb && vb.width ? vb.width : svg.getBBox().width;
+        let h = vb && vb.height ? vb.height : svg.getBBox().height;
+        // Lock SVG to its natural size so the stage sizes to it (enables centering)
+        svg.style.width = w + 'px';
+        svg.style.height = h + 'px';
+        const vw = viewport.clientWidth;
+        const vh = viewport.clientHeight;
+        return Math.min((vw * 0.9) / w, (vh * 0.9) / h);
+      }
+
+      function resetTransform() {
+        scale = fitScale;
+        offsetX = 0;
+        offsetY = 0;
+        applyTransform();
+      }
+
+      function openLightbox(mermaidCode) {
+        stage.innerHTML = '';
+        const pre = document.createElement('pre');
+        pre.className = 'mermaid';
+        pre.textContent = mermaidCode;
+        stage.appendChild(pre);
+
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        isOpen = true;
+
+        mermaid.run({ querySelector: '.mermaid-lightbox-stage .mermaid' }).then(() => {
+          fitScale = fitToViewport();
+          scale = fitScale;
+          offsetX = 0;
+          offsetY = 0;
+          applyTransform();
+        });
+      }
+
+      function closeLightbox() {
+        overlay.classList.remove('open');
+        document.body.style.overflow = '';
+        stage.innerHTML = '';
+        isOpen = false;
+      }
+
+      diagrams.forEach(diagram => {
+        diagram.addEventListener('click', () => {
+          const diagramId = diagram.id;
+          const mermaidCode = mermaidCodeMap.get(diagramId);
+          if (mermaidCode) openLightbox(mermaidCode);
+        });
+      });
+
+      closeBtn.addEventListener('click', closeLightbox);
+      resetBtn.addEventListener('click', resetTransform);
+
+      overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) closeLightbox();
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (!isOpen) return;
+        if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+          closeLightbox();
+        }
+      });
+
+      viewport.addEventListener('wheel', (event) => {
+        if (!isOpen) return;
+        event.preventDefault();
+        const delta = event.deltaY < 0 ? 1.12 : 0.88;
+        scale = Math.min(maxScale, Math.max(minScale, scale * delta));
+        applyTransform();
+      }, { passive: false });
+
+      viewport.addEventListener('pointerdown', (event) => {
+        if (!isOpen) return;
+        event.preventDefault();
+        dragging = true;
+        startX = event.clientX;
+        startY = event.clientY;
+        viewport.classList.add('dragging');
+        viewport.setPointerCapture(event.pointerId);
+      });
+
+      viewport.addEventListener('pointermove', (event) => {
+        if (!dragging || !isOpen) return;
+        const dx = event.clientX - startX;
+        const dy = event.clientY - startY;
+        startX = event.clientX;
+        startY = event.clientY;
+        offsetX += dx;
+        offsetY += dy;
+        applyTransform();
+      });
+
+      viewport.addEventListener('pointerup', () => {
+        dragging = false;
+        viewport.classList.remove('dragging');
+      });
+
+      viewport.addEventListener('pointercancel', () => {
+        dragging = false;
+        viewport.classList.remove('dragging');
+      });
+    }
+
+    Promise.resolve(runResult).then(initMermaidLightbox);
   </script>
 
   <!-- Nav scroll + mobile toggle -->
@@ -151,6 +359,29 @@
     document.getElementById('nav-hamburger').addEventListener('click', () => {
       document.getElementById('nav-mobile').classList.toggle('open');
     });
+  </script>
+  <!-- Colorize hex color codes inline -->
+  <script>
+    (function () {
+      function luminance(r, g, b) {
+        return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+      }
+      document.querySelectorAll('.docs-body code').forEach(function (el) {
+        var t = el.textContent.trim();
+        var m = /^#([0-9a-fA-F]{6})$/.exec(t);
+        if (!m) return;
+        var hex = m[1];
+        var r = parseInt(hex.slice(0, 2), 16);
+        var g = parseInt(hex.slice(2, 4), 16);
+        var b = parseInt(hex.slice(4, 6), 16);
+        var fg = luminance(r, g, b) > 0.5 ? '#0D1117' : '#F0F0F0';
+        el.style.background = '#' + hex;
+        el.style.color = fg;
+        el.style.borderColor = 'rgba(255,255,255,.22)';
+        el.style.fontWeight = '600';
+        el.style.textShadow = 'none';
+      });
+    })();
   </script>
 
 </body>

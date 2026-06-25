@@ -7,13 +7,15 @@ title: Tech Debt
 
 Known issues in the codebase, ordered by severity. This page is updated as items are resolved or discovered.
 
+> **Last verified against code:** June 2026. Line counts and locations below reflect the current source; several items grew since first documented.
+
 ---
 
 ## 🔴 High
 
 ### 1. XboxDeviceService — God class
 
-**File:** `XBVault/Services/XboxDeviceService.cs` · 1038 lines · 35 public methods/properties
+**File:** `XBVault/Services/XboxDeviceService.cs` · **1,207 lines** · 35 public methods/properties
 
 **Problem:** Mixes HTTP calls, WebSocket handling, JSON parsing, and logging across 8 unrelated domains — packages, processes, crash dumps, network, system info, screenshots, performance, restart/shutdown. Every new feature adds another method to the same class, making it hard to test, navigate, or refactor.
 
@@ -36,15 +38,15 @@ Removed from tracking, added to `.gitignore`, deleted from disk.
 
 ## 🟡 Medium
 
-### 3. `App.axaml.cs` — 455 lines, manual composition root
+### 3. `App.axaml.cs` — 497 lines, manual composition root
 
 **File:** `App.axaml.cs`
 
-The main startup file has grown to 455 lines and does too much:
+The main startup file has grown to 497 lines and does too much:
 
-- Manually instantiates all services with `new` (no DI container)
-- `InitAfterSplashAsync` is a 342-line method wiring all 12+ window delegate callbacks, sidebar views, catalog load, splash close, and first-run wizard
-- Contains 2 bare `catch { }` blocks at lines 106 and 109 inside `ShowErrorDialogSafe` — errors in the error dialog are silently swallowed
+- Manually instantiates the core services with `new` (XboxDeviceService, CacheService, PackageInstallService, SftpService) — no DI container
+- `InitAfterSplashAsync` is a 384-line method wiring all 22 window delegate callbacks, sidebar views, catalog load, splash close, and first-run wizard
+- Contains 2 bare `catch { }` blocks at lines 107 and 110 inside `ShowErrorDialogSafe` — errors in the error dialog are silently swallowed
 
 **Fix:** Extract dialog wiring into a `DialogRegistry` class. Consider a lightweight DI container (`Microsoft.Extensions.DependencyInjection`) to replace manual `new`.
 
@@ -52,9 +54,9 @@ The main startup file has grown to 455 lines and does too much:
 
 ### 4. No `ConfigureAwait(false)` anywhere
 
-**~88 `await` calls across Services/. Zero have `.ConfigureAwait(false)`.**
+**~82–100 `await` calls across Services/. Zero have `.ConfigureAwait(false)`.**
 
-Breakdown: ~75 in `XboxDeviceService.cs`, ~8 in `PackageInstallService.cs`, ~5 in `CatalogApiService.cs`.
+Spread across `XboxDeviceService.cs` (~50+), `PackageInstallService.cs`, `CatalogApiService.cs`, and `SftpService.cs`.
 
 Service-layer continuations unnecessarily capture the UI synchronization context, which can cause deadlocks and reduces throughput.
 
@@ -68,9 +70,9 @@ Several catch blocks discard exceptions with no logging, no rethrow, and no mean
 
 | File | Line | Pattern | Impact |
 |------|------|---------|--------|
-| `App.axaml.cs` | 106, 109 | `catch { }` | Error dialog failures silently swallowed |
-| `Services/XboxDeviceService.cs` | 384 | `catch { }` | JSON parse in `TryParseError()` silently returns null |
-| `Services/XboxDeviceService.cs` | 583–585 | `catch { /* Ignore */ }` | Package manager polling swallows all errors |
+| `App.axaml.cs` | 107, 110 | `catch { }` | Error dialog failures silently swallowed |
+| `Services/XboxDeviceService.cs` | 422 | `catch { }` | JSON parse in `TryParseError()` silently returns null |
+| `Services/XboxDeviceService.cs` | 621–623 | `catch { /* Ignore */ }` | Package manager polling swallows all errors |
 | `ViewModels/NetworkInfoViewModel.cs` | 50 | `catch { }` | All network adapter parse errors silently dropped |
 | `ViewModels/CrashDataViewModel.cs` | 76 | `catch { CrashDumpEnabled = false; }` | Deserialization failure silently sets default |
 | `ViewModels/ConnectionViewModel.cs` | 68 | `catch { }` | JSON parse helper, returns null |
@@ -87,14 +89,23 @@ Some are intentional (cleanup paths, cancellation), but the majority in service/
 
 ### 6. `async void` in code-behind (fire-and-forget)
 
-Four event handlers use `async void` — unhandled exceptions crash the process with no recovery:
+Verification found **11 instances** (the original docs listed 4) — unhandled exceptions in `async void` crash the process with no recovery:
 
-| File | Line | Method |
-|------|------|--------|
-| `Views/ConnectionWindow.axaml.cs` | 37 | `OnConnectionCompleted` |
-| `Views/ErrorDialog.axaml.cs` | 60 | `OnCopyClick` |
-| `Views/LogsView.axaml.cs` | 41 | `OnCopyClick` |
-| `Views/NetworkInfoWindow.axaml.cs` | 15 | `OnLoaded` |
+| File | Line | Method | Risk |
+|------|------|--------|------|
+| `Views/ConnectionWindow.axaml.cs` | 37 | `OnConnectionCompleted` | High |
+| `Views/ErrorDialog.axaml.cs` | 60 | `OnCopyClick` | High |
+| `Views/FileExplorerView.axaml.cs` | 272 | `OnTreeItemExpanded` | High |
+| `Views/FileExplorerView.axaml.cs` | 284 | `OnBrowseFilesClick` | High |
+| `Views/FileExplorerView.axaml.cs` | 562 | `OnDropZoneDrop` | High |
+| `Views/NetworkInfoWindow.axaml.cs` | 15 | `OnLoaded` | High |
+| `Views/LogsView.axaml.cs` | 41 | `OnCopyClick` | Low |
+| `Views/SftpInfoWindow.axaml.cs` | 23 | `OnCopyHostClick` | Low |
+| `Views/SftpInfoWindow.axaml.cs` | 35 | `OnCopyPortClick` | Low |
+| `Views/SftpInfoWindow.axaml.cs` | 47 | `OnCopyUserClick` | Low |
+| `Views/SftpInfoWindow.axaml.cs` | 59 | `OnCopyPasswordClick` | Low |
+
+The high-risk handlers perform real async work (connection, SFTP tree expansion, file browse, drag-drop upload, network load); the low-risk ones are clipboard copies. The `FileExplorerView` handlers arrived with the v0.8.7 file explorer.
 
 **Fix:** Wrap body in a safe `FireAndForget` extension with exception logging, or restructure to `async Task` where possible.
 
@@ -218,9 +229,9 @@ The previously documented silent catch at `PerformanceSnapshot.cs:78` now calls 
 
 ---
 
-### 16. `BrowseViewModel.cs` — 499 lines
+### 16. `BrowseViewModel.cs` — 580 lines
 
-Approaching the god-class threshold. Contains catalog loading, filtering, search, item selection, install orchestration, and image thumbnail management.
+Approaching the god-class threshold (grew from ~499 to 580 lines). Contains catalog loading, filtering, search, item selection, install orchestration, progress reporting, and image thumbnail management.
 
 **Fix:** No immediate action required, but monitor. Consider extracting install-related logic into a dedicated coordinator if it grows further.
 
@@ -234,27 +245,49 @@ Approaching the god-class threshold. Contains catalog loading, filtering, search
 
 ---
 
+### 18. File Explorer drive list is hardcoded — no discovery
+
+**File:** `ViewModels/FileExplorerViewModel.cs:429` (`DetectDrivesAsync`)
+
+The File Explorer surfaces a **static** set of drives — `{ "C", "D", "E", "Q" }` — with no runtime discovery:
+
+```csharp
+var drives = new[] { "C", "D", "E", "Q" }.Select(l => new SftpEntry { ... });
+```
+
+The Xbox Dev Mode drive layout is **not guaranteed stable** — the external-storage letter has changed historically (it was not always `E:`), and consoles may expose additional or differently-lettered volumes. With a fixed list, real drives can be missing (not shown) or dead entries can appear (shown but unmountable).
+
+**Fix:** Discover drives dynamically over SSH instead of hardcoding — e.g. `wmic logicaldisk get name`, or probe `cd {letter}: && echo ok` across the alphabet, and build the list from what actually responds. Keep `{C, D, E, Q}` only as a fallback if discovery fails.
+
+---
+
 ## Summary
 
 ```mermaid
 graph LR
-    subgraph Severity["Severity distribution"]
-        H("🔴 High: 1 open · 1 resolved"):::high
-        M("🟡 Medium: 8"):::medium
-        L("🟢 Low: 7 · 1 resolved"):::low
-    end
-
-    classDef high fill:#e74,color:#fff
-    classDef medium fill:#f90,color:#111
-    classDef low fill:#9c3,color:#111
+    H["🔴 High<br/>1 open · 1 resolved"]
+    M["🟡 Medium<br/>8"]
+    L["🟢 Low<br/>8 · 1 resolved"]
+    
+    style H fill:#CC3333,stroke:#9ACA3C,color:#fff
+    style M fill:#FF9900,stroke:#9ACA3C,color:#000
+    style L fill:#9ACA3C,stroke:#447F3E,color:#000
 ```
 
 | Severity | Open | Resolved | Estimated effort |
 |----------|------|----------|-----------------|
-| 🔴 High | 1 | 1 ✅ | 2–4 hours |
-| 🟡 Medium | 8 | — | 8–16 hours |
-| 🟢 Low | 7 | 1 ✅ | 3–6 hours |
-| **Total** | **16 open** | **2 resolved** | **13–26 hours** |
+| 🔴 High | 1 | 1 ✅ | 4–6 hours |
+| 🟡 Medium | 8 | — | 10–18 hours |
+| 🟢 Low | 8 | 1 ✅ | 3–7 hours |
+| **Total** | **17 open** | **2 resolved** | **17–31 hours** |
+
+### Notable changes since first documented
+
+- **`async void` 4 → 11** instances (the v0.8.7 File Explorer added 3 high-risk handlers).
+- **`XboxDeviceService` 1,038 → 1,207 lines**; **`App.axaml.cs` 455 → 497** (`InitAfterSplashAsync` 342 → 384); **`BrowseViewModel` 499 → 580**.
+- **Silent catches**: 12–14+ confirmed sites (more than the 8 first listed).
+- **`ConfigureAwait(false)`**: still **0** across the service layer.
+- **New #18**: File Explorer drive list is hardcoded (`{C, D, E, Q}`) with no discovery.
 
 ---
 

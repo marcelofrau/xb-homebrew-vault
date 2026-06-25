@@ -17,6 +17,42 @@ https://<xbox-ip>:11443
 
 HTTP Basic Authentication with the username and password configured in Xbox Developer Mode settings.
 
+The same credentials are reused across all transports — HTTP Basic (this API), SFTP (SSH.NET), and SMB (USB folder access). See [Architecture → Design Decisions](architecture#design-decisions--rationale).
+
+---
+
+## Request Conventions
+
+`XboxDeviceService` applies the same conventions to every call:
+
+| Concern | Behavior | Rationale |
+|---------|----------|-----------|
+| **TLS certificate** | Validation is **bypassed** (`ServerCertificateCustomValidationCallback` always returns `true`). | The console serves a self-signed certificate. Dev-only tool on a trusted LAN. |
+| **CSRF token** | A `CookieContainer` is shared across requests; the `CSRF-Token` cookie returned on the first call is sent automatically on subsequent state-changing requests. | WDP rejects unauthenticated `POST`/`DELETE` without the token. |
+| **HttpClient lifetime** | A fresh `HttpClient` is created whenever `Configure(...)` is called. | `BaseAddress` is immutable once set; recreation allows switching consoles. |
+| **Parameter encoding** | `appid` / `package` values are **Base64-encoded then URL-escaped**. | WDP expects opaque, URL-safe identifiers. |
+
+### Common error responses
+
+The Device Portal uses standard HTTP status codes. Typical failures:
+
+| Status | Meaning | How the client reacts |
+|--------|---------|-----------------------|
+| `401 Unauthorized` | Wrong credentials or expired session | Surfaces a connection error; user re-enters credentials |
+| `403 Forbidden` | Missing/expired CSRF token | A new request re-acquires the cookie |
+| `404 Not Found` | Package/process/file no longer exists | Treated as already-removed in delete flows |
+| `409 Conflict` | Package manager busy with another operation | Retried via readiness polling (see below) |
+| `500 Internal Server Error` | Console-side failure (often during install) | Logged; operation reported as failed |
+
+Error bodies, when present, follow:
+
+```json
+{
+  "Reason": "The request could not be completed.",
+  "ErrorCode": -2147023728
+}
+```
+
 ---
 
 ## Connection
@@ -96,6 +132,21 @@ Returns the currently running foreground title.
   "PackageFullName": "RetroArch.20319A388A0CE8_px48cv62crvag"
 }
 ```
+
+### Package manager readiness & polling
+
+The package manager processes one operation at a time and is briefly unavailable after each upload/install. Before issuing the next operation (e.g. uploading a dependency), the client polls `GET /api/app/packagemanager/packages` and waits until the manager reports ready.
+
+**Backoff strategy** (`WaitForPackageManagerReady`):
+
+| Attempts | Delay each | Cumulative |
+|---------:|-----------:|-----------:|
+| 1–3 | 2s | up to 6s |
+| 4–15 | 3s | up to 45s |
+
+After 15 attempts (~45s) the wait gives up and the operation is reported as failed. Most installs become ready within 1–2 attempts. See the full [Package Installation Flow](integration-package-installation-flow) for the multipart upload pattern, dependency ordering, and failure recovery.
+
+> **Multipart uploads:** install (`POST .../package`) accepts `multipart/form-data` with the package file. Dependencies are uploaded sequentially, each gated by the readiness poll above.
 
 ---
 
@@ -219,6 +270,11 @@ Used by `PerformanceViewModel` to drive the real-time chart in the Dev Tools pan
 
 - [Windows Device Portal API](https://learn.microsoft.com/en-us/windows/uwp/debug-test-perf/device-portal-api-core)
 - [Xbox Developer Mode Guide](https://wiki.sternserv.xyz/docs/xbox-setup/xbox-developer-mode-setup)
+
+**Related guides:**
+- [Package Installation Flow](integration-package-installation-flow) — multipart upload, dependency detection, polling & backoff
+- [SSH/SFTP & Path Handling](integration-ssh-sftp-challenges) — file transfer outside WDP, `cmd.exe` quirks
+- [Architecture](architecture) — where these endpoints map to services
 
 ---
 

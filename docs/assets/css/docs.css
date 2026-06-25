@@ -1,3 +1,33 @@
+/* ─── Fantasque Sans Mono (self-hosted webfont) ──────────── */
+@font-face {
+  font-family: 'Fantasque Sans Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/FantasqueSansMono-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fantasque Sans Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/FantasqueSansMono-Italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fantasque Sans Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/FantasqueSansMono-Bold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fantasque Sans Mono';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/FantasqueSansMono-BoldItalic.woff2') format('woff2');
+}
+
 /* ─── Docs layout ───────────────────────────────────────── */
 .docs-layout {
   display: grid;
@@ -150,8 +180,8 @@
 
 /* ─── Code ──────────────────────────────────────────────── */
 .docs-body code {
-  font-family: 'Courier New', 'Fira Code', monospace;
-  font-size: .85em;
+  font-family: 'Fantasque Sans Mono', 'Fira Code', 'Courier New', monospace;
+  font-size: .9em;
   background: rgba(154,202,60,.07);
   border: 1px solid rgba(154,202,60,.18);
   color: var(--green-glow);
@@ -174,8 +204,8 @@
   border: none;
   color: var(--text);
   padding: 0;
-  font-size: .85rem;
-  line-height: 1.7;
+  font-size: .92rem;
+  line-height: 1.65;
 }
 
 /* ─── Tables ────────────────────────────────────────────── */
@@ -251,9 +281,93 @@
   margin: 24px 0;
   overflow-x: auto;
   text-align: center;
+  cursor: zoom-in;
 }
 .docs-body .mermaid svg {
   max-width: 100%;
+  height: auto;
+  image-rendering: crisp-edges;
+}
+
+/* Mermaid fullscreen viewer */
+.mermaid-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(10, 12, 15, 0.92);
+  display: none;
+}
+
+.mermaid-lightbox.open {
+  display: block;
+}
+
+.mermaid-lightbox-toolbar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.mermaid-lightbox-button {
+  border: 1px solid var(--border-accent);
+  background: var(--bg3);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mermaid-lightbox-button:hover {
+  border-color: var(--green);
+  color: var(--green-glow);
+}
+
+.mermaid-lightbox-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--muted);
+  font-size: .8rem;
+  letter-spacing: .03em;
+  text-align: center;
+  z-index: 2;
+}
+
+.mermaid-lightbox-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.mermaid-lightbox-viewport.dragging {
+  cursor: grabbing;
+}
+
+.mermaid-lightbox-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.mermaid-lightbox-stage svg {
+  display: block;
+  max-width: none;
   height: auto;
 }
 
@@ -332,3 +446,113 @@
 @media (max-width: 480px) {
   .docs-content { padding: 24px 16px 48px; }
 }
+
+/* ─── Syntax highlighting (Rouge) — Blades theme ────────────
+   Token colors tuned to the green/dark Blades palette.
+   Rouge wraps fenced code in .highlight with token spans. */
+.docs-body .highlight,
+.docs-body .highlighter-rouge .highlight {
+  background: transparent;
+}
+
+/* Optional language badge for fenced blocks */
+.docs-body div.highlighter-rouge {
+  position: relative;
+}
+
+/* Base text inside highlighted blocks */
+.docs-body .highlight code,
+.docs-body .highlight pre {
+  color: var(--text);
+}
+
+/* Comments */
+.docs-body .highlight .c,
+.docs-body .highlight .ch,
+.docs-body .highlight .cd,
+.docs-body .highlight .cm,
+.docs-body .highlight .cp,
+.docs-body .highlight .cpf,
+.docs-body .highlight .c1,
+.docs-body .highlight .cs   { color: #5A5C60; font-style: italic; }
+
+/* Keywords */
+.docs-body .highlight .k,
+.docs-body .highlight .kc,
+.docs-body .highlight .kd,
+.docs-body .highlight .kn,
+.docs-body .highlight .kp,
+.docs-body .highlight .kr   { color: #9ACA3C; font-weight: 600; }
+.docs-body .highlight .kt   { color: #C8E68A; font-weight: 600; } /* type keyword */
+
+/* Strings */
+.docs-body .highlight .s,
+.docs-body .highlight .sa,
+.docs-body .highlight .sb,
+.docs-body .highlight .sc,
+.docs-body .highlight .dl,
+.docs-body .highlight .sd,
+.docs-body .highlight .s2,
+.docs-body .highlight .se,
+.docs-body .highlight .sh,
+.docs-body .highlight .si,
+.docs-body .highlight .sx,
+.docs-body .highlight .sr,
+.docs-body .highlight .s1,
+.docs-body .highlight .ss   { color: #D7BA7D; }
+
+/* Numbers */
+.docs-body .highlight .m,
+.docs-body .highlight .mb,
+.docs-body .highlight .mf,
+.docs-body .highlight .mh,
+.docs-body .highlight .mi,
+.docs-body .highlight .mo,
+.docs-body .highlight .il   { color: #B5E665; }
+
+/* Functions / methods */
+.docs-body .highlight .nf,
+.docs-body .highlight .fm   { color: #B5E665; }
+
+/* Classes, namespaces, types */
+.docs-body .highlight .nc,
+.docs-body .highlight .nn,
+.docs-body .highlight .no,
+.docs-body .highlight .nl   { color: #C8E68A; }
+
+/* Builtins / constants */
+.docs-body .highlight .nb,
+.docs-body .highlight .bp,
+.docs-body .highlight .kva  { color: #9ACA3C; }
+
+/* Variables */
+.docs-body .highlight .n,
+.docs-body .highlight .nv,
+.docs-body .highlight .vc,
+.docs-body .highlight .vg,
+.docs-body .highlight .vi   { color: var(--text); }
+
+/* Operators / punctuation */
+.docs-body .highlight .o,
+.docs-body .highlight .ow,
+.docs-body .highlight .p    { color: #8B8D91; }
+
+/* HTML/XML tags & attributes */
+.docs-body .highlight .nt   { color: #9ACA3C; }
+.docs-body .highlight .na   { color: #B5E665; }
+
+/* Decorators / annotations */
+.docs-body .highlight .nd   { color: #C8E68A; }
+
+/* Generic diff / output */
+.docs-body .highlight .gd   { color: #ff6b6b; background: rgba(255,107,107,.08); }
+.docs-body .highlight .gi   { color: #9ACA3C; background: rgba(154,202,60,.08); }
+.docs-body .highlight .gh,
+.docs-body .highlight .gu   { color: var(--green-glow); font-weight: 600; }
+.docs-body .highlight .gp   { color: #5A5C60; }
+.docs-body .highlight .ge   { font-style: italic; }
+.docs-body .highlight .gs   { font-weight: 600; }
+
+/* Errors */
+.docs-body .highlight .err  { color: #ff6b6b; background: rgba(255,107,107,.08); }
+

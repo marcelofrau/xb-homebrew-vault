@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Feature - File Explorer
+published: false
 ---
 
 # File Explorer — SSH/SFTP Browser

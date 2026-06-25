@@ -7,6 +7,7 @@ baseurl: "/xb-homebrew-vault"
 
 github_username: marcelofrau
 repository: marcelofrau/xb-homebrew-vault
+app_icon: /assets/images/about-appicon-80.png
 
 show_downloads: true
 

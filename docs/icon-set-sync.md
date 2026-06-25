@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Icon Set Sync
+published: false
 ---
 
 Icon set sync (personal icons)
