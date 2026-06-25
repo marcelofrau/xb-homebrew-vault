@@ -21,6 +21,8 @@ public partial class App : Application
     {
         SetupGlobalExceptionHandling();
 
+        Logger.Init();
+
         // Apply saved log level from settings
         var savedLevel = SettingsService.Current.MinLogLevel;
         Logger.MinLevel = savedLevel switch

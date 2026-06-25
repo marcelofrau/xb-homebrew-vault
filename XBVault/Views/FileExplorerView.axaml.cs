@@ -90,10 +90,12 @@ public partial class FileExplorerView : UserControl
             Logger.Error("OnDataContextChanged: BrowseFilesBtn is NULL!");
 
         Logger.Trace($"OnDataContextChanged: UploadButton is null? {UploadButton is null}");
-        if (UploadButton is not null)
-            UploadButton.Click += OnBrowseFilesClick;
-        else
-            Logger.Error("OnDataContextChanged: UploadButton is NULL!");
+        if (UploadFilesMenuItem is not null)
+            UploadFilesMenuItem.Click += OnUploadFilesClick;
+        if (UploadFolderMenuItem is not null)
+            UploadFolderMenuItem.Click += OnUploadFolderClick;
+        if (UploadZipMenuItem is not null)
+            UploadZipMenuItem.Click += OnUploadZipExtractClick;
 
         Logger.Trace("OnDataContextChanged: buttons wired");
 
@@ -293,26 +295,118 @@ public partial class FileExplorerView : UserControl
             Title = "Select files to upload",
             AllowMultiple = true
         });
+        var filePaths = files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToArray();
+        if (filePaths.Length == 0) return;
 
-        var paths = files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToArray();
-        if (paths.Length > 0)
-            await _vm.UploadFilesCommand.ExecuteAsync(paths);
+        await _vm.UploadMixedAsync(filePaths, []);
+    }
+
+    private async void OnUploadFilesClick(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is null) return;
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is null) return;
+
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Select files to upload",
+            AllowMultiple = true
+        });
+        var filePaths = files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToArray();
+        if (filePaths.Length == 0)
+        {
+            await ShowInfoDialogAsync("No files selected", "You did not select any files to upload.");
+            return;
+        }
+
+        await _vm.UploadMixedAsync(filePaths, []);
+    }
+
+    private async void OnUploadFolderClick(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is null) return;
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is null) return;
+
+        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Select folders to upload",
+            AllowMultiple = true
+        });
+        var folderPaths = folders.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToArray();
+        if (folderPaths.Length == 0)
+        {
+            await ShowInfoDialogAsync("No folders selected", "You did not select any folders to upload.");
+            return;
+        }
+
+        await _vm.UploadMixedAsync([], folderPaths);
+    }
+
+    private async void OnUploadZipExtractClick(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is null) return;
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is null) return;
+
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Select ZIP file to extract and upload",
+            AllowMultiple = false,
+            FileTypeFilter = new[] { new FilePickerFileType("ZIP Archive") { Patterns = new[] { "*.zip" } } }
+        });
+        if (files.Count == 0)
+        {
+            await ShowInfoDialogAsync("No file selected", "You did not select a ZIP file to extract and upload.");
+            return;
+        }
+        var zipPath = files[0].TryGetLocalPath();
+        if (zipPath is null) return;
+
+        await _vm.UploadZipExtractAsync(zipPath);
+    }
+
+    private async Task ShowInfoDialogAsync(string title, string message)
+    {
+        var topLevel = TopLevel.GetTopLevel(this) as Window;
+        if (topLevel is null) return;
+
+        var vm = new ConfirmViewModel(title, message, "OK", "", isDestructive: false);
+        var win = new ConfirmWindow { DataContext = vm };
+        await win.ShowDialog(topLevel);
     }
 
     private async Task<bool> ShowDeleteConfirmAsync(IReadOnlyList<SftpEntry> entries)
     {
-        var msg = entries.Count == 1
-            ? $"Are you sure you want to delete {entries[0].Name}?"
-            : $"Are you sure you want to delete {entries.Count} items?";
+        if (_vm is null) return false;
+        var hasFolders = entries.Any(e => e.IsDirectory);
+        var suffix = hasFolders ? " (including all contents)" : "";
+        var summary = entries.Count == 1
+            ? $"Delete {entries[0].Name}{suffix}?"
+            : $"Delete {entries.Count} items{suffix}?";
 
-        var vm = new ConfirmViewModel(
-            "Delete", msg,
-            "Delete", "Cancel",
-            "avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png",
-            "avares://XBVault/Assets/Views/ErrorDialog/errordialog-trash-48.png",
-            isDestructive: true);
+        var paths = new List<string>();
+        foreach (var e in entries)
+        {
+            if (e.IsDirectory)
+            {
+                paths.Add($"{e.FullPath}\\(folder)");
+                try
+                {
+                    var sub = await _vm.SftpService.RecursiveListAsync(e.FullPath);
+                    foreach (var f in sub.Where(x => !x.IsDirectory))
+                        paths.Add($"  {f.FullPath}");
+                }
+                catch { paths.Add($"  <unable to list>"); }
+            }
+            else
+            {
+                paths.Add(e.FullPath);
+            }
+        }
 
-        var win = new ConfirmWindow { DataContext = vm };
+        var vm = new DeleteConfirmViewModel(summary, paths);
+        var win = new DeleteConfirmWindow { DataContext = vm };
         var topLevel = TopLevel.GetTopLevel(this) as Window;
         if (topLevel is not null)
             await win.ShowDialog(topLevel);
@@ -566,16 +660,23 @@ public partial class FileExplorerView : UserControl
         if (_vm is null) return;
         var dropped = e.DataTransfer.TryGetFiles();
         if (dropped is null) return;
-        var files = dropped.ToList();
 
-        var paths = files
-            .Select(f => f.TryGetLocalPath())
-            .Where(p => p is not null)
-            .Cast<string>()
-            .ToArray();
+        var filePaths = new List<string>();
+        var folderPaths = new List<string>();
 
-        if (paths.Length > 0)
-            await _vm.UploadFilesCommand.ExecuteAsync(paths);
+        foreach (var item in dropped)
+        {
+            if (item is IStorageFolder)
+                folderPaths.Add(item.TryGetLocalPath()!);
+            else
+                filePaths.Add(item.TryGetLocalPath()!);
+        }
+
+        Logger.Trace($"OnDropZoneDrop: {filePaths.Count} file(s), {folderPaths.Count} folder(s) dropped");
+        if (filePaths.Count > 0 || folderPaths.Count > 0)
+            await _vm.UploadMixedAsync(filePaths.ToArray(), folderPaths.ToArray());
+        else
+            Logger.Trace("OnDropZoneDrop: no local paths resolved");
     }
 
 }

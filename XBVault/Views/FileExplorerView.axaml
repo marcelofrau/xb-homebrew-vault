@@ -11,6 +11,10 @@
       <Setter Property="Padding" Value="1,0"/>
     </Style>
 
+    <Style Selector="TreeViewItem:empty /template/ ContentPresenter#PART_HeaderPresenter">
+      <Setter Property="Margin" Value="23,0,0,0"/>
+    </Style>
+
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="32,32,32,16">
@@ -126,7 +130,9 @@
                      FontSize="14"
                      VerticalAlignment="Center"
                      TextWrapping="NoWrap"
-                     TextTrimming="CharacterEllipsis"/>
+                     TextTrimming="CharacterEllipsis"
+                     MaxWidth="350"
+                     ToolTip.Tip="{ReflectionBinding StatusMessage}"/>
         </StackPanel>
       </Border>
 
@@ -335,7 +341,7 @@
                   Margin="0,4,0,0"
                   VerticalAlignment="Bottom">
         <Button Command="{ReflectionBinding CreateFolderCommand}"
-                IsEnabled="{ReflectionBinding HasSelectedEntry}"
+                IsEnabled="{ReflectionBinding CanRefresh}"
                 Padding="6,4"
                 Width="110"
                 HorizontalContentAlignment="Stretch">
@@ -348,20 +354,41 @@
                        VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
-        <Button Command="{ReflectionBinding UploadFilesCommand}"
-                Padding="6,4"
-                Width="110"
-                HorizontalContentAlignment="Stretch"
-                x:Name="UploadButton">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-upload-48.png"
-                   Width="24" Height="24"
-                   Stretch="Uniform"/>
-            <TextBlock Text="Upload"
-                       FontSize="12"
-                       VerticalAlignment="Center"/>
-          </StackPanel>
-        </Button>
+      <Button Padding="6,4"
+              Width="110"
+              HorizontalContentAlignment="Stretch"
+              x:Name="UploadButton">
+        <Button.Flyout>
+          <MenuFlyout>
+            <MenuItem Header="Upload Files" x:Name="UploadFilesMenuItem">
+              <MenuItem.Icon>
+                <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-add-file-20.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Upload Folder" x:Name="UploadFolderMenuItem">
+              <MenuItem.Icon>
+                <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-folder-20.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Upload ZIP &amp; Extract" x:Name="UploadZipMenuItem">
+              <MenuItem.Icon>
+                <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-zip-20.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+              </MenuItem.Icon>
+            </MenuItem>
+          </MenuFlyout>
+        </Button.Flyout>
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-upload-48.png"
+                 Width="24" Height="24"
+                 Stretch="Uniform"/>
+          <TextBlock Text="Upload"
+                     FontSize="12"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
         <Button Command="{ReflectionBinding DownloadSelectedCommand}"
                 IsEnabled="{ReflectionBinding CanDownloadMultiple}"
                 Padding="6,4"

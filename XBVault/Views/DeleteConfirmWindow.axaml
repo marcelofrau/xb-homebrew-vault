@@ -1,0 +1,105 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        x:Class="XBVault.Views.DeleteConfirmWindow"
+        x:DataType="vm:DeleteConfirmViewModel"
+        Title="Delete"
+        Width="560" Height="420"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
+  <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
+    <Grid RowDefinitions="Auto,Auto,*">
+      <!-- Title Bar -->
+      <Grid Height="32" PointerPressed="OnTitleBarPointerPressed">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#447F3E" Offset="0"/>
+            <GradientStop Color="#9ACA3C" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="Confirm Deletion"
+                   Foreground="#1A1A1A" FontSize="14" FontWeight="Bold"
+                   VerticalAlignment="Center" Margin="12,0"/>
+        <Button Grid.Column="1" Width="32" Height="32" Padding="0"
+                BorderThickness="0" Click="OnCloseClick" Cursor="Hand"
+                ToolTip.Tip="Close">
+          <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-close-20.png"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <Button.Styles>
+            <Style Selector="Button"><Setter Property="Background" Value="Transparent"/></Style>
+            <Style Selector="Button:pointerover"><Setter Property="Background" Value="#CC3333"/></Style>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#CC3333"/>
+            </Style>
+          </Button.Styles>
+        </Button>
+      </Grid>
+
+      <!-- Header: Icon + Summary -->
+      <Border Grid.Row="1" Padding="16,16,16,8">
+        <Grid ColumnDefinitions="48,*" ColumnSpacing="14">
+          <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-trash-48.png"
+                 Width="48" Height="48" Stretch="Uniform" VerticalAlignment="Top"/>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Summary}"
+                       TextWrapping="Wrap" FontSize="14"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource DangerBrush}"/>
+            <TextBlock FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                       IsVisible="{Binding FileCount, Converter={StaticResource IntPositive}}">
+              <Run Text="{Binding FileCount}"/><Run Text=" item(s)"/>
+            </TextBlock>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- File list area -->
+      <Border Grid.Row="2" Margin="16,0,16,16"
+              Background="{StaticResource SurfaceAltBrush}"
+              CornerRadius="6" Padding="12,8">
+        <Grid RowDefinitions="*,Auto">
+          <ScrollViewer>
+            <TextBlock Text="{Binding FileListText}"
+                       FontFamily="{StaticResource MonoFont}"
+                       FontSize="12"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       TextWrapping="NoWrap"/>
+          </ScrollViewer>
+
+          <StackPanel Grid.Row="1" Orientation="Horizontal"
+                      HorizontalAlignment="Right" Spacing="8"
+                      Margin="0,8,0,0">
+            <Button Command="{Binding CancelCommand}"
+                    Padding="12,6" MinWidth="90">
+              <TextBlock Text="Cancel" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </Button>
+            <Button Command="{Binding ConfirmCommand}"
+                    Padding="12,6" MinWidth="90"
+                    Background="{StaticResource DangerBrush}"
+                    Foreground="White">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-trash-48.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Delete" FontWeight="SemiBold" VerticalAlignment="Center"/>
+              </Grid>
+              <Button.Styles>
+                <Style Selector="Button:pointerover">
+                  <Setter Property="Background" Value="#C0392B"/>
+                </Style>
+              </Button.Styles>
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
+  </Border>
+</Window>

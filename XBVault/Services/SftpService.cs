@@ -168,6 +168,7 @@ public class SftpService : IDisposable
 
     public Task<List<SftpEntry>> RecursiveListAsync(string path)
     {
+        Logger.Trace($"RecursiveListAsync: '{path}'");
         return Task.Run(async () =>
         {
             if (_ssh is null || !_ssh.IsConnected)
@@ -176,7 +177,17 @@ public class SftpService : IDisposable
             // dir /s /b /a-d: all file paths recursively, bare format
             var result = await RunShellCommandAsync($"dir \"{path}\" /s /b /a-d");
             if (!result.Success)
+            {
+                var err = result.Error ?? "";
+                if (err.Contains("não encontrado", StringComparison.OrdinalIgnoreCase)
+                    || err.Contains("not found", StringComparison.OrdinalIgnoreCase)
+                    || err.Contains("no files", StringComparison.OrdinalIgnoreCase))
+                {
+                    Logger.Debug($"RecursiveListAsync: '{path}' is empty (exit=1, err=empty dir)");
+                    return [];
+                }
                 throw new Exception($"dir /s /b /a-d failed: {result.Error}");
+            }
 
             var parent = path.TrimEnd('\\');
             var entries = new List<SftpEntry>();
@@ -208,6 +219,7 @@ public class SftpService : IDisposable
                 }
             }
 
+            Logger.Trace($"RecursiveListAsync: '{path}' — {entries.Count} entries");
             return entries;
         });
     }

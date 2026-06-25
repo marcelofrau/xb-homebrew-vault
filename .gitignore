@@ -33,6 +33,9 @@ Thumbs.db
 .cursor/
 .aider/
 
+# AI agent project config
+opencode.json
+
 # AI agent rules
 AGENTS.md
 

@@ -261,7 +261,7 @@
           <Button Classes="SidebarBtn"
                   HorizontalAlignment="Stretch"
                   FontWeight="SemiBold"
-                  Command="{Binding DisconnectCommand}"
+                  Click="OnDisconnectClick"
                   IsVisible="{Binding IsXboxConnected}">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-disconnect-32.png"

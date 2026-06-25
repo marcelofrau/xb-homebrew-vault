@@ -81,7 +81,8 @@
                       HorizontalAlignment="Right">
             <Button Command="{Binding CancelCommand}"
                     Padding="12,8"
-                    MinWidth="90">
+                    MinWidth="90"
+                    IsVisible="{Binding CancelText, Converter={StaticResource StringNotEmpty}}">
               <TextBlock Text="{Binding CancelText}"
                          VerticalAlignment="Center"
                          HorizontalAlignment="Center"/>

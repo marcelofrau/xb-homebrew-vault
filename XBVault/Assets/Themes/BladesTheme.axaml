@@ -304,8 +304,40 @@
     <Setter Property="BorderThickness" Value="0"/>
   </Style>
 
+    <!-- MenuFlyout -->
+  <Style Selector="MenuFlyoutPresenter">
+    <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="5"/>
+    <Setter Property="Padding" Value="4"/>
+  </Style>
+
+  <Style Selector="MenuItem">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="Padding" Value="10,6"/>
+    <Setter Property="CornerRadius" Value="3"/>
+  </Style>
+
+  <Style Selector="MenuItem:pointerover /template/ Border">
+    <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+  </Style>
+
+  <Style Selector="MenuItem:pressed /template/ Border">
+    <Setter Property="Background" Value="{StaticResource AccentHoverDarkBrush}"/>
+  </Style>
+
+  <Style Selector="MenuItem:disabled">
+    <Setter Property="Foreground" Value="{StaticResource TextDimBrush}"/>
+  </Style>
+
   <!-- TextBox -->
   <Style Selector="TextBox">
+
+
     <Style.Resources>
       <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#0F1F0F"/>
       <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#2A2D33"/>

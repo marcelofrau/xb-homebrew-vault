@@ -53,8 +53,9 @@ public static class Logger
 {
     private static readonly object _lock = new();
     private static bool _consoleAttached;
-    private static LogLevel _minLevel = LogLevel.Trace;
+    private static LogLevel _minLevel = LogLevel.Info;
     private static StreamWriter? _fileWriter;
+    private static string? _logDir;
 
     public static LogLevel MinLevel
     {
@@ -65,6 +66,39 @@ public static class Logger
     // in-memory log lines for UI
     public static ObservableCollection<LogEntry> Entries { get; } = new ObservableCollection<LogEntry>();
     public static event Action<LogEntry>? OnLog;
+
+    /// <summary>
+    /// Initialize file logging to %APPDATA%/XBVault/logs/ with rotation.
+    /// Keeps last 5 log files, deletes oldest.
+    /// </summary>
+    public static void Init()
+    {
+        _logDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "XBVault", "logs");
+
+        try
+        {
+            Directory.CreateDirectory(_logDir);
+
+            // Rotate: keep 5 newest, delete rest
+            var existing = Directory.GetFiles(_logDir, "XBVault-*.log")
+                .OrderByDescending(f => f)
+                .ToList();
+            foreach (var old in existing.Skip(4))
+                File.Delete(old);
+
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd-HHmmss");
+            var logPath = Path.Combine(_logDir, $"XBVault-{timestamp}.log");
+            _fileWriter = new StreamWriter(logPath, append: false) { AutoFlush = true };
+            Info($"Log file: {logPath}");
+        }
+        catch (Exception ex)
+        {
+            // File logging unavailable — continue without it
+            try { System.Diagnostics.Debug.WriteLine($"Logger.Init failed: {ex.Message}"); } catch { }
+        }
+    }
 
     public static void AttachConsole()
     {
@@ -126,14 +160,10 @@ public static class Logger
             try { Entries.Add(entry); } catch { }
             try { OnLog?.Invoke(entry); } catch { }
             try { WriteConsole(entry); } catch { }
-            try
+            if (_fileWriter is not null)
             {
-                _fileWriter ??= new StreamWriter(
-                    Path.Combine(Path.GetTempPath(), "XBVault.log"), append: false)
-                    { AutoFlush = true };
-                _fileWriter.WriteLine(entry.ToString());
+                try { _fileWriter.WriteLine(entry.ToString()); } catch { }
             }
-            catch { }
         }
     }
 
