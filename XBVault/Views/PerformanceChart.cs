@@ -10,7 +10,7 @@ namespace XBVault.Views;
 public class PerformanceChart : Control
 {
     private readonly List<double> _values = [];
-    private const int MaxPoints = 60;
+    private const int MaxPoints = 30;
 
     public static readonly StyledProperty<IBrush?> StrokeProperty =
         AvaloniaProperty.Register<PerformanceChart, IBrush?>(nameof(Stroke), Brushes.Lime);
