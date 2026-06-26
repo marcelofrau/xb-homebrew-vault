@@ -206,7 +206,7 @@ This means there are potentially 3 separate `CatalogApiService` instances alive 
 
 ---
 
-### 14. `DllImport` in Logger + `System.Management` load-time risk on Linux
+### 14. ~~`DllImport` in Logger + `System.Management` load-time risk on Linux~~ ✅ Resolved (v0.9.2)
 
 Two Windows-specific dependencies:
 
@@ -219,7 +219,7 @@ The Linux and macOS release artifacts in CI publish with `--self-contained true`
 
 **Fix Logger:** Already functionally guarded. The `DllImport` declaration itself is low risk — no further action required unless P/Invoke metadata size is a concern.
 
-**Fix UsbDriveDetector:** Add `#if WINDOWS` conditional compilation or move `using System.Management` inside the guarded block with reflection-based dynamic loading. Verify Linux CI artifact actually starts.
+**Fix UsbDriveDetector:** `using System.Management` and all WMI code wrapped in `#if WINDOWS_BUILD` (csproj defines `WINDOWS_BUILD` only on Windows builds). Non-Windows builds get a no-op fallback, no assembly reference needed.
 
 ---
 
@@ -263,7 +263,7 @@ The Xbox Dev Mode drive layout is **not guaranteed stable** — the external-sto
 graph LR
     H["🔴 High<br/>1 open · 1 resolved"]
     M["🟡 Medium<br/>6 open · 2 resolved"]
-    L["🟢 Low<br/>3 open · 4 resolved"]
+    L["🟢 Low<br/>2 open · 5 resolved"]
     
     style H fill:#CC3333,stroke:#9ACA3C,color:#fff
     style M fill:#FF9900,stroke:#9ACA3C,color:#000
@@ -274,8 +274,8 @@ graph LR
 |----------|------|----------|-----------------|
 | 🔴 High | 1 | 1 ✅ | 4–6 hours |
 | 🟡 Medium | 6 | 2 ✅ | 8–14 hours |
-| 🟢 Low | 3 | 4 ✅ | 1–3 hours |
-| **Total** | **10 open** | **7 resolved** | **13–23 hours** |
+| 🟢 Low | 2 | 5 ✅ | 0–2 hours |
+| **Total** | **9 open** | **8 resolved** | **12–22 hours** |
 
 ### Notable changes since first documented
 
@@ -285,7 +285,7 @@ graph LR
 - **`ConfigureAwait(false)`**: still **0** across the service layer.
 - **Resolved #9, #10, #11**: TitleGradient, unified close button, magic delays (v0.9.1).
 - **Resolved #12**: CatalogApiService injected via constructor (v0.9.2).
-- **Resolved #15, #17**: PerformanceSnapshot logging, orphaned `_Backup` icons.
+- **Resolved #14**: UsbDriveDetector WMI code conditionally compiled for Windows only (v0.9.2).
 
 ---
 
