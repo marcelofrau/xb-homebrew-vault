@@ -147,7 +147,7 @@ cd xb-homebrew-vault
 .\build\run.ps1
 
 # Build release (produces self-contained ZIP)
-.\build\build-release.ps1 -Version 0.9.2 -Arch x64
+.\build\build-release.ps1 -Version 0.9.4 -Arch x64
 ```
 
 ## 🏛️ Project Structure
