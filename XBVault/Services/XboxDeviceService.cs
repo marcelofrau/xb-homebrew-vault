@@ -422,7 +422,10 @@ public class XboxDeviceService
             if (doc.RootElement.TryGetProperty("ErrorMessage", out var msg))
                 return msg.GetString();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Logger.Warn($"TryParseError: failed to parse error JSON: {ex.Message}");
+        }
         return null;
     }
 
@@ -621,9 +624,9 @@ public class XboxDeviceService
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore errors during polling
+                Logger.Trace($"Package manager polling error (ignored): {ex.Message}");
             }
             await Task.Delay(RetryDelayMs);
         }
@@ -1178,7 +1181,7 @@ public class XboxDeviceService
             if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived)
             {
                 try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", CancellationToken.None); }
-                catch { }
+                catch (Exception ex) { Logger.Trace($"WS close error (ignored): {ex.Message}"); }
             }
             ws.Dispose();
             Logger.Info("WS disconnected");

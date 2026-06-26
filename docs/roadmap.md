@@ -7,9 +7,9 @@ title: Roadmap
 
 ## Current Status
 
-**Latest release: v0.8.6** · [Download](https://github.com/marcelofrau/xb-homebrew-vault/releases/latest) · **v0.8.7 shipping soon**
+**Latest release: v0.9.2** · [Download](https://github.com/marcelofrau/xb-homebrew-vault/releases/latest)
 
-The app is feature-complete for daily Xbox Dev Mode homebrew management. Core flows — first-run setup, browse, install, uninstall, dev tools, USB permissions — are all shipping and stable. **v0.8.7 (shipping soon) brings a functional File Explorer** (SSH/SFTP browser), replacing the former placeholder tab.
+The app is feature-complete for daily Xbox Dev Mode homebrew management. Core flows — first-run setup, browse, install, uninstall, dev tools, USB permissions — are all shipping and stable. **v0.9.0 shipped a full File Explorer** with dual-pane tree + list view, upload/download with progress bars, delete, and create folder. **v0.9.1–v0.9.2** focused on SFTP performance (60+ MB/s), tech debt reduction, and cross-platform hardening.
 
 ---
 
@@ -28,7 +28,9 @@ timeline
     v0.8.4 : Settings redesign, live screenshot, item-detail overlay, theme polish
     v0.8.5 : catalog.json migration, UWP Port field, cache expiry, confirm dialogs
     v0.8.6 : First-run setup wizard, USB permission wizard, spinner polish
-    v0.8.7 : Functional File Explorer (SSH/SFTP browser, upload/download, drive mounting)
+    v0.9.0 : Full File Explorer (dual-pane tree/list, upload/download, delete, create folder)
+    v0.9.1 : SFTP performance rewrite (60+ MB/s), title gradient, window close button, magic delays → constants
+    v0.9.2 : CatalogApiService DI, WINDOWS_BUILD guard, silent catches → logged, PerformanceChart tweak
 ```
 
 ## What's Shipped
@@ -45,6 +47,10 @@ timeline
 | Catalog API | v0.8.5 | Migrated from HTML scraping to `catalog.json`, UWP Port field, cache expiry, confirm dialogs, dependency selection in wizard |
 | Setup & USB | v0.8.6 | First-run setup wizard (3-step), USB permission wizard with WMI detection + icacls, spinner + min-delay polish |
 | File Explorer | v0.8.7 | Functional SSH/SFTP file browser — browse, upload/download with progress, drive mounting via `mklink` |
+| File Explorer (full) | v0.9.0 | Dual-pane tree + list, folder upload, delete confirm, progress bars, toolbar status, file-type icons |
+| SFTP Performance | v0.9.1 | Rewrite: 32 KB loop → native UploadFile/DownloadFile, dynamic buffer (64/256/512 KB), 60+ MB/s |
+| Quick wins | v0.9.1 | TitleGradient resource, unified WindowClose button, magic delays → named constants, deleted _Backup |
+| Stabilization | v0.9.2 | CatalogApiService constructor injection, WINDOWS_BUILD conditional compile, silent catches → logged, PerformanceChart MaxPoints 30 |
 
 ### Feature Delivery Timeline
 
@@ -81,9 +87,18 @@ gantt
     Settings redesign            :done, 2026-06, 2026-06
     Item-detail overlay          :done, 2026-06, 2026-06
     section File Explorer
-    SSH/SFTP file browser        :done, 2026-07, 2026-07
-    Upload/download with progress:done, 2026-07, 2026-07
-    Drive mounting via mklink    :done, 2026-07, 2026-07
+    SSH/SFTP file browser        :done, 2026-06, 2026-06
+    Upload/download with progress:done, 2026-06, 2026-06
+    Drive mounting via mklink    :done, 2026-06, 2026-06
+    section v0.9.x Stabilization
+    SFTP performance rewrite     :done, 2026-06, 2026-06
+    TitleGradient resource       :done, 2026-06, 2026-06
+    WindowClose button           :done, 2026-06, 2026-06
+    Magic delays to constants    :done, 2026-06, 2026-06
+    CatalogApiService DI         :done, 2026-06, 2026-06
+    WINDOWS_BUILD cond guard     :done, 2026-06, 2026-06
+    Silent catches → log         :done, 2026-06, 2026-06
+    Deleted _Backup              :done, 2026-06, 2026-06
 ```
 
 ### Feature Breakdown
@@ -112,12 +127,24 @@ gantt
 | UI | Xbox 360 Blades dark theme | ✅ |
 | UI | Settings redesign | ✅ v0.8.4 |
 | UI | Activity log viewer | ✅ |
-| File Explorer | SSH/SFTP file browser | ✅ v0.8.7 |
-| File Explorer | Upload / download with progress | ✅ v0.8.7 |
+| File Explorer | SSH/SFTP file browser | ✅ v0.8.7/v0.9.0 |
+| File Explorer | Upload / download with progress | ✅ v0.8.7/v0.9.0 |
 | File Explorer | Drive mounting via `mklink` | ✅ v0.8.7 |
+| File Explorer | Delete / create folder | ✅ v0.9.0 |
+| File Explorer | Dual-pane tree + list | ✅ v0.9.0 |
+| File Explorer | File-type icons | ✅ v0.9.0 |
+| File Explorer | Toolbar status block | ✅ v0.9.0 |
 | CI | Windows + Ubuntu + macOS build matrix | ✅ |
 | CI | Linux release artifact | ✅ |
 | CI | macOS release artifact | ✅ v0.8.6 |
+| Stability | TitleGradient resource | ✅ v0.9.1 |
+| Stability | WindowClose button unified | ✅ v0.9.1 |
+| Stability | Magic delays → named constants | ✅ v0.9.1 |
+| Stability | Deleted _Backup directory | ✅ v0.9.1 |
+| Stability | SFTP performance (60+ MB/s) | ✅ v0.9.1 |
+| Stability | CatalogApiService DI | ✅ v0.9.2 |
+| Stability | WINDOWS_BUILD conditional guard | ✅ v0.9.2 |
+| Stability | Silent catches → logged | ✅ v0.9.2 |
 
 ---
 
@@ -129,44 +156,35 @@ gantt
 gantt
     title Road to v1.0
     dateFormat  YYYY-MM-DD
-    section v0.9.0 — File Explorer
-    Context operations (rename/delete) : 2026-07, 7d
-    Edge cases & error handling        : 2026-07, 10d
-    UX polish & keyboard navigation    : 2026-08, 7d
     section v0.9.x → v1.0.0 — Stabilization
-    Split XboxDeviceService     : 2026-08, 14d
-    Theme gradient as resource  : 2026-08, 3d
-    ConfigureAwait pass         : 2026-08, 3d
-    async void fix              : 2026-08, 2d
-    Bugfix & refactor sweep     : 2026-09, 21d
+    Split XboxDeviceService     : 2026-07, 14d
+    ConfigureAwait pass         : 2026-07, 3d
+    async void fix              : 2026-07, 2d
+    Remaining tech debt sweep   : 2026-08, 14d
     section Beyond v1.0
-    Community catalog           : 2026-10, 21d
-    Enhanced version checker    : 2026-10, 5d
-    Storage analyzer            : 2026-11, 10d
+    Community catalog           : 2026-09, 21d
+    Enhanced version checker    : 2026-09, 5d
+    Storage analyzer            : 2026-10, 10d
 ```
-
-### v0.9.0 — File Explorer Consolidation
-
-The functional File Explorer ships in **v0.8.7** (SSH/SFTP browse, upload/download, drive mounting via SSH.NET on port 22 — same credentials as WDP, no companion app). **v0.9.0** is the milestone that marks it complete and polished.
-
-| Item | Description |
-|------|-------------|
-| Context operations | Rename, delete, new folder from the context menu |
-| Error handling | Graceful handling of permission errors, disconnects, large directories |
-| UX polish | Keyboard navigation, breadcrumb path bar, drag-and-drop refinements |
-| Performance | Lazy-load + virtualization for directories with many entries |
 
 ### v0.9.x → v1.0.0 — Stabilization
 
-The road from v0.9.0 to **v1.0.0** is dedicated to **bugfixing, refactoring, and tech debt reduction** — no major new features, just hardening toward a stable 1.0.
+The remaining road to **v1.0.0** is dedicated to **bugfixing, refactoring, and tech debt reduction** — no major new features, just hardening toward a stable 1.0.
 
-| Item | Description |
-|------|-------------|
-| **Split XboxDeviceService** | Break the 1038-line god class into `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService` |
-| **Theme resources** | Extract duplicated title bar gradient + close button into shared `StaticResource` / UserControl (currently copy-pasted in 14+ windows) |
-| **`ConfigureAwait(false)` audit** | Add to all service-layer `await` calls |
-| **Remove `async void`** | Fix fire-and-forget event handlers that can crash the process on unhandled exceptions |
-| **Bugfix & refactor sweep** | Address open issues, reduce duplication, tighten error handling across the app |
+| Item | Status | Description |
+|------|--------|-------------|
+| **Split XboxDeviceService** | 🔴 Remaining | Break the 1200-line god class into `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService` |
+| **`ConfigureAwait(false)` audit** | 🟡 Remaining | Add to all service-layer `await` calls |
+| **Remove `async void`** | 🟡 Remaining | Fix fire-and-forget event handlers that can crash the process on unhandled exceptions |
+| **Remaining tech debt** | 🟡 5 items | TD #3 (composition root), #7 (IDisposable), #8 (Border corner clip), #13 (CTS dispose), #16 (BrowseViewModel size) |
+| TitleGradient resource | ✅ v0.9.1 | Extracted duplicated gradient into shared resource |
+| WindowClose button | ✅ v0.9.1 | Unified across all windows |
+| Magic delays → constants | ✅ v0.9.1 | Named constants for all magic delay values |
+| SFTP performance | ✅ v0.9.1 | 32 KB loop → native UploadFile/DownloadFile, 60+ MB/s |
+| CatalogApiService DI | ✅ v0.9.2 | Constructor injection instead of self-instantiation |
+| WINDOWS_BUILD guard | ✅ v0.9.2 | Conditional compilation for System.Management |
+| Silent catches → log | ✅ v0.9.2 | All `catch { }` now log diagnostics |
+| Deleted _Backup | ✅ v0.9.1 | Removed stale backup directory |
 
 ### v1.0.0 — First Stable Release
 

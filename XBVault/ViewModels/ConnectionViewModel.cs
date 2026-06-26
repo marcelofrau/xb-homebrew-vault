@@ -79,7 +79,10 @@ public partial class ConnectionViewModel : ObservableObject
                     return s2.GetString();
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Logger.Warn($"TryGetLinkSpeedAsync: failed to parse: {ex.Message}");
+        }
         return null;
     }
 

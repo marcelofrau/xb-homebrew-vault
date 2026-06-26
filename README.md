@@ -41,7 +41,7 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 | 🛠️ | **Dev Tools** | Screenshot capture, system info, process manager, network info, real-time CPU/GPU/RAM chart |
 | 💾 | **USB Permission Wizard** | Prepare a USB drive for Xbox Dev Mode — auto-detect drives, apply NTFS permissions via icacls |
 | 🔗 | **First-Run Setup Wizard** | Guided 3-step setup for first-time users — enter IP, credentials, test connection |
-| 📁 | **File Explorer** | *(Coming soon)* Browse the Xbox file system over SSH/SFTP |
+| 📁 | **File Explorer** | ✅ Browse, upload/download, delete, create folders over SSH/SFTP with dual-pane tree + list view |
 | 🌙 | **Blades Theme** | Xbox 360-inspired dark theme with green accents |
 | 🔐 | **Secure Credentials** | Obfuscated local storage — no cloud, no accounts, no telemetry |
 | 📋 | **Activity Log** | Full in-app log with multi-select, copy, auto-scroll, and configurable log level |
@@ -114,8 +114,8 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 | Package management | ✅ | Install, uninstall, dependency resolution, custom install wizard |
 | Dev Tools | ✅ | Screenshot, system info, processes, network, performance chart |
 | USB permission wizard | ✅ | WMI drive detection, icacls permission grant |
-| File Explorer (SSH/SFTP) | ⏳ | Browse Xbox file system wirelessly — next major feature |
-| Cross-platform polish | ⏳ | macOS build, Linux/macOS runtime guards |
+| File Explorer (SSH/SFTP) | ✅ | Browse, upload/download, delete, create folders — dual-pane tree + list |
+| Cross-platform polish | ⏳ | macOS build v0.8.6, Linux/macOS runtime guards v0.9.2 |
 
 See the full [Roadmap](https://marcelofrau.github.io/xb-homebrew-vault/roadmap) for details and future plans.
 
@@ -147,7 +147,7 @@ cd xb-homebrew-vault
 .\build\run.ps1
 
 # Build release (produces self-contained ZIP)
-.\build\build-release.ps1 -Version 0.8.6 -Arch x64
+.\build\build-release.ps1 -Version 0.9.2 -Arch x64
 ```
 
 ## 🏛️ Project Structure

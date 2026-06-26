@@ -64,26 +64,24 @@ Service-layer continuations unnecessarily capture the UI synchronization context
 
 ---
 
-### 5. Silent exception swallowing — multiple sites
+### 5. ~~Silent exception swallowing — multiple sites~~ ✅ Resolved (v0.9.2)
 
-Several catch blocks discard exceptions with no logging, no rethrow, and no meaningful fallback. Most impactful:
+Several catch blocks discard exceptions with no logging, no rethrow, and no meaningful fallback:
 
-| File | Line | Pattern | Impact |
-|------|------|---------|--------|
-| `App.axaml.cs` | 107, 110 | `catch { }` | Error dialog failures silently swallowed |
-| `Services/XboxDeviceService.cs` | 422 | `catch { }` | JSON parse in `TryParseError()` silently returns null |
-| `Services/XboxDeviceService.cs` | 621–623 | `catch { /* Ignore */ }` | Package manager polling swallows all errors |
-| `ViewModels/NetworkInfoViewModel.cs` | 50 | `catch { }` | All network adapter parse errors silently dropped |
-| `ViewModels/CrashDataViewModel.cs` | 76 | `catch { CrashDumpEnabled = false; }` | Deserialization failure silently sets default |
-| `ViewModels/ConnectionViewModel.cs` | 68 | `catch { }` | JSON parse helper, returns null |
-| `Services/AdminHelper.cs` | 19 | `catch { return false; }` | No logging |
-| `Services/CryptoService.cs` | 41 | `catch { return string.Empty; }` | No logging |
-| `Services/Logger.cs` | 125–127 | `catch { }` × 3 | Logger itself silently fails |
-| `Services/XboxDeviceService.cs` | 1140 | `catch { }` | WebSocket close teardown |
+| File | Pattern | Fix |
+|------|---------|-----|
+| `App.axaml.cs` | `catch { }` | `Logger.Error` added |
+| `Services/XboxDeviceService.cs:425` | `catch { }` | `Logger.Warn` added |
+| `Services/XboxDeviceService.cs:624` | `catch { /* Ignore */ }` | `Logger.Trace` added |
+| `Services/XboxDeviceService.cs:1181` | `catch { }` | `Logger.Trace` added |
+| `ViewModels/NetworkInfoViewModel.cs:50` | `catch { }` | `Logger.Warn` added |
+| `ViewModels/CrashDataViewModel.cs:76` | `catch { CrashDumpEnabled = false; }` | `Logger.Warn` added |
+| `ViewModels/ConnectionViewModel.cs:82` | `catch { }` | `Logger.Warn` added |
+| `Services/AdminHelper.cs` | `catch { return false; }` | File deleted (dead code) |
+| `Services/CryptoService.cs:41` | `catch { return string.Empty; }` | `Logger.Warn` added |
+| `Services/Logger.cs` | `catch { }` × 3 | Left as-is (logger can't log itself) |
 
-Some are intentional (cleanup paths, cancellation), but the majority in service/ViewModel logic hide bugs.
-
-**Fix:** Add `Logger.Warn/Error` to non-intentional silent catches. Use `catch (OperationCanceledException)` explicitly where cancellation is expected.
+**Fix:** Added `Logger.Warn/Error/Trace` to all non-intentional silent catches. Deleted dead `AdminHelper.cs`.
 
 ---
 
@@ -262,7 +260,7 @@ The Xbox Dev Mode drive layout is **not guaranteed stable** — the external-sto
 ```mermaid
 graph LR
     H["🔴 High<br/>1 open · 1 resolved"]
-    M["🟡 Medium<br/>6 open · 2 resolved"]
+    M["🟡 Medium<br/>5 open · 3 resolved"]
     L["🟢 Low<br/>2 open · 5 resolved"]
     
     style H fill:#CC3333,stroke:#9ACA3C,color:#fff
@@ -273,9 +271,9 @@ graph LR
 | Severity | Open | Resolved | Estimated effort |
 |----------|------|----------|-----------------|
 | 🔴 High | 1 | 1 ✅ | 4–6 hours |
-| 🟡 Medium | 6 | 2 ✅ | 8–14 hours |
+| 🟡 Medium | 5 | 3 ✅ | 6–12 hours |
 | 🟢 Low | 2 | 5 ✅ | 0–2 hours |
-| **Total** | **9 open** | **8 resolved** | **12–22 hours** |
+| **Total** | **8 open** | **9 resolved** | **10–20 hours** |
 
 ### Notable changes since first documented
 

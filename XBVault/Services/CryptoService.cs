@@ -38,8 +38,9 @@ public static class CryptoService
             Array.Copy(salted, Salt.Length, bytes, 0, bytes.Length);
             return Encoding.UTF8.GetString(bytes);
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Warn($"CryptoService: decryption failed: {ex.Message}");
             return string.Empty;
         }
     }

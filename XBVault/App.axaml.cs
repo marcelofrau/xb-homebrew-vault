@@ -108,10 +108,16 @@ public partial class App : Application
                     else
                         dlg.Show();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "ShowErrorDialogSafe: failed to show dialog");
+                }
             }, DispatcherPriority.Send);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "ShowErrorDialogSafe: outer dispatch failed");
+        }
     }
 
     private static async Task InitAfterSplashAsync(

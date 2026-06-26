@@ -47,7 +47,10 @@ public partial class NetworkInfoViewModel : ObservableObject
                     if (doc.RootElement.TryGetProperty("Adapters", out var adapters))
                         ParseAdapters(adapters);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Logger.Warn($"Failed to parse network config JSON: {ex.Message}");
+                }
             }
 
             // WiFi scan

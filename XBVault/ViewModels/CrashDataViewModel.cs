@@ -73,7 +73,11 @@ public partial class CrashDataViewModel : ObservableObject
                     var control = JsonSerializer.Deserialize<CrashControlInfo>(controlJson);
                     CrashDumpEnabled = control?.CrashDumpEnabled ?? false;
                 }
-                catch { CrashDumpEnabled = false; }
+                catch (Exception ex)
+                {
+                    Logger.Warn($"Failed to parse crash control info: {ex.Message}");
+                    CrashDumpEnabled = false;
+                }
             }
 
             var json = await _xboxService.GetCrashDumpsAsync();

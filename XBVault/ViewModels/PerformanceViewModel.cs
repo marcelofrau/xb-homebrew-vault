@@ -55,6 +55,7 @@ public partial class PerformanceViewModel : ObservableObject
     private void StopMonitoring()
     {
         _cts?.Cancel();
+        _cts?.Dispose();
         _cts = null;
         IsMonitoring = false;
     }
