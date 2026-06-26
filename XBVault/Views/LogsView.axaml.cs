@@ -10,6 +10,8 @@ namespace XBVault.Views;
 
 public partial class LogsView : UserControl
 {
+    private const int CopyFeedbackDelayMs = 2000;
+
     public LogsView()
     {
         InitializeComponent();
@@ -55,7 +57,7 @@ public partial class LogsView : UserControl
 
         var orig = CopyButtonText.Text;
         CopyButtonText.Text = "Copied!";
-        await Task.Delay(2000);
+        await Task.Delay(CopyFeedbackDelayMs);
         CopyButtonText.Text = orig;
     }
 

@@ -11,6 +11,8 @@ namespace XBVault.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
+    private const int AutoHideNotificationDelayMs = 3000;
+
     private readonly XboxDeviceService _xboxService;
     private readonly CacheService _cacheService;
 
@@ -74,7 +76,7 @@ public partial class SettingsViewModel : ObservableObject
 
     private async Task AutoHideSavedNotification()
     {
-        await Task.Delay(3000);
+        await Task.Delay(AutoHideNotificationDelayMs);
         ShowSavedNotification = false;
     }
 

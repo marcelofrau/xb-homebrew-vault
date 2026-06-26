@@ -88,6 +88,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
     - uses: actions/download-artifact@v4
       with:
         pattern: release-*
@@ -97,7 +101,44 @@ jobs:
     - name: Display structure
       run: ls -lh dist/
 
-    - uses: softprops/action-gh-release@v2
+    - name: Generate release body
+      run: |
+        echo "## 📋 Changelog" > release-body.md
+        echo "" >> release-body.md
+        PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        if [ -n "$PREV_TAG" ]; then
+          git log "$PREV_TAG"..HEAD --pretty=format:"- %s" --no-merges >> release-body.md || true
+        else
+          git log --pretty=format:"- %s" --no-merges -20 >> release-body.md || true
+        fi
+        echo "" >> release-body.md
+        echo "" >> release-body.md
+        echo "## ✅ SHA256 Checksums" >> release-body.md
+        echo "" >> release-body.md
+        echo '```' >> release-body.md
+        (cd dist && sha256sum *) >> release-body.md
+        echo '```' >> release-body.md
+        echo "" >> release-body.md
+        echo "---" >> release-body.md
+        echo "" >> release-body.md
+        echo "VirusTotal scan in progress — results appended automatically." >> release-body.md
+
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v2
       with:
         files: dist/*
+        body_path: release-body.md
         fail_on_unmatched_files: false
+
+    - name: VirusTotal Scan
+      uses: cssnr/virustotal-action@v1
+      continue-on-error: true
+      with:
+        vt_api_key: ${{ secrets.VT_API_KEY }}
+        file_globs: dist/*
+        sha256: true
+        update_release: true
+        release_id: ${{ steps.create_release.outputs.id }}
+        release_heading: '### 🔬 VirusTotal'
+        collapsed: true

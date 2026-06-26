@@ -52,6 +52,12 @@
     <SolidColorBrush x:Key="InputBorderHoverBrush" Color="{StaticResource BladesInputBorderHover}"/>
     <SolidColorBrush x:Key="ComboBoxBgBrush" Color="{StaticResource BladesComboBoxBg}"/>
 
+    <!-- Title gradient -->
+    <LinearGradientBrush x:Key="TitleGradient" StartPoint="0%,0%" EndPoint="100%,0%">
+      <GradientStop Color="#447F3E" Offset="0"/>
+      <GradientStop Color="#9ACA3C" Offset="1"/>
+    </LinearGradientBrush>
+
     <!-- Fonts -->
     <FontFamily x:Key="TitleFont">avares://XBVault/Assets/Fonts/Oxanium-700.ttf#Oxanium</FontFamily>
     <FontFamily x:Key="BodyFont">avares://XBVault/Assets/Fonts/Oxanium-400.ttf#Oxanium</FontFamily>
@@ -302,6 +308,28 @@
     <Setter Property="Background" Value="{StaticResource DangerBrush}"/>
     <Setter Property="Foreground" Value="White"/>
     <Setter Property="BorderThickness" Value="0"/>
+  </Style>
+
+  <!-- Window close button -->
+  <Style Selector="Button.WindowClose">
+    <Setter Property="Width" Value="32"/>
+    <Setter Property="Height" Value="32"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Content">
+      <Template>
+        <Image Source="avares://XBVault/Assets/Icons/close-20.png"
+               Width="20" Height="20" Stretch="Uniform"/>
+      </Template>
+    </Setter>
+  </Style>
+  <Style Selector="Button.WindowClose:pointerover">
+    <Setter Property="Background" Value="#CC3333"/>
+  </Style>
+  <Style Selector="Button.WindowClose:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#CC3333"/>
   </Style>
 
     <!-- MenuFlyout -->

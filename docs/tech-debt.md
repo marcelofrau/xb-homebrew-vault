@@ -237,11 +237,9 @@ Approaching the god-class threshold (grew from ~499 to 580 lines). Contains cata
 
 ---
 
-### 17. Orphaned `_Backup` icons — verify before deleting
+### ~~17. Orphaned `_Backup` icons~~ ✅ Resolved (v0.9.1)
 
-`Assets/_Backup/Icons/setup-save-continue.ico` and `setup-test-connection.ico` were created for the old `SetupWindow` (removed). With `SetupWizardWindow` added in v0.8.6, verify whether these are still orphaned before deleting.
-
-**Fix:** Check `Assets/Views/SetupWizardWindow/` for overlapping references; delete `_Backup` icons if confirmed unused.
+Deleted `Assets/_Backup/` directory — all files were already untracked (gitignored) and unreferenced.
 
 ---
 
@@ -267,7 +265,7 @@ The Xbox Dev Mode drive layout is **not guaranteed stable** — the external-sto
 graph LR
     H["🔴 High<br/>1 open · 1 resolved"]
     M["🟡 Medium<br/>8"]
-    L["🟢 Low<br/>8 · 1 resolved"]
+    L["🟢 Low<br/>7 · 2 resolved"]
     
     style H fill:#CC3333,stroke:#9ACA3C,color:#fff
     style M fill:#FF9900,stroke:#9ACA3C,color:#000
@@ -278,8 +276,8 @@ graph LR
 |----------|------|----------|-----------------|
 | 🔴 High | 1 | 1 ✅ | 4–6 hours |
 | 🟡 Medium | 8 | — | 10–18 hours |
-| 🟢 Low | 8 | 1 ✅ | 3–7 hours |
-| **Total** | **17 open** | **2 resolved** | **17–31 hours** |
+| 🟢 Low | 7 | 2 ✅ | 3–7 hours |
+| **Total** | **16 open** | **3 resolved** | **17–31 hours** |
 
 ### Notable changes since first documented
 
@@ -288,6 +286,7 @@ graph LR
 - **Silent catches**: 12–14+ confirmed sites (more than the 8 first listed).
 - **`ConfigureAwait(false)`**: still **0** across the service layer.
 - **New #18**: File Explorer drive list is hardcoded (`{C, D, E, Q}`) with no discovery.
+- **Resolved #17**: `_Backup` directory deleted (v0.9.1).
 
 ---
 

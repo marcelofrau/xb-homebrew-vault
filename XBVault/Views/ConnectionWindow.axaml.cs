@@ -9,6 +9,9 @@ namespace XBVault.Views;
 
 public partial class ConnectionWindow : Window
 {
+    private const int SuccessCloseDelayMs = 2000;
+    private const int FailureCloseDelayMs = 1500;
+
     public ConnectionWindow()
     {
         InitializeComponent();
@@ -38,9 +41,9 @@ public partial class ConnectionWindow : Window
     {
         Logger.Info($"Connection dialog completed: success={success}");
         if (success)
-            await Task.Delay(2000);
+            await Task.Delay(SuccessCloseDelayMs);
         else
-            await Task.Delay(1500);
+            await Task.Delay(FailureCloseDelayMs);
         Close();
     }
 

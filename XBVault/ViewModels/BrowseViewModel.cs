@@ -16,6 +16,8 @@ namespace XBVault.ViewModels;
 
 public partial class BrowseViewModel : ObservableObject
 {
+    private const int SlowThumbnailDelayMs = 3000;
+
     private readonly CatalogApiService _catalogService;
     private readonly PackageInstallService _installService;
     private readonly XboxDeviceService _xboxService;
@@ -561,7 +563,7 @@ public partial class BrowseViewModel : ObservableObject
             {
 #if DEBUG
                 if (SlowThumbnails)
-                    await Task.Delay(3000);
+                    await Task.Delay(SlowThumbnailDelayMs);
 #endif
                 Logger.Trace($"Fetching thumbnail: {item.ImageUrl}");
                 var bytes = await ImageHttp.GetByteArrayAsync(item.ImageUrl);

@@ -10,6 +10,8 @@ namespace XBVault.Views;
 
 public partial class RefreshWindow : Window
 {
+    private const int CloseDelayMs = 1500;
+
     public RefreshWindow()
     {
         InitializeComponent();
@@ -48,7 +50,7 @@ public partial class RefreshWindow : Window
         Logger.Info($"Catalog refresh window completed: success={success}");
         Dispatcher.UIThread.Post(async () =>
         {
-            await Task.Delay(1500);
+            await Task.Delay(CloseDelayMs);
             Close();
         });
     }

@@ -9,6 +9,8 @@ namespace XBVault.ViewModels;
 
 public partial class RefreshViewModel : ObservableObject
 {
+    private const int InitialStatusDelayMs = 200;
+
     private readonly CatalogApiService _catalogService;
     private readonly Func<Task>? _onCatalogRefreshed;
 
@@ -66,7 +68,7 @@ public partial class RefreshViewModel : ObservableObject
             });
 
             AddLine("Fetching catalog data...");
-            await Task.Delay(200);
+            await Task.Delay(InitialStatusDelayMs);
 
             var items = await _catalogService.FetchCatalogAsync(forceRefresh: true, progress: progress);
 

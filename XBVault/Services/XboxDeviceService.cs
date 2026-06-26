@@ -15,6 +15,9 @@ namespace XBVault.Services;
 
 public class XboxDeviceService
 {
+    private const int PollDelayMs = 2000;
+    private const int RetryDelayMs = 3000;
+
     private HttpClient _http;
     private HttpClientHandler? _handler;
     private bool _configured;
@@ -607,7 +610,7 @@ public class XboxDeviceService
                 if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     // 404 means no operation in progress
-                    await Task.Delay(2000);
+                    await Task.Delay(PollDelayMs);
                     var resp2 = await _http.GetAsync("/api/app/packagemanager/state");
                     var code2 = (int)resp2.StatusCode;
                     Logger.Info($"GET /api/app/packagemanager/state => {code2}");
@@ -622,7 +625,7 @@ public class XboxDeviceService
             {
                 // Ignore errors during polling
             }
-            await Task.Delay(3000);
+            await Task.Delay(RetryDelayMs);
         }
         Logger.Warn("Timed out waiting for package manager, continuing anyway");
     }

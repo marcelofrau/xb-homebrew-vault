@@ -21,6 +21,8 @@ public record SelectableDep
 
 public partial class CustomInstallViewModel : ObservableObject
 {
+    private const int MinProgressMs = 1000;
+
     private readonly XboxDeviceService _xboxService;
     private readonly PackageInstallService _installService;
     private static readonly HttpClient _http = new();
@@ -340,8 +342,8 @@ public partial class CustomInstallViewModel : ObservableObject
             progress);
 
         var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
-        if (elapsed < 1000)
-            await Task.Delay(1000 - (int)elapsed);
+        if (elapsed < MinProgressMs)
+            await Task.Delay(MinProgressMs - (int)elapsed);
 
         InstallComplete = true;
         InstallSuccess = result;

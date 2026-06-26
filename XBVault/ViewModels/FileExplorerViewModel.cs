@@ -457,7 +457,7 @@ public partial class FileExplorerViewModel : ObservableObject
 
     private static Task<List<SftpEntry>> DetectDrivesAsync()
     {
-        var drives = new[] { "C", "D", "E", "Q" }.Select(l =>
+        var drives = new[] { "C", "D", "E", "G", "J", "L", "M", "N", "Q", "S", "T", "U", "V", "X", "Y" }.Select(l =>
         {
             var e = new SftpEntry
             {

@@ -15,6 +15,18 @@ public partial class ConnectionViewModel : ObservableObject
     private readonly XboxDeviceService _xboxService;
     private CancellationTokenSource? _cts;
     private static readonly Random _memeRng = new();
+    private const int DialToneDelayMs = 300;
+    private const int ModemInitDelayMs = 500;
+    private const int DialingDelayMs = 400;
+    private const int CarrierDelayMs = 600;
+    private const int LinkSpeedDelayMs = 300;
+    private const int ConnectDisplayDelayMs = 250;
+    private const int ProtocolDisplayDelayMs = 250;
+    private const int TcpHandshakeDelayMs = 300;
+    private const int NegotiateDelayMs = 350;
+    private const int AuthDelayMs = 350;
+    private const int NetworkConfigDelayMs = 350;
+    private const int SessionInitDelayMs = 350;
 
     public ConnectionViewModel(XboxDeviceService xboxService)
     {
@@ -130,20 +142,20 @@ public partial class ConnectionViewModel : ObservableObject
         try
         {
             AddLine("ATDT " + settings.Address);
-            await Task.Delay(300, ct);
+            await Task.Delay(DialToneDelayMs, ct);
             await MaybeMeme(ct);
 
             AddLine("Initializing modem...");
             Progress = 0.1;
-            await Task.Delay(500, ct);
+            await Task.Delay(ModemInitDelayMs, ct);
             await MaybeMeme(ct);
 
             AddLine("Dialing " + settings.BaseUrl + "...");
-            await Task.Delay(400, ct);
+            await Task.Delay(DialingDelayMs, ct);
 
             AddLine("Waiting for carrier...");
             Progress = 0.25;
-            await Task.Delay(600, ct);
+            await Task.Delay(CarrierDelayMs, ct);
             await MaybeMeme(ct);
 
             var baseUrl = settings.BaseUrl;
@@ -176,38 +188,38 @@ public partial class ConnectionViewModel : ObservableObject
                 AddLine("");
                 AddLine(CortanaLines[_memeRng.Next(CortanaLines.Length)]);
                 Progress = 0.3;
-                await Task.Delay(300, ct);
+                await Task.Delay(LinkSpeedDelayMs, ct);
                 await MaybeMeme(ct);
 
                 AddLine("CONNECT " + (linkSpeed ?? "1 Gbps"));
                 Progress = 0.35;
-                await Task.Delay(250, ct);
+                await Task.Delay(ConnectDisplayDelayMs, ct);
 
                 AddLine("Protocol: TCP/IP");
                 Progress = 0.4;
-                await Task.Delay(250, ct);
+                await Task.Delay(ProtocolDisplayDelayMs, ct);
 
                 AddLine("TCP handshake: SYN sent... SYN-ACK received... ACK sent.");
                 Progress = 0.45;
-                await Task.Delay(300, ct);
+                await Task.Delay(TcpHandshakeDelayMs, ct);
                 await MaybeMeme(ct);
 
                 AddLine("Negotiating handshake...");
                 Progress = 0.5;
-                await Task.Delay(350, ct);
+                await Task.Delay(NegotiateDelayMs, ct);
                 await MaybeMeme(ct);
 
                 AddLine("Authenticating...");
                 Progress = 0.65;
-                await Task.Delay(350, ct);
+                await Task.Delay(AuthDelayMs, ct);
 
                 AddLine("Obtaining network configuration...");
                 Progress = 0.8;
-                await Task.Delay(350, ct);
+                await Task.Delay(NetworkConfigDelayMs, ct);
 
                 AddLine("Initializing remote session...");
                 Progress = 0.9;
-                await Task.Delay(350, ct);
+                await Task.Delay(SessionInitDelayMs, ct);
 
                 AddLine("");
                 AddLine("CONNECTED!");

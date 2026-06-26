@@ -12,6 +12,7 @@ namespace XBVault;
 
 public partial class App : Application
 {
+    private const int SplashMinDelayMs = 2000;
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -125,7 +126,7 @@ public partial class App : Application
         PackageInstallService installService)
     {
         Logger.Debug("Splash delay starting (2s)");
-        await Task.Delay(2000);
+        await Task.Delay(SplashMinDelayMs);
         Logger.Debug("Splash delay complete, building main window");
 
         await Dispatcher.UIThread.InvokeAsync(async () =>

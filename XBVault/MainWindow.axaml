@@ -36,14 +36,9 @@
     <Grid RowDefinitions="32,*" ColumnDefinitions="220,*">
 
     <!-- Title Bar -->
-    <Grid Grid.ColumnSpan="2" Height="32"
-          PointerPressed="OnTitleBarPointerPressed">
-      <Grid.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-          <GradientStop Color="#447F3E" Offset="0"/>
-          <GradientStop Color="#9ACA3C" Offset="1"/>
-        </LinearGradientBrush>
-      </Grid.Background>
+      <Grid Grid.ColumnSpan="2" Height="32"
+            PointerPressed="OnTitleBarPointerPressed"
+            Background="{StaticResource TitleGradient}">
       <Grid.ColumnDefinitions>*,Auto,Auto</Grid.ColumnDefinitions>
       <TextBlock Text="XB Homebrew Vault"
                  Foreground="#1A1A1A"
@@ -71,26 +66,8 @@
           </Style>
         </Button.Styles>
       </Button>
-      <Button Grid.Column="2" Width="32" Height="32"
-              Padding="0"
-              BorderThickness="0" Click="OnCloseClick"
-              Cursor="Hand" Focusable="False"
-              ToolTip.Tip="Close">
-        <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-close-20.png"
-               Width="20" Height="20"
-               Stretch="Uniform"/>
-        <Button.Styles>
-          <Style Selector="Button">
-            <Setter Property="Background" Value="Transparent"/>
-          </Style>
-          <Style Selector="Button:pointerover">
-            <Setter Property="Background" Value="#CC3333"/>
-          </Style>
-          <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#CC3333"/>
-          </Style>
-        </Button.Styles>
-      </Button>
+      <Button Grid.Column="2" Classes="WindowClose"
+              Click="OnCloseClick" ToolTip.Tip="Close"/>
     </Grid>
 
     <!-- Sidebar -->

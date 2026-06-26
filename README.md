@@ -5,6 +5,7 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square)](https://dotnet.microsoft.com/download)
 [![Build](https://img.shields.io/github/actions/workflow/status/marcelofrau/xb-homebrew-vault/build.yml?style=flat-square&label=build)](https://github.com/marcelofrau/xb-homebrew-vault/actions)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0078D6?style=flat-square)](https://github.com/marcelofrau/xb-homebrew-vault/releases)
+[![VirusTotal](https://img.shields.io/badge/Security-VirusTotal_Scanned-394EFF?style=flat-square&logo=virustotal)](https://www.virustotal.com/gui/home/upload)
 
 > The easiest way to manage homebrew on your Xbox Dev Mode console — browse, install, and control everything wirelessly from your PC.
 

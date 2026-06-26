@@ -17,34 +17,14 @@
   </Window.Styles>
   <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
     <Grid RowDefinitions="Auto,*">
-      <Grid Height="32" PointerPressed="OnTitleBarPointerPressed">
-        <Grid.Background>
-          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-            <GradientStop Color="#447F3E" Offset="0"/>
-            <GradientStop Color="#9ACA3C" Offset="1"/>
-          </LinearGradientBrush>
-        </Grid.Background>
+      <Grid Height="32" PointerPressed="OnTitleBarPointerPressed"
+            Background="{StaticResource TitleGradient}">
         <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
         <TextBlock Text="System Info"
                    Foreground="#1A1A1A" FontSize="14" FontWeight="Bold"
                    VerticalAlignment="Center" Margin="12,0"/>
-        <Button Grid.Column="1" Width="32" Height="32" Padding="0"
-                BorderThickness="0" Click="OnCloseClick" Cursor="Hand"
-                ToolTip.Tip="Close">
-          <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-close-20.png"
-                 Width="20" Height="20" Stretch="Uniform"/>
-          <Button.Styles>
-            <Style Selector="Button">
-              <Setter Property="Background" Value="Transparent"/>
-            </Style>
-            <Style Selector="Button:pointerover">
-              <Setter Property="Background" Value="#CC3333"/>
-            </Style>
-            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-              <Setter Property="Background" Value="#CC3333"/>
-            </Style>
-          </Button.Styles>
-        </Button>
+        <Button Grid.Column="1" Classes="WindowClose"
+                Click="OnCloseClick" ToolTip.Tip="Close"/>
       </Grid>
       <Border Grid.Row="1" Padding="20">
         <StackPanel Spacing="16">

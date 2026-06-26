@@ -10,10 +10,21 @@ public class SftpService : IDisposable
 {
     private SshClient? _ssh;
     private SftpClient? _sftp;
+    private string? _lastHost;
+    private int _lastPort;
+    private string? _lastUser;
+    private string? _lastPass;
 
     public bool IsConnected => _sftp?.IsConnected ?? false;
 
     public event EventHandler<bool>? ConnectionChanged;
+
+    private static uint GetBufferSize(long fileSize) => fileSize switch
+    {
+        < 1_048_576 => 65536,       // < 1 MB → 64 KB
+        < 104_857_600 => 262144,    // 1–100 MB → 256 KB
+        _ => 524288                 // > 100 MB → 512 KB
+    };
 
     private static string NormalizePath(string path)
     {
@@ -28,6 +39,10 @@ public class SftpService : IDisposable
 
     public async Task ConnectAsync(string host, int port, string user, string pass)
     {
+        _lastHost = host;
+        _lastPort = port;
+        _lastUser = user;
+        _lastPass = pass;
         Logger.Debug($"SftpService.ConnectAsync: connecting to {host}:{port} as {user}");
         await Task.Run(() =>
         {
@@ -47,7 +62,8 @@ public class SftpService : IDisposable
                 _sftp.OperationTimeout = TimeSpan.FromSeconds(15);
                 _sftp.KeepAliveInterval = TimeSpan.FromSeconds(30);
                 _sftp.Connect();
-                Logger.Debug($"SFTP client connected: {_sftp.IsConnected}");
+                _sftp.BufferSize = 512 * 1024;
+                Logger.Debug($"SFTP client connected: {_sftp.IsConnected}, BufferSize={_sftp.BufferSize}");
 
                 Logger.Info($"SFTP connection established to {host}:{port} as {user}");
                 ConnectionChanged?.Invoke(this, true);
@@ -59,6 +75,29 @@ public class SftpService : IDisposable
                 throw;
             }
         });
+    }
+
+    private void ReconnectSftp()
+    {
+        if (_lastHost is null || _lastUser is null)
+        {
+            Logger.Error("ReconnectSftp: no saved credentials available");
+            throw new InvalidOperationException("SFTP reconnect unavailable (no saved credentials)");
+        }
+
+        _sftp?.Dispose();
+        _sftp = null;
+
+        var connInfo = new ConnectionInfo(_lastHost, _lastPort, _lastUser,
+            new PasswordAuthenticationMethod(_lastUser, _lastPass));
+
+        Logger.Debug($"ReconnectSftp: connecting to {_lastHost}:{_lastPort} as {_lastUser}");
+        _sftp = new SftpClient(connInfo);
+        _sftp.OperationTimeout = TimeSpan.FromSeconds(15);
+        _sftp.KeepAliveInterval = TimeSpan.FromSeconds(30);
+        _sftp.Connect();
+        _sftp.BufferSize = 512 * 1024;
+        Logger.Debug($"ReconnectSftp: reconnected, BufferSize={_sftp.BufferSize}");
     }
 
     public void Disconnect()
@@ -77,6 +116,11 @@ public class SftpService : IDisposable
         _sftp = null;
         _ssh?.Dispose();
         _ssh = null;
+
+        _lastHost = null;
+        _lastPort = 0;
+        _lastUser = null;
+        _lastPass = null;
 
         ConnectionChanged?.Invoke(this, false);
         Logger.Debug("SftpService.Disconnect: complete");
@@ -231,28 +275,36 @@ public class SftpService : IDisposable
         Logger.Debug($"UploadFileAsync: -> '{norm}'");
         return Task.Run(() =>
         {
-            if (_sftp is null || !_sftp.IsConnected)
-                throw new InvalidOperationException("SFTP not connected");
+            if (_sftp is null)
+                throw new InvalidOperationException("SFTP not connected (null)");
+            if (!_sftp.IsConnected)
+            {
+                Logger.Warn($"UploadFileAsync: SFTP disconnected, attempting reconnect...");
+                ReconnectSftp();
+                Logger.Info($"UploadFileAsync: reconnect OK");
+            }
 
             var totalBytes = source.Length;
             Logger.Debug($"UploadFileAsync: '{norm}' size={totalBytes}");
-            long uploadedBytes = 0;
-            var buffer = new byte[32768];
-            var bytesRead = 0;
-            var chunkCount = 0;
 
-            using var remoteStream = _sftp.OpenWrite(norm);
+            _sftp.BufferSize = GetBufferSize(totalBytes);
 
-            while ((bytesRead = source.Read(buffer, 0, buffer.Length)) > 0)
+            int lastReportedPct = -1;
+
+            Action<ulong> onUploadProgress = bytesTransferred =>
             {
                 ct.ThrowIfCancellationRequested();
-                remoteStream.Write(buffer, 0, bytesRead);
-                uploadedBytes += bytesRead;
-                chunkCount++;
-                progress?.Report((double)uploadedBytes / totalBytes);
-            }
+                var pct = (int)((long)bytesTransferred * 100 / totalBytes);
+                if (pct != lastReportedPct)
+                {
+                    lastReportedPct = pct;
+                    progress?.Report((double)(long)bytesTransferred / totalBytes);
+                }
+            };
 
-            Logger.Debug($"UploadFileAsync: '{norm}' done — {chunkCount} chunks, {uploadedBytes}B");
+            _sftp.UploadFile(source, norm, onUploadProgress);
+
+            Logger.Debug($"UploadFileAsync: '{norm}' done — {totalBytes}B");
         }, ct);
     }
 
@@ -262,8 +314,14 @@ public class SftpService : IDisposable
         Logger.Debug($"DownloadFileAsync: '{norm}'");
         return Task.Run<long>(() =>
         {
-            if (_sftp is null || !_sftp.IsConnected)
-                throw new InvalidOperationException("SFTP not connected");
+            if (_sftp is null)
+                throw new InvalidOperationException("SFTP not connected (null)");
+            if (!_sftp.IsConnected)
+            {
+                Logger.Warn($"DownloadFileAsync: SFTP disconnected, attempting reconnect...");
+                ReconnectSftp();
+                Logger.Info($"DownloadFileAsync: reconnect OK");
+            }
 
             long fileSize = -1;
             try
@@ -278,42 +336,39 @@ public class SftpService : IDisposable
 
             // Try forward-slash first; fall back to backslash
             string usePath = norm;
-            SftpFileStream remoteStream;
             try
             {
-                Logger.Debug($"DownloadFileAsync: OpenRead '{usePath}'");
-                remoteStream = _sftp.OpenRead(usePath);
+                Logger.Debug($"DownloadFileAsync: checking path '{usePath}'");
+                _sftp.GetAttributes(usePath);
             }
             catch (SftpPathNotFoundException)
             {
                 usePath = ShellPath(remotePath);
-                Logger.Warn($"DownloadFileAsync: OpenRead forward-slash failed, trying backslash '{usePath}'");
-                remoteStream = _sftp.OpenRead(usePath);
+                Logger.Warn($"DownloadFileAsync: forward-slash failed, trying backslash '{usePath}'");
             }
 
-            Logger.Debug($"DownloadFileAsync: '{usePath}' opened OK, size={fileSize}");
-            long downloadedBytes = 0;
-            var buffer = new byte[32768];
-            int bytesRead;
-            var chunkCount = 0;
+            Logger.Debug($"DownloadFileAsync: '{usePath}' opening, size={fileSize}");
 
-            using (remoteStream)
+            if (fileSize > 0)
+                _sftp.BufferSize = GetBufferSize(fileSize);
+
+            int lastReportedPct = -1;
+
+            Action<ulong> onDownloadProgress = bytesTransferred =>
             {
-                Logger.Trace($"DownloadFileAsync: '{usePath}' starting read loop");
-                while ((bytesRead = remoteStream.Read(buffer, 0, buffer.Length)) > 0)
+                ct.ThrowIfCancellationRequested();
+                if (fileSize <= 0) return;
+                var pct = (int)((long)bytesTransferred * 100 / fileSize);
+                if (pct != lastReportedPct)
                 {
-                    ct.ThrowIfCancellationRequested();
-                    destination.Write(buffer, 0, bytesRead);
-                    downloadedBytes += bytesRead;
-                    chunkCount++;
-                    if (fileSize > 0)
-                        progress?.Report((double)downloadedBytes / fileSize);
-                    if (chunkCount % 100 == 0)
-                        Logger.Trace($"DownloadFileAsync: '{usePath}' chunk#{chunkCount} total={downloadedBytes}B");
+                    lastReportedPct = pct;
+                    progress?.Report((double)(long)bytesTransferred / fileSize);
                 }
-            }
+            };
 
-            Logger.Debug($"DownloadFileAsync: '{usePath}' done — {chunkCount} chunks, {downloadedBytes}B");
+            _sftp.DownloadFile(usePath, destination, onDownloadProgress);
+
+            Logger.Debug($"DownloadFileAsync: '{usePath}' done — {fileSize}B");
             return fileSize;
         }, ct);
     }

@@ -12,6 +12,8 @@ namespace XBVault.ViewModels;
 
 public partial class UsbPermissionViewModel : ObservableObject
 {
+    private const int MinSpinnerDelayMs = 1000;
+
     public Action? CloseAction;
 
     public UsbPermissionViewModel()
@@ -224,7 +226,7 @@ public partial class UsbPermissionViewModel : ObservableObject
         CurrentStep = 3;
 
         // Minimum 1s delay so spinner is visible
-        await Task.Delay(1000);
+        await Task.Delay(MinSpinnerDelayMs);
 
         try
         {
