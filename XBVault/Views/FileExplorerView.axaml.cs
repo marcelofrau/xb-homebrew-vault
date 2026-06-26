@@ -477,21 +477,6 @@ public partial class FileExplorerView : UserControl
     private void OnListBoxPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         Logger.Trace($"OnListBoxPointerPressed: ClickCount={e.ClickCount} Source={e.Source?.GetType().Name}");
-        if (_vm is null) return;
-        if (e.ClickCount < 2) return;
-        var item = (e.Source as StyledElement)?.DataContext;
-        Logger.Trace($"OnListBoxPointerPressed: DataContext type={item?.GetType().Name}");
-        if (item is SftpEntry entry && entry.IsDirectory && !entry.IsPlaceholder)
-        {
-            Logger.Debug($"OnListBoxPointerPressed: double-click navigating to '{entry.FullPath}'");
-            _ = _vm.ExpandTreeToPathAsync(entry.FullPath);
-            _vm.NavigateToPathCommand.Execute(entry.FullPath);
-            e.Handled = true;
-        }
-        else
-        {
-            Logger.Trace($"OnListBoxPointerPressed: no match — IsDirectory={item is SftpEntry se && se.IsDirectory}, IsPlaceholder={item is SftpEntry se2 && se2.IsPlaceholder}");
-        }
     }
 
     private void OnListBoxPreviewPointerPressed(object? sender, PointerPressedEventArgs e)

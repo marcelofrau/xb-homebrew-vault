@@ -11,10 +11,6 @@
       <Setter Property="Padding" Value="1,0"/>
     </Style>
 
-    <Style Selector="TreeViewItem:empty /template/ ContentPresenter#PART_HeaderPresenter">
-      <Setter Property="Margin" Value="23,0,0,0"/>
-    </Style>
-
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="32,32,32,16">
@@ -274,8 +270,9 @@
                   Foreground="White">
           <TreeView.DataTemplates>
             <TreeDataTemplate DataType="models:SftpEntry"
-                              ItemsSource="{ReflectionBinding Children}">
+                               ItemsSource="{ReflectionBinding Children}">
               <StackPanel Orientation="Horizontal" Spacing="4"
+                          Margin="{ReflectionBinding HeaderMargin}"
                           ToolTip.Tip="{ReflectionBinding Name}">
                 <Image Width="20" Height="20" Stretch="Uniform"
                        Source="{ReflectionBinding TreeIconPath}"

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Avalonia;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Renci.SshNet.Sftp;
@@ -96,10 +97,15 @@ public class SftpEntry : INotifyPropertyChanged
     public bool IsPlaceholder { get; set; }
     public bool ShowIcon => !IsPlaceholder;
 
+    public Thickness HeaderMargin => !IsDrive && !IsPlaceholder && Children.Count == 0
+        ? new Thickness(23, 0, 0, 0)
+        : new Thickness(0);
+
     public SftpEntry()
     {
         Name = string.Empty;
         FullPath = string.Empty;
+        Children.CollectionChanged += (_, _) => Notify(nameof(HeaderMargin));
     }
 
     private string GetTreeIconName() => IsDrive || IsJunction ? "drive" : IsDirectory ? "folder" : "file";

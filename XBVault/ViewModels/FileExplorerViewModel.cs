@@ -496,6 +496,12 @@ public partial class FileExplorerViewModel : ObservableObject
             var folders = children.Where(c => c.IsDirectory).ToList();
 
             Logger.Debug($"ExpandFolderAsync: '{path}' got {children.Count} children, {folders.Count} folders");
+            if (folders.Count == 0)
+            {
+                Logger.Trace($"ExpandFolderAsync: '{path}' no folders found, collapsing");
+                target.IsExpanded = false;
+                return;
+            }
             for (int i = 0; i < folders.Count; i++)
             {
                 folders[i].IsLastChild = i >= folders.Count - 1;
@@ -534,32 +540,25 @@ public partial class FileExplorerViewModel : ObservableObject
             CurrentPath = path;
             var entries = await _sftpService.ListDirectoryAsync(path);
 
-            Dispatcher.UIThread.Post(() =>
+            CurrentEntries.Clear();
+            var parentDir = GetParentPath(path);
+            if (parentDir is not null)
             {
-                CurrentEntries.Clear();
-                var parentDir = GetParentPath(path);
-                if (parentDir is not null)
+                CurrentEntries.Add(new SftpEntry
                 {
-                    CurrentEntries.Add(new SftpEntry
-                    {
-                        Name = "..",
-                        FullPath = parentDir,
-                        IsDirectory = true,
-                        IsPlaceholder = true,
-                        IsLastChild = true
-                    });
-                }
-                foreach (var e in entries)
-                    CurrentEntries.Add(e);
-                Logger.Debug($"NavigateToPathAsync: loaded {entries.Count} entries for '{path}'");
-                OnPropertyChanged(nameof(CanRefresh));
-            });
-
-            Dispatcher.UIThread.Post(() =>
-            {
-                Logger.Trace("NavigateToPathAsync: post-nav focus");
-                FocusFileList?.Invoke();
-            });
+                    Name = "..",
+                    FullPath = parentDir,
+                    IsDirectory = true,
+                    IsPlaceholder = true,
+                    IsLastChild = true
+                });
+            }
+            foreach (var e in entries)
+                CurrentEntries.Add(e);
+            Logger.Debug($"NavigateToPathAsync: loaded {entries.Count} entries for '{path}'");
+            OnPropertyChanged(nameof(CanRefresh));
+            FocusFileList?.Invoke();
+            Logger.Trace("NavigateToPathAsync: post-nav focus");
 
             var targetEntry = FindEntry(TreeRoots, path);
             if (targetEntry is not null)
