@@ -207,7 +207,7 @@ public partial class CatalogApiService
 
 
 
-    private void ClassifyDownloads(CatalogItem item)
+    private static void ClassifyDownloads(CatalogItem item)
     {
         foreach (var download in item.Downloads)
         {
@@ -226,7 +226,7 @@ public partial class CatalogApiService
         }
     }
 
-    private DownloadType ClassifyDownload(DownloadAsset download)
+    private static DownloadType ClassifyDownload(DownloadAsset download)
     {
         var url = download.Url.ToLowerInvariant();
         var label = (download.Label ?? string.Empty).ToLowerInvariant();
@@ -306,10 +306,9 @@ public partial class CatalogApiService
                 .ToList();
 
             // Re-classify downloads
-            var service = new CatalogApiService();
             foreach (var item in items)
             {
-                service.ClassifyDownloads(item);
+                ClassifyDownloads(item);
             }
 
             return items;

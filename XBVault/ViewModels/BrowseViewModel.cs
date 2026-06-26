@@ -37,9 +37,9 @@ public partial class BrowseViewModel : ObservableObject
 
     private static readonly HttpClient ImageHttp = new();
 
-    public BrowseViewModel(PackageInstallService installService, XboxDeviceService xboxService)
+    public BrowseViewModel(PackageInstallService installService, XboxDeviceService xboxService, CatalogApiService catalogService)
     {
-        _catalogService = new CatalogApiService();
+        _catalogService = catalogService;
         _installService = installService;
         _xboxService = xboxService;
         Logger.Debug("BrowseViewModel created");

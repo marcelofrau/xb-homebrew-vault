@@ -138,7 +138,7 @@ Internal `Configure()` re-creates and disposes old instances on reconfiguration,
 
 ---
 
-### 9. Title bar gradient duplicated across windows
+### 9. ~~Title bar gradient duplicated across windows~~ ✅ Resolved (v0.9.1)
 
 The same `LinearGradientBrush` (`#447F3E` → `#9ACA3C`) is defined **inline** in every dialog window plus MainWindow — some windows define it twice (title bar + table header). `SetupWizardWindow` and `UsbPermissionWindow` added in v0.8.6 continue the pattern.
 
@@ -153,7 +153,7 @@ The same `LinearGradientBrush` (`#447F3E` → `#9ACA3C`) is defined **inline** i
 
 ---
 
-### 10. Close button template duplicated across windows
+### 10. ~~Close button template duplicated across windows~~ ✅ Resolved (v0.9.1)
 
 Same `<Button>` with inline styles (`#CC3333` hover, 32×32, transparent default) copy-pasted into every window, including new windows added in v0.8.6.
 
@@ -163,7 +163,7 @@ Same `<Button>` with inline styles (`#CC3333` hover, 32×32, transparent default
 
 ## 🟢 Low
 
-### 11. Hardcoded magic delays — 23 instances
+### 11. ~~Hardcoded magic delays — 23 instances~~ ✅ Resolved (v0.9.1)
 
 `Task.Delay(ms)` with hardcoded numbers across Views, ViewModels, and Services:
 
@@ -184,7 +184,7 @@ Same `<Button>` with inline styles (`#CC3333` hover, 32×32, transparent default
 
 ---
 
-### 12. `CatalogApiService` not injected — created inline in two places
+### 12. ~~`CatalogApiService` not injected — created inline in two places~~ ✅ Resolved (v0.9.2)
 
 **Files:** `ViewModels/BrowseViewModel.cs:40`, `Services/CatalogApiService.cs:309`
 
@@ -247,15 +247,13 @@ Deleted `Assets/_Backup/` directory — all files were already untracked (gitign
 
 **File:** `ViewModels/FileExplorerViewModel.cs:429` (`DetectDrivesAsync`)
 
-The File Explorer surfaces a **static** set of drives — `{ "C", "D", "E", "Q" }` — with no runtime discovery:
-
-```csharp
-var drives = new[] { "C", "D", "E", "Q" }.Select(l => new SftpEntry { ... });
-```
+The File Explorer surfaces a **static** set of drives — `{ "C", "D", "E", "G", "J", "L", "M", "N", "Q", "S", "T", "U", "V", "X", "Y" }` — with no runtime discovery. The list was expanded in v0.9.1 to match WinSCP's default set, which covers current Xbox Dev Mode drive layouts well.
 
 The Xbox Dev Mode drive layout is **not guaranteed stable** — the external-storage letter has changed historically (it was not always `E:`), and consoles may expose additional or differently-lettered volumes. With a fixed list, real drives can be missing (not shown) or dead entries can appear (shown but unmountable).
 
-**Fix:** Discover drives dynamically over SSH instead of hardcoding — e.g. `wmic logicaldisk get name`, or probe `cd {letter}: && echo ok` across the alphabet, and build the list from what actually responds. Keep `{C, D, E, Q}` only as a fallback if discovery fails.
+**Fix:** Discover drives dynamically over SSH instead of hardcoding — e.g. `wmic logicaldisk get name`, or probe `cd {letter}: && echo ok` across the alphabet, and build the list from what actually responds. Keep the current set only as a fallback if discovery fails.
+
+**Status:** Sufficiently addressed for now — the expanded list covers all known Xbox drive letters.
 
 ---
 
@@ -264,8 +262,8 @@ The Xbox Dev Mode drive layout is **not guaranteed stable** — the external-sto
 ```mermaid
 graph LR
     H["🔴 High<br/>1 open · 1 resolved"]
-    M["🟡 Medium<br/>8"]
-    L["🟢 Low<br/>7 · 2 resolved"]
+    M["🟡 Medium<br/>6 open · 2 resolved"]
+    L["🟢 Low<br/>3 open · 4 resolved"]
     
     style H fill:#CC3333,stroke:#9ACA3C,color:#fff
     style M fill:#FF9900,stroke:#9ACA3C,color:#000
@@ -275,9 +273,9 @@ graph LR
 | Severity | Open | Resolved | Estimated effort |
 |----------|------|----------|-----------------|
 | 🔴 High | 1 | 1 ✅ | 4–6 hours |
-| 🟡 Medium | 8 | — | 10–18 hours |
-| 🟢 Low | 7 | 2 ✅ | 3–7 hours |
-| **Total** | **16 open** | **3 resolved** | **17–31 hours** |
+| 🟡 Medium | 6 | 2 ✅ | 8–14 hours |
+| 🟢 Low | 3 | 4 ✅ | 1–3 hours |
+| **Total** | **10 open** | **7 resolved** | **13–23 hours** |
 
 ### Notable changes since first documented
 
@@ -285,8 +283,9 @@ graph LR
 - **`XboxDeviceService` 1,038 → 1,207 lines**; **`App.axaml.cs` 455 → 497** (`InitAfterSplashAsync` 342 → 384); **`BrowseViewModel` 499 → 580**.
 - **Silent catches**: 12–14+ confirmed sites (more than the 8 first listed).
 - **`ConfigureAwait(false)`**: still **0** across the service layer.
-- **New #18**: File Explorer drive list is hardcoded (`{C, D, E, Q}`) with no discovery.
-- **Resolved #17**: `_Backup` directory deleted (v0.9.1).
+- **Resolved #9, #10, #11**: TitleGradient, unified close button, magic delays (v0.9.1).
+- **Resolved #12**: CatalogApiService injected via constructor (v0.9.2).
+- **Resolved #15, #17**: PerformanceSnapshot logging, orphaned `_Backup` icons.
 
 ---
 

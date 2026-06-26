@@ -46,9 +46,10 @@ public partial class App : Application
             var cacheService = new CacheService();
             var installService = new PackageInstallService(cacheService, xboxService);
             var sftpService = new SftpService();
+            var catalogService = new CatalogApiService();
 
             var mainViewModel = new MainViewModel(xboxService);
-            var browseViewModel = new BrowseViewModel(installService, xboxService);
+            var browseViewModel = new BrowseViewModel(installService, xboxService, catalogService);
             var installedViewModel = new InstalledViewModel(xboxService);
             var fileExplorerViewModel = new FileExplorerViewModel(xboxService, sftpService);
             var toolsViewModel = new ToolsViewModel(xboxService);
