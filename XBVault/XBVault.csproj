@@ -16,6 +16,7 @@
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <Copyright>Copyright (c) 2026 Marcelo Frau</Copyright>
     <PublishReadyToRun Condition="$([MSBuild]::IsOSPlatform('windows'))">true</PublishReadyToRun>
+    <DefineConstants Condition="$([MSBuild]::IsOSPlatform('windows'))">$(DefineConstants);WINDOWS_BUILD</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

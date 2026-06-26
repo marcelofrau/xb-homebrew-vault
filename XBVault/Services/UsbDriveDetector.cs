@@ -1,4 +1,6 @@
+#if WINDOWS_BUILD
 using System.Management;
+#endif
 using System.Runtime.InteropServices;
 using XBVault.Models;
 
@@ -8,13 +10,18 @@ public static class UsbDriveDetector
 {
     public static List<UsbDriveInfo> ListUsbDrives()
     {
-        var drives = new List<UsbDriveInfo>();
-
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             Logger.Warn("UsbDriveDetector: not Windows, returning empty");
-            return drives;
+            return [];
         }
+        return ListUsbDrivesWindows();
+    }
+
+#if WINDOWS_BUILD
+    private static List<UsbDriveInfo> ListUsbDrivesWindows()
+    {
+        var drives = new List<UsbDriveInfo>();
 
         Logger.Info("UsbDriveDetector: starting WMI USB drive scan");
         try
@@ -22,9 +29,6 @@ public static class UsbDriveDetector
             var systemDrive = Path.GetPathRoot(Environment.SystemDirectory)?.TrimEnd('\\');
             Logger.Info($"UsbDriveDetector: systemDrive = {systemDrive}");
 
-            // Query logical disks directly — avoids fragile ASSOCIATORS OF chain
-            // that fails on many removable USB drives.
-            // DriveType 2 = Removable (USB sticks, flash drives)
             using var searcher = new ManagementObjectSearcher(
                 "SELECT * FROM Win32_LogicalDisk WHERE DriveType=2");
 
@@ -74,6 +78,13 @@ public static class UsbDriveDetector
         Logger.Info($"UsbDriveDetector: returning {result.Count} drives (filtered {drives.Count - result.Count} system drives)");
         return result;
     }
+#else
+    private static List<UsbDriveInfo> ListUsbDrivesWindows()
+    {
+        Logger.Warn("UsbDriveDetector: WMI not available on this platform");
+        return [];
+    }
+#endif
 
     private static string FormatSize(long bytes)
     {
@@ -83,4 +94,3 @@ public static class UsbDriveDetector
         return $"{bytes / (1024.0 * 1024 * 1024):F1} GB";
     }
 }
-
