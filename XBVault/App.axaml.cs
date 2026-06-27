@@ -404,7 +404,7 @@ public partial class App : Application
                                 }
                             ]
                         });
-                        return files?.FirstOrDefault()?.TryGetLocalPath();
+                        return files is { Count: > 0 } ? files[0].TryGetLocalPath() : null;
                     }
                     catch (Exception ex)
                     {

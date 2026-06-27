@@ -5,6 +5,7 @@
         xmlns:sys="using:System"
         xmlns:controls="using:XBVault.Controls"
         x:Class="XBVault.Views.ItemDetailWindow"
+        Classes="dialogWindow"
         x:DataType="vm:BrowseViewModel"
         Title="Item Details"
         Width="540" Height="670"

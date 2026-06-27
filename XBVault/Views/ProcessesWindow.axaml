@@ -3,6 +3,7 @@
         xmlns:vm="using:XBVault.ViewModels"
         xmlns:models="using:XBVault.Models"
         x:Class="XBVault.Views.ProcessesWindow"
+        Classes="dialogWindow"
         x:DataType="vm:ProcessesViewModel"
         Title="Processes"
         WindowStartupLocation="CenterOwner"

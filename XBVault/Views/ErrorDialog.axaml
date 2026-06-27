@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="XBVault.Views.ErrorDialog"
+        Classes="dialogWindow"
         Title="Error"
         Width="540" Height="420"
         WindowStartupLocation="CenterOwner"

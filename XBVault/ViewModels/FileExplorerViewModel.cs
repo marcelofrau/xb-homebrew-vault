@@ -13,7 +13,7 @@ namespace XBVault.ViewModels;
 
 public enum ToolbarStatusSeverity { None, Info, Success, Warning, Error }
 
-public partial class FileExplorerViewModel : ObservableObject
+public partial class FileExplorerViewModel : ObservableObject, IDisposable
 {
     private readonly XboxDeviceService _xboxService;
     private readonly SftpService _sftpService;
@@ -23,6 +23,13 @@ public partial class FileExplorerViewModel : ObservableObject
     private long _transferBytesTotal;
     private CancellationTokenSource? _currentTransferCts;
     private string? _uploadTargetPath;
+
+    public void Dispose()
+    {
+        _currentTransferCts?.Cancel();
+        _currentTransferCts?.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     public FileExplorerViewModel(XboxDeviceService xboxService, SftpService sftpService)
     {
@@ -93,7 +100,7 @@ public partial class FileExplorerViewModel : ObservableObject
 
     public bool CanModifyFiles => !ShowActivity;
     public bool CanDeleteMultiple => SelectedEntries.Count > 0 && CanModifyFiles;
-    public bool CanDownloadMultiple => SelectedEntries.Count(e => !e.IsDrive) > 0 && CanModifyFiles;
+    public bool CanDownloadMultiple => SelectedEntries.Any(e => !e.IsDrive) && CanModifyFiles;
     public bool CanRenameSingle => SelectedEntries.Count == 1 && CanModifyFiles;
     public string OperationLockedTooltip => ShowActivity ? "Waiting for current operation to finish..." : string.Empty;
 

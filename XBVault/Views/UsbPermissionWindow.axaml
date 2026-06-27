@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:XBVault.ViewModels"
         x:Class="XBVault.Views.UsbPermissionWindow"
+        Classes="dialogWindow"
         x:DataType="vm:UsbPermissionViewModel"
         Title="USB Media Drive"
         Width="600" Height="500"

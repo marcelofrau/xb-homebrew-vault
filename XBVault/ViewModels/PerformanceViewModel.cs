@@ -10,10 +10,17 @@ using XBVault.Services;
 
 namespace XBVault.ViewModels;
 
-public partial class PerformanceViewModel : ObservableObject
+public partial class PerformanceViewModel : ObservableObject, IDisposable
 {
     private readonly XboxDeviceService _xboxService;
     private CancellationTokenSource? _cts;
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     public PerformanceViewModel(XboxDeviceService xboxService)
     {

@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:XBVault.ViewModels"
         x:Class="XBVault.Views.ConfirmWindow"
+        Classes="dialogWindow"
         x:DataType="vm:ConfirmViewModel"
         Title="{Binding Title}"
         WindowStartupLocation="CenterOwner"

@@ -12,10 +12,17 @@ using Avalonia.Input;
 
 namespace XBVault.ViewModels;
 
-public partial class ScreenshotViewModel : ObservableObject
+public partial class ScreenshotViewModel : ObservableObject, IDisposable
 {
     private readonly XboxDeviceService _xboxService;
     private CancellationTokenSource? _liveCts;
+
+    public void Dispose()
+    {
+        _liveCts?.Cancel();
+        _liveCts?.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     public ScreenshotViewModel(XboxDeviceService xboxService)
     {

@@ -30,6 +30,87 @@
       <Setter Property="FontSize" Value="11"/>
       <Setter Property="Cursor" Value="Hand"/>
     </Style>
+
+    <Style Selector="Button#ConnectPulseBtn">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="0"/>
+      <Setter Property="Padding" Value="0,10"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Cursor" Value="Arrow"/>
+      <Setter Property="Foreground" Value="#CCC"/>
+      <Style.Animations>
+        <Animation Duration="0:0:1.5" IterationCount="INFINITE" FillMode="Both">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="1"/>
+          </KeyFrame>
+          <KeyFrame Cue="50%">
+            <Setter Property="Opacity" Value="0.4"/>
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="1"/>
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+
+    <Style Selector="ListBoxItem.nav-item:pointerover">
+      <Setter Property="RenderTransform" Value="scale(1.03)"/>
+    </Style>
+
+    <Style Selector="ListBoxItem.nav-item:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.98)"/>
+    </Style>
+
+    <Style Selector="ListBoxItem.nav-item:selected">
+      <Setter Property="RenderTransform" Value="scale(1)"/>
+      <Style Selector="^ > Grid > Border">
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="Opacity" Value="1"/>
+      </Style>
+    </Style>
+
+    <Style Selector="ListBoxItem.nav-item">
+      <Setter Property="Transitions">
+        <Setter.Value>
+          <Transitions>
+            <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15"/>
+          </Transitions>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style Selector="Image.statusDot">
+      <Style.Animations>
+        <Animation Duration="0:0:2" IterationCount="INFINITE" FillMode="Both">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="1"/>
+          </KeyFrame>
+          <KeyFrame Cue="50%">
+            <Setter Property="Opacity" Value="0.5"/>
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="1"/>
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+
+    <Style Selector="StackPanel.brand-logo">
+      <Style.Animations>
+        <Animation Duration="0:0:2.5" IterationCount="Infinite" FillMode="Both">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="0.85"/>
+          </KeyFrame>
+          <KeyFrame Cue="50%">
+            <Setter Property="Opacity" Value="1"/>
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0.85"/>
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
   </Window.Styles>
 
   <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
@@ -80,8 +161,10 @@
 
         <!-- Brand -->
         <Border Padding="16,20,16,16"
-                Grid.Row="0">
-          <StackPanel HorizontalAlignment="Center">
+                Grid.Row="0" Cursor="Hand"
+                ToolTip.Tip="Visit marcelofrau.github.io/xb-homebrew-vault"
+                PointerPressed="OnBrandClick">
+          <StackPanel HorizontalAlignment="Center" Classes="brand-logo">
             <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-xbox-80.png"
                    Width="80" Height="80"
                    Stretch="Uniform"
@@ -112,13 +195,16 @@
                  Background="Transparent"
                  SelectedIndex="{Binding SelectedTab}"
                  SelectionMode="Single">
-          <ListBoxItem Tag="Browse" Padding="16,10">
-             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+          <ListBoxItem Tag="Browse" Classes="nav-item" Padding="16,10">
+             <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
+              <Border Background="Transparent" Opacity="0"
+                      Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-browse-32.png"
                      Width="32" Height="32"
+                     Grid.Column="1"
                      Stretch="Uniform"/>
               <TextBlock Text="BROWSE"
-                         Grid.Column="1"
+                         Grid.Column="2"
                          VerticalAlignment="Center"
                          FontSize="13"
                          FontWeight="SemiBold"
@@ -126,13 +212,16 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Installed" Padding="16,10">
-             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+          <ListBoxItem Tag="Installed" Classes="nav-item" Padding="16,10">
+             <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
+              <Border Background="Transparent" Opacity="0"
+                      Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-installed-32.png"
                      Width="32" Height="32"
+                     Grid.Column="1"
                      Stretch="Uniform"/>
               <TextBlock Text="INSTALLED"
-                         Grid.Column="1"
+                         Grid.Column="2"
                          VerticalAlignment="Center"
                          FontSize="13"
                          FontWeight="SemiBold"
@@ -140,13 +229,16 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="FileExplorer" Padding="16,10">
-             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+          <ListBoxItem Tag="FileExplorer" Classes="nav-item" Padding="16,10">
+             <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
+              <Border Background="Transparent" Opacity="0"
+                      Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-fileexplorer-32.png"
                      Width="32" Height="32"
+                     Grid.Column="1"
                      Stretch="Uniform"/>
               <TextBlock Text="FILE EXPLORER"
-                         Grid.Column="1"
+                         Grid.Column="2"
                          VerticalAlignment="Center"
                          FontSize="13"
                          FontWeight="SemiBold"
@@ -154,13 +246,16 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Tools" Padding="16,10">
-             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+          <ListBoxItem Tag="Tools" Classes="nav-item" Padding="16,10">
+             <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
+              <Border Background="Transparent" Opacity="0"
+                      Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-tools-32.png"
                      Width="32" Height="32"
+                     Grid.Column="1"
                      Stretch="Uniform"/>
               <TextBlock Text="TOOLS"
-                         Grid.Column="1"
+                         Grid.Column="2"
                          VerticalAlignment="Center"
                          FontSize="13"
                          FontWeight="SemiBold"
@@ -168,13 +263,16 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Settings" Padding="16,10">
-             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+          <ListBoxItem Tag="Settings" Classes="nav-item" Padding="16,10">
+             <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
+              <Border Background="Transparent" Opacity="0"
+                      Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-settings-32.png"
                      Width="32" Height="32"
+                     Grid.Column="1"
                      Stretch="Uniform"/>
               <TextBlock Text="SETTINGS"
-                         Grid.Column="1"
+                         Grid.Column="2"
                          VerticalAlignment="Center"
                          FontSize="13"
                          FontWeight="SemiBold"
@@ -182,13 +280,16 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Logs" Padding="16,10">
-             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+          <ListBoxItem Tag="Logs" Classes="nav-item" Padding="16,10">
+             <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
+              <Border Background="Transparent" Opacity="0"
+                      Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-logs-32.png"
                      Width="32" Height="32"
+                     Grid.Column="1"
                      Stretch="Uniform"/>
               <TextBlock Text="LOGS"
-                         Grid.Column="1"
+                         Grid.Column="2"
                          VerticalAlignment="Center"
                          FontSize="13"
                          FontWeight="SemiBold"
@@ -217,12 +318,12 @@
         <!-- Connection status + Connect + About -->
         <StackPanel Grid.Row="3" Spacing="4" Margin="16,0,16,16">
 
-          <!-- Connect button -->
+          <!-- Connect button (normal) -->
           <Button Classes="SidebarBtn"
                   HorizontalAlignment="Stretch"
                   FontWeight="SemiBold"
                   Command="{Binding ConnectCommand}"
-                  IsVisible="{Binding IsXboxConnected, Converter={StaticResource BoolInverse}}">
+                  IsVisible="{Binding CanConnect}">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-connect-32.png"
                      Width="32" Height="32"
@@ -230,6 +331,24 @@
                      VerticalAlignment="Center"/>
               <TextBlock Grid.Column="1"
                           Text="CONNECT"
+                          VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+
+          <!-- Connect button (pulsing) -->
+          <Button Classes="SidebarBtn"
+                  x:Name="ConnectPulseBtn"
+                  HorizontalAlignment="Stretch"
+                  FontWeight="SemiBold"
+                  IsVisible="{Binding ShowConnecting}">
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-connect-32.png"
+                     Width="32" Height="32"
+                     Stretch="Uniform"
+                     VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1"
+                          Text="CONNECTING"
                           VerticalAlignment="Center"/>
             </Grid>
           </Button>
@@ -281,7 +400,10 @@
         <Carousel x:Name="ViewCarousel"
                   SelectedIndex="{Binding SelectedTab}">
           <Carousel.PageTransition>
-            <CrossFade Duration="0:0:0.3"/>
+            <CompositePageTransition>
+              <CrossFade Duration="0:0:0.3"/>
+              <PageSlide Duration="0:0:0.3" Orientation="Horizontal"/>
+            </CompositePageTransition>
           </Carousel.PageTransition>
         </Carousel>
 
@@ -295,6 +417,7 @@
                    Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"
                    IsVisible="{Binding IsDisconnected}"/>
             <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-status-connected-16.png"
+                   Classes="statusDot"
                    Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"
                    IsVisible="{Binding IsXboxConnected}"/>
             <TextBlock Grid.Column="1"

@@ -15,6 +15,11 @@ public static class SettingsService
 
     private static AppSettings? _current;
 
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        WriteIndented = true
+    };
+
     public static AppSettings Current
     {
         get
@@ -64,10 +69,7 @@ public static class SettingsService
         if (!Directory.Exists(AppDataDir))
             Directory.CreateDirectory(AppDataDir);
 
-        var json = JsonSerializer.Serialize(_current ?? new AppSettings(), new JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
+        var json = JsonSerializer.Serialize(_current ?? new AppSettings(), _jsonOptions);
 
         File.WriteAllText(SettingsPath, json);
         Logger.Info($"Settings saved to {SettingsPath} ({json.Length} bytes)");

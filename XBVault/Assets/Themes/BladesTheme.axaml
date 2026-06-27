@@ -190,6 +190,18 @@
     <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
   </Style>
 
+  <Style Selector="Window.dialogWindow">
+    <Setter Property="Opacity" Value="0"/>
+    <Setter Property="Transitions">
+      <Setter.Value>
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
+        </Transitions>
+      </Setter.Value>
+    </Setter>
+    <Setter Property="(controls:DialogFadeBehavior.EnableDialogFade)" Value="True"/>
+  </Style>
+
   <!-- Text -->
   <Style Selector="TextBlock">
     <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
@@ -235,6 +247,22 @@
     <Setter Property="FontSize" Value="13"/>
     <Setter Property="FontWeight" Value="Bold"/>
     <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
+    <Setter Property="Transitions">
+      <Setter.Value>
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1"/>
+        </Transitions>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style Selector="Button:pointerover">
+    <Setter Property="RenderTransform" Value="scale(1.02)"/>
+  </Style>
+
+  <Style Selector="Button:pressed">
+    <Setter Property="RenderTransform" Value="scale(0.98)"/>
   </Style>
 
   <Style Selector="Button.Accent">
@@ -438,6 +466,14 @@
   <Style Selector="ListBoxItem">
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
+    <Setter Property="Transitions">
+      <Setter.Value>
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.15"/>
+        </Transitions>
+      </Setter.Value>
+    </Setter>
   </Style>
 
   <Style Selector="ListBoxItem:pointerover">

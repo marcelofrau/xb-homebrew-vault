@@ -37,13 +37,26 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isXboxConnected;
 
+    [ObservableProperty]
+    private bool _isConnecting;
+
     public bool IsNotConfigured => !IsXboxConnected && !SettingsService.Current.XboxConnection.IsConfigured;
     public bool IsDisconnected => !IsXboxConnected && SettingsService.Current.XboxConnection.IsConfigured;
+    public bool CanConnect => !IsXboxConnected && !IsConnecting;
+    public bool ShowConnecting => IsConnecting;
 
     partial void OnIsXboxConnectedChanged(bool value)
     {
         OnPropertyChanged(nameof(IsNotConfigured));
         OnPropertyChanged(nameof(IsDisconnected));
+        OnPropertyChanged(nameof(CanConnect));
+        OnPropertyChanged(nameof(ShowConnecting));
+    }
+
+    partial void OnIsConnectingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanConnect));
+        OnPropertyChanged(nameof(ShowConnecting));
     }
 
     partial void OnSelectedTabChanged(int value)
@@ -119,7 +132,11 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
+        IsConnecting = true;
+
         var result = await ShowConnectAction();
+
+        IsConnecting = false;
 
         if (result)
         {

@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using XBVault.Helpers;
 using XBVault.Models;
 
+#pragma warning disable CA1001 // HttpClient is long-lived singleton
+
 namespace XBVault.Services;
 
 /// <summary>
@@ -24,6 +26,11 @@ public partial class CatalogApiService
     private static readonly string CacheDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "XBVault", "cache");
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        WriteIndented = true
+    };
 
     private static readonly string CachePath = Path.Combine(CacheDir, "catalog-api.json");
 
@@ -364,10 +371,7 @@ public partial class CatalogApiService
                 }
             };
 
-            var json = JsonSerializer.Serialize(cache, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
+            var json = JsonSerializer.Serialize(cache, _jsonOptions);
 
             File.WriteAllText(CachePath, json);
             Logger.Info($"Cache saved: {items.Count} items to {CachePath}");

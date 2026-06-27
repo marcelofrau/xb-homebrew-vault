@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:XBVault.ViewModels"
         x:Class="XBVault.Views.DeleteConfirmWindow"
+        Classes="dialogWindow"
         x:DataType="vm:DeleteConfirmViewModel"
         Title="Delete"
         Width="560" Height="420"

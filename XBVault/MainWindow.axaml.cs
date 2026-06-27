@@ -32,6 +32,12 @@ public partial class MainWindow : Window
             BeginMoveDrag(e);
     }
 
+    private void OnBrandClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Logger.Info("Opening project website from brand logo");
+        Process.Start(new ProcessStartInfo("https://marcelofrau.github.io/xb-homebrew-vault/") { UseShellExecute = true });
+    }
+
     private void OnErLinkClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Logger.Info("Opening Emulation Revival website from sidebar");

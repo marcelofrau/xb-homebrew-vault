@@ -3,6 +3,7 @@
         xmlns:vm="using:XBVault.ViewModels"
         xmlns:sys="using:System"
         x:Class="XBVault.Views.RefreshWindow"
+        Classes="dialogWindow"
         x:DataType="vm:RefreshViewModel"
         Title="Refresh Catalog"
         WindowStartupLocation="CenterOwner"

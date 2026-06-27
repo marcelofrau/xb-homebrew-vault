@@ -12,10 +12,17 @@ using XBVault.Services;
 
 namespace XBVault.ViewModels;
 
-public partial class ConnectionViewModel : ObservableObject
+public partial class ConnectionViewModel : ObservableObject, IDisposable
 {
     private readonly XboxDeviceService _xboxService;
     private CancellationTokenSource? _cts;
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        GC.SuppressFinalize(this);
+    }
     private static readonly Random _memeRng = new();
     private const int DialToneDelayMs = 300;
     private const int ModemInitDelayMs = 500;

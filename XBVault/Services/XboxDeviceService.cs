@@ -11,6 +11,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using XBVault.Models;
 
+#pragma warning disable CA1001 // HttpClient+Handler are long-lived singleton
+#pragma warning disable CA5359 // Xbox uses self-signed certs — bypass intentional
+
 namespace XBVault.Services;
 
 public class XboxDeviceService
@@ -777,7 +780,7 @@ public class XboxDeviceService
                 return null;
             }
 
-            return await response.Content.ReadAsByteArrayAsync();
+            return await response.Content.ReadAsByteArrayAsync(ct);
         }
         catch (OperationCanceledException)
         {

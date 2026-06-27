@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using XBVault.Helpers;
 using XBVault.Models;
 
+#pragma warning disable CA1001 // HttpClient is long-lived singleton
+
 namespace XBVault.Services;
 
 public class PackageInstallService
@@ -88,7 +90,7 @@ public class PackageInstallService
 
                 while ((bytesRead = await stream.ReadAsync(buffer)) > 0)
                 {
-                    await fileStream.WriteAsync(buffer, 0, bytesRead);
+                    await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead));
                     read += bytesRead;
                     if (total > 0)
                     {

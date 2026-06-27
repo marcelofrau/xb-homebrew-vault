@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:XBVault.ViewModels"
         x:Class="XBVault.Views.PerformanceWindow"
+        Classes="dialogWindow"
         x:DataType="vm:PerformanceViewModel"
         Title="Xbox Performance"
         WindowStartupLocation="CenterOwner"
