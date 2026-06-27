@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
+using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
@@ -55,9 +56,11 @@ public partial class BrowseViewModel : ObservableObject
     private string _selectedCategory = "All";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isLoading;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isInstalling;
 
     [ObservableProperty]
@@ -91,7 +94,12 @@ public partial class BrowseViewModel : ObservableObject
     private CatalogItem? _selectedItem;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isCheckingInstalled;
+
+    public Cursor? Cursor => (IsLoading || IsInstalling || IsCheckingInstalled) ? AppStartingCursor : null;
+
+    private static readonly Cursor AppStartingCursor = new(StandardCursorType.AppStarting);
 
     [ObservableProperty]
     private bool _checkComplete;

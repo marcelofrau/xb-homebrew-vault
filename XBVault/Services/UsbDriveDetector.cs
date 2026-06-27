@@ -1,5 +1,6 @@
 #if WINDOWS_BUILD
 using System.Management;
+#pragma warning disable CA1416
 #endif
 using System.Runtime.InteropServices;
 using XBVault.Models;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Services;
@@ -27,7 +28,12 @@ public partial class RefreshViewModel : ObservableObject
     private double _progress;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isRunning;
+
+    public Cursor? Cursor => IsRunning ? WaitCursor : null;
+
+    private static readonly Cursor WaitCursor = new(StandardCursorType.Wait);
 
     public event Action<bool>? Completed;
 

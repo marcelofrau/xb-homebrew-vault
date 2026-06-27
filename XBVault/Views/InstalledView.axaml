@@ -3,7 +3,7 @@
               xmlns:vm="using:XBVault.ViewModels"
               xmlns:models="using:XBVault.Models"
               x:Class="XBVault.Views.InstalledView"
-              x:DataType="vm:InstalledViewModel">
+              Cursor="{Binding Cursor}" x:DataType="vm:InstalledViewModel">
 
   <UserControl.Styles>
     <Style Selector="ListBoxItem">

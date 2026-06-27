@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
 using XBVault.Services;
+using Avalonia.Input;
 
 namespace XBVault.ViewModels;
 
@@ -21,10 +22,16 @@ public partial class ProcessesViewModel : ObservableObject
     }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isLoading;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isPolling;
+
+    public Cursor? Cursor => (IsLoading || IsPolling) ? AppStartingCursor : null;
+
+    private static readonly Cursor AppStartingCursor = new(StandardCursorType.AppStarting);
 
     [ObservableProperty]
     private string? _lastUpdated;

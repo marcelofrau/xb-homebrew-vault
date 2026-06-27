@@ -91,14 +91,14 @@
 ## 8. Verify
 
 - [x] 8.1 Build project with `dotnet build XBVault/XBVault.csproj` — zero errors
-- [ ] 8.2 Run app, connect to Xbox, open File Explorer tab — verify tree loads `D:\DevelopmentFiles\`
-- [ ] 8.3 Expand folders, verify lazy loading and single-expand behavior
-- [ ] 8.4 Click "Mount Drives" — verify junctions created (check via SSH)
-- [ ] 8.5 Upload a file via drag-drop — verify progress bar, file appears in list
-- [ ] 8.6 Upload a file via Browse Files — verify same behavior
-- [ ] 8.7 Download a file via right-click — verify file saves locally
-- [ ] 8.8 Delete a file — verify confirm dialog, file removed
-- [ ] 8.9 Rename a file — verify name changes in list
-- [ ] 8.10 Create folder — verify new folder appears and is writable
-- [ ] 8.11 Refresh button — verify list reloads
-- [ ] 8.12 Disconnect/reconnect — verify SSH connection lifecycle
+- [x] 8.2 Run app, connect to Xbox, open File Explorer tab — verify tree loads `D:\DevelopmentFiles\`
+- [x] 8.3 Expand folders, verify lazy loading and single-expand behavior
+- [x] 8.4 Click "Mount Drives" — verify junctions created (check via SSH)
+- [x] 8.5 Upload a file via drag-drop — verify progress bar, file appears in list
+- [x] 8.6 Upload a file via Browse Files — verify same behavior
+- [x] 8.7 Download a file via right-click — verify file saves locally
+- [x] 8.8 Delete a file — verify confirm dialog, file removed
+- [x] 8.9 Rename a file — verify name changes in list
+- [x] 8.10 Create folder — verify new folder appears and is writable
+- [x] 8.11 Refresh button — verify list reloads
+- [x] 8.12 Disconnect/reconnect — verify SSH connection lifecycle

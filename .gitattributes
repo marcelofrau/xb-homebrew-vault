@@ -1,0 +1,20 @@
+* text=auto eol=lf
+
+*.cs text
+*.axaml text
+*.axaml.cs text
+*.json text
+*.jsonc text
+*.ps1 text
+*.sh text eol=lf
+*.md text
+*.yml text
+*.yaml text
+*.csproj text
+*.sln text
+*.props text
+*.targets text
+
+*.png binary
+*.ico binary
+*.zip binary

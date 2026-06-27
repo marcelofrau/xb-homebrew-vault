@@ -4,7 +4,7 @@
               xmlns:models="using:XBVault.Models"
               xmlns:controls="using:XBVault.Controls"
               x:Class="XBVault.Views.BrowseView"
-              x:DataType="vm:BrowseViewModel">
+              Cursor="{Binding Cursor}" x:DataType="vm:BrowseViewModel">
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="32">
 

@@ -1,0 +1,28 @@
+{
+  "dotnet.defaultSolution": "XBVault/XBVault.csproj",
+  "files.exclude": {
+    "**/bin": true,
+    "**/obj": true,
+    "**/dist": true
+  },
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "*.axaml": "${basename}.axaml.cs, ${basename}.axaml.cs"
+  },
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  "[csharp]": {
+    "editor.defaultFormatter": "ms-dotnettools.csharp",
+    "editor.indentSize": 4,
+    "editor.tabSize": 4
+  },
+  "[axaml]": {
+    "editor.indentSize": 2,
+    "editor.tabSize": 2
+  },
+  "omnisharp.enableRoslynAnalyzers": true,
+  "omnisharp.enableEditorConfigSupport": true,
+  "dotnet.formatting.organizeImportsOnFormat": true
+}

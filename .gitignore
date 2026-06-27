@@ -13,7 +13,6 @@ publish/
 
 # IDE
 .vs/
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -32,12 +31,6 @@ Thumbs.db
 .codebase-memory/
 .cursor/
 .aider/
-
-# AI agent project config
-opencode.json
-
-# AI agent rules
-AGENTS.md
 
 # Orphaned legacy assets
 XBVault/Assets/_Backup/

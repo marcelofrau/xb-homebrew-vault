@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
@@ -24,6 +25,7 @@ public partial class CrashDataViewModel : ObservableObject
     }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -39,7 +41,12 @@ public partial class CrashDataViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCrashDumpSelected))]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isRefreshing;
+
+    public Cursor? Cursor => (IsLoading || IsRefreshing) ? AppStartingCursor : null;
+
+    private static readonly Cursor AppStartingCursor = new(StandardCursorType.AppStarting);
 
     public bool IsCrashDumpSelected => SelectedCrashDump is not null;
     public bool HasCrashDumps => CrashDumps.Count > 0;

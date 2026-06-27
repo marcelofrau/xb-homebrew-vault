@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
+using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
@@ -62,10 +63,16 @@ public partial class InstalledViewModel : ObservableObject
     public ObservableCollection<InstalledPackage> Packages { get; } = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isLoading;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isPolling;
+
+    public Cursor? Cursor => (IsLoading || IsPolling) ? AppStartingCursor : null;
+
+    private static readonly Cursor AppStartingCursor = new(StandardCursorType.AppStarting);
 
     [ObservableProperty]
     private string? _lastUpdated;

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
@@ -58,6 +59,7 @@ public partial class CustomInstallViewModel : ObservableObject
     private string? _statusText;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isAnalyzing;
 
     [ObservableProperty]
@@ -81,6 +83,7 @@ public partial class CustomInstallViewModel : ObservableObject
     public ObservableCollection<SelectableDep> DepItems { get; } = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isInstalling;
 
     [ObservableProperty]
@@ -106,6 +109,10 @@ public partial class CustomInstallViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _installSuccess;
+
+    public Cursor? Cursor => (IsAnalyzing || IsInstalling) ? AppStartingCursor : null;
+
+    private static readonly Cursor AppStartingCursor = new(StandardCursorType.AppStarting);
 
     public bool CanGoNext => CurrentStep switch
     {

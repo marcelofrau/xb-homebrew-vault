@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
 using XBVault.Services;
+using Avalonia.Input;
 
 namespace XBVault.ViewModels;
 
@@ -19,7 +20,12 @@ public partial class NetworkInfoViewModel : ObservableObject
     }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isLoading;
+
+    public Cursor? Cursor => IsLoading ? AppStartingCursor : null;
+
+    private static readonly Cursor AppStartingCursor = new(StandardCursorType.AppStarting);
 
     [ObservableProperty]
     private string? _statusMessage;

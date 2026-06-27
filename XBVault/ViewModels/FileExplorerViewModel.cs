@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 using Avalonia.Threading;
+using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
@@ -21,6 +22,7 @@ public partial class FileExplorerViewModel : ObservableObject
     private DateTime _transferStartTime;
     private long _transferBytesTotal;
     private CancellationTokenSource? _currentTransferCts;
+    private string? _uploadTargetPath;
 
     public FileExplorerViewModel(XboxDeviceService xboxService, SftpService sftpService)
     {
@@ -81,6 +83,7 @@ public partial class FileExplorerViewModel : ObservableObject
     private bool _isConnected;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -140,9 +143,11 @@ public partial class FileExplorerViewModel : ObservableObject
     private double _uploadProgress;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isUploading;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isDownloading;
 
     [ObservableProperty]
@@ -152,6 +157,7 @@ public partial class FileExplorerViewModel : ObservableObject
     private string _downloadStatusText = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isDeleting;
 
     [ObservableProperty]
@@ -164,6 +170,10 @@ public partial class FileExplorerViewModel : ObservableObject
     public bool ShowIdle => !ShowActivity;
     public double ActivityProgress => IsDeleting ? DeleteProgress : IsUploading ? UploadProgress : DownloadProgress;
     public string ActivityText => IsDeleting ? DeleteStatusText : IsUploading ? UploadStatusText : DownloadStatusText;
+
+    public Cursor? Cursor => (IsLoading || IsUploading || IsDownloading || IsDeleting) ? AppStartingCursor : null;
+
+    private static readonly Cursor AppStartingCursor = new(StandardCursorType.AppStarting);
 
     private void NotifyFileLockProperties()
     {
@@ -560,6 +570,8 @@ public partial class FileExplorerViewModel : ObservableObject
             FocusFileList?.Invoke();
             Logger.Trace("NavigateToPathAsync: post-nav focus");
 
+            await ExpandTreeToPathAsync(path);
+
             var targetEntry = FindEntry(TreeRoots, path);
             if (targetEntry is not null)
                 ScrollToEntry?.Invoke(targetEntry);
@@ -695,6 +707,7 @@ public partial class FileExplorerViewModel : ObservableObject
 
         _currentTransferCts = new CancellationTokenSource();
         var ct = _currentTransferCts.Token;
+        _uploadTargetPath = CurrentPath;
 
         try
         {
@@ -738,6 +751,8 @@ public partial class FileExplorerViewModel : ObservableObject
                         LastModified = fi.LastWriteTimeUtc
                     };
 
+                    if (CurrentPath == _uploadTargetPath)
+                    {
                     var existing = CurrentEntries.FirstOrDefault(e => !e.IsDirectory && e.Name == fileName);
                     if (existing is not null) CurrentEntries.Remove(existing);
                     var ph = CurrentEntries.FirstOrDefault(e => e.IsPlaceholder);
@@ -753,6 +768,7 @@ public partial class FileExplorerViewModel : ObservableObject
                     if (ph2 is not null) parentNode.Children.Remove(ph2);
                     InsertSorted(parentNode.Children, newEntry);
                 }
+                    }
 
                 StatusSeverity = ToolbarStatusSeverity.Success;
                 StatusMessage = $"{fileName} uploaded";
@@ -781,6 +797,7 @@ public partial class FileExplorerViewModel : ObservableObject
         }
         finally
         {
+            _uploadTargetPath = null;
             _currentTransferCts?.Dispose();
             _currentTransferCts = null;
         }
@@ -796,6 +813,7 @@ public partial class FileExplorerViewModel : ObservableObject
 
         _currentTransferCts = new CancellationTokenSource();
         var ct = _currentTransferCts.Token;
+        _uploadTargetPath = CurrentPath;
 
         try
         {
@@ -846,13 +864,18 @@ public partial class FileExplorerViewModel : ObservableObject
                 await _sftpService.UploadFileAsync(stream, remotePath, pFile, ct);
             }
 
-            Dispatcher.UIThread.Post(() => AddToCurrentAndTree(new SftpEntry
+            var addPath = _uploadTargetPath;
+            Dispatcher.UIThread.Post(() =>
             {
-                Name = Path.GetFileName(localFolder.TrimEnd('\\')),
-                FullPath = CurrentPath.TrimEnd('\\') + "\\" + Path.GetFileName(localFolder.TrimEnd('\\')),
-                IsDirectory = true,
-                Children = { new SftpEntry { Name = "" } }
-            }));
+                if (CurrentPath != addPath) return;
+                AddToCurrentAndTree(new SftpEntry
+                {
+                    Name = Path.GetFileName(localFolder.TrimEnd('\\')),
+                    FullPath = CurrentPath.TrimEnd('\\') + "\\" + Path.GetFileName(localFolder.TrimEnd('\\')),
+                    IsDirectory = true,
+                    Children = { new SftpEntry { Name = "" } }
+                });
+            });
 
             UploadProgress = 1;
             Logger.Info($"UploadFolderAsync: '{localFolder}' — {totalFiles} file(s) uploaded");
@@ -873,6 +896,7 @@ public partial class FileExplorerViewModel : ObservableObject
         }
         finally
         {
+            _uploadTargetPath = null;
             IsUploading = false;
             UploadProgress = 0;
             UploadStatusText = string.Empty;
@@ -893,6 +917,7 @@ public partial class FileExplorerViewModel : ObservableObject
         _currentTransferCts = new CancellationTokenSource();
         var ct = _currentTransferCts.Token;
         var totalItems = fCount + dCount;
+        _uploadTargetPath = CurrentPath;
 
         try
         {
@@ -1018,6 +1043,7 @@ public partial class FileExplorerViewModel : ObservableObject
         }
         finally
         {
+            _uploadTargetPath = null;
             IsUploading = false;
             UploadProgress = 0;
             UploadStatusText = string.Empty;
@@ -1028,6 +1054,11 @@ public partial class FileExplorerViewModel : ObservableObject
 
     private void AddToCurrentAndTree(SftpEntry newEntry)
     {
+        if (_uploadTargetPath is not null && CurrentPath != _uploadTargetPath)
+        {
+            Logger.Trace($"AddToCurrentAndTree: skipped (path changed '{CurrentPath}' != '{_uploadTargetPath}')");
+            return;
+        }
         Logger.Trace($"AddToCurrentAndTree: '{newEntry.FullPath}' (IsDir={newEntry.IsDirectory})");
         var existing = CurrentEntries.FirstOrDefault(e => !e.IsPlaceholder && e.Name == newEntry.Name && e.IsDirectory == newEntry.IsDirectory);
         if (existing is not null) { CurrentEntries.Remove(existing); Logger.Trace($"AddToCurrentAndTree: removed existing '{existing.FullPath}' from CurrentEntries"); }
@@ -1076,6 +1107,7 @@ public partial class FileExplorerViewModel : ObservableObject
             _currentTransferCts = new CancellationTokenSource();
             var ct = _currentTransferCts.Token;
 
+            _uploadTargetPath = CurrentPath;
             IsUploading = true;
             UploadProgress = 0;
             _transferStartTime = DateTime.UtcNow;
@@ -1114,8 +1146,10 @@ public partial class FileExplorerViewModel : ObservableObject
             }
 
             // Add entries to list view
+            var addPath = _uploadTargetPath;
             Dispatcher.UIThread.Post(() =>
             {
+                if (CurrentPath != addPath) return;
                 var addedDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < totalFiles; i++)
                 {
@@ -1169,6 +1203,7 @@ public partial class FileExplorerViewModel : ObservableObject
         }
         finally
         {
+            _uploadTargetPath = null;
             IsUploading = false;
             UploadProgress = 0;
             UploadStatusText = string.Empty;

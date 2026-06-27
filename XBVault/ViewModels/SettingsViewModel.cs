@@ -1,3 +1,4 @@
+using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.Generic;
@@ -54,6 +55,7 @@ public partial class SettingsViewModel : ObservableObject
     private bool _useHttps = true;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isTestingConnection;
 
     [ObservableProperty]
@@ -88,6 +90,10 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private string _selectedLogLevel = "Info";
+
+    public Cursor? Cursor => IsTestingConnection ? AppStartingCursor : null;
+
+    private static readonly Cursor AppStartingCursor = new(StandardCursorType.AppStarting);
 
     public List<string> LogLevels { get; } = ["Trace", "Debug", "Info", "Warn", "Error", "Fatal"];
 

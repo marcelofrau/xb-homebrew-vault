@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
@@ -41,6 +42,7 @@ public partial class ConnectionViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsActive))]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isRunning;
 
     [ObservableProperty]
@@ -48,9 +50,14 @@ public partial class ConnectionViewModel : ObservableObject
     private bool _isSuccess;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsActive))]
     private bool _isFailed;
 
-    public bool IsActive => !IsRunning && !IsSuccess;
+    public bool IsActive => !IsRunning && !IsSuccess && !IsFailed;
+
+    public Cursor? Cursor => IsRunning ? WaitCursor : null;
+
+    private static readonly Cursor WaitCursor = new(StandardCursorType.Wait);
 
     public event Action<bool>? Completed;
 

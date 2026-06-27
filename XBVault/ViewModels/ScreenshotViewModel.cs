@@ -8,6 +8,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Services;
+using Avalonia.Input;
 
 namespace XBVault.ViewModels;
 
@@ -22,6 +23,7 @@ public partial class ScreenshotViewModel : ObservableObject
     }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isCapturing;
 
     [ObservableProperty]
@@ -45,7 +47,12 @@ public partial class ScreenshotViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LiveButtonText))]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isLiveCapturing;
+
+    public Cursor? Cursor => (IsCapturing || IsLiveCapturing) ? AppStartingCursor : null;
+
+    private static readonly Cursor AppStartingCursor = new(StandardCursorType.AppStarting);
 
     public string LiveButtonText => IsLiveCapturing ? "Stop Live" : "Start Live";
 

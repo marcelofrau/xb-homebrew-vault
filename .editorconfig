@@ -1,0 +1,181 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+
+# ========== .NET code-style analyzer settings ==========
+
+# Using directives
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# Modifier preferences
+csharp_preferred_modifier_order = public, private, protected, internal, static, extern, new, virtual, abstract, sealed, override, readonly, unsafe, required, volatile, async:silent
+
+# var preferences
+csharp_style_var_for_built_in_types = false:silent
+csharp_style_var_when_type_is_apparent = true:silent
+csharp_style_var_elsewhere = false:silent
+
+# Expression-bodied members
+csharp_style_expression_bodied_methods = true:suggestion
+csharp_style_expression_bodied_constructors = false:suggestion
+csharp_style_expression_bodied_operators = false:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_expression_bodied_indexers = true:suggestion
+csharp_style_expression_bodied_accessors = true:suggestion
+csharp_style_expression_bodied_lambdas = true:suggestion
+csharp_style_expression_bodied_local_functions = false:suggestion
+
+# Pattern matching
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_inlined_variable_declaration = true:suggestion
+csharp_prefer_simple_default_expression = true:suggestion
+csharp_style_pattern_local_over_anonymous_function = true:suggestion
+csharp_style_deconstruction_over_object_init = true:suggestion
+
+# Null-checking
+csharp_style_throw_expression = true:suggestion
+csharp_style_conditional_delegate_call = true:suggestion
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+csharp_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
+
+# Code block preferences
+csharp_prefer_braces = true:silent
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_pattern_switch_over_syntax = true:suggestion
+
+# Namespace
+csharp_style_namespace_declarations = file_scoped:silent
+
+# Other
+csharp_style_prefer_primary_constructors = false:suggestion
+csharp_style_unused_value_expression_statement_preference = discard_variable:suggestion
+csharp_style_unused_value_assignment_preference = discard_variable:suggestion
+csharp_style_prefer_extended_property_pattern = true:suggestion
+
+# ========== Naming conventions ==========
+dotnet_naming_rule.types_and_namespaces_should_be_pascalcase.severity = suggestion
+dotnet_naming_rule.types_and_namespaces_should_be_pascalcase.symbols = types_and_namespaces
+dotnet_naming_rule.types_and_namespaces_should_be_pascalcase.style = pascalcase
+
+dotnet_naming_rule.interfaces_should_be_iprefixed.severity = suggestion
+dotnet_naming_rule.interfaces_should_be_iprefixed.symbols = interfaces
+dotnet_naming_rule.interfaces_should_be_iprefixed.style = iprefix
+
+dotnet_naming_rule.type_parameters_should_be_tprefix.severity = suggestion
+dotnet_naming_rule.type_parameters_should_be_tprefix.symbols = type_parameters
+dotnet_naming_rule.type_parameters_should_be_tprefix.style = tprefix
+
+dotnet_naming_rule.private_fields_should_be_underscore_camelcase.severity = suggestion
+dotnet_naming_rule.private_fields_should_be_underscore_camelcase.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_underscore_camelcase.style = underscore_camelcase
+
+dotnet_naming_rule.private_static_fields_should_be_s_underscore_camelcase.severity = suggestion
+dotnet_naming_rule.private_static_fields_should_be_s_underscore_camelcase.symbols = private_static_fields
+dotnet_naming_rule.private_static_fields_should_be_s_underscore_camelcase.style = underscore_camelcase
+
+dotnet_naming_rule.public_members_should_be_pascalcase.severity = suggestion
+dotnet_naming_rule.public_members_should_be_pascalcase.symbols = public_members
+dotnet_naming_rule.public_members_should_be_pascalcase.style = pascalcase
+
+dotnet_naming_rule.locals_should_be_camelcase.severity = suggestion
+dotnet_naming_rule.locals_should_be_camelcase.symbols = locals
+dotnet_naming_rule.locals_should_be_camelcase.style = camelcase
+
+# Symbol groups
+dotnet_naming_symbols.types_and_namespaces.applicable_kinds = class, struct, interface, enum, record, namespace
+dotnet_naming_symbols.types_and_namespaces.applicable_accessibilities = *
+
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities = *
+
+dotnet_naming_symbols.type_parameters.applicable_kinds = type_parameter
+dotnet_naming_symbols.type_parameters.applicable_accessibilities = *
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_symbols.private_static_fields.applicable_kinds = field
+dotnet_naming_symbols.private_static_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_fields.required_modifiers = static
+
+dotnet_naming_symbols.public_members.applicable_kinds = property, method, event
+dotnet_naming_symbols.public_members.applicable_accessibilities = public, internal, protected, protected_internal, private_protected
+
+dotnet_naming_symbols.locals.applicable_kinds = local
+dotnet_naming_symbols.locals.applicable_accessibilities = *
+
+# Naming styles
+dotnet_naming_style.pascalcase.required_prefix =
+dotnet_naming_style.pascalcase.required_suffix =
+dotnet_naming_style.pascalcase.capitalization = pascal_case
+
+dotnet_naming_style.iprefix.required_prefix = I
+dotnet_naming_style.iprefix.required_suffix =
+dotnet_naming_style.iprefix.capitalization = pascal_case
+
+dotnet_naming_style.tprefix.required_prefix = T
+dotnet_naming_style.tprefix.required_suffix =
+dotnet_naming_style.tprefix.capitalization = pascal_case
+
+dotnet_naming_style.underscore_camelcase.required_prefix = _
+dotnet_naming_style.underscore_camelcase.required_suffix =
+dotnet_naming_style.underscore_camelcase.capitalization = camel_case
+
+dotnet_naming_style.camelcase.required_prefix =
+dotnet_naming_style.camelcase.required_suffix =
+dotnet_naming_style.camelcase.capitalization = camel_case
+
+# ========== Rule severity overrides (reduce noise) ==========
+# Existing codebase patterns — kept as suggestions, not warnings
+dotnet_diagnostic.CA1032.severity = suggestion  # Implement standard exception constructors
+dotnet_diagnostic.CA1051.severity = suggestion   # Do not declare visible instance fields
+dotnet_diagnostic.CA1305.severity = suggestion   # Locale-sensitive string operations
+dotnet_diagnostic.CA1310.severity = suggestion   # String comparison locale variance
+dotnet_diagnostic.CA1507.severity = suggestion   # Use nameof
+dotnet_diagnostic.CA1822.severity = suggestion   # Member can be marked as static
+dotnet_diagnostic.CA1852.severity = suggestion   # Type can be sealed
+dotnet_diagnostic.CA1861.severity = suggestion   # Prefer static readonly fields
+dotnet_diagnostic.CA1862.severity = suggestion   # Use StringComparison overloads
+dotnet_diagnostic.CA1865.severity = suggestion   # Use char overloads
+dotnet_diagnostic.CA1866.severity = suggestion   # Use char overloads
+dotnet_diagnostic.CA1868.severity = suggestion   # Remove redundant Contains guard
+dotnet_diagnostic.CA2007.severity = suggestion   # Consider ConfigureAwait
+dotnet_diagnostic.CA2201.severity = suggestion   # Exception type not specific
+dotnet_diagnostic.CA2227.severity = suggestion   # Collection properties should be read only
+dotnet_diagnostic.IDE0130.severity = suggestion  # Namespace does not match folder structure
+dotnet_diagnostic.IDE0058.severity = suggestion  # Remove unused expression value
+dotnet_diagnostic.IDE0060.severity = suggestion  # Remove unused parameter
+
+[*.axaml]
+indent_style = space
+indent_size = 2
+
+[*.{json,jsonc,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+[*.{ps1,psm1}]
+indent_style = space
+indent_size = 4
+
+[*.sh]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.csproj]
+indent_style = space
+indent_size = 2

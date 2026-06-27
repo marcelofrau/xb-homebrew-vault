@@ -11,7 +11,8 @@
         CanResize="False"
         ShowInTaskbar="False"
         WindowDecorations="None"
-        Background="{StaticResource SurfaceBrush}">
+        Background="{StaticResource SurfaceBrush}"
+        Cursor="{Binding Cursor}">
 
   <Window.Styles>
     <Style Selector="Window">

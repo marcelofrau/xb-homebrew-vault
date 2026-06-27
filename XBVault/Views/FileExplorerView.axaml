@@ -1,8 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
               xmlns:models="using:XBVault.Models"
-              xmlns:controls="using:XBVault.Controls"
-               x:Class="XBVault.Views.FileExplorerView">
+               xmlns:controls="using:XBVault.Controls"
+               xmlns:vm="using:XBVault.ViewModels"
+               Cursor="{Binding Cursor}" x:Class="XBVault.Views.FileExplorerView" x:DataType="vm:FileExplorerViewModel">
 
   <UserControl.Styles>
     <Style Selector="TreeViewItem">
@@ -13,7 +14,7 @@
 
   </UserControl.Styles>
 
-  <Grid RowDefinitions="Auto,Auto,*" Margin="32,32,32,16">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="16,32,16,16">
 
     <!-- Row 0: Header -->
     <Grid Grid.Row="0" Margin="0,14,0,16" ColumnDefinitions="*,Auto">
@@ -225,22 +226,27 @@
     <!-- Main content: connected + initialized -->
     <Grid Grid.Row="2"
           IsVisible="{ReflectionBinding ShowReadyContent}"
-          RowDefinitions="Auto,*,Auto"
-          ColumnDefinitions="Auto,*,Auto">
+          RowDefinitions="Auto,*,Auto">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="2*" MinWidth="180"/>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="8*" MinWidth="220"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
 
-      <!-- Row 0: Location bar (colspan 2; Go button sits in col 2 for alignment) -->
-      <Grid Grid.ColumnSpan="2"
+      <!-- Row 0: Location bar (colspan 3; Go button sits in col 3 for alignment) -->
+      <Grid Grid.ColumnSpan="3"
             Margin="0,0,4,0">
         <TextBox Text="{ReflectionBinding CurrentPath}"
                  FontSize="13"
                  Padding="8,6"
                  VerticalContentAlignment="Center"/>
       </Grid>
-      <!-- Go button (col 2 = same column as action buttons) -->
-      <Button Grid.Row="0" Grid.Column="2"
+      <!-- Go button (col 3 = same column as action buttons) -->
+      <Button Grid.Row="0" Grid.Column="3"
               Command="{ReflectionBinding NavigateToPathCommand}"
               CommandParameter="{ReflectionBinding CurrentPath}"
-              Width="110"
+              Width="105"
               Padding="6,4"
               Margin="4,0,0,0"
               HorizontalContentAlignment="Stretch"
@@ -257,7 +263,6 @@
 
       <!-- Row 1, Col 0: TreeView (folders only) -->
       <Border Grid.Row="1"
-              MinWidth="180"
               BorderBrush="{StaticResource BorderBrush}"
               BorderThickness="1"
               CornerRadius="4"
@@ -267,28 +272,36 @@
                   BorderThickness="0"
                   Background="Transparent"
                   HorizontalAlignment="Stretch"
-                  Foreground="White">
+                  Foreground="White"
+                  ScrollViewer.HorizontalScrollBarVisibility="Auto">
           <TreeView.DataTemplates>
             <TreeDataTemplate DataType="models:SftpEntry"
                                ItemsSource="{ReflectionBinding Children}">
-              <StackPanel Orientation="Horizontal" Spacing="4"
-                          Margin="{ReflectionBinding HeaderMargin}"
-                          ToolTip.Tip="{ReflectionBinding Name}">
+              <StackPanel Orientation="Horizontal" Spacing="2"
+                           Margin="{ReflectionBinding HeaderMargin}"
+                           ToolTip.Tip="{ReflectionBinding Name}">
                 <Image Width="20" Height="20" Stretch="Uniform"
                        Source="{ReflectionBinding TreeIconPath}"
                        IsVisible="{ReflectionBinding ShowIcon}"/>
                 <TextBlock Text="{ReflectionBinding Name}"
-                           FontSize="13"
-                           VerticalAlignment="Center"/>
+                            FontSize="13"
+                            VerticalAlignment="Center"
+                            TextTrimming="CharacterEllipsis"/>
               </StackPanel>
             </TreeDataTemplate>
           </TreeView.DataTemplates>
         </TreeView>
       </Border>
 
-      <!-- Row 1, Col 1: ListBox (file list) -->
-      <Border Grid.Row="1" Grid.Column="1"
-              MinWidth="220"
+      <!-- GridSplitter -->
+      <GridSplitter Grid.Row="1" Grid.Column="1"
+                    Width="3"
+                    ResizeBehavior="PreviousAndNext"
+                    Background="Transparent"
+                    Margin="0,4,0,4"/>
+
+      <!-- Row 1, Col 2: ListBox (file list) -->
+      <Border Grid.Row="1" Grid.Column="2"
               BorderBrush="{StaticResource BorderBrush}"
               BorderThickness="1"
               CornerRadius="4"
@@ -306,15 +319,16 @@
           </ListBox.Styles>
           <ListBox.DataTemplates>
             <DataTemplate DataType="models:SftpEntry">
-              <Grid ColumnDefinitions="20,*,Auto" Margin="0,0,6,0">
+              <Grid ColumnDefinitions="20,*,Auto" Margin="0,0,6,0"
+                    ToolTip.Tip="{ReflectionBinding Name}">
                 <Image Width="20" Height="20" Stretch="Uniform"
                        Source="{ReflectionBinding IconPath}"/>
                 <TextBlock Grid.Column="1"
-                           Text="{ReflectionBinding Name}"
-                           FontSize="13"
-                           VerticalAlignment="Center"
-                           Margin="4,0,8,0"
-                           TextTrimming="None"/>
+                            Text="{ReflectionBinding Name}"
+                            FontSize="13"
+                            VerticalAlignment="Center"
+                            Margin="4,0,8,0"
+                            TextTrimming="CharacterEllipsis"/>
                 <TextBlock Grid.Column="2"
                            Text="{ReflectionBinding FormattedSize}"
                            FontSize="12"
@@ -327,15 +341,15 @@
         </ListBox>
       </Border>
 
-      <!-- Row 1, Col 2: Action buttons -->
-      <StackPanel Grid.Row="1" Grid.Column="2"
+      <!-- Row 1, Col 3: Action buttons -->
+      <StackPanel Grid.Row="1" Grid.Column="3"
                   Spacing="6"
                   Margin="0,4,0,0"
                   VerticalAlignment="Bottom">
         <Button Command="{ReflectionBinding CreateFolderCommand}"
                 IsEnabled="{ReflectionBinding CanRefresh}"
                 Padding="6,4"
-                Width="110"
+                Width="105"
                 HorizontalContentAlignment="Stretch">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-newfolder-32.png"
@@ -348,7 +362,7 @@
         </Button>
       <Button IsEnabled="{ReflectionBinding CanModifyFiles}"
               Padding="6,4"
-              Width="110"
+              Width="105"
               HorizontalContentAlignment="Stretch"
               x:Name="UploadButton"
               ToolTip.Tip="{ReflectionBinding OperationLockedTooltip}">
@@ -386,7 +400,7 @@
         <Button Command="{ReflectionBinding DownloadSelectedCommand}"
                 IsEnabled="{ReflectionBinding CanDownloadMultiple}"
                 Padding="6,4"
-                Width="110"
+                Width="105"
                 HorizontalContentAlignment="Stretch"
                 ToolTip.Tip="{ReflectionBinding OperationLockedTooltip}">
           <StackPanel Orientation="Horizontal" Spacing="6">
@@ -401,7 +415,7 @@
         <Button Command="{ReflectionBinding DeleteSelectedCommand}"
                 IsEnabled="{ReflectionBinding CanDeleteMultiple}"
                 Padding="6,4"
-                Width="110"
+                Width="105"
                 HorizontalContentAlignment="Stretch"
                 ToolTip.Tip="{ReflectionBinding OperationLockedTooltip}">
           <StackPanel Orientation="Horizontal" Spacing="6">
@@ -416,7 +430,7 @@
         <Button Command="{ReflectionBinding RenameEntryCommand}"
                 IsEnabled="{ReflectionBinding CanRenameSingle}"
                 Padding="6,4"
-                Width="110"
+                Width="105"
                 HorizontalContentAlignment="Stretch"
                 ToolTip.Tip="{ReflectionBinding OperationLockedTooltip}">
           <StackPanel Orientation="Horizontal" Spacing="6">
@@ -431,7 +445,7 @@
       </StackPanel>
 
       <!-- Row 2: Drop zone / Progress card -->
-      <Border Grid.Row="2" Grid.ColumnSpan="3"
+      <Border Grid.Row="2" Grid.ColumnSpan="4"
               Padding="10"
               CornerRadius="8"
               BorderThickness="2"
