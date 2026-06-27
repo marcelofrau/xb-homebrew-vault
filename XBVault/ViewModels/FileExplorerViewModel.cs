@@ -1320,7 +1320,7 @@ public partial class FileExplorerViewModel : ObservableObject
                 var (file, relative) = fileList[i];
                 Logger.Trace($"DownloadSelectedAsync: [{i + 1}/{totalFiles}] '{file.FullPath}' → '{Path.Combine(localDir, relative)}'");
                 _transferStartTime = DateTime.UtcNow;
-                _transferBytesTotal = file.Size;
+                _transferBytesTotal = await _sftpService.GetFileSizeAsync(file.FullPath);
                 DownloadProgress = (double)i / totalFiles;
 
                 partialPath = Path.Combine(localDir, relative);
@@ -1377,7 +1377,7 @@ public partial class FileExplorerViewModel : ObservableObject
             IsDownloading = true;
             DownloadProgress = 0;
             _transferStartTime = DateTime.UtcNow;
-            _transferBytesTotal = entry.Size;
+            _transferBytesTotal = await _sftpService.GetFileSizeAsync(entry.FullPath);
             DownloadStatusText = $"Downloading {entry.Name}... (0%)";
 
             await using var stream = File.Create(savePath);
@@ -1469,7 +1469,7 @@ public partial class FileExplorerViewModel : ObservableObject
                     var idx = i;
                     Logger.Trace($"DownloadFolderAsync: [{idx + 1}/{totalFiles}] '{file.FullPath}' → '{partialPath}'");
                     _transferStartTime = DateTime.UtcNow;
-                    _transferBytesTotal = file.Size;
+                    _transferBytesTotal = await _sftpService.GetFileSizeAsync(file.FullPath);
 
                     await using var stream = File.Create(partialPath);
                     var dProgress = new Progress<double>(p =>

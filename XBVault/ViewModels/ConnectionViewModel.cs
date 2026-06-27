@@ -1,12 +1,13 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Input;
+using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using XBVault.Models;
 using XBVault.Services;
 
 namespace XBVault.ViewModels;
@@ -29,10 +30,33 @@ public partial class ConnectionViewModel : ObservableObject
     private const int NetworkConfigDelayMs = 350;
     private const int SessionInitDelayMs = 350;
 
+    private string[] _cortanaLines = [];
+    private string[] _allLines = [];
+
     public ConnectionViewModel(XboxDeviceService xboxService)
     {
         _xboxService = xboxService;
+        LoadMemeLines();
         Logger.Debug("ConnectionViewModel initialized");
+    }
+
+    private void LoadMemeLines()
+    {
+        try
+        {
+            using var stream = AssetLoader.Open(new Uri("avares://XBVault/Assets/Views/ConnectionWindow/backchannel-packets.json"));
+            var dict = JsonSerializer.Deserialize<Dictionary<string, string[]>>(stream);
+            if (dict is null) return;
+            _cortanaLines = dict.GetValueOrDefault("transmissions", []);
+            _allLines = [.. dict.GetValueOrDefault("handshakeNoise", []),
+                         .. dict.GetValueOrDefault("cheatCodes", []),
+                         .. dict.GetValueOrDefault("copypasta", []),
+                         .. dict.GetValueOrDefault("stackTraces", [])];
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"LoadMemeLines: failed to load — {ex.Message}");
+        }
     }
 
     public ObservableCollection<string> OutputLines { get; } = new ObservableCollection<string>();
@@ -93,29 +117,14 @@ public partial class ConnectionViewModel : ObservableObject
         return null;
     }
 
-    private static readonly string[] CortanaLines =
-    {
-        "Cortana: Slipspace connection active. Welcome back, Spartan.",
-        "Cortana: AI handshake complete. Transmitting coordinates.",
-        "Cortana: I've got the maps. Ready when you are.",
-        "Cortana: Network secured. Link established.",
-        "Cortana: Welcome home, Spartan. Connection stable.",
-        "Cortana: AI protocol v1.0 — Handshake successful.",
-        "Cortana: UNSC network bridge active.",
-        "Cortana: Connection authenticated. Signal secure.",
-        "Cortana: Slipspace buffer calibrated. Engaging link.",
-        "Cortana: Sending your coordinates. Stay safe out there."
-    };
-
     private async Task MaybeMeme(CancellationToken ct)
     {
-        if (_memeRng.NextDouble() >= 0.5) return;
-        var lines = MemeLines.All;
+        if (_memeRng.NextDouble() >= 0.5 || _allLines.Length == 0) return;
         var count = _memeRng.Next(1, 3);
         for (int i = 0; i < count; i++)
         {
             await Task.Delay(_memeRng.Next(150, 400), ct);
-            AddLine(lines[_memeRng.Next(lines.Length)]);
+            AddLine(_allLines[_memeRng.Next(_allLines.Length)]);
         }
     }
 
@@ -196,7 +205,8 @@ public partial class ConnectionViewModel : ObservableObject
                 var linkSpeed = await TryGetLinkSpeedAsync();
 
                 AddLine("");
-                AddLine(CortanaLines[_memeRng.Next(CortanaLines.Length)]);
+                if (_cortanaLines.Length > 0)
+                    AddLine(_cortanaLines[_memeRng.Next(_cortanaLines.Length)]);
                 Progress = 0.3;
                 await Task.Delay(LinkSpeedDelayMs, ct);
                 await MaybeMeme(ct);

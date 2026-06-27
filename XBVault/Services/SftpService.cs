@@ -308,6 +308,18 @@ public class SftpService : IDisposable
         }, ct);
     }
 
+    public Task<long> GetFileSizeAsync(string remotePath)
+    {
+        var norm = NormalizePath(remotePath);
+        return Task.Run(() =>
+        {
+            if (_sftp is null || !_sftp.IsConnected)
+                return -1L;
+            try { return _sftp.GetAttributes(norm).Size; }
+            catch { return -1L; }
+        });
+    }
+
     public Task<long> DownloadFileAsync(string remotePath, Stream destination, IProgress<double>? progress, CancellationToken ct = default)
     {
         var norm = NormalizePath(remotePath);

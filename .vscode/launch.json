@@ -9,7 +9,7 @@
       "program": "${workspaceFolder}/XBVault/bin/Debug/net8.0/XBVault.exe",
       "args": [],
       "cwd": "${workspaceFolder}",
-      "console": "externalTerminal",
+      "console": "integratedTerminal",
       "stopAtEntry": false,
       "requireExactSource": false
     },
@@ -21,7 +21,7 @@
       "program": "${workspaceFolder}/XBVault/bin/Debug/net8.0/XBVault.exe",
       "args": [],
       "cwd": "${workspaceFolder}",
-      "console": "externalTerminal",
+      "console": "integratedTerminal",
       "stopAtEntry": false,
       "noDebug": true
     },
