@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Architecture
+description: MVVM architecture of XB Homebrew Vault — Avalonia UI, CommunityToolkit.Mvvm, .NET 8, WDP REST API, and SSH/SFTP integration layers.
 ---
 
 # Architecture

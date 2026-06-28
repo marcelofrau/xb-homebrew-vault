@@ -2,7 +2,7 @@ title: XB Homebrew Vault
 description: Desktop manager for Xbox Dev Mode homebrew — browse, install, and manage emulators and apps via the Xbox Device Portal API.
 theme: jekyll-theme-cayman
 
-url: "https://marcelofrau.github.io"
+url: "https://xbvault.pages.dev"
 baseurl: "/xb-homebrew-vault"
 
 github_username: marcelofrau
@@ -28,6 +28,8 @@ kramdown:
 highlighter: rouge
 
 plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
   - jekyll-relative-links
 
 relative_links:

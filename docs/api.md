@@ -1,6 +1,7 @@
 ---
 layout: default
 title: API Reference
+description: Xbox Device Portal REST API endpoints used by XB Homebrew Vault — package management, system info, processes, and WebSocket events for Xbox Dev Mode.
 ---
 
 # Xbox Device Portal API

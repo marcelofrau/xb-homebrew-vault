@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Data Sources
+description: How XB Homebrew Vault sources its catalog — Emulation Revival JSON API integration, catalog structure, and sync pipeline for Xbox homebrew apps.
 ---
 
 # Data Sources
