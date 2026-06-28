@@ -24,7 +24,8 @@ jobs:
           bundler-cache: true
           working-directory: docs
 
-      - run: bundle exec jekyll build -s docs -d docs/_site --baseurl ""
+      - run: bundle exec jekyll build -s . -d _site --baseurl ""
+        working-directory: docs
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

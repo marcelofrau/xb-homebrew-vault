@@ -1,5 +1,4 @@
 {
-  "dotnet.defaultSolution": "XBVault/XBVault.csproj",
   "files.exclude": {
     "**/bin": true,
     "**/obj": true,
