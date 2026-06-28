@@ -4,6 +4,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square)](https://dotnet.microsoft.com/download)
 [![Build](https://img.shields.io/github/actions/workflow/status/marcelofrau/xb-homebrew-vault/build.yml?style=flat-square&label=build)](https://github.com/marcelofrau/xb-homebrew-vault/actions)
+[![Docs](https://img.shields.io/github/actions/workflow/status/marcelofrau/xb-homebrew-vault/deploy-docs.yml?style=flat-square&label=docs&logo=cloudflare)](https://github.com/marcelofrau/xb-homebrew-vault/actions/workflows/deploy-docs.yml)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0078D6?style=flat-square)](https://github.com/marcelofrau/xb-homebrew-vault/releases)
 [![VirusTotal](https://img.shields.io/badge/Security-VirusTotal_Scanned-394EFF?style=flat-square&logo=virustotal)](https://www.virustotal.com/gui/home/upload)
 
@@ -16,7 +17,7 @@
 <p align="center">
   <a href="https://github.com/marcelofrau/xb-homebrew-vault/releases/latest"><strong>⬇️ Download Latest Release</strong></a>
   &nbsp;·&nbsp;
-  <a href="https://marcelofrau.github.io/xb-homebrew-vault"><strong>🌐 Website</strong></a>
+  <a href="https://xbvault.pages.dev"><strong>🌐 Website</strong></a>
   &nbsp;·&nbsp;
   <a href="https://github.com/marcelofrau/xb-homebrew-vault/issues">Report a Bug</a>
 </p>
