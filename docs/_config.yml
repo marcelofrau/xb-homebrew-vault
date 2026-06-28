@@ -27,6 +27,8 @@ kramdown:
 # Syntax highlighting
 highlighter: rouge
 
+image: https://xbvault.pages.dev/social-preview.jpg
+
 plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
