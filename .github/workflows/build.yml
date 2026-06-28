@@ -101,17 +101,10 @@ jobs:
     - name: Display structure
       run: ls -lh dist/
 
-    - name: Generate release body
+    - name: Generate checksums body
       run: |
-        echo "## 📋 Changelog" > release-body.md
-        echo "" >> release-body.md
-        PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-        if [ -n "$PREV_TAG" ]; then
-          git log "$PREV_TAG"..HEAD --pretty=format:"- %s" --no-merges >> release-body.md || true
-        else
-          git log --pretty=format:"- %s" --no-merges -20 >> release-body.md || true
-        fi
-        echo "" >> release-body.md
+        echo "" > release-body.md
+        echo "---" >> release-body.md
         echo "" >> release-body.md
         echo "## ✅ SHA256 Checksums" >> release-body.md
         echo "" >> release-body.md
@@ -119,16 +112,15 @@ jobs:
         (cd dist && sha256sum *) >> release-body.md
         echo '```' >> release-body.md
         echo "" >> release-body.md
-        echo "---" >> release-body.md
-        echo "" >> release-body.md
         echo "VirusTotal scan in progress — results appended automatically." >> release-body.md
 
-    - name: Create Release
+    - name: Update Release
       id: create_release
       uses: softprops/action-gh-release@v2
       with:
         files: dist/*
         body_path: release-body.md
+        append_body: true
         fail_on_unmatched_files: false
 
     - name: VirusTotal Scan
