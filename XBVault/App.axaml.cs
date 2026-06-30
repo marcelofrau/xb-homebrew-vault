@@ -278,8 +278,18 @@ public partial class App : Application
                 return connVm.IsSuccess;
             };
 
-            mainViewModel.OnInstalledTabSelected = () =>
-                _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
+            mainViewModel.OnTabChanged = tab =>
+            {
+                if (tab == 1)
+                {
+                    installedViewModel.StartPolling();
+                    _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
+                }
+                else
+                {
+                    installedViewModel.StopPolling();
+                }
+            };
 
             Logger.Info("Creating InstalledView");
             var installedView = new Views.InstalledView { DataContext = installedViewModel };
