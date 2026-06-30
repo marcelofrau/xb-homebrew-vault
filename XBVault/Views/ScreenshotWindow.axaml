@@ -125,14 +125,22 @@
             </Button>
           </Grid>
 
-          <!-- Status message -->
+          <!-- Status message: dynamic severity (success=green, error=red, info=blue) -->
           <Border Grid.Row="2"
-                  IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
-                  Background="#1AE74C3C" BorderBrush="{StaticResource DangerBrush}"
+                  IsVisible="{Binding HasStatus}"
+                  Background="{Binding StatusBackground}"
+                  BorderBrush="{Binding StatusBorderBrush}"
                   BorderThickness="1" CornerRadius="6" Padding="14,10">
-            <TextBlock Text="{Binding StatusMessage}"
-                       Foreground="{StaticResource DangerBrush}"
-                       FontSize="13" FontWeight="SemiBold"/>
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+              <Image Source="{Binding StatusIconPath}"
+                     Width="20" Height="20" Stretch="Uniform"
+                     VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1"
+                         Text="{Binding StatusMessage}"
+                         Foreground="{Binding StatusForeground}"
+                         FontSize="13" FontWeight="SemiBold"
+                         VerticalAlignment="Center"/>
+            </Grid>
           </Border>
 
         </Grid>

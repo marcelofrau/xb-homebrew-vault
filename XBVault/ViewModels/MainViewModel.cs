@@ -27,6 +27,7 @@ public partial class MainViewModel : ObservableObject
 
     public Action? ShowAboutAction { get; set; }
     public Func<Task<bool>>? ShowConnectAction { get; set; }
+    public Action? OnInstalledTabSelected { get; set; }
 
     [ObservableProperty]
     private int _selectedTab;
@@ -71,6 +72,9 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsSettingsActive));
         OnPropertyChanged(nameof(IsLogsActive));
         UpdateActiveView();
+
+        if (value == 1)
+            OnInstalledTabSelected?.Invoke();
     }
 
     public bool IsBrowseActive => SelectedTab == 0;

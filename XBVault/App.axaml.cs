@@ -278,6 +278,9 @@ public partial class App : Application
                 return connVm.IsSuccess;
             };
 
+            mainViewModel.OnInstalledTabSelected = () =>
+                _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
+
             Logger.Info("Creating InstalledView");
             var installedView = new Views.InstalledView { DataContext = installedViewModel };
             Logger.Info("InstalledView created");

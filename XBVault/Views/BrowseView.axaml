@@ -86,6 +86,7 @@
     <!-- Row 2 content panel (stable drag-drop target, no flicker) -->
     <Panel Grid.Row="2"
            x:Name="DropPanel"
+           Background="Transparent"
            DragDrop.AllowDrop="True">
 
       <!-- Loading -->
@@ -134,6 +135,7 @@
       <!-- Drop overlay (on top of all Row 2 content) -->
       <Border x:Name="DropOverlay"
               IsVisible="False"
+              IsHitTestVisible="False"
               ZIndex="100"
               Background="#CC1A1A2E"
               BorderThickness="2"

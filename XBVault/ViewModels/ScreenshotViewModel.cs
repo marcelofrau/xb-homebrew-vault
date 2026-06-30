@@ -43,8 +43,58 @@ public partial class ScreenshotViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HasScreenshot));
     }
 
+    public enum StatusSeverity { None, Success, Error, Info }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStatus))]
+    [NotifyPropertyChangedFor(nameof(IsStatusSuccess))]
+    [NotifyPropertyChangedFor(nameof(IsStatusError))]
+    [NotifyPropertyChangedFor(nameof(IsStatusInfo))]
+    [NotifyPropertyChangedFor(nameof(StatusIconPath))]
+    [NotifyPropertyChangedFor(nameof(StatusForeground))]
+    [NotifyPropertyChangedFor(nameof(StatusBackground))]
+    [NotifyPropertyChangedFor(nameof(StatusBorderBrush))]
+    private StatusSeverity _statusType;
+
     [ObservableProperty]
     private string? _statusMessage;
+
+    public bool HasStatus => StatusType != StatusSeverity.None;
+    public bool IsStatusSuccess => StatusType == StatusSeverity.Success;
+    public bool IsStatusError => StatusType == StatusSeverity.Error;
+    public bool IsStatusInfo => StatusType == StatusSeverity.Info;
+
+    public string StatusIconPath => StatusType switch
+    {
+        StatusSeverity.Success => "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-success-20.png",
+        StatusSeverity.Error => "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-error-20.png",
+        StatusSeverity.Info => "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-info-20.png",
+        _ => string.Empty
+    };
+
+    public string StatusForeground => StatusType switch
+    {
+        StatusSeverity.Success => "#55FF55",
+        StatusSeverity.Error => "#FF5555",
+        StatusSeverity.Info => "#3399FF",
+        _ => "Transparent"
+    };
+
+    public string StatusBackground => StatusType switch
+    {
+        StatusSeverity.Success => "#3355FF55",
+        StatusSeverity.Error => "#33FF5555",
+        StatusSeverity.Info => "#333399FF",
+        _ => "Transparent"
+    };
+
+    public string StatusBorderBrush => StatusType switch
+    {
+        StatusSeverity.Success => "#5555FF55",
+        StatusSeverity.Error => "#55FF5555",
+        StatusSeverity.Info => "#553399FF",
+        _ => "Transparent"
+    };
 
     public List<string> IntervalOptions { get; } =
         ["0.8s", "1.0s", "1.5s", "2.0s", "2.5s", "3.0s", "3.5s", "4.0s", "4.5s", "5.0s"];
@@ -82,11 +132,13 @@ public partial class ScreenshotViewModel : ObservableObject, IDisposable
 
         IsCapturing = true;
         StatusMessage = null;
+        StatusType = StatusSeverity.None;
 
         var data = await _xboxService.CaptureScreenshotAsync();
         if (data is null)
         {
             StatusMessage = "Screenshot not available — Xbox Dev Mode does not support this API";
+            StatusType = StatusSeverity.Info;
             IsCapturing = false;
             return;
         }
@@ -105,6 +157,7 @@ public partial class ScreenshotViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             StatusMessage = "Screenshot failed";
+            StatusType = StatusSeverity.Error;
             Logger.Error(ex, "CaptureScreenshot failed");
         }
         finally
@@ -125,6 +178,7 @@ public partial class ScreenshotViewModel : ObservableObject, IDisposable
         IsLiveCapturing = true;
         IsCapturing = false;
         StatusMessage = null;
+        StatusType = StatusSeverity.None;
 
         _liveCts?.Dispose();
         _liveCts = new CancellationTokenSource();
@@ -185,6 +239,9 @@ public partial class ScreenshotViewModel : ObservableObject, IDisposable
 
         var path = await SaveScreenshotDialog(ms);
         if (!string.IsNullOrWhiteSpace(path))
+        {
             StatusMessage = $"Saved to {path}";
+            StatusType = StatusSeverity.Success;
+        }
     }
 }

@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using XBVault.Services;
 using XBVault.ViewModels;
 
 namespace XBVault.Views;
@@ -54,23 +55,41 @@ public partial class InstalledView : UserControl
 
     private void OnDragOver(object? sender, DragEventArgs e)
     {
+        Logger.Trace($"InstDragOver: hasFile={e.DataTransfer.Formats.Contains(DataFormat.File)}");
+
         if (!e.DataTransfer.Formats.Contains(DataFormat.File))
             return;
 
         var files = e.DataTransfer.TryGetFiles();
+        Logger.Trace($"InstDragOver: files={files?.Length ?? -1}");
+
         if (files is null || files.Length != 1)
+        {
+            e.DragEffects = DragDropEffects.None;
+            DropOverlay.IsVisible = false;
             return;
+        }
 
         var ext = Path.GetExtension(files[0].Name).ToLowerInvariant();
+        Logger.Trace($"InstDragOver: file={files[0].Name} ext={ext}");
+
         if (_packageExts.Contains(ext))
         {
+            Logger.Trace($"InstDragOver: VALID — showing overlay");
             e.DragEffects = DragDropEffects.Copy;
-            DropOverlay.IsVisible = true;
+            if (!DropOverlay.IsVisible)
+                DropOverlay.IsVisible = true;
+        }
+        else
+        {
+            e.DragEffects = DragDropEffects.None;
+            DropOverlay.IsVisible = false;
         }
     }
 
     private void OnDragLeave(object? sender, DragEventArgs e)
     {
+        Logger.Trace("InstDragLeave: hiding overlay");
         DropOverlay.IsVisible = false;
     }
 
