@@ -37,17 +37,17 @@ public partial class InstalledView : UserControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        DragDrop.AddDragOverHandler(PackageListBox, OnDragOver);
-        DragDrop.AddDragLeaveHandler(PackageListBox, OnDragLeave);
-        DragDrop.AddDropHandler(PackageListBox, OnDrop);
+        DragDrop.AddDragOverHandler(DropPanel, OnDragOver);
+        DragDrop.AddDragLeaveHandler(DropPanel, OnDragLeave);
+        DragDrop.AddDropHandler(DropPanel, OnDrop);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        DragDrop.RemoveDragOverHandler(PackageListBox, OnDragOver);
-        DragDrop.RemoveDragLeaveHandler(PackageListBox, OnDragLeave);
-        DragDrop.RemoveDropHandler(PackageListBox, OnDrop);
+        DragDrop.RemoveDragOverHandler(DropPanel, OnDragOver);
+        DragDrop.RemoveDragLeaveHandler(DropPanel, OnDragLeave);
+        DragDrop.RemoveDropHandler(DropPanel, OnDrop);
     }
 
     private static readonly HashSet<string> _packageExts = [".appx", ".msix", ".appxbundle", ".zip"];
@@ -74,6 +74,19 @@ public partial class InstalledView : UserControl
         DropOverlay.IsVisible = false;
     }
 
+    private Window? GetWindow() =>
+        TopLevel.GetTopLevel(this) as Window;
+
+    private async Task ShowUnsupportedDialog(Window owner)
+    {
+        var dlg = new ErrorDialog(
+            "Unsupported File",
+            "The dropped file is not a supported package format.",
+            "Supported formats: .appx, .msix, .appxbundle, .zip",
+            ErrorDialogType.Warn);
+        await dlg.ShowDialog(owner);
+    }
+
     private async void OnDrop(object? sender, DragEventArgs e)
     {
         DropOverlay.IsVisible = false;
@@ -88,7 +101,12 @@ public partial class InstalledView : UserControl
 
         var ext = Path.GetExtension(path).ToLowerInvariant();
         if (!_packageExts.Contains(ext))
+        {
+            var win = GetWindow();
+            if (win is not null)
+                await ShowUnsupportedDialog(win);
             return;
+        }
 
         if (DataContext is InstalledViewModel vm && vm.OpenCustomInstallWithFileAction is not null)
             await vm.OpenCustomInstallWithFileAction(path);

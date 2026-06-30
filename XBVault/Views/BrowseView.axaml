@@ -83,91 +83,91 @@
       </ComboBox>
     </Grid>
 
-    <!-- Loading -->
-    <Border Grid.Row="2"
-            IsVisible="{Binding IsLoading}"
-            Background="{StaticResource SurfaceBrush}">
-    <StackPanel HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Spacing="12">
-      <Image x:Name="SpinnerImage"
-             Source="avares://XBVault/Assets/Views/BrowseView/browse-spinner-48.png"
-             Width="48" Height="48"
-             Stretch="Uniform"
-             HorizontalAlignment="Center"
-             RenderTransformOrigin="50% 50%">
-        <Image.RenderTransform>
-          <RotateTransform Angle="0"/>
-        </Image.RenderTransform>
-      </Image>
-      <ProgressBar IsIndeterminate="True"
-                   Width="200"
-                   Foreground="{StaticResource AccentBrush}"/>
-      <TextBlock Text="Loading catalog..."
-                 Foreground="{StaticResource TextMutedBrush}"
-                 FontSize="13"
-                 HorizontalAlignment="Center"/>
-    </StackPanel>
-    </Border>
+    <!-- Row 2 content panel (stable drag-drop target, no flicker) -->
+    <Panel Grid.Row="2"
+           x:Name="DropPanel"
+           DragDrop.AllowDrop="True">
 
-    <!-- Empty state -->
-    <Border Grid.Row="2"
-            IsVisible="{Binding HasItems, Converter={StaticResource BoolInverse}}"
-            Background="{StaticResource SurfaceBrush}">
-    <StackPanel HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Spacing="8">
-      <TextBlock Text="No items found"
-                 FontSize="16"
-                 Foreground="{StaticResource TextMutedBrush}"
-                 HorizontalAlignment="Center"/>
-      <TextBlock Text="Adjust your search or filters"
-                 FontSize="13"
-                 Foreground="{StaticResource TextDimBrush}"
-                 HorizontalAlignment="Center"/>
-    </StackPanel>
-    </Border>
-
-    <!-- Drop overlay (on top of grid area, hidden by default) -->
-    <Border Grid.Row="2"
-            x:Name="DropOverlay"
-            IsVisible="False"
-            ZIndex="100"
-            Background="#CC1A1A2E"
-            BorderThickness="2"
-            BorderBrush="#B40078D7"
-            CornerRadius="12"
-            Margin="4">
-      <StackPanel VerticalAlignment="Center"
-                  HorizontalAlignment="Center"
+      <!-- Loading -->
+      <Border IsVisible="{Binding IsLoading}"
+              Background="{StaticResource SurfaceBrush}">
+      <StackPanel HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
                   Spacing="12">
-        <Image Source="avares://XBVault/Assets/Icons/droppackage-64.png"
-               Width="64" Height="64"
+        <Image x:Name="SpinnerImage"
+               Source="avares://XBVault/Assets/Views/BrowseView/browse-spinner-48.png"
+               Width="48" Height="48"
                Stretch="Uniform"
                HorizontalAlignment="Center"
-               Opacity="0.8"/>
-        <TextBlock Text="Drop a package to install"
-                   FontSize="16"
-                   FontWeight="SemiBold"
-                   Foreground="White"
-                   HorizontalAlignment="Center"/>
-        <TextBlock Text=".appx, .msix, .appxbundle or .zip"
-                   FontSize="12"
-                   Foreground="#CCFFFFFF"
+               RenderTransformOrigin="50% 50%">
+          <Image.RenderTransform>
+            <RotateTransform Angle="0"/>
+          </Image.RenderTransform>
+        </Image>
+        <ProgressBar IsIndeterminate="True"
+                     Width="200"
+                     Foreground="{StaticResource AccentBrush}"/>
+        <TextBlock Text="Loading catalog..."
+                   Foreground="{StaticResource TextMutedBrush}"
+                   FontSize="13"
                    HorizontalAlignment="Center"/>
       </StackPanel>
-    </Border>
+      </Border>
 
-    <!-- Catalog Grid -->
-    <ListBox Grid.Row="2"
-             x:Name="PackageListBox"
-             ItemsSource="{Binding Items}"
-             SelectedItem="{Binding SelectedItem}"
-             BorderThickness="0"
-             Background="Transparent"
-             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-             IsVisible="{Binding HasItems}"
-             DragDrop.AllowDrop="True">
+      <!-- Empty state -->
+      <Border IsVisible="{Binding HasItems, Converter={StaticResource BoolInverse}}"
+              Background="{StaticResource SurfaceBrush}">
+      <StackPanel HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Spacing="8">
+        <TextBlock Text="No items found"
+                   FontSize="16"
+                   Foreground="{StaticResource TextMutedBrush}"
+                   HorizontalAlignment="Center"/>
+        <TextBlock Text="Adjust your search or filters"
+                   FontSize="13"
+                   Foreground="{StaticResource TextDimBrush}"
+                   HorizontalAlignment="Center"/>
+      </StackPanel>
+      </Border>
+
+      <!-- Drop overlay (on top of all Row 2 content) -->
+      <Border x:Name="DropOverlay"
+              IsVisible="False"
+              ZIndex="100"
+              Background="#CC1A1A2E"
+              BorderThickness="2"
+              BorderBrush="#B40078D7"
+              CornerRadius="12"
+              Margin="4">
+        <StackPanel VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="12">
+          <Image Source="avares://XBVault/Assets/Icons/droppackage-64.png"
+                 Width="64" Height="64"
+                 Stretch="Uniform"
+                 HorizontalAlignment="Center"
+                 Opacity="0.8"/>
+          <TextBlock Text="Drop a package to install"
+                     FontSize="16"
+                     FontWeight="SemiBold"
+                     Foreground="White"
+                     HorizontalAlignment="Center"/>
+          <TextBlock Text=".appx, .msix, .appxbundle or .zip"
+                     FontSize="12"
+                     Foreground="#CCFFFFFF"
+                     HorizontalAlignment="Center"/>
+        </StackPanel>
+      </Border>
+
+      <!-- Catalog Grid -->
+      <ListBox x:Name="PackageListBox"
+               ItemsSource="{Binding Items}"
+               SelectedItem="{Binding SelectedItem}"
+               BorderThickness="0"
+               Background="Transparent"
+               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+               IsVisible="{Binding HasItems}">
       <ListBox.ItemsPanel>
         <ItemsPanelTemplate>
           <WrapPanel Orientation="Horizontal"/>
@@ -221,6 +221,8 @@
         </DataTemplate>
       </ListBox.ItemTemplate>
     </ListBox>
+
+    </Panel>
 
   </Grid>
 
