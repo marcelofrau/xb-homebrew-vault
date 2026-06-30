@@ -613,28 +613,92 @@ public class XboxDeviceService
                 var resp = await _http.GetAsync("/api/app/packagemanager/state");
                 var code = (int)resp.StatusCode;
                 Logger.Info($"GET /api/app/packagemanager/state => {code}");
-                if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+
+                if (IsIdleCode(resp.StatusCode))
                 {
-                    // 404 means no operation in progress
+                    // 204/404 means no operation in progress
                     await Task.Delay(PollDelayMs);
                     var resp2 = await _http.GetAsync("/api/app/packagemanager/state");
                     var code2 = (int)resp2.StatusCode;
                     Logger.Info($"GET /api/app/packagemanager/state => {code2}");
-                    if (resp2.StatusCode == System.Net.HttpStatusCode.NotFound)
+
+                    if (IsIdleCode(resp2.StatusCode))
                     {
-                        Logger.Info("Package manager ready (got 404 twice)");
+                        Logger.Info("Package manager ready (got idle status twice)");
                         return;
                     }
+
+                    // Confirmation poll got 200+JSON — check Success
+                    if (resp2.StatusCode == System.Net.HttpStatusCode.OK && IsJsonSuccess(await resp2.Content.ReadAsStringAsync(), out var statusMsg))
+                    {
+                        Logger.Info($"Package manager ready (idle then success: {statusMsg})");
+                        return;
+                    }
+
+                    continue;
                 }
+
+                if (resp.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    var body = await resp.Content.ReadAsStringAsync();
+                    Logger.Debug($"GET /api/app/packagemanager/state body: {Truncate(body, 500)}");
+
+                    if (IsJsonSuccess(body, out var statusMsg))
+                    {
+                        Logger.Info($"Package manager ready (operation completed: {statusMsg})");
+                        return;
+                    }
+
+                    Logger.Warn($"Package manager state: {statusMsg} — not ready yet");
+                    continue;
+                }
+
+                // Unexpected status code (4xx, 5xx, etc)
+                Logger.Warn($"Package manager unexpected status: {code} {resp.ReasonPhrase}");
             }
             catch (Exception ex)
             {
-                Logger.Trace($"Package manager polling error (ignored): {ex.Message}");
+                Logger.Warn($"Package manager polling error: {ex.Message}");
             }
             await Task.Delay(RetryDelayMs);
         }
         Logger.Warn("Timed out waiting for package manager, continuing anyway");
     }
+
+    private static bool IsIdleCode(HttpStatusCode code) =>
+        code == HttpStatusCode.NotFound || code == HttpStatusCode.NoContent;
+
+    private static bool IsJsonSuccess(string json, out string statusMessage)
+    {
+        statusMessage = "";
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("Success", out var el) && el.GetBoolean())
+            {
+                var codeText = root.TryGetProperty("CodeText", out var ct) ? ct.GetString() : "";
+                var reason = root.TryGetProperty("Reason", out var r) ? r.GetString() : "";
+                statusMessage = $"{reason} {codeText}".Trim();
+                return true;
+            }
+
+            var errCode = root.TryGetProperty("Code", out var c) ? c.GetInt32() : -1;
+            var errText = root.TryGetProperty("CodeText", out var t) ? t.GetString() : "";
+            var errReason = root.TryGetProperty("Reason", out var re) ? re.GetString() : "";
+            statusMessage = $"Code={errCode} Reason={errReason} CodeText={errText}";
+            return false;
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Parse error: {ex.Message}";
+            return false;
+        }
+    }
+
+    private static string Truncate(string s, int maxLen) =>
+        s.Length <= maxLen ? s : s[..maxLen] + "... (truncated)";
 
     private async Task<string> ReadResponseBody(HttpResponseMessage resp)
     {

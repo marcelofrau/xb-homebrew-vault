@@ -446,6 +446,59 @@ public partial class App : Application
             toolsViewModel.ShowCustomInstallAction = openCustomInstall;
             browseViewModel.ShowCustomInstallAction = openCustomInstall;
 
+                Func<string, Task> openCustomInstallWithFile = async (filePath) =>
+            {
+                if (!xboxService.IsConnected)
+                {
+                    var errDlg = new ErrorDialog(
+                        "Not Connected",
+                        "Connect to an Xbox first before using Custom Install.",
+                        "Go to the sidebar and connect to your Xbox Developer Mode console.",
+                        ErrorDialogType.Warn);
+                    await errDlg.ShowDialog(main);
+                    return;
+                }
+                var vm = new CustomInstallViewModel(xboxService, installService);
+                vm.PickFileAsync = () => Task.FromResult<string?>(null);
+                vm.PickDependencyFilesAsync = async () =>
+                {
+                    try
+                    {
+                        var files = await main.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                        {
+                            Title = "Select Dependencies",
+                            AllowMultiple = true,
+                            FileTypeFilter =
+                            [
+                                new FilePickerFileType("Package files")
+                                {
+                                    Patterns = ["*.appx", "*.msix", "*.appxbundle", "*.msixbundle", "*.zip"]
+                                }
+                            ]
+                        });
+                        return files?.Select(f => f.TryGetLocalPath())
+                                     .Where(p => p is not null)
+                                     .Cast<string>()
+                                     .ToArray();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "CustomInstall dependency picker failed");
+                        return null;
+                    }
+                };
+                vm.SourcePath = filePath;
+                var win = new Views.CustomInstallWindow { DataContext = vm };
+                vm.CloseAction = () => win.Close();
+                win.Opened += async (_, _) =>
+                {
+                    await vm.AnalyzeCommand.ExecuteAsync(null);
+                };
+                await win.ShowDialog(main);
+            };
+            browseViewModel.OpenCustomInstallWithFileAction = openCustomInstallWithFile;
+            installedViewModel.OpenCustomInstallWithFileAction = openCustomInstallWithFile;
+
             toolsViewModel.ShowConfirmAsync = async (title, message, confirmText, cancelText, iconSource, messageIconSource) =>
             {
                 var vm = new ConfirmViewModel(title, message, confirmText, cancelText, iconSource, messageIconSource);

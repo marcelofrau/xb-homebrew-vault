@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using XBVault.Helpers;
@@ -30,12 +31,40 @@ public class PackageInstallService
         @"telemetrydependenc|logsideloading|diagnostics\.tracing|" +
         @"visualstudio\.(remote|telemetry|util)|newtonsoft|system\.runtime\.compiler)");
 
+    private static readonly Regex ArchPattern = new(
+        @"(?:^|[\._\-])(arm64|arm|x64|x86|neutral)(?:[\._\-]|$)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     private static readonly HashSet<string> InstallerExts = new(
         StringComparer.OrdinalIgnoreCase) { ".appx", ".msix", ".appxbundle", ".msixbundle" };
 
     private static bool IsDep(string fileName) => DepPattern.IsMatch(fileName);
     private static bool IsJunk(string fileName) => JunkPattern.IsMatch(fileName);
     private static bool IsInstallable(string fileName) => InstallerExts.Contains(Path.GetExtension(fileName));
+
+    private static string[] FilterByArchitecture(string[] files)
+    {
+        var targetArch = RuntimeInformation.ProcessArchitecture;
+        var targetSuffix = targetArch switch
+        {
+            Architecture.X64 => "x64",
+            Architecture.X86 => "x86",
+            Architecture.Arm64 => "arm64",
+            Architecture.Arm => "arm",
+            _ => null
+        };
+
+        return files.Where(f =>
+        {
+            var name = Path.GetFileNameWithoutExtension(f);
+            var match = ArchPattern.Match(name);
+            if (!match.Success)
+                return true;
+
+            var fileArch = match.Groups[1].Value.ToLowerInvariant();
+            return fileArch == targetSuffix || fileArch == "neutral";
+        }).ToArray();
+    }
 
     public PackageInstallService(CacheService cache, XboxDeviceService xbox)
     {
@@ -304,7 +333,7 @@ public class PackageInstallService
         }
 
         results = results.OrderBy(f => Path.GetFileName(f)).ToList();
-        return results.ToArray();
+        return FilterByArchitecture(results.ToArray());
     }
 
     public static string[] ExtractBundles(string directory)
@@ -341,7 +370,7 @@ public class PackageInstallService
             }
         }
 
-        return extracted.ToArray();
+        return FilterByArchitecture(extracted.ToArray());
     }
 
     public static (string? main, string[] deps) ClassifyPackages(string[] files)
@@ -400,7 +429,7 @@ public class PackageInstallService
         var packages = FindInstallablePackages(directory);
         var bundles = ExtractBundles(directory);
         var all = packages.Concat(bundles).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-        return all;
+        return FilterByArchitecture(all);
     }
 
     public static AnalyzeResult AnalyzeLocalFile(string filePath)

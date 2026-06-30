@@ -128,14 +128,46 @@
     </StackPanel>
     </Border>
 
+    <!-- Drop overlay (on top of grid area, hidden by default) -->
+    <Border Grid.Row="2"
+            x:Name="DropOverlay"
+            IsVisible="False"
+            ZIndex="100"
+            Background="#CC1A1A2E"
+            BorderThickness="2"
+            BorderBrush="#B40078D7"
+            CornerRadius="12"
+            Margin="4">
+      <StackPanel VerticalAlignment="Center"
+                  HorizontalAlignment="Center"
+                  Spacing="12">
+        <Image Source="avares://XBVault/Assets/Icons/droppackage-64.png"
+               Width="64" Height="64"
+               Stretch="Uniform"
+               HorizontalAlignment="Center"
+               Opacity="0.8"/>
+        <TextBlock Text="Drop a package to install"
+                   FontSize="16"
+                   FontWeight="SemiBold"
+                   Foreground="White"
+                   HorizontalAlignment="Center"/>
+        <TextBlock Text=".appx, .msix, .appxbundle or .zip"
+                   FontSize="12"
+                   Foreground="#CCFFFFFF"
+                   HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+
     <!-- Catalog Grid -->
     <ListBox Grid.Row="2"
+             x:Name="PackageListBox"
              ItemsSource="{Binding Items}"
              SelectedItem="{Binding SelectedItem}"
              BorderThickness="0"
              Background="Transparent"
              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-             IsVisible="{Binding HasItems}">
+             IsVisible="{Binding HasItems}"
+             DragDrop.AllowDrop="True">
       <ListBox.ItemsPanel>
         <ItemsPanelTemplate>
           <WrapPanel Orientation="Horizontal"/>

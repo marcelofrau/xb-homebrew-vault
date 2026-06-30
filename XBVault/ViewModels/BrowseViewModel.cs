@@ -27,6 +27,7 @@ public partial class BrowseViewModel : ObservableObject
     public Action<CatalogItem>? ShowDetailAction;
     public Action? CloseDetailAction;
     public Action? ShowCustomInstallAction;
+    public Func<string, Task>? OpenCustomInstallWithFileAction;
 
     [RelayCommand]
     private void CloseDetail() => CloseDetailAction?.Invoke();

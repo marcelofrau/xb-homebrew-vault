@@ -18,6 +18,8 @@ public partial class InstalledViewModel : ObservableObject
     private readonly XboxDeviceService _xboxService;
     private readonly List<InstalledPackage> _allPackages = [];
 
+    public Func<string, Task>? OpenCustomInstallWithFileAction { get; set; }
+
     public InstalledViewModel(XboxDeviceService xboxService)
     {
         _xboxService = xboxService;

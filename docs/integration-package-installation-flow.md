@@ -163,6 +163,63 @@ graph TD
 
 ---
 
+### Architecture Filter (Prevents Wrong-Arch Packages)
+
+**Problem:** `.appxbundle`/`.msixbundle` files contain architecture-specific packages inside (e.g. `app_arm.appx`, `app_x64.appx`, `app_x86.appx`). Dependency folders (`Dependencies/`, `deps/`) can also contain mixed-arch files like `Microsoft.VCLibs.ARM64.14.00.appx`. Without filtering, all variants get classified and uploaded — ARM packages fail on x64 Xbox.
+
+**Solution:** `FilterByArchitecture()` detects the current system architecture and discards non-matching packages.
+
+**Code** (`PackageInstallService.cs:34-35`):
+```csharp
+private static readonly Regex ArchPattern = new(
+    @"(?:^|[\._\-])(arm64|arm|x64|x86|neutral)(?:[\._\-]|$)",
+    RegexOptions.IgnoreCase | RegexOptions.Compiled);
+```
+
+**How it works:**
+
+```mermaid
+graph TD
+    INPUT["Package File List"]
+    INPUT --> ARCH_CHECK{"Has arch<br/>segment?"}
+    ARCH_CHECK -->|"No arch marker"| KEEP["✅ Keep<br/>Assume neutral"]
+    ARCH_CHECK -->|"arm64/arm/x86"| TARGET_MATCH{"Matches<br/>target arch?"}
+    ARCH_CHECK -->|"x64"| TARGET_MATCH
+    ARCH_CHECK -->|"neutral"| KEEP
+    TARGET_MATCH -->|"Yes"| KEEP
+    TARGET_MATCH -->|"No"| DROP["❌ Drop<br/>Wrong arch"]
+    
+    style INPUT fill:#1A1D23,stroke:#447F3E,color:#9ACA3C
+    style ARCH_CHECK fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style KEEP fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style DROP fill:#CC3333,stroke:#9ACA3C,color:#fff
+    style TARGET_MATCH fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+```
+
+**Arch detection is segment-based (not just suffix):**
+
+| Filename | Arch Detected | x64 System | Why |
+|----------|---------------|-----------|-----|
+| `MyGame_1.0.0.0_x64.appx` | `x64` | ✅ Kept | Match target |
+| `MyGame_1.0.0.0_arm.appx` | `arm` | ❌ Dropped | Wrong arch |
+| `Microsoft.VCLibs.**ARM64**.14.00.appx` | `arm64` | ❌ Dropped | Arch in middle segment |
+| `Microsoft.VCLibs.**x64**.14.00.appx` | `x64` | ✅ Kept | Arch in middle segment |
+| `Microsoft.VCLibs.**x86**.14.00.appx` | `x86` | ❌ Dropped | Arch in middle segment |
+| `MyApp_1.0.0.0_neutral.appx` | `neutral` | ✅ Kept | Any arch |
+| `MyApp.appx` | `none` | ✅ Kept | No marker assumed neutral |
+
+**Where filter is applied** (3 points in `PackageInstallService.cs`):
+
+| Location | What It Filters |
+|----------|----------------|
+| `ExtractBundles()` return | Inner packages extracted from `.appxbundle`/`.msixbundle` |
+| `FindInstallablePackages()` return | Standalone files + `Dependencies/`/`deps/`/`dep/` folders |
+| `GetInstallableFiles()` return | Safety net on merged results |
+
+**Coverage:** Both catalog install (`DownloadAndInstallAsync`) and custom/manual install (`AnalyzeLocalFile`/`AnalyzeDirectory`) flow through these same methods — one filter covers both.
+
+---
+
 ## Phase 2: Download with Cache
 
 ### Cache Strategy
