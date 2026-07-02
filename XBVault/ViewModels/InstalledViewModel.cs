@@ -6,6 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using Avalonia.Input;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
@@ -66,11 +68,24 @@ public partial class InstalledViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Cursor))]
+    [NotifyPropertyChangedFor(nameof(IsPackageSelected))]
+    [NotifyPropertyChangedFor(nameof(IsPackageRunning))]
+    [NotifyPropertyChangedFor(nameof(IsPackageNotRunning))]
+    [NotifyPropertyChangedFor(nameof(IsPackageSelectedNotRunning))]
     private bool _isLoading;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isPolling;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cursor))]
+    [NotifyPropertyChangedFor(nameof(IsPackageSelected))]
+    [NotifyPropertyChangedFor(nameof(IsPackageRunning))]
+    [NotifyPropertyChangedFor(nameof(IsPackageNotRunning))]
+    [NotifyPropertyChangedFor(nameof(IsPackageSelectedNotRunning))]
+    [NotifyPropertyChangedFor(nameof(CanRefresh))]
+    private bool _isUninstalling;
 
     public Cursor? Cursor => (IsLoading || IsPolling) ? AppStartingCursor : null;
 
@@ -130,6 +145,7 @@ public partial class InstalledViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowStatus));
         OnPropertyChanged(nameof(ShowRefreshPrompt));
         OnPropertyChanged(nameof(ShowGrid));
+        OnPropertyChanged(nameof(CanRefresh));
     }
 
     partial void OnIsLoadingChanged(bool value)
@@ -137,6 +153,9 @@ public partial class InstalledViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowDisconnected));
         OnPropertyChanged(nameof(ShowRefreshPrompt));
         OnPropertyChanged(nameof(ShowGrid));
+        OnPropertyChanged(nameof(IsPackageRunning));
+        OnPropertyChanged(nameof(IsPackageNotRunning));
+        OnPropertyChanged(nameof(IsPackageSelectedNotRunning));
     }
 
     partial void OnHasPackagesChanged(bool value)
@@ -148,15 +167,18 @@ public partial class InstalledViewModel : ObservableObject
     [ObservableProperty]
     private InstalledPackage? _selectedPackage;
 
-    public bool IsPackageSelected => SelectedPackage is not null;
-    public bool IsPackageRunning => SelectedPackage?.IsRunning ?? false;
-    public bool IsPackageNotRunning => SelectedPackage is null || !SelectedPackage.IsRunning;
+    public bool IsPackageSelected => SelectedPackage is not null && !IsUninstalling;
+    public bool IsPackageRunning => !IsLoading && !IsUninstalling && (SelectedPackage?.IsRunning ?? false);
+    public bool IsPackageNotRunning => !IsLoading && !IsUninstalling && (SelectedPackage is null || !SelectedPackage.IsRunning);
+    public bool IsPackageSelectedNotRunning => !IsLoading && !IsUninstalling && SelectedPackage is not null && !SelectedPackage.IsRunning;
+    public bool CanRefresh => !IsUninstalling && IsConnected;
 
     partial void OnSelectedPackageChanged(InstalledPackage? value)
     {
         OnPropertyChanged(nameof(IsPackageSelected));
         OnPropertyChanged(nameof(IsPackageRunning));
         OnPropertyChanged(nameof(IsPackageNotRunning));
+        OnPropertyChanged(nameof(IsPackageSelectedNotRunning));
         if (value is not null)
         {
             Logger.Info($"Selected package raw:\n{value.RawJson}");
@@ -167,9 +189,18 @@ public partial class InstalledViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsPackageRunning));
         OnPropertyChanged(nameof(IsPackageNotRunning));
+        OnPropertyChanged(nameof(IsPackageSelectedNotRunning));
     }
 
     public Func<Task<bool>>? ShowConnectAction { get; set; }
+    public Func<string, string, string, Task>? ShowErrorAction { get; set; }
+    public Func<InstalledPackage, Bitmap?>? ResolveBanner { get; set; }
+    public Action? OnCatalogReady { get; set; }
+
+    [ObservableProperty]
+    private bool _isCatalogReady;
+
+    private static Bitmap? _genericBanner;
 
     [RelayCommand]
     private async Task ConnectAsync()
@@ -180,6 +211,24 @@ public partial class InstalledViewModel : ObservableObject
             if (ok)
                 _xboxService.MarkConnected();
         }
+    }
+
+    private async Task<bool> SuspendAnyRunningAsync(InstalledPackage? excludePkg = null)
+    {
+        var running = _allPackages.FirstOrDefault(p => p.IsRunning && p != excludePkg);
+        if (running is null) return true;
+
+        var ok = await _xboxService.SuspendPackageAsync(running.FullName);
+        if (ok)
+        {
+            running.IsRunning = false;
+            UpdateRunningState();
+            Logger.Info($"Suspended {running.Name} before launch");
+            return true;
+        }
+
+        Logger.Warn($"Failed to suspend {running.Name}, will refresh");
+        return false;
     }
 
     [RelayCommand]
@@ -194,6 +243,12 @@ public partial class InstalledViewModel : ObservableObject
             return;
         }
 
+        if (!await SuspendAnyRunningAsync(SelectedPackage))
+        {
+            await RefreshPackagesAsync();
+            return;
+        }
+
         try
         {
             var (ok, err) = await _xboxService.LaunchPackageAsync(SelectedPackage.FullName, rid);
@@ -202,7 +257,7 @@ public partial class InstalledViewModel : ObservableObject
                 SelectedPackage.IsRunning = true;
                 ToolbarStatus = $"Launched: {SelectedPackage.Name}";
                 UpdateRunningState();
-                _ = RefreshRunningStateAsync(); // background refresh
+                _ = RefreshRunningStateAsync();
             }
             else
             {
@@ -250,6 +305,79 @@ public partial class InstalledViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private async Task LaunchPackageAsync(InstalledPackage pkg)
+    {
+        if (pkg is null || pkg.IsRunning) return;
+
+        var rid = pkg.PackageRelativeId;
+        if (string.IsNullOrEmpty(rid))
+        {
+            ToolbarStatus = "Cannot launch: no package relative id";
+            return;
+        }
+
+        if (!await SuspendAnyRunningAsync(pkg))
+        {
+            await RefreshPackagesAsync();
+            return;
+        }
+
+        try
+        {
+            var (ok, err) = await _xboxService.LaunchPackageAsync(pkg.FullName, rid);
+            if (ok)
+            {
+                pkg.IsRunning = true;
+                ToolbarStatus = $"Launched: {pkg.Name}";
+                _ = RefreshRunningStateAsync();
+            }
+            else
+            {
+                ToolbarStatus = $"Failed: {err ?? "unknown error"}";
+            }
+        }
+        catch (Exception ex)
+        {
+            ToolbarStatus = "Launch failed";
+            Logger.Error(ex, $"Launch failed for {pkg.Name}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task SuspendPackageAsync(InstalledPackage pkg)
+    {
+        if (pkg is null || !pkg.IsRunning) return;
+
+        var ok = await _xboxService.SuspendPackageAsync(pkg.FullName);
+        if (ok)
+        {
+            pkg.IsRunning = false;
+            ToolbarStatus = $"Suspended: {pkg.Name}";
+        }
+        else
+        {
+            ToolbarStatus = $"Suspend failed: {pkg.Name}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task TerminatePackageAsync(InstalledPackage pkg)
+    {
+        if (pkg is null || !pkg.IsRunning) return;
+
+        var ok = await _xboxService.TerminatePackageAsync(pkg.FullName);
+        if (ok)
+        {
+            pkg.IsRunning = false;
+            ToolbarStatus = $"Terminated: {pkg.Name}";
+        }
+        else
+        {
+            ToolbarStatus = $"Terminate failed: {pkg.Name}";
+        }
+    }
+
     private async Task RefreshRunningStateAsync()
     {
         var running = await _xboxService.GetRunningPackageNamesAsync();
@@ -268,7 +396,12 @@ public partial class InstalledViewModel : ObservableObject
     {
         if (!_xboxService.IsConnected)
         {
-            Logger.Info("Xbox not connected — skipping package refresh");
+            Logger.Info("Xbox not connected — showing error dialog");
+            if (ShowErrorAction is not null)
+                await ShowErrorAction(
+                    "Not Connected",
+                    "Connect to your Xbox before refreshing packages.",
+                    "Go to the sidebar and connect to your Xbox Developer Mode console.");
             return;
         }
 
@@ -292,6 +425,21 @@ public partial class InstalledViewModel : ObservableObject
                 Logger.Info($"  {pkg.Name,-30} v{pkg.Version,-14}  {pkg.DisplayPublisher ?? "-",-20}  {pkg.PackageFamilyName ?? ""}");
 
             ApplyFilter();
+
+            if (_genericBanner is null)
+            {
+                try
+                {
+                    var uri = new Uri("avares://XBVault/Assets/Views/InstalledView/installed-banner-generic.jpg");
+                    _genericBanner = new Bitmap(AssetLoader.Open(uri));
+                }
+                catch { }
+            }
+
+            foreach (var pkg in _allPackages)
+            {
+                pkg.BannerImage = ResolveBanner?.Invoke(pkg) ?? _genericBanner;
+            }
 
             await RefreshRunningStateAsync();
             LastUpdated = "Updated: " + DateTime.Now.ToString("HH:mm:ss");
@@ -325,6 +473,7 @@ public partial class InstalledViewModel : ObservableObject
             if (!ok) return;
         }
 
+        IsUninstalling = true;
         pkg.IsUninstalling = true;
         Logger.Info($"Uninstalling: {pkg.Name}");
 
@@ -339,6 +488,10 @@ public partial class InstalledViewModel : ObservableObject
             pkg.IsUninstalling = false;
             StatusMessage = "Uninstall failed";
             Logger.Error(ex, $"Uninstall error: {pkg.Name}");
+        }
+        finally
+        {
+            IsUninstalling = false;
         }
     }
 

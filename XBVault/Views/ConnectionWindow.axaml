@@ -105,12 +105,18 @@
                        Foreground="{StaticResource AccentBrush}"
                        Margin="0,0,8,0"/>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-            <Button Command="{Binding CancelCommand}" Padding="10,6" MaxWidth="100"
+            <Button x:Name="CancelBtn"
+                    Command="{Binding CancelCommand}" Padding="10,6" MaxWidth="100"
                     IsEnabled="{Binding IsActive}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-cancel-20.png"
-                       Width="20" Height="20"
-                       Stretch="Uniform"/>
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-cancel-20.png"
+                         IsVisible="{Binding #CancelBtn.IsEnabled}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-cancel-20-disabled.png"
+                         IsVisible="{Binding #CancelBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                </Grid>
                 <TextBlock Grid.Column="1" Text="Cancel" VerticalAlignment="Center"/>
               </Grid>
             </Button>
@@ -120,9 +126,14 @@
                      IsEnabled="{Binding IsActive}"
                     Padding="10,6" MaxWidth="120">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
-                       Width="20" Height="20"
-                       Stretch="Uniform"/>
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                         IsVisible="{Binding #ConnectBtn.IsEnabled}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20-disabled.png"
+                         IsVisible="{Binding #ConnectBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                </Grid>
                 <TextBlock Grid.Column="1" Text="Connect" VerticalAlignment="Center"/>
               </Grid>
             </Button>

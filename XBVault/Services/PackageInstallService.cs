@@ -76,18 +76,20 @@ public class PackageInstallService
 
     public async Task<bool> DownloadAndInstallAsync(
         CatalogItem item,
+        string? downloadUrl = null,
         IProgress<InstallProgressInfo>? progress = null)
     {
-        if (string.IsNullOrWhiteSpace(item.DownloadUrl))
+        var url = downloadUrl ?? item.DownloadUrl;
+        if (string.IsNullOrWhiteSpace(url))
         {
             Logger.Error($"No download URL for {item.Name}");
             return false;
         }
 
         progress?.Report(new InstallProgressInfo { Status = $"Starting install of {item.Name}..." });
-        Logger.Info($"DownloadAndInstall: {item.Name} from {item.DownloadUrl}");
+        Logger.Info($"DownloadAndInstall: {item.Name} from {url}");
 
-        var fileName = GetFileNameFromUrl(item.DownloadUrl);
+        var fileName = GetFileNameFromUrl(url);
         var localPath = _cache.GetDownloadPath(item.Id, fileName);
         Logger.Debug($"Target local path: {localPath}");
 
@@ -104,7 +106,7 @@ public class PackageInstallService
 
             try
             {
-                var response = await _http.GetAsync(item.DownloadUrl,
+                var response = await _http.GetAsync(url,
                     HttpCompletionOption.ResponseHeadersRead);
                 response.EnsureSuccessStatusCode();
 
@@ -136,7 +138,7 @@ public class PackageInstallService
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, $"Download failed for {item.DownloadUrl}");
+                Logger.Error(ex, $"Download failed for {url}");
                 if (File.Exists(localPath))
                     File.Delete(localPath);
                 return false;

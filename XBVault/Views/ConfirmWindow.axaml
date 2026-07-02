@@ -64,6 +64,7 @@
                          HorizontalAlignment="Center"/>
             </Button>
             <Button x:Name="ConfirmBtn"
+                    Classes="Accent"
                     Command="{Binding ConfirmCommand}"
                     Padding="12,8"
                     MinWidth="90">

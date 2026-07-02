@@ -64,25 +64,39 @@
           <Grid Grid.Row="1"
                 ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto"
                 ColumnSpacing="6">
-            <Button Grid.Column="0"
+            <Button x:Name="CaptureBtn"
+                    Grid.Column="0"
                     Command="{Binding CaptureScreenshotCommand}"
                     Classes="Accent"
                     IsEnabled="{Binding IsLiveCapturing, Converter={StaticResource BoolInverse}}"
                     Padding="14,8" FontWeight="SemiBold">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Image Source="avares://XBVault/Assets/Views/ScreenshotWindow/screenshot-capture-20.png"
-                       Width="20" Height="20" Stretch="Uniform"/>
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/ScreenshotWindow/screenshot-capture-20.png"
+                         IsVisible="{Binding #CaptureBtn.IsEnabled}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <Image Source="avares://XBVault/Assets/Views/ScreenshotWindow/screenshot-capture-20-disabled.png"
+                         IsVisible="{Binding #CaptureBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                </Grid>
                 <TextBlock Grid.Column="1" Text="Capture" VerticalAlignment="Center"/>
               </Grid>
             </Button>
-            <Button Grid.Column="1"
+            <Button x:Name="SaveScreenshotBtn"
+                    Grid.Column="1"
                     Command="{Binding SaveScreenshotCommand}"
                     IsVisible="{Binding HasScreenshot}"
                     IsEnabled="{Binding IsLiveCapturing, Converter={StaticResource BoolInverse}}"
                     Padding="12,7" FontWeight="SemiBold">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
-                <Image Source="avares://XBVault/Assets/Views/ScreenshotWindow/screenshot-save-20.png"
-                       Width="18" Height="18" Stretch="Uniform"/>
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/ScreenshotWindow/screenshot-save-20.png"
+                         IsVisible="{Binding #SaveScreenshotBtn.IsEnabled}"
+                         Width="18" Height="18" Stretch="Uniform"/>
+                  <Image Source="avares://XBVault/Assets/Views/ScreenshotWindow/screenshot-save-20-disabled.png"
+                         IsVisible="{Binding #SaveScreenshotBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                         Width="18" Height="18" Stretch="Uniform"/>
+                </Grid>
                 <TextBlock Grid.Column="1" Text="Save As..." VerticalAlignment="Center"/>
               </Grid>
             </Button>

@@ -34,32 +34,44 @@
 
     <!-- Row 1: Toolbar -->
     <Grid Grid.Row="1"
-          ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto"
+          ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto"
           Margin="0,0,0,16">
 
-      <Button Grid.Column="0"
+      <Button x:Name="BrowseBtn"
+              Grid.Column="0"
               Command="{ReflectionBinding InitializeCommand}"
               IsEnabled="{ReflectionBinding CanBrowse}"
               Padding="10,6">
         <StackPanel Orientation="Horizontal" Spacing="5">
-          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-folder-20.png"
-                 Width="20" Height="20"
-                 Stretch="Uniform"/>
+          <Grid>
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-folder-20.png"
+                   IsVisible="{Binding #BrowseBtn.IsEnabled}"
+                   Width="20" Height="20" Stretch="Uniform"/>
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-folder-20-disabled.png"
+                   IsVisible="{Binding #BrowseBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                   Width="20" Height="20" Stretch="Uniform"/>
+          </Grid>
           <TextBlock Text="Browse"
                      FontSize="13"
                      VerticalAlignment="Center"/>
         </StackPanel>
       </Button>
 
-      <Button Grid.Column="1"
+      <Button x:Name="RefreshBtn"
+              Grid.Column="1"
               Command="{ReflectionBinding RefreshCommand}"
               IsEnabled="{ReflectionBinding CanRefresh}"
               Padding="10,6"
               Margin="6,0,0,0">
         <StackPanel Orientation="Horizontal" Spacing="5">
-          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-refresh-20.png"
-                 Width="20" Height="20"
-                 Stretch="Uniform"/>
+          <Grid>
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-refresh-20.png"
+                   IsVisible="{Binding #RefreshBtn.IsEnabled}"
+                   Width="20" Height="20" Stretch="Uniform"/>
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-refresh-20-disabled.png"
+                   IsVisible="{Binding #RefreshBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                   Width="20" Height="20" Stretch="Uniform"/>
+          </Grid>
           <TextBlock Text="Refresh"
                      FontSize="13"
                      VerticalAlignment="Center"/>
@@ -67,15 +79,21 @@
       </Button>
 
       <!-- SFTP info -->
-      <Button Grid.Column="2"
+      <Button x:Name="SftpInfoBtn"
+              Grid.Column="2"
               Command="{ReflectionBinding OpenConnectionInfoCommand}"
               IsEnabled="{ReflectionBinding IsConnected}"
               Padding="10,6"
               Margin="6,0,0,0">
         <StackPanel Orientation="Horizontal" Spacing="5">
-          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-network-20.png"
-                 Width="20" Height="20"
-                 Stretch="Uniform"/>
+          <Grid>
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-network-20.png"
+                   IsVisible="{Binding #SftpInfoBtn.IsEnabled}"
+                   Width="20" Height="20" Stretch="Uniform"/>
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-network-20-disabled.png"
+                   IsVisible="{Binding #SftpInfoBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                   Width="20" Height="20" Stretch="Uniform"/>
+          </Grid>
           <TextBlock Text="SFTP Info"
                      FontSize="13"
                      VerticalAlignment="Center"/>
@@ -83,24 +101,53 @@
       </Button>
 
       <!-- Open in WinSCP -->
-      <Button Grid.Column="3"
+      <Button x:Name="WinScpBtn"
+              Grid.Column="3"
               Command="{ReflectionBinding OpenWinScpCommand}"
               Padding="10,6"
               Margin="6,0,0,0"
               IsVisible="{ReflectionBinding IsWindows}"
               IsEnabled="{ReflectionBinding IsConnected}">
         <StackPanel Orientation="Horizontal" Spacing="5">
-          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-winscp-24.png"
-                 Width="20" Height="20"
-                 Stretch="Uniform"/>
+          <Grid>
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-winscp-24.png"
+                   IsVisible="{Binding #WinScpBtn.IsEnabled}"
+                   Width="20" Height="20" Stretch="Uniform"/>
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-winscp-24-disabled.png"
+                   IsVisible="{Binding #WinScpBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                   Width="20" Height="20" Stretch="Uniform"/>
+          </Grid>
           <TextBlock Text="WinSCP"
                      FontSize="13"
                      VerticalAlignment="Center"/>
         </StackPanel>
       </Button>
 
+      <!-- Toggle all drives -->
+      <ToggleButton Grid.Column="4"
+                    IsChecked="{ReflectionBinding ShowAllDrives}"
+                    Padding="10,6"
+                    Margin="6,0,0,0"
+                    ToolTip.Tip="Show all system drives (default: D: and E: only)">
+        <ToggleButton.Styles>
+          <Style Selector="ToggleButton Image">
+            <Setter Property="Source" Value="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-drives-off-20.png"/>
+          </Style>
+          <Style Selector="ToggleButton:checked Image">
+            <Setter Property="Source" Value="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-drives-on-20.png"/>
+          </Style>
+        </ToggleButton.Styles>
+        <StackPanel Orientation="Horizontal" Spacing="5">
+          <Image Width="20" Height="20"
+                 Stretch="Uniform"/>
+          <TextBlock Text="All drives"
+                     FontSize="12"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
+      </ToggleButton>
+
       <!-- Status block: error/warning/success/info -->
-      <Border Grid.Column="4"
+      <Border Grid.Column="5"
               IsVisible="{ReflectionBinding HasStatus}"
               CornerRadius="6"
               Padding="8,4"
@@ -346,25 +393,31 @@
                   Spacing="6"
                   Margin="0,4,0,0"
                   VerticalAlignment="Bottom">
-        <Button Command="{ReflectionBinding CreateFolderCommand}"
+        <Button x:Name="NewFolderBtn"
+                Command="{ReflectionBinding CreateFolderCommand}"
                 IsEnabled="{ReflectionBinding CanRefresh}"
                 Padding="6,4"
                 Width="105"
                 HorizontalContentAlignment="Stretch">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-newfolder-32.png"
-                   Width="24" Height="24"
-                   Stretch="Uniform"/>
+            <Grid>
+              <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-newfolder-32.png"
+                     IsVisible="{Binding #NewFolderBtn.IsEnabled}"
+                     Width="24" Height="24" Stretch="Uniform"/>
+              <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-newfolder-32-disabled.png"
+                     IsVisible="{Binding #NewFolderBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                     Width="24" Height="24" Stretch="Uniform"/>
+            </Grid>
             <TextBlock Text="New Folder"
                        FontSize="12"
                        VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
-      <Button IsEnabled="{ReflectionBinding CanModifyFiles}"
+      <Button x:Name="UploadButton"
+              IsEnabled="{ReflectionBinding CanModifyFiles}"
               Padding="6,4"
               Width="105"
               HorizontalContentAlignment="Stretch"
-              x:Name="UploadButton"
               ToolTip.Tip="{ReflectionBinding OperationLockedTooltip}">
         <Button.Flyout>
           <MenuFlyout>
@@ -389,54 +442,77 @@
           </MenuFlyout>
         </Button.Flyout>
         <StackPanel Orientation="Horizontal" Spacing="6">
-          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-upload-48.png"
-                 Width="24" Height="24"
-                 Stretch="Uniform"/>
+          <Grid>
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-upload-48.png"
+                   IsVisible="{Binding #UploadButton.IsEnabled}"
+                   Width="24" Height="24" Stretch="Uniform"/>
+            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-upload-48-disabled.png"
+                   IsVisible="{Binding #UploadButton.IsEnabled, Converter={StaticResource BoolInverse}}"
+                   Width="24" Height="24" Stretch="Uniform"/>
+          </Grid>
           <TextBlock Text="Upload"
                      FontSize="12"
                      VerticalAlignment="Center"/>
         </StackPanel>
       </Button>
-        <Button Command="{ReflectionBinding DownloadSelectedCommand}"
+        <Button x:Name="DownloadBtn"
+                Command="{ReflectionBinding DownloadSelectedCommand}"
                 IsEnabled="{ReflectionBinding CanDownloadMultiple}"
                 Padding="6,4"
                 Width="105"
                 HorizontalContentAlignment="Stretch"
                 ToolTip.Tip="{ReflectionBinding OperationLockedTooltip}">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-download-32.png"
-                   Width="24" Height="24"
-                   Stretch="Uniform"/>
+            <Grid>
+              <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-download-32.png"
+                     IsVisible="{Binding #DownloadBtn.IsEnabled}"
+                     Width="24" Height="24" Stretch="Uniform"/>
+              <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-download-32-disabled.png"
+                     IsVisible="{Binding #DownloadBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                     Width="24" Height="24" Stretch="Uniform"/>
+            </Grid>
             <TextBlock Text="Download"
                        FontSize="12"
                        VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
-        <Button Command="{ReflectionBinding DeleteSelectedCommand}"
+        <Button x:Name="DeleteBtn"
+                Command="{ReflectionBinding DeleteSelectedCommand}"
                 IsEnabled="{ReflectionBinding CanDeleteMultiple}"
                 Padding="6,4"
                 Width="105"
                 HorizontalContentAlignment="Stretch"
                 ToolTip.Tip="{ReflectionBinding OperationLockedTooltip}">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-delete-32.png"
-                   Width="24" Height="24"
-                   Stretch="Uniform"/>
+            <Grid>
+              <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-delete-32.png"
+                     IsVisible="{Binding #DeleteBtn.IsEnabled}"
+                     Width="24" Height="24" Stretch="Uniform"/>
+              <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-delete-32-disabled.png"
+                     IsVisible="{Binding #DeleteBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                     Width="24" Height="24" Stretch="Uniform"/>
+            </Grid>
             <TextBlock Text="Delete"
                        FontSize="12"
                        VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
-        <Button Command="{ReflectionBinding RenameEntryCommand}"
+        <Button x:Name="RenameBtn"
+                Command="{ReflectionBinding RenameEntryCommand}"
                 IsEnabled="{ReflectionBinding CanRenameSingle}"
                 Padding="6,4"
                 Width="105"
                 HorizontalContentAlignment="Stretch"
                 ToolTip.Tip="{ReflectionBinding OperationLockedTooltip}">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-rename-32.png"
-                   Width="24" Height="24"
-                   Stretch="Uniform"/>
+            <Grid>
+              <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-rename-32.png"
+                     IsVisible="{Binding #RenameBtn.IsEnabled}"
+                     Width="24" Height="24" Stretch="Uniform"/>
+              <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-rename-32-disabled.png"
+                     IsVisible="{Binding #RenameBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                     Width="24" Height="24" Stretch="Uniform"/>
+            </Grid>
             <TextBlock Text="Rename"
                        FontSize="12"
                        VerticalAlignment="Center"/>

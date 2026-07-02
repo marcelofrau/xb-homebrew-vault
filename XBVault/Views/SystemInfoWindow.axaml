@@ -30,12 +30,19 @@
       </Grid>
       <Border Grid.Row="1" Padding="20">
         <StackPanel Spacing="16">
-          <Button Command="{Binding RefreshCommand}"
+          <Button x:Name="SysInfoRefreshBtn"
+                  Command="{Binding RefreshCommand}"
                   IsEnabled="{Binding IsLoading, Converter={StaticResource BoolInverse}}"
                   Padding="14,8" HorizontalAlignment="Left">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-              <Image Source="avares://XBVault/Assets/Views/SystemInfoWindow/systeminfo-refresh-20.png"
-                     Width="20" Height="20" Stretch="Uniform"/>
+              <Grid>
+                <Image Source="avares://XBVault/Assets/Views/SystemInfoWindow/systeminfo-refresh-20.png"
+                       IsVisible="{Binding #SysInfoRefreshBtn.IsEnabled}"
+                       Width="20" Height="20" Stretch="Uniform"/>
+                <Image Source="avares://XBVault/Assets/Views/SystemInfoWindow/systeminfo-refresh-20-disabled.png"
+                       IsVisible="{Binding #SysInfoRefreshBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                       Width="20" Height="20" Stretch="Uniform"/>
+              </Grid>
               <TextBlock Grid.Column="1" Text="Refresh" VerticalAlignment="Center"/>
             </Grid>
           </Button>

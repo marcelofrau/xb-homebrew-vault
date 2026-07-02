@@ -47,9 +47,11 @@ public partial class App : Application
             var installService = new PackageInstallService(cacheService, xboxService);
             var sftpService = new SftpService();
             var catalogService = new CatalogApiService();
+            var overrideService = new PackageOverrideService();
+            overrideService.Initialize();
 
             var mainViewModel = new MainViewModel(xboxService);
-            var browseViewModel = new BrowseViewModel(installService, xboxService, catalogService);
+            var browseViewModel = new BrowseViewModel(installService, xboxService, catalogService, overrideService);
             var installedViewModel = new InstalledViewModel(xboxService);
             var fileExplorerViewModel = new FileExplorerViewModel(xboxService, sftpService);
             var toolsViewModel = new ToolsViewModel(xboxService);
@@ -278,12 +280,26 @@ public partial class App : Application
                 return connVm.IsSuccess;
             };
 
+            installedViewModel.ShowErrorAction = async (title, description, details) =>
+            {
+                var errDlg = new ErrorDialog(title, description, details, ErrorDialogType.Warn);
+                await errDlg.ShowDialog(main);
+            };
+
+            installedViewModel.ResolveBanner = pkg => browseViewModel.FindThumbnailByPackage(pkg);
+            browseViewModel.OnCatalogLoaded = () =>
+            {
+                if (installedViewModel is not null)
+                    installedViewModel.IsCatalogReady = true;
+            };
+
             mainViewModel.OnTabChanged = tab =>
             {
                 if (tab == 1)
                 {
                     installedViewModel.StartPolling();
-                    _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
+                    if (xboxService.IsConnected)
+                        _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
                 }
                 else
                 {
@@ -511,6 +527,15 @@ public partial class App : Application
             };
             browseViewModel.OpenCustomInstallWithFileAction = openCustomInstallWithFile;
             installedViewModel.OpenCustomInstallWithFileAction = openCustomInstallWithFile;
+            fileExplorerViewModel.OpenCustomInstallWithFileAction = openCustomInstallWithFile;
+
+            fileExplorerViewModel.ShowConfirmAction = async (title, message, confirmText, cancelText) =>
+            {
+                var vm = new ConfirmViewModel(title, message, confirmText, cancelText, null, null);
+                var win = new Views.ConfirmWindow { DataContext = vm };
+                await win.ShowDialog(main);
+                return vm.Confirmed;
+            };
 
             toolsViewModel.ShowConfirmAsync = async (title, message, confirmText, cancelText, iconSource, messageIconSource) =>
             {

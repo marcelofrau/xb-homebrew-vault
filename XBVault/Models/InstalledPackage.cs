@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Avalonia.Media.Imaging;
 
 namespace XBVault.Models;
 
@@ -128,6 +129,9 @@ public class InstalledPackage : INotifyPropertyChanged
 
     [JsonIgnore]
     public string StateLabel => IsRunning ? "Running" : "Not Running";
+
+    [JsonIgnore]
+    public Bitmap? BannerImage { get; set; }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

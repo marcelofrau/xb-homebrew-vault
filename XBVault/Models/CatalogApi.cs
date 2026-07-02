@@ -28,6 +28,9 @@ public class CatalogApiItem
     [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
 
+    [JsonPropertyName("appId")]
+    public string? AppId { get; set; }
+
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
 
@@ -102,7 +105,8 @@ public class CatalogApiItem
                 {
                     Name = c.Name,
                     Role = "Developer",
-                    Url = c.Github
+                    Url = c.Github,
+                    Donations = c.Donations
                 }));
 
             if (Contributors.Porters?.Count > 0)
@@ -110,7 +114,8 @@ public class CatalogApiItem
                 {
                     Name = c.Name,
                     Role = "Porter",
-                    Url = c.Github
+                    Url = c.Github,
+                    Donations = c.Donations
                 }));
 
             if (Contributors.Maintainers?.Count > 0)
@@ -118,7 +123,8 @@ public class CatalogApiItem
                 {
                     Name = c.Name,
                     Role = "Maintainer",
-                    Url = c.Github
+                    Url = c.Github,
+                    Donations = c.Donations
                 }));
 
             if (Contributors.ModAuthors?.Count > 0)
@@ -126,7 +132,8 @@ public class CatalogApiItem
                 {
                     Name = c.Name,
                     Role = "Mod Author",
-                    Url = c.Github
+                    Url = c.Github,
+                    Donations = c.Donations
                 }));
 
             if (Contributors.PrebuiltBy?.Count > 0)
@@ -134,7 +141,8 @@ public class CatalogApiItem
                 {
                     Name = c.Name,
                     Role = "Prebuilt By",
-                    Url = c.Github
+                    Url = c.Github,
+                    Donations = c.Donations
                 }));
 
             return all;
@@ -198,6 +206,7 @@ public class Contributor
     public string Name { get; set; } = string.Empty;
     public string? Role { get; set; }
     public string? Url { get; set; }
+    public List<DonationLink>? Donations { get; set; }
 }
 
 /// <summary>

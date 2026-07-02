@@ -1,0 +1,124 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        x:Class="XBVault.Views.DiscordPopup"
+        Classes="dialogWindow"
+        x:DataType="vm:DiscordPopupViewModel"
+        Title="Join Our Community"
+        WindowStartupLocation="CenterOwner"
+        Width="360"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
+
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+
+    <Style Selector="Button.DiscordBtn">
+      <Setter Property="Background" Value="#4E56D0"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Padding" Value="12,8"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+    </Style>
+
+    <Style Selector="Button.DiscordBtn:pointerover">
+      <Setter Property="Background" Value="#5B63E0"/>
+    </Style>
+
+    <Style Selector="Button.DiscordBtn:pressed">
+      <Setter Property="Background" Value="#3D44B8"/>
+    </Style>
+  </Window.Styles>
+
+  <Border BorderBrush="#4E56D0" BorderThickness="2" Margin="1">
+    <Grid RowDefinitions="Auto,*">
+
+      <!-- Title Bar -->
+      <Grid Height="32"
+            PointerPressed="OnTitleBarPointerPressed"
+            Background="#2D2D3D">
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="Join Our Community"
+                   Foreground="White"
+                   FontSize="14"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"
+                   Margin="12,0"/>
+        <Button Grid.Column="1" Classes="WindowClose"
+                Click="OnCloseClick" ToolTip.Tip="Close"/>
+      </Grid>
+
+      <!-- Body -->
+      <Border Grid.Row="1" BorderThickness="0" Padding="0">
+        <StackPanel Margin="20,16,20,20" Spacing="16">
+
+          <!-- Discord Icon + Description -->
+          <Grid ColumnDefinitions="48,*" ColumnSpacing="14">
+            <Image Source="avares://XBVault/Assets/Views/DiscordPopup/discordpopup-discord-48.png"
+                   Width="48" Height="48"
+                   Stretch="Uniform"
+                   VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1"
+                       Text="Choose a server to join for support and discussion:"
+                       FontSize="13"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Center"/>
+          </Grid>
+
+          <!-- Discord Buttons -->
+          <Button Classes="DiscordBtn"
+                  Command="{Binding JoinRevivesCommand}">
+            <Grid ColumnDefinitions="20,*" ColumnSpacing="8">
+              <Image Source="avares://XBVault/Assets/Views/DiscordPopup/discordpopup-discord-48.png"
+                     Width="18" Height="18"
+                     Stretch="Uniform"
+                     VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1"
+                         Text="REVIVES COMMUNITY"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+
+          <Button Classes="DiscordBtn"
+                  Command="{Binding JoinXboxHubCommand}">
+            <Grid ColumnDefinitions="20,*" ColumnSpacing="8">
+              <Image Source="avares://XBVault/Assets/Views/DiscordPopup/discordpopup-discord-48.png"
+                     Width="18" Height="18"
+                     Stretch="Uniform"
+                     VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1"
+                         Text="XBOX EMULATION HUB"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+
+          <Button Classes="DiscordBtn"
+                  Command="{Binding JoinErCommand}">
+            <Grid ColumnDefinitions="20,*" ColumnSpacing="8">
+              <Image Source="avares://XBVault/Assets/Views/DiscordPopup/discordpopup-discord-48.png"
+                     Width="18" Height="18"
+                     Stretch="Uniform"
+                     VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1"
+                         Text="EMULATION REVIVAL"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+
+        </StackPanel>
+      </Border>
+
+    </Grid>
+  </Border>
+
+</Window>

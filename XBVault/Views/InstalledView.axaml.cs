@@ -141,5 +141,7 @@ public partial class InstalledView : UserControl
         _angle = (_angle - 6 + 360) % 360;
         if (SpinnerImage.RenderTransform is RotateTransform rt)
             rt.Angle = _angle;
+        if (CatalogSpinnerImage?.RenderTransform is RotateTransform catRt)
+            catRt.Angle = _angle;
     }
 }

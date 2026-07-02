@@ -8,7 +8,7 @@
         Classes="dialogWindow"
         x:DataType="vm:BrowseViewModel"
         Title="Item Details"
-        Width="540" Height="670"
+        Width="540" Height="740"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
         WindowDecorations="None"
@@ -39,7 +39,7 @@
 
       <!-- Content -->
       <Border Grid.Row="1" BorderThickness="0">
-        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="16">
+        <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="16">
 
           <!-- Name -->
           <TextBlock Grid.Row="0"
@@ -52,12 +52,13 @@
                   <Border Grid.Row="1"
                           CornerRadius="8"
                           Background="{StaticResource SurfaceAltBrush}"
-                          Height="210"
+                          Height="280"
                           HorizontalAlignment="Stretch"
                           Margin="0,16,0,0">
             <Grid>
               <Image Source="{Binding SelectedItem.Thumbnail}"
                      Stretch="UniformToFill"
+                     RenderOptions.BitmapInterpolationMode="HighQuality"
                      IsVisible="{Binding SelectedItem.IsThumbnailLoading, Converter={StaticResource BoolInverse}}"/>
               <Border Background="{StaticResource SurfaceAltBrush}"
                       IsVisible="{Binding SelectedItem.IsThumbnailLoading}">
@@ -108,27 +109,75 @@
                   <TextBlock Text="Developer"
                              Foreground="{StaticResource TextDimBrush}"
                              FontSize="12" Grid.Row="1"/>
-                  <TextBlock Grid.Column="1"
-                             Text="{Binding SelectedItem.Developer}"
-                             FontSize="12" Grid.Row="1"/>
+                  <Button Grid.Column="1"
+                          Click="OnDeveloperClick"
+                          Cursor="Hand"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          FontSize="12"
+                          Foreground="{StaticResource AccentBrush}"
+                          Padding="0"
+                          HorizontalAlignment="Left"
+                          Grid.Row="1"
+                          ToolTip.Tip="Click for links">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <TextBlock Text="{Binding SelectedItem.Developer}"
+                                 VerticalAlignment="Center"/>
+                      <TextBlock Text="▾" FontSize="9"
+                                 Foreground="{StaticResource TextDimBrush}"
+                                 VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
 
                   <TextBlock Text="UWP Port by"
                              Foreground="{StaticResource TextDimBrush}"
                              FontSize="12" Grid.Row="2"
                              IsVisible="{Binding SelectedItem.UwpPortBy, Converter={StaticResource StringNotEmpty}}"/>
-                  <TextBlock Grid.Column="1"
-                             Text="{Binding SelectedItem.UwpPortBy}"
-                             FontSize="12" Grid.Row="2"
-                             IsVisible="{Binding SelectedItem.UwpPortBy, Converter={StaticResource StringNotEmpty}}"/>
+                  <Button Grid.Column="1"
+                          Click="OnUwpPortByClick"
+                          Cursor="Hand"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          FontSize="12"
+                          Foreground="{StaticResource AccentBrush}"
+                          Padding="0"
+                          HorizontalAlignment="Left"
+                          Grid.Row="2"
+                          IsVisible="{Binding SelectedItem.UwpPortBy, Converter={StaticResource StringNotEmpty}}"
+                          ToolTip.Tip="Click for links">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <TextBlock Text="{Binding SelectedItem.UwpPortBy}"
+                                 VerticalAlignment="Center"/>
+                      <TextBlock Text="▾" FontSize="9"
+                                 Foreground="{StaticResource TextDimBrush}"
+                                 VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
 
                   <TextBlock Text="Maintained by"
                              Foreground="{StaticResource TextDimBrush}"
                              FontSize="12" Grid.Row="3"
                              IsVisible="{Binding SelectedItem.MaintainedBy, Converter={StaticResource StringNotEmpty}}"/>
-                  <TextBlock Grid.Column="1"
-                             Text="{Binding SelectedItem.MaintainedBy}"
-                             FontSize="12" Grid.Row="3"
-                             IsVisible="{Binding SelectedItem.MaintainedBy, Converter={StaticResource StringNotEmpty}}"/>
+                  <Button Grid.Column="1"
+                          Click="OnMaintainedByClick"
+                          Cursor="Hand"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          FontSize="12"
+                          Foreground="{StaticResource AccentBrush}"
+                          Padding="0"
+                          HorizontalAlignment="Left"
+                          Grid.Row="3"
+                          IsVisible="{Binding SelectedItem.MaintainedBy, Converter={StaticResource StringNotEmpty}}"
+                          ToolTip.Tip="Click for links">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <TextBlock Text="{Binding SelectedItem.MaintainedBy}"
+                                 VerticalAlignment="Center"/>
+                      <TextBlock Text="▾" FontSize="9"
+                                 Foreground="{StaticResource TextDimBrush}"
+                                 VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
 
                   <TextBlock Text="Release date"
                              Foreground="{StaticResource TextDimBrush}"
@@ -193,92 +242,21 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="models:Contributor">
-                        <Border Background="{StaticResource SurfaceAltBrush}"
+                        <Button Click="OnContributorClick"
+                                Cursor="Hand"
+                                Background="{StaticResource SurfaceAltBrush}"
+                                BorderThickness="0"
                                 CornerRadius="4"
                                 Padding="8,4"
-                                Margin="0,2,6,2">
+                                Margin="0,2,6,2"
+                                ToolTip.Tip="Click for links">
                           <TextBlock Text="{Binding Name}"
                                      FontSize="11"
-                                     Foreground="{StaticResource TextBrush}"/>
-                        </Border>
+                                     Foreground="{StaticResource AccentBrush}"/>
+                        </Button>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
-                </StackPanel>
-
-                <!-- Links -->
-                <StackPanel Spacing="4"
-                            IsVisible="{Binding SelectedItem.HasLinks}">
-                  <TextBlock Text="Links"
-                             FontSize="12"
-                             FontWeight="SemiBold"/>
-                  <WrapPanel Orientation="Horizontal">
-                    <!-- Setup Guide -->
-                    <Button Padding="8,4"
-                            Margin="0,2,6,2"
-                            Command="{Binding OpenLinkCommand}"
-                            CommandParameter="{Binding SelectedItem.SetupGuideUrl}"
-                            IsVisible="{Binding SelectedItem.SetupGuideUrl, Converter={StaticResource StringNotEmpty}}"
-                            Cursor="Hand">
-                      <StackPanel Orientation="Horizontal" Spacing="4">
-                        <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-guide-20.png"
-                               Width="16" Height="16" Stretch="Uniform"/>
-                        <TextBlock Text="Setup Guide" FontSize="11" VerticalAlignment="Center"/>
-                      </StackPanel>
-                    </Button>
-                    <!-- Tutorial -->
-                    <Button Padding="8,4"
-                            Margin="0,2,6,2"
-                            Command="{Binding OpenLinkCommand}"
-                            CommandParameter="{Binding SelectedItem.TutorialUrl}"
-                            IsVisible="{Binding SelectedItem.TutorialUrl, Converter={StaticResource StringNotEmpty}}"
-                            Cursor="Hand">
-                      <StackPanel Orientation="Horizontal" Spacing="4">
-                        <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-youtube-20.png"
-                               Width="16" Height="16" Stretch="Uniform"/>
-                        <TextBlock Text="Tutorial" FontSize="11" VerticalAlignment="Center"/>
-                      </StackPanel>
-                    </Button>
-                    <!-- Release Notes -->
-                    <Button Padding="8,4"
-                            Margin="0,2,6,2"
-                            Command="{Binding OpenLinkCommand}"
-                            CommandParameter="{Binding SelectedItem.ReleaseNotesUrl}"
-                            IsVisible="{Binding SelectedItem.ReleaseNotesUrl, Converter={StaticResource StringNotEmpty}}"
-                            Cursor="Hand">
-                      <StackPanel Orientation="Horizontal" Spacing="4">
-                        <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-notes-20.png"
-                               Width="16" Height="16" Stretch="Uniform"/>
-                        <TextBlock Text="Release Notes" FontSize="11" VerticalAlignment="Center"/>
-                      </StackPanel>
-                    </Button>
-                    <!-- Source Code -->
-                    <Button Padding="8,4"
-                            Margin="0,2,6,2"
-                            Command="{Binding OpenLinkCommand}"
-                            CommandParameter="{Binding SelectedItem.SourceCodeUrl}"
-                            IsVisible="{Binding SelectedItem.SourceCodeUrl, Converter={StaticResource StringNotEmpty}}"
-                            Cursor="Hand">
-                      <StackPanel Orientation="Horizontal" Spacing="4">
-                        <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-github-20.png"
-                               Width="16" Height="16" Stretch="Uniform"/>
-                        <TextBlock Text="Source Code" FontSize="11" VerticalAlignment="Center"/>
-                      </StackPanel>
-                    </Button>
-                    <!-- Website -->
-                    <Button Padding="8,4"
-                            Margin="0,2,6,2"
-                            Command="{Binding OpenLinkCommand}"
-                            CommandParameter="{Binding SelectedItem.Url}"
-                            IsVisible="{Binding SelectedItem.Url, Converter={StaticResource StringNotEmpty}}"
-                            Cursor="Hand">
-                      <StackPanel Orientation="Horizontal" Spacing="4">
-                        <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-globe-16.png"
-                               Width="16" Height="16" Stretch="Uniform"/>
-                        <TextBlock Text="Website" FontSize="11" VerticalAlignment="Center"/>
-                      </StackPanel>
-                    </Button>
-                  </WrapPanel>
                 </StackPanel>
 
               </StackPanel>
@@ -286,7 +264,7 @@
 
             <!-- Install overlay -->
             <Border IsVisible="{Binding ShowInstallOverlay}"
-                    Background="#E01E1E1E">
+                    Background="#E01A1D23">
             <StackPanel VerticalAlignment="Center"
                         HorizontalAlignment="Center"
                         Spacing="10">
@@ -374,7 +352,7 @@
 
             <!-- Check overlay -->
             <Border IsVisible="{Binding ShowCheckOverlay}"
-                    Background="#E01E1E1E">
+                    Background="#E01A1D23">
             <StackPanel VerticalAlignment="Center"
                         HorizontalAlignment="Center"
                         Spacing="10">
@@ -449,81 +427,156 @@
             </Border>
           </Grid>
 
+          <!-- Links (always visible) -->
+          <StackPanel Grid.Row="3" Margin="0,12,0,0"
+                      IsVisible="{Binding ShowDescriptionPanel}">
+            <Separator Background="{StaticResource BorderBrush}" Height="1" Margin="0,0,0,8"/>
+            <WrapPanel Orientation="Horizontal">
+              <!-- Setup Guide -->
+              <Button Padding="6,4" Margin="0,0,6,4"
+                      Command="{Binding OpenLinkCommand}"
+                      CommandParameter="{Binding SelectedItem.SetupGuideUrl}"
+                      IsVisible="{Binding SelectedItem.SetupGuideUrl, Converter={StaticResource StringNotEmpty}}"
+                      Cursor="Hand">
+                <StackPanel Orientation="Horizontal" Spacing="3">
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-guide-20.png"
+                         Width="14" Height="14" Stretch="Uniform"/>
+                  <TextBlock Text="Guide" FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <!-- Tutorial -->
+              <Button Padding="6,4" Margin="0,0,6,4"
+                      Command="{Binding OpenLinkCommand}"
+                      CommandParameter="{Binding SelectedItem.TutorialUrl}"
+                      IsVisible="{Binding SelectedItem.TutorialUrl, Converter={StaticResource StringNotEmpty}}"
+                      Cursor="Hand">
+                <StackPanel Orientation="Horizontal" Spacing="3">
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-youtube-20.png"
+                         Width="14" Height="14" Stretch="Uniform"/>
+                  <TextBlock Text="Tutorial" FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <!-- Release Notes -->
+              <Button Padding="6,4" Margin="0,0,6,4"
+                      Command="{Binding OpenLinkCommand}"
+                      CommandParameter="{Binding SelectedItem.ReleaseNotesUrl}"
+                      IsVisible="{Binding SelectedItem.ReleaseNotesUrl, Converter={StaticResource StringNotEmpty}}"
+                      Cursor="Hand">
+                <StackPanel Orientation="Horizontal" Spacing="3">
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-notes-20.png"
+                         Width="14" Height="14" Stretch="Uniform"/>
+                  <TextBlock Text="Notes" FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <!-- Source Code -->
+              <Button Padding="6,4" Margin="0,0,6,4"
+                      Command="{Binding OpenLinkCommand}"
+                      CommandParameter="{Binding SelectedItem.SourceCodeUrl}"
+                      IsVisible="{Binding SelectedItem.SourceCodeUrl, Converter={StaticResource StringNotEmpty}}"
+                      Cursor="Hand">
+                <StackPanel Orientation="Horizontal" Spacing="3">
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-github-20.png"
+                         Width="14" Height="14" Stretch="Uniform"/>
+                  <TextBlock Text="Source" FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <!-- Website -->
+              <Button Padding="6,4" Margin="0,0,6,4"
+                      Command="{Binding OpenLinkCommand}"
+                      CommandParameter="{Binding SelectedItem.Url}"
+                      IsVisible="{Binding SelectedItem.Url, Converter={StaticResource StringNotEmpty}}"
+                      Cursor="Hand">
+                <StackPanel Orientation="Horizontal" Spacing="3">
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-globe-16.png"
+                         Width="14" Height="14" Stretch="Uniform"/>
+                  <TextBlock Text="Website" FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+            </WrapPanel>
+          </StackPanel>
+
           <!-- Footer -->
-          <StackPanel Grid.Row="3" Margin="0,12,0,0">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-              <!-- Left: Close -->
-              <Button Grid.Column="0"
-                      Padding="16,10"
-                      Command="{Binding CloseDetailCommand}">
+          <StackPanel Grid.Row="4" Margin="0,12,0,0">
+            <Grid ColumnDefinitions="Auto,Auto,*">
+              <!-- Left: Check -->
+              <StackPanel Grid.Column="0"
+                          Orientation="Horizontal"
+                          Spacing="8">
+                <Button x:Name="CheckBtn"
+                        Padding="16,10"
+                        Command="{Binding CheckInstalledCommand}"
+                        IsEnabled="{Binding CanCheckXboxItem}"
+                        IsVisible="{Binding CheckComplete, Converter={StaticResource BoolInverse}}">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    <Grid>
+                      <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
+                             IsVisible="{Binding #CheckBtn.IsEnabled}"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                      <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20-disabled.png"
+                             IsVisible="{Binding #CheckBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                    </Grid>
+                    <TextBlock Grid.Column="1" Text="Check Installed"
+                               FontSize="12"
+                               VerticalAlignment="Center"/>
+                  </Grid>
+                </Button>
+                <Button x:Name="RecheckBtn"
+                        Padding="16,10"
+                        Command="{Binding CheckInstalledCommand}"
+                        IsEnabled="{Binding CanRecheckXboxItem}"
+                        IsVisible="{Binding CheckComplete}">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    <Grid>
+                      <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
+                             IsVisible="{Binding #RecheckBtn.IsEnabled}"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                      <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20-disabled.png"
+                             IsVisible="{Binding #RecheckBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                    </Grid>
+                    <TextBlock Grid.Column="1" Text="Re-check"
+                               FontSize="12"
+                               VerticalAlignment="Center"/>
+                  </Grid>
+                </Button>
+              </StackPanel>
+
+              <!-- Install -->
+              <Button x:Name="InstallBtn"
+                      Classes="Accent"
+                      Grid.Column="1"
+                      Padding="20,10"
+                      Margin="8,0,0,0"
+                      Click="OnInstallClick"
+                      IsEnabled="{Binding CanInstallXboxItem}"
+                      IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-<Image Source="avares://XBVault/Assets/Icons/close-20.png"
-                       Width="20" Height="20"
-                       Stretch="Uniform"/>
-                  <TextBlock Grid.Column="1" Text="Close"
+                  <Grid>
+                    <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
+                           IsVisible="{Binding #InstallBtn.IsEnabled}"
+                           Width="20" Height="20" Stretch="Uniform"/>
+                    <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20-disabled.png"
+                           IsVisible="{Binding #InstallBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                           Width="20" Height="20" Stretch="Uniform"/>
+                  </Grid>
+                  <TextBlock Grid.Column="1" Text="Install"
                              FontSize="13"
                              FontWeight="SemiBold"
                              VerticalAlignment="Center"/>
                 </Grid>
               </Button>
 
-              <!-- Center: Check + Visit Site -->
-              <StackPanel Grid.Column="1"
-                          Orientation="Horizontal"
-                          HorizontalAlignment="Center"
-                          Spacing="8">
-                <Button Padding="16,10"
-                        Command="{Binding CheckInstalledCommand}"
-                        IsEnabled="{Binding CanCheckXboxItem}"
-                        IsVisible="{Binding CheckComplete, Converter={StaticResource BoolInverse}}">
-                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                    <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
-                           Width="20" Height="20"
-                           Stretch="Uniform"/>
-                    <TextBlock Grid.Column="1" Text="Check Installed"
-                               FontSize="12"
-                               VerticalAlignment="Center"/>
-                  </Grid>
-                </Button>
-                <Button Padding="16,10"
-                        Command="{Binding CheckInstalledCommand}"
-                        IsEnabled="{Binding CanRecheckXboxItem}"
-                        IsVisible="{Binding CheckComplete}">
-                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                    <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
-                           Width="20" Height="20"
-                           Stretch="Uniform"/>
-                    <TextBlock Grid.Column="1" Text="Re-check"
-                               FontSize="12"
-                               VerticalAlignment="Center"/>
-                  </Grid>
-                </Button>
-                <Button Padding="20,10"
-                        Command="{Binding VisitSiteCommand}"
-                        IsEnabled="{Binding IsNotInstalling}">
-                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                    <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-globe-16.png"
-                           Width="20" Height="20"
-                           Stretch="Uniform"/>
-                    <TextBlock Grid.Column="1" Text="Visit Site"
-                               FontSize="13"
-                               VerticalAlignment="Center"/>
-                  </Grid>
-                </Button>
-              </StackPanel>
-
-              <!-- Right: Install -->
-              <Button Classes="Accent"
-                      Grid.Column="2"
-                      Padding="20,10"
-                      Command="{Binding InstallSelectedCommand}"
-                      IsEnabled="{Binding CanInstallXboxItem}"
-                      IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
+              <!-- Right: Close -->
+              <Button Grid.Column="2"
+                      Padding="16,10"
+                      HorizontalAlignment="Right"
+                      Command="{Binding CloseDetailCommand}">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
+                  <Image Source="avares://XBVault/Assets/Icons/close-20.png"
                          Width="20" Height="20"
                          Stretch="Uniform"/>
-                  <TextBlock Grid.Column="1" Text="Install"
+                  <TextBlock Grid.Column="1" Text="Close"
                              FontSize="13"
                              FontWeight="SemiBold"
                              VerticalAlignment="Center"/>

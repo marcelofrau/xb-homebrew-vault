@@ -196,6 +196,7 @@
                 <Grid>
                   <Image Source="{Binding Thumbnail}"
                          Stretch="UniformToFill"
+                         RenderOptions.BitmapInterpolationMode="HighQuality"
                          IsVisible="{Binding IsThumbnailLoading, Converter={StaticResource BoolInverse}}"/>
                   <Border Background="{StaticResource SurfaceAltBrush}"
                           IsVisible="{Binding IsThumbnailLoading}">

@@ -131,23 +131,37 @@
           </Border>
 
           <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
-            <Button Grid.Column="0" Command="{Binding RefreshCommand}"
+            <Button x:Name="ProcRefreshBtn"
+                    Grid.Column="0" Command="{Binding RefreshCommand}"
                     IsEnabled="{Binding IsLoading, Converter={StaticResource BoolInverse}}"
                     Padding="14,8">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Image Source="avares://XBVault/Assets/Views/ProcessesWindow/processes-refresh-20.png"
-                       Width="20" Height="20" Stretch="Uniform"/>
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/ProcessesWindow/processes-refresh-20.png"
+                         IsVisible="{Binding #ProcRefreshBtn.IsEnabled}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <Image Source="avares://XBVault/Assets/Views/ProcessesWindow/processes-refresh-20-disabled.png"
+                         IsVisible="{Binding #ProcRefreshBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                </Grid>
                 <TextBlock Grid.Column="1" Text="Refresh" VerticalAlignment="Center"/>
               </Grid>
             </Button>
-            <Button Grid.Column="1" Command="{Binding KillSelectedCommand}"
+            <Button x:Name="KillBtn"
+                    Grid.Column="1" Command="{Binding KillSelectedCommand}"
                     IsEnabled="{Binding IsProcessSelected}"
                     Background="{StaticResource CardBgBrush}"
                     BorderBrush="{StaticResource BorderBrush}"
                     Padding="14,8">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Image Source="avares://XBVault/Assets/Views/ProcessesWindow/processes-kill-20.png"
-                       Width="20" Height="20" Stretch="Uniform"/>
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/ProcessesWindow/processes-kill-20.png"
+                         IsVisible="{Binding #KillBtn.IsEnabled}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <Image Source="avares://XBVault/Assets/Views/ProcessesWindow/processes-kill-20-disabled.png"
+                         IsVisible="{Binding #KillBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                </Grid>
                 <TextBlock Grid.Column="1" Text="Kill Selected" VerticalAlignment="Center"/>
               </Grid>
             </Button>

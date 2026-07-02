@@ -51,6 +51,8 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     public Action? FocusFileList { get; set; }
     public Action<string, string, string>? ShowErrorDialog { get; set; }
     public Func<string, string, string, string?, Task<string?>>? ShowInputDialogAsync { get; set; }
+    public Func<string, string, string, string, Task<bool>>? ShowConfirmAction { get; set; }
+    public Func<string, Task>? OpenCustomInstallWithFileAction { get; set; }
 
     private void OnBoxConnectionChanged(bool connected)
     {
@@ -162,6 +164,15 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _downloadStatusText = string.Empty;
+
+    [ObservableProperty]
+    private bool _showAllDrives;
+
+    partial void OnShowAllDrivesChanged(bool value)
+    {
+        Logger.Debug($"ShowAllDrives changed to {value}, reloading drives...");
+        _ = LoadTreeRootsAsync();
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Cursor))]
@@ -472,18 +483,22 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             entries[i].IsLastChild = i >= entries.Count - 1;
     }
 
-    private static Task<List<SftpEntry>> DetectDrivesAsync()
+    private Task<List<SftpEntry>> DetectDrivesAsync()
     {
-        var drives = new[] { "C", "D", "E", "G", "J", "L", "M", "N", "Q", "S", "T", "U", "V", "X", "Y" }.Select(l =>
+        var all = new[] { "C", "D", "E", "G", "J", "L", "M", "N", "Q", "S", "T", "U", "V", "X", "Y" };
+        var letters = ShowAllDrives ? all : new[] { "D", "E" };
+        var drives = letters.Select(l =>
         {
+            var name = l == "E" ? "E:\\ (external)" : $"{l}:\\";
             var e = new SftpEntry
             {
-                Name = $"{l}:\\",
+                Name = name,
                 FullPath = $"{l}:\\",
                 IsDirectory = true,
                 IsDrive = true,
                 LastModified = DateTime.MinValue,
-                ToolTip = l == "E" ? "Usually external drive" : null
+                IconName = l == "E" ? null : "ssd",
+                ToolTip = l == "E" ? "External USB storage drive" : null
             };
             e.Children.Add(new SftpEntry { Name = "" });
             return e;

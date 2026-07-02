@@ -44,6 +44,14 @@ public partial class MainWindow : Window
         Process.Start(new ProcessStartInfo("https://emulationrevival.github.io") { UseShellExecute = true });
     }
 
+    private async void OnDiscordClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Logger.Info("Opening Discord community popup");
+        var vm = new DiscordPopupViewModel();
+        var popup = new DiscordPopup { DataContext = vm };
+        await popup.ShowDialog(this);
+    }
+
     private async void OnDisconnectClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Logger.Info("OnDisconnectClick: user clicked disconnect");

@@ -452,14 +452,21 @@
             </Button>
 
             <!-- Step 0: Analyze -->
-            <Button Classes="Accent"
+            <Button x:Name="AnalyzeBtn"
+                    Classes="Accent"
                     Padding="20,8"
                     Command="{Binding AnalyzeCommand}"
                     IsVisible="{Binding IsSourceStep}"
                     IsEnabled="{Binding CanGoNext}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-analyze-20.png"
-                       Width="18" Height="18" Stretch="Uniform"/>
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-analyze-20.png"
+                         IsVisible="{Binding #AnalyzeBtn.IsEnabled}"
+                         Width="18" Height="18" Stretch="Uniform"/>
+                  <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-analyze-20-disabled.png"
+                         IsVisible="{Binding #AnalyzeBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                         Width="18" Height="18" Stretch="Uniform"/>
+                </Grid>
                 <TextBlock Grid.Column="1" Text="Analyze"
                            FontSize="13" FontWeight="SemiBold"
                            VerticalAlignment="Center"/>

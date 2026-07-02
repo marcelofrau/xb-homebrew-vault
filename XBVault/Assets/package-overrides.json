@@ -1,0 +1,34 @@
+{
+  "packageFamilyNameOverrides": [
+    {
+      "packageFamilyName": "SMWRP",
+      "catalogId": "super-mario-world-remastered-plus"
+    },
+    {
+      "packageFamilyName": "SuperMarioBrosRemastered",
+      "catalogId": "super-mario-bros-remastered"
+    },
+    {
+      "packageFamilyName": "57bcfd1f-31c1-4f8e-bf91-958732a81506",
+      "imageUrl": "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.gamingonlinux.com%2Fuploads%2Farticles%2Ftagline_images%2F306770739id25264gol.jpg&f=1&nofb=1&ipt=f4f01ecffa4598684d4d7c0b2f65dfb0a96ac78e601e28e9c227100baa4883c4"
+    },
+    {
+      "packageFamilyName": "20468Jellyfin.Jellyfin",
+      "imageUrl": "https://m.media-amazon.com/images/I/51i0m01RSxL.png"
+    },
+    {
+      "packageFamilyName": "Revive.SpaceCadetPinballUWP",
+      "imageUrl": "https://emulationrevival.github.io/xbox-dev-mode/images/game-ports/spacecadetpinball.webp"
+    }
+  ],
+  "packageNameOverrides": [
+    {
+      "packageName": "SMBRP",
+      "catalogId": "super-mario-world-remastered-plus"
+    },
+    {
+      "packageName": "NSCUMM",
+      "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS24z1dkK6oWxZR1IaQtfYax-XxQYZcv7IUEdFBxkowyYWHrIM3g6qcKpBO&s=10"
+    }
+  ]
+}

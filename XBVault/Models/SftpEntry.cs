@@ -56,6 +56,7 @@ public class SftpEntry : INotifyPropertyChanged
     public string? Extension { get; set; }
     public bool IsJunction { get; set; }
     public bool IsDrive { get; set; }
+    public string? IconName { get; set; }
     public string? ToolTip { get; set; }
 
     public string FormattedSize => IsDirectory ? "" : FormatSize(Size);
@@ -108,7 +109,7 @@ public class SftpEntry : INotifyPropertyChanged
         Children.CollectionChanged += (_, _) => Notify(nameof(HeaderMargin));
     }
 
-    private string GetTreeIconName() => IsDrive || IsJunction ? "drive" : IsDirectory ? "folder" : "file";
+    private string GetTreeIconName() => IconName ?? (IsDrive || IsJunction ? "drive" : IsDirectory ? "folder" : "file");
 
     private string GetFileIconName()
     {

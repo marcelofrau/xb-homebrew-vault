@@ -111,6 +111,14 @@
         </Animation>
       </Style.Animations>
     </Style>
+
+    <Style Selector="Button#DiscordBtn:pointerover">
+      <Setter Property="Background" Value="#5B63E0"/>
+    </Style>
+
+    <Style Selector="Button#DiscordBtn:pressed">
+      <Setter Property="Background" Value="#3D44B8"/>
+    </Style>
   </Window.Styles>
 
   <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
@@ -299,21 +307,49 @@
           </ListBoxItem>
         </ListBox>
 
-        <!-- ER Logo -->
-        <Button Grid.Row="2"
-                Cursor="Hand"
-                Background="Transparent"
-                BorderThickness="0"
-                HorizontalAlignment="Center"
-                Margin="0,0,0,8"
-                ToolTip.Tip="Visit Emulation Revival website"
-                Click="OnErLinkClick">
-          <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-erlogo.png"
-                 Width="140"
-                 Height="40"
-                 Stretch="Uniform"
-                 HorizontalAlignment="Center"/>
-        </Button>
+        <!-- ER Logo + Discord -->
+        <StackPanel Grid.Row="2" Spacing="4" Margin="0,0,0,8">
+
+          <!-- ER Logo -->
+          <Button Cursor="Hand"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  HorizontalAlignment="Center"
+                  ToolTip.Tip="Visit Emulation Revival website"
+                  Click="OnErLinkClick">
+            <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-erlogo.png"
+                   Width="140"
+                   Height="40"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center"/>
+          </Button>
+
+          <!-- Discord -->
+          <Button x:Name="DiscordBtn"
+                  Click="OnDiscordClick"
+                  HorizontalAlignment="Center"
+                  Width="120"
+                  Height="28"
+                  Background="#4E56D0"
+                  BorderThickness="0"
+                  CornerRadius="6"
+                  Cursor="Hand"
+                  ToolTip.Tip="Join our Discord community">
+            <StackPanel Orientation="Horizontal" Spacing="4"
+                        HorizontalAlignment="Center">
+              <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-discord-20.png"
+                     Width="18" Height="18"
+                     Stretch="Uniform"
+                     VerticalAlignment="Center"/>
+              <TextBlock Text="JOIN US"
+                         FontSize="11"
+                         FontWeight="Bold"
+                         Foreground="White"
+                         VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+
+        </StackPanel>
 
         <!-- Connection status + Connect + About -->
         <StackPanel Grid.Row="3" Spacing="4" Margin="16,0,16,16">

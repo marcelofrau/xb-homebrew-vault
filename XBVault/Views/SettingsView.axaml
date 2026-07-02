@@ -80,13 +80,19 @@
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Spacing="8">
-              <Button Command="{Binding TestConnectionCommand}"
+              <Button x:Name="TestConnBtn"
+                      Command="{Binding TestConnectionCommand}"
                       IsEnabled="{Binding IsTestingConnection, Converter={StaticResource BoolInverse}}"
                       Padding="16,8">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-test-20.png"
-                         Width="20" Height="20"
-                         Stretch="Uniform"/>
+                  <Grid>
+                    <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-test-20.png"
+                           IsVisible="{Binding #TestConnBtn.IsEnabled}"
+                           Width="20" Height="20" Stretch="Uniform"/>
+                    <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-test-20-disabled.png"
+                           IsVisible="{Binding #TestConnBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                           Width="20" Height="20" Stretch="Uniform"/>
+                  </Grid>
                   <TextBlock Grid.Column="1" Text="Test Connection"
                              VerticalAlignment="Center"/>
                 </Grid>

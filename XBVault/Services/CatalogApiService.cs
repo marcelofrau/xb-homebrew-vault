@@ -183,6 +183,7 @@ public partial class CatalogApiService
         return new CatalogItem
         {
             Id = api.Id,
+            AppId = api.AppId,
             Name = api.Title,
             Description = api.Description,
             Version = api.Version,
@@ -415,19 +416,19 @@ public partial class CatalogApiService
         var map = new ContributorsMap();
 
         if (groups.TryGetValue("Developer", out var devs))
-            map.Developers = devs.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url }).ToList();
+            map.Developers = devs.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url, Donations = c.Donations }).ToList();
 
         if (groups.TryGetValue("Porter", out var porters))
-            map.Porters = porters.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url }).ToList();
+            map.Porters = porters.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url, Donations = c.Donations }).ToList();
 
         if (groups.TryGetValue("Maintainer", out var mains))
-            map.Maintainers = mains.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url }).ToList();
+            map.Maintainers = mains.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url, Donations = c.Donations }).ToList();
 
         if (groups.TryGetValue("Mod Author", out var mods))
-            map.ModAuthors = mods.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url }).ToList();
+            map.ModAuthors = mods.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url, Donations = c.Donations }).ToList();
 
         if (groups.TryGetValue("Prebuilt By", out var prebuilt))
-            map.PrebuiltBy = prebuilt.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url }).ToList();
+            map.PrebuiltBy = prebuilt.Select(c => new ContributorEntry { Name = c.Name, Github = c.Url, Donations = c.Donations }).ToList();
 
         return map;
     }

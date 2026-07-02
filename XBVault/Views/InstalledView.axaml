@@ -2,27 +2,37 @@
               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
               xmlns:vm="using:XBVault.ViewModels"
               xmlns:models="using:XBVault.Models"
+              xmlns:conv="using:XBVault.Converters"
               x:Class="XBVault.Views.InstalledView"
+              x:Name="ThisRoot"
               Cursor="{Binding Cursor}" x:DataType="vm:InstalledViewModel">
+
+  <UserControl.Resources>
+    <SolidColorBrush x:Key="RunningVersionFgBrush" Color="#CEE5A0"/>
+    <SolidColorBrush x:Key="RunningPublisherFgBrush" Color="#A0C090"/>
+    <SolidColorBrush x:Key="RunningStateFgBrush" Color="#9ACA3C"/>
+    <conv:BoolToValueConverter x:Key="BoolToRunningVersionFg"
+                                TrueValue="{StaticResource RunningVersionFgBrush}"
+                                FalseValue="{StaticResource AccentBrush}"/>
+    <conv:BoolToValueConverter x:Key="BoolToRunningPublisherFg"
+                                TrueValue="{StaticResource RunningPublisherFgBrush}"
+                                FalseValue="{StaticResource TextMutedBrush}"/>
+  </UserControl.Resources>
 
   <UserControl.Styles>
     <Style Selector="ListBoxItem">
       <Setter Property="Padding" Value="0"/>
     </Style>
+
+    <!-- Selection: border only -->
     <Style Selector="ListBoxItem:selected Border.Card">
-      <Setter Property="Background" Value="#3A6E35"/>
-      <Setter Property="BorderBrush" Value="#9ACA3C"/>
+      <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
       <Setter Property="BorderThickness" Value="2"/>
     </Style>
     <Style Selector="ListBoxItem:selected:focus Border.Card">
-      <Setter Property="Background" Value="#3A6E35"/>
-      <Setter Property="BorderBrush" Value="#9ACA3C"/>
+      <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
       <Setter Property="BorderThickness" Value="2"/>
     </Style>
-    <Style Selector="ListBoxItem:pointerover Border.Card">
-      <Setter Property="Background" Value="#2F5A2A"/>
-    </Style>
-
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,Auto,*" Margin="32">
@@ -57,13 +67,22 @@
           ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto"
           Margin="0,0,0,16">
 
-      <Button Grid.Column="0"
+      <Button x:Name="RefreshBtn"
+              Grid.Column="0"
               Command="{Binding RefreshPackagesCommand}"
+              IsEnabled="{Binding CanRefresh}"
               Padding="12,8">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-<Image Source="avares://XBVault/Assets/Views/InstalledView/installed-refresh-20.png"
+          <Grid>
+            <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-refresh-20.png"
+                   IsVisible="{Binding #RefreshBtn.IsEnabled}"
                    Width="20" Height="20"
                    Stretch="Uniform"/>
+            <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-refresh-20-disabled.png"
+                   IsVisible="{Binding #RefreshBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                   Width="20" Height="20"
+                   Stretch="Uniform"/>
+          </Grid>
           <TextBlock Grid.Column="1"
                      Text="Refresh"
                      FontSize="13"
@@ -71,16 +90,24 @@
         </Grid>
       </Button>
 
-      <Button Grid.Column="1"
+      <Button x:Name="UninstallBtn"
+              Grid.Column="1"
               Command="{Binding UninstallSelectedCommand}"
               Classes="Danger"
               Padding="12,8"
               IsEnabled="{Binding IsPackageSelected}"
               Margin="8,0,0,0">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-<Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
+          <Grid>
+            <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
+                   IsVisible="{Binding #UninstallBtn.IsEnabled}"
                    Width="20" Height="20"
                    Stretch="Uniform"/>
+            <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20-disabled.png"
+                   IsVisible="{Binding #UninstallBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                   Width="20" Height="20"
+                   Stretch="Uniform"/>
+          </Grid>
           <TextBlock Grid.Column="1"
                      Text="Uninstall"
                      FontSize="13"
@@ -88,59 +115,74 @@
         </Grid>
       </Button>
 
-      <!-- Launch (not running) -->
-      <Button Grid.Column="2"
+      <!-- Launch -->
+      <Button x:Name="LaunchBtn"
+              Grid.Column="2"
               Command="{Binding LaunchSelectedCommand}"
-              Padding="12,8"
-              IsVisible="{Binding IsPackageNotRunning}"
-              IsEnabled="{Binding IsPackageSelected}"
-              Margin="8,0,0,0">
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-          <Path Data="M7,4 L17,12 L7,20 Z"
-                Fill="{StaticResource AccentBrush}"
-                Width="18" Height="18"
-                Stretch="Uniform"
-                VerticalAlignment="Center"/>
-          <TextBlock Grid.Column="1"
-                     Text="Launch"
-                     FontSize="13"
-                     VerticalAlignment="Center"/>
+              Padding="10,6"
+              IsEnabled="{Binding IsPackageSelectedNotRunning}"
+              Margin="8,0,0,0"
+              ToolTip.Tip="Launch">
+        <Grid>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-20.png"
+                 IsVisible="{Binding #LaunchBtn.IsEnabled}"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-20-disabled.png"
+                 IsVisible="{Binding #LaunchBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                 Width="20" Height="20" Stretch="Uniform"/>
         </Grid>
       </Button>
 
-      <!-- Suspend + Terminate (running) -->
-      <Button Grid.Column="2"
+      <!-- Suspend -->
+      <Button x:Name="SuspendBtn"
+              Grid.Column="3"
               Command="{Binding SuspendSelectedCommand}"
-              Padding="12,8"
-              IsVisible="{Binding IsPackageRunning}"
+              Padding="10,6"
               IsEnabled="{Binding IsPackageRunning}"
-              Margin="8,0,0,0">
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-          <TextBlock Text="⏸"
-                     FontSize="16"
-                     VerticalAlignment="Center"/>
-          <TextBlock Grid.Column="1"
-                     Text="Suspend"
-                     FontSize="13"
-                     VerticalAlignment="Center"/>
+              Margin="8,0,0,0"
+              ToolTip.Tip="Suspend">
+        <Grid>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-suspend-20.png"
+                 IsVisible="{Binding #SuspendBtn.IsEnabled}"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-suspend-20-disabled.png"
+                 IsVisible="{Binding #SuspendBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                 Width="20" Height="20" Stretch="Uniform"/>
         </Grid>
       </Button>
 
-      <Button Grid.Column="3"
+      <!-- Terminate -->
+      <Button x:Name="TerminateBtn"
+              Grid.Column="4"
               Command="{Binding TerminateSelectedCommand}"
-              Padding="12,8"
-              IsVisible="{Binding IsPackageRunning}"
+              Padding="10,6"
               IsEnabled="{Binding IsPackageRunning}"
-              Margin="8,0,0,0">
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-terminate-16.png"
-                 Width="16" Height="16" Stretch="Uniform"/>
-          <TextBlock Grid.Column="1"
-                     Text="Terminate"
-                     FontSize="13"
-                     VerticalAlignment="Center"/>
+              Margin="8,0,0,0"
+              ToolTip.Tip="Terminate">
+        <Grid>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-terminate-20.png"
+                 IsVisible="{Binding #TerminateBtn.IsEnabled}"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-terminate-20-disabled.png"
+                 IsVisible="{Binding #TerminateBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                 Width="20" Height="20" Stretch="Uniform"/>
         </Grid>
       </Button>
+
+      <!-- Drop hint -->
+      <StackPanel Grid.Column="5"
+                  Orientation="Horizontal"
+                  Spacing="6"
+                  VerticalAlignment="Center"
+                  Margin="12,0,0,0"
+                  Opacity="0.45">
+        <Image Source="avares://XBVault/Assets/Icons/droppackage-64.png"
+               Width="14" Height="14" Stretch="Uniform"/>
+        <TextBlock Text="Drop .appx/.msix to install"
+                   FontSize="11"
+                   Foreground="{StaticResource TextMutedBrush}"
+                   VerticalAlignment="Center"/>
+      </StackPanel>
 
       <TextBox Grid.Column="6"
                Text="{Binding SearchText}"
@@ -255,6 +297,29 @@
         </Button>
       </StackPanel>
 
+      <!-- Catalog-loading overlay (catalog not ready yet) -->
+      <Panel IsVisible="{Binding ShowGrid}"
+             IsHitTestVisible="False"
+             Background="#80000000"
+             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12"
+                    IsVisible="{Binding IsCatalogReady, Converter={StaticResource BoolInverse}}">
+          <Image x:Name="CatalogSpinnerImage"
+                 Source="avares://XBVault/Assets/Views/InstalledView/installed-spinner-48.png"
+                 Width="48" Height="48" Stretch="Uniform"
+                 HorizontalAlignment="Center">
+            <Image.RenderTransform>
+              <RotateTransform Angle="0"/>
+            </Image.RenderTransform>
+          </Image>
+          <ProgressBar IsIndeterminate="True" Width="200"
+                       Foreground="{StaticResource AccentBrush}"/>
+          <TextBlock Text="Loading catalog..."
+                     Foreground="White"
+                     FontSize="13" HorizontalAlignment="Center"/>
+        </StackPanel>
+      </Panel>
+
       <!-- Package grid -->
       <ListBox x:Name="PackageListBox"
                ItemsSource="{Binding Packages}"
@@ -271,51 +336,114 @@
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="models:InstalledPackage">
           <Border Classes="Card"
-                  Padding="10"
                   Margin="4"
-                  Height="150"
+                  MinHeight="120"
                   Cursor="Hand">
             <Grid>
-              <!-- Running border overlay -->
-              <Border BorderBrush="#9ACA3C"
-                      BorderThickness="2"
+              <!-- Running background: fills entire card -->
+              <Border Background="#1A3A1A"
                       CornerRadius="8"
                       IsVisible="{Binding IsRunning}"/>
 
-              <!-- Card content -->
-              <StackPanel Spacing="6" HorizontalAlignment="Center"
-                          Opacity="{Binding IsUninstalling, Converter={StaticResource BoolToOpacity}}">
-                <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-package-32.png"
-                       Width="32" Height="32"
-                       Stretch="Uniform"
-                       HorizontalAlignment="Center"/>
-                <TextBlock Text="{Binding Name}"
-                           FontSize="14"
-                           FontWeight="SemiBold"
-                           TextWrapping="Wrap"
-                           TextAlignment="Center"/>
-                <TextBlock Text="{Binding Version}"
-                           FontSize="12"
-                           Foreground="{StaticResource AccentBrush}"
-                           TextAlignment="Center"/>
-                <TextBlock Text="{Binding DisplayPublisher}"
-                           FontSize="10"
-                           Foreground="{StaticResource TextMutedBrush}"
-                           TextTrimming="CharacterEllipsis"
-                           IsVisible="{Binding DisplayPublisher, Converter={StaticResource StringNotEmpty}}"
-                           TextAlignment="Center"/>
-                <TextBlock Text="{Binding StateLabel}"
-                           FontSize="10"
-                           FontWeight="Bold"
-                           HorizontalAlignment="Center"
-                           Margin="0,4,0,0"
-                           Foreground="{StaticResource TextMutedBrush}"/>
+              <Grid RowDefinitions="Auto,*">
+                <!-- Banner header -->
+                <Border CornerRadius="8,8,0,0"
+                        Height="115"
+                        Background="{StaticResource SurfaceAltBrush}"
+                        HorizontalAlignment="Stretch">
+                  <Image Source="{Binding BannerImage}"
+                         Stretch="UniformToFill"
+                         RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                </Border>
 
-              </StackPanel>
+                <!-- Card content -->
+                <StackPanel Grid.Row="1" Spacing="0" VerticalAlignment="Center"
+                            Margin="10"
+                            Opacity="{Binding IsUninstalling, Converter={StaticResource BoolToOpacity}}">
+
+                  <!-- Top section: icon left, text right -->
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"
+                        Margin="0,0,0,4">
+                    <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-package-32.png"
+                           Width="32" Height="32"
+                           Stretch="Uniform"
+                           VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                      <TextBlock Text="{Binding Name}"
+                                 FontSize="14"
+                                 FontWeight="SemiBold"
+                                 TextWrapping="Wrap"/>
+                      <TextBlock Text="{Binding Version}"
+                                 FontSize="12"
+                                 Foreground="{Binding IsRunning, Converter={StaticResource BoolToRunningVersionFg}}"/>
+                      <TextBlock Text="{Binding DisplayPublisher}"
+                                 FontSize="10"
+                                 Foreground="{Binding IsRunning, Converter={StaticResource BoolToRunningPublisherFg}}"
+                                 TextTrimming="CharacterEllipsis"
+                                 IsVisible="{Binding DisplayPublisher, Converter={StaticResource StringNotEmpty}}"/>
+                    </StackPanel>
+                  </Grid>
+
+                  <!-- Bottom row: state label left, buttons right -->
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
+                    <!-- State label -->
+                    <TextBlock Text="Running"
+                               Foreground="{StaticResource RunningStateFgBrush}"
+                               FontSize="11" FontWeight="Bold"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding IsRunning}"/>
+                    <TextBlock Text="Not Running"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               FontSize="10" FontWeight="Bold"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding IsRunning, Converter={StaticResource BoolInverse}}"/>
+
+                    <!-- Launch (not running) -->
+                    <Button Grid.Column="1"
+                            IsVisible="{Binding IsRunning, Converter={StaticResource BoolInverse}}"
+                            IsEnabled="{Binding #ThisRoot.DataContext.IsUninstalling, Converter={StaticResource BoolInverse}}"
+                            Command="{Binding #ThisRoot.DataContext.LaunchPackageCommand}"
+                            CommandParameter="{Binding}"
+                            ToolTip.Tip="Launch"
+                            Width="24" Height="24" Padding="2"
+                            Background="Transparent" BorderThickness="0"
+                            VerticalAlignment="Center">
+                      <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-16.png"
+                             Width="16" Height="16" Stretch="Uniform"/>
+                    </Button>
+
+                    <!-- Suspend + Terminate (running) -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                                IsVisible="{Binding IsRunning}">
+                      <Button Command="{Binding #ThisRoot.DataContext.SuspendPackageCommand}"
+                              CommandParameter="{Binding}"
+                              IsEnabled="{Binding #ThisRoot.DataContext.IsUninstalling, Converter={StaticResource BoolInverse}}"
+                              ToolTip.Tip="Suspend"
+                              Width="24" Height="24" Padding="2"
+                              Background="Transparent" BorderThickness="0"
+                              VerticalAlignment="Center">
+                        <Path Data="M7,4 L11,4 L11,20 L7,20 Z M13,4 L17,4 L17,20 L13,20 Z"
+                              Fill="White" Width="12" Height="12" Stretch="Uniform"/>
+                      </Button>
+                      <Button Command="{Binding #ThisRoot.DataContext.TerminatePackageCommand}"
+                              CommandParameter="{Binding}"
+                              IsEnabled="{Binding #ThisRoot.DataContext.IsUninstalling, Converter={StaticResource BoolInverse}}"
+                              ToolTip.Tip="Terminate"
+                              Width="24" Height="24" Padding="2"
+                              Background="Transparent" BorderThickness="0"
+                              VerticalAlignment="Center">
+                        <Path Data="M4,4 L20,4 L20,20 L4,20 Z"
+                              Fill="White" Width="12" Height="12" Stretch="Uniform"/>
+                      </Button>
+                    </StackPanel>
+                  </Grid>
+                </StackPanel>
+              </Grid>
 
               <!-- Uninstall overlay -->
               <Border Background="#AA222222"
                       CornerRadius="6"
+                      Margin="10"
                       IsVisible="{Binding IsUninstalling}">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
                   <TextBlock Text="Uninstalling..."

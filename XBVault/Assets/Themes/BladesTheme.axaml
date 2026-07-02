@@ -379,7 +379,32 @@
   </Style>
 
   <Style Selector="MenuItem:pointerover /template/ Border">
-    <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+  </Style>
+
+  <Style Selector="MenuItem:pointerover /template/ ContentPresenter#PART_Header">
+    <Setter Property="Foreground" Value="#1A1A1A"/>
+  </Style>
+
+  <Style Selector="MenuItem:focus-visible /template/ Border">
+    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+  </Style>
+  <Style Selector="MenuItem:focus-visible /template/ ContentPresenter#PART_Header">
+    <Setter Property="Foreground" Value="#1A1A1A"/>
+  </Style>
+
+  <Style Selector="MenuItem:focus /template/ ContentPresenter#PART_Header">
+    <Setter Property="Foreground" Value="#1A1A1A"/>
+  </Style>
+  <Style Selector="MenuItem:focus /template/ Border">
+    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+  </Style>
+
+  <Style Selector="MenuFlyoutPresenter MenuItem:focus-visible /template/ Border">
+    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+  </Style>
+  <Style Selector="MenuFlyoutPresenter MenuItem:focus-visible /template/ ContentPresenter#PART_Header">
+    <Setter Property="Foreground" Value="White"/>
   </Style>
 
   <Style Selector="MenuItem:pressed /template/ Border">

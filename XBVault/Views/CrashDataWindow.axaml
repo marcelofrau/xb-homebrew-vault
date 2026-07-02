@@ -98,12 +98,19 @@
           </Border>
 
           <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="8">
-            <Button Grid.Column="0" Command="{Binding RefreshCommand}"
+            <Button x:Name="CrashRefreshBtn"
+                    Grid.Column="0" Command="{Binding RefreshCommand}"
                     IsEnabled="{Binding IsRefreshing, Converter={StaticResource BoolInverse}}"
                     Padding="14,8">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Image Source="avares://XBVault/Assets/Views/ProcessesWindow/processes-refresh-20.png"
-                       Width="20" Height="20" Stretch="Uniform"/>
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/ProcessesWindow/processes-refresh-20.png"
+                         IsVisible="{Binding #CrashRefreshBtn.IsEnabled}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <Image Source="avares://XBVault/Assets/Views/ProcessesWindow/processes-refresh-20-disabled.png"
+                         IsVisible="{Binding #CrashRefreshBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                </Grid>
                 <TextBlock Grid.Column="1" Text="Refresh" VerticalAlignment="Center"/>
               </Grid>
             </Button>

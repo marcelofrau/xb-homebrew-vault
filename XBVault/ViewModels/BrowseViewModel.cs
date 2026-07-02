@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -22,12 +23,14 @@ public partial class BrowseViewModel : ObservableObject
     private readonly CatalogApiService _catalogService;
     private readonly PackageInstallService _installService;
     private readonly XboxDeviceService _xboxService;
+    private readonly PackageOverrideService _overrideService;
     private List<CatalogItem> _allItems = [];
 
     public Action<CatalogItem>? ShowDetailAction;
     public Action? CloseDetailAction;
     public Action? ShowCustomInstallAction;
     public Func<string, Task>? OpenCustomInstallWithFileAction;
+    public Action? OnCatalogLoaded;
 
     [RelayCommand]
     private void CloseDetail() => CloseDetailAction?.Invoke();
@@ -38,12 +41,14 @@ public partial class BrowseViewModel : ObservableObject
     public Func<Task>? ShowRefreshDialogAsync;
 
     private static readonly HttpClient ImageHttp = new();
+    private readonly ConcurrentDictionary<string, Bitmap?> _overrideImageCache = new();
 
-    public BrowseViewModel(PackageInstallService installService, XboxDeviceService xboxService, CatalogApiService catalogService)
+    public BrowseViewModel(PackageInstallService installService, XboxDeviceService xboxService, CatalogApiService catalogService, PackageOverrideService overrideService)
     {
         _catalogService = catalogService;
         _installService = installService;
         _xboxService = xboxService;
+        _overrideService = overrideService;
         Logger.Debug("BrowseViewModel created");
     }
 
@@ -231,8 +236,7 @@ public partial class BrowseViewModel : ObservableObject
             var packages = await _xboxService.GetInstalledPackagesAsync();
             Logger.Debug($"Got {packages.Count} installed packages from Xbox");
 
-            var match = packages.FirstOrDefault(p =>
-                p.Name.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+            var match = packages.FirstOrDefault(p => IsPackageMatch(item, p));
             CheckComplete = true;
 
             if (match is not null)
@@ -302,6 +306,7 @@ public partial class BrowseViewModel : ObservableObject
             Logger.Debug("FetchCatalogAsync start (JSON API primary)");
             _allItems = await _catalogService.FetchCatalogAsync(forceRefresh: false);
             Logger.Info($"Catalog loaded: {_allItems.Count} items total");
+            OnCatalogLoaded?.Invoke();
 
             foreach (var item in _allItems)
                 Logger.Info($"  {item.Name}");
@@ -410,6 +415,19 @@ public partial class BrowseViewModel : ObservableObject
     [RelayCommand]
     private async Task InstallSelectedAsync()
     {
+        var asset = SelectedItem?.MainDownload ?? SelectedItem?.Downloads.FirstOrDefault();
+        var url = asset?.Url ?? SelectedItem?.DownloadUrl;
+        await InstallAsync(url);
+    }
+
+    public async Task InstallByAssetAsync(DownloadAsset? asset)
+    {
+        var url = asset?.Url ?? SelectedItem?.MainDownload?.Url ?? SelectedItem?.DownloadUrl;
+        await InstallAsync(url);
+    }
+
+    private async Task InstallAsync(string? downloadUrl)
+    {
         if (SelectedItem is null)
         {
             Logger.Warn("InstallSelected called with no item");
@@ -420,7 +438,7 @@ public partial class BrowseViewModel : ObservableObject
             Logger.Warn($"Install already in progress for {SelectedItem.Name}");
             return;
         }
-        if (SelectedItem?.IsWindowsTool == true)
+        if (SelectedItem.IsWindowsTool)
         {
             Logger.Warn($"Refusing install for Windows tool: {SelectedItem.Name}");
             InstallComplete = true;
@@ -441,8 +459,8 @@ public partial class BrowseViewModel : ObservableObject
             return;
         }
 
-        var itemName = SelectedItem?.Name ?? "?";
-        var itemUrl = SelectedItem?.DownloadUrl ?? "?";
+        var itemName = SelectedItem.Name;
+        var itemUrl = downloadUrl ?? "?";
 
         CheckComplete = false;
         CheckInstalled = false;
@@ -471,7 +489,7 @@ public partial class BrowseViewModel : ObservableObject
             });
 
             Logger.Debug("Calling DownloadAndInstallAsync");
-            var result = await _installService.DownloadAndInstallAsync(SelectedItem!, progress);
+            var result = await _installService.DownloadAndInstallAsync(SelectedItem!, downloadUrl, progress);
 
             if (result)
             {
@@ -587,5 +605,153 @@ public partial class BrowseViewModel : ObservableObject
         }
 
         Logger.Debug($"Thumbnails loaded: {loaded}/{total}");
+    }
+
+    public Bitmap? FindThumbnailByPackage(InstalledPackage pkg)
+    {
+        var match = _allItems.FirstOrDefault(i => IsPackageMatch(i, pkg));
+        if (match?.Thumbnail is not null)
+            return match.Thumbnail;
+
+        var url = GetOverrideImageUrl(pkg);
+        if (url is null) return null;
+
+        return _overrideImageCache.GetOrAdd(url, u =>
+        {
+            try
+            {
+                var bytes = Task.Run(() => ImageHttp.GetByteArrayAsync(u)).GetAwaiter().GetResult();
+                using var ms = new MemoryStream(bytes);
+                return new Bitmap(ms);
+            }
+            catch
+            {
+                return null;
+            }
+        });
+    }
+
+    private string? GetOverrideImageUrl(InstalledPackage pkg)
+    {
+        var pfn = !string.IsNullOrEmpty(pkg.PackageFamilyName) ? StripPackageFamilyName(pkg.PackageFamilyName) : null;
+        if (pfn is not null && _overrideService.TryGetImageUrl(pfn, out var url))
+            return url;
+        if (_overrideService.TryGetImageUrlByName(pkg.Name, out var url2))
+            return url2;
+        if (!string.IsNullOrEmpty(pkg.DisplayName) && _overrideService.TryGetImageUrlByName(pkg.DisplayName, out var url3))
+            return url3;
+        return null;
+    }
+
+    private bool IsPackageMatch(CatalogItem catalog, InstalledPackage pkg)
+    {
+        // E0: Exact matches (highest confidence)
+        if (catalog.Name.Equals(pkg.Name, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!string.IsNullOrEmpty(pkg.DisplayName) && catalog.Name.Equals(pkg.DisplayName, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var pfn = !string.IsNullOrEmpty(pkg.PackageFamilyName) ? StripPackageFamilyName(pkg.PackageFamilyName) : null;
+
+        if (pfn is not null && catalog.Name.Equals(pfn, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!string.IsNullOrEmpty(catalog.AppId) && pkg.Name.Contains(catalog.AppId, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!string.IsNullOrEmpty(catalog.Id) && pkg.Name.Contains(catalog.Id, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // E1: Alphanumeric normalization — strip non-alnum, lowercase
+        // Handles "Super Mario Bros Remastered" vs "SuperMarioBrosRemastered" (spaces)
+        var catNorm = NormalizeAlnum(catalog.Name);
+        if (pfn is not null && catNorm.Equals(NormalizeAlnum(pfn), StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // E2: Download URL filename contains package Name or DisplayName
+        // Handles SMBR: downloadUrl "SMBR_1.2.zip" contains Name "SMBR"
+        if (DownloadUrlContains(pkg.Name, catalog) ||
+            (!string.IsNullOrEmpty(pkg.DisplayName) && DownloadUrlContains(pkg.DisplayName, catalog)))
+            return true;
+
+        // E3: Reverse — catalog.AppId contains normalized PFN
+        // Handles cases where PFN is abbreviation embedded in appId
+        if (!string.IsNullOrEmpty(catalog.AppId) && pfn is not null &&
+            catalog.AppId.Contains(pfn, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // E4: Download URL filename first-token prefix of PFN (or vice versa), minimum 4 chars
+        // Handles SMWRP: url firstToken "SMWR" is prefix of PFN "SMWRP"
+        if (pfn is not null && DownloadTokenPrefixMatch(pfn, catalog))
+            return true;
+
+        // E5: Manual override table (final fallback — zero false positives)
+        if (!string.IsNullOrEmpty(pfn) && _overrideService.TryGetCatalogId(pfn, out var overrideId))
+        {
+            if (catalog.Id.Equals(overrideId, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        if (_overrideService.TryGetCatalogIdByName(pkg.Name, out var overrideIdByName))
+        {
+            if (catalog.Id.Equals(overrideIdByName, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static string StripPackageFamilyName(string familyName)
+    {
+        var idx = familyName.LastIndexOf('_');
+        return idx > 0 ? familyName[..idx] : familyName;
+    }
+
+    private static string NormalizeAlnum(string value)
+    {
+        return System.Text.RegularExpressions.Regex.Replace(value, "[^a-zA-Z0-9]", "");
+    }
+
+    private static bool DownloadUrlContains(string value, CatalogItem catalog)
+    {
+        if (string.IsNullOrEmpty(value)) return false;
+
+        var urls = new[] { catalog.DownloadUrl }
+            .Concat(catalog.Downloads.Select(d => d.Url))
+            .Where(u => !string.IsNullOrEmpty(u))
+            .Distinct();
+
+        foreach (var url in urls)
+        {
+            var filename = Path.GetFileNameWithoutExtension(url);
+            if (filename is not null && filename.Contains(value, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool DownloadTokenPrefixMatch(string pfn, CatalogItem catalog)
+    {
+        var urls = new[] { catalog.DownloadUrl }
+            .Concat(catalog.Downloads.Select(d => d.Url))
+            .Where(u => !string.IsNullOrEmpty(u))
+            .Distinct();
+
+        foreach (var url in urls)
+        {
+            var filename = Path.GetFileNameWithoutExtension(url);
+            if (string.IsNullOrEmpty(filename)) continue;
+
+            var token = filename.Split('_')[0];
+            if (token.Length < 4 && pfn.Length < 4) continue;
+
+            if (pfn.StartsWith(token, StringComparison.OrdinalIgnoreCase) ||
+                token.StartsWith(pfn, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 }

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -641,6 +642,8 @@ public partial class FileExplorerView : UserControl
         DropZoneBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(51, 255, 255, 255));
     }
 
+    private static readonly string[] PackageExts = [".appx", ".msix", ".appxbundle", ".zip"];
+
     private async void OnDropZoneDrop(object? sender, DragEventArgs e)
     {
         OnDropZoneDragLeave(sender, e);
@@ -661,6 +664,35 @@ public partial class FileExplorerView : UserControl
         }
 
         Logger.Trace($"OnDropZoneDrop: {filePaths.Count} file(s), {folderPaths.Count} folder(s) dropped");
+
+        // Check if any file looks like an installable package
+        var packageFiles = filePaths
+            .Where(f => PackageExts.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
+            .ToArray();
+
+        if (packageFiles.Length > 0 && _vm.ShowConfirmAction is not null && _vm.OpenCustomInstallWithFileAction is not null)
+        {
+            var msg = packageFiles.Length == 1
+                ? $"{Path.GetFileName(packageFiles[0])} looks like an installable package."
+                : $"{packageFiles.Length} files look like installable packages.";
+
+            msg += "\n\nInstall or copy?";
+
+            var install = await _vm.ShowConfirmAction("Install package?", msg, "Install", "Copy only");
+            if (install)
+            {
+                foreach (var pf in packageFiles)
+                    await _vm.OpenCustomInstallWithFileAction(pf);
+
+                // Upload remaining non-package files normally
+                var remaining = filePaths.Except(packageFiles).ToArray();
+                if (remaining.Length > 0 || folderPaths.Count > 0)
+                    await _vm.UploadMixedAsync(remaining, folderPaths.ToArray());
+                return;
+            }
+        }
+
+        // Normal upload (no packages, or user chose copy)
         if (filePaths.Count > 0 || folderPaths.Count > 0)
             await _vm.UploadMixedAsync(filePaths.ToArray(), folderPaths.ToArray());
         else
