@@ -72,7 +72,11 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 | **Dev Tools Panel** | **Performance Monitor** |
 | ![](docs/screenshots/xbvault-tools.png) | ![](docs/screenshots/xbvault-performance-monitpr.png) |
 | **Process List** | **Screen Capture** |
-| ![](docs/screenshots/xbvault-process-monitor.png) | ![](docs/screenshots/XBVault_69kMa5zbie.png) |
+| ![](docs/screenshots/xbvault-process-monitor.png) | ![](docs/screenshots/xbvault-screenshot-random-01.png) |
+| **Discord Community** | **Multi-Option Install** |
+| ![](docs/screenshots/xbvault-screenshot-random-02.png) | ![](docs/screenshots/xbvault-screenshot-random-03.png) |
+| **Contributor Links** | **Author Donations** |
+| ![](docs/screenshots/xbvault-screenshot-random-04.png) | ![](docs/screenshots/xbvault-screenshot-random-05.png) |
 
 </details>
 
