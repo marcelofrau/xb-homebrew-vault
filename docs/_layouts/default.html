@@ -41,6 +41,8 @@
     <!-- mobile menu -->
     <div class="nav-mobile" id="nav-mobile">
       <a href="{{ '/' | relative_url }}">Home</a>
+      <a href="{{ '/user-manual' | relative_url }}">User Manual</a>
+      <a href="{{ '/troubleshooting' | relative_url }}">Troubleshooting</a>
       <a href="{{ '/docs' | relative_url }}">Docs</a>
       <a href="{{ '/architecture' | relative_url }}">Architecture</a>
       <a href="{{ '/roadmap' | relative_url }}">Roadmap</a>
@@ -55,6 +57,11 @@
 
     <!-- SIDEBAR -->
     <aside class="docs-sidebar" id="docs-sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">User Guide</div>
+        <a href="{{ '/user-manual' | relative_url }}" class="sidebar-link {% if page.url contains 'user-manual' %}active{% endif %}">User Manual</a>
+        <a href="{{ '/troubleshooting' | relative_url }}" class="sidebar-link {% if page.url contains 'troubleshooting' %}active{% endif %}">Troubleshooting</a>
+      </div>
       <div class="sidebar-section">
         <div class="sidebar-label">Overview</div>
         <a href="{{ '/' | relative_url }}" class="sidebar-link">Home</a>

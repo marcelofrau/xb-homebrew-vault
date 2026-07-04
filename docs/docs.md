@@ -13,6 +13,8 @@ Everything you need to understand, build, and contribute to XB Homebrew Vault.
 
 | Document | Description |
 |----------|-------------|
+| [User Manual](user-manual) | Complete guide for using the app — install, manage, configure |
+| [Troubleshooting](troubleshooting) | Fix common problems — connection, installs, crashes |
 | [Requirements](requirements) | Functional and non-functional requirements — what the app must do and how |
 | [Roadmap](roadmap) | Version history, shipped features, and what's planned next |
 
