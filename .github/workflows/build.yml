@@ -77,6 +77,30 @@ jobs:
         VERSION: ${{ github.ref_name }}
       run: ${{ matrix.script }}
 
+    - name: Verify native executable in package
+      shell: bash
+      run: |
+        set -euo pipefail
+        shopt -s nullglob
+        zips=(dist/XBVault-*.zip)
+        if [ ${#zips[@]} -eq 0 ]; then
+          echo "::error::No ZIP found in dist/"
+          exit 1
+        fi
+        zip="${zips[0]}"
+        echo "Verifying: $(basename "$zip")"
+        case "${{ matrix.rid }}" in
+          win-*) expected="XBVault.exe" ;;
+          *)     expected="XBVault" ;;
+        esac
+        if unzip -l "$zip" 2>/dev/null | awk 'NR>3 && !/^---------/ {print $NF}' | grep -qxF "$expected"; then
+          echo "✅ '$expected' present"
+        else
+          echo "::error::Missing '$expected' in $(basename "$zip")"
+          unzip -l "$zip"
+          exit 1
+        fi
+
     - uses: actions/upload-artifact@v4
       with:
         name: release-${{ matrix.rid }}

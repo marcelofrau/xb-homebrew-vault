@@ -715,7 +715,7 @@ public partial class BrowseViewModel : ObservableObject
 
     private static bool DownloadUrlContains(string value, CatalogItem catalog)
     {
-        if (string.IsNullOrEmpty(value)) return false;
+        if (string.IsNullOrEmpty(value) || value.Length < 3) return false;
 
         var urls = new[] { catalog.DownloadUrl }
             .Concat(catalog.Downloads.Select(d => d.Url))

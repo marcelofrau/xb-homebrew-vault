@@ -65,35 +65,12 @@
         </ScrollViewer>
 
         <!-- Buttons -->
-        <StackPanel Grid.Row="1"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Right"
-                    Spacing="8"
-                    Margin="0,8,0,0">
-          <Button x:Name="CopyBtn"
-                  Classes="Accent"
-                  Padding="12,6"
-                  Click="OnCopyClick"
-                  ToolTip.Tip="Copy error details to clipboard">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-              <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-copy-20.png"
-Width="20" Height="20"
-                      Stretch="Uniform"/>
-              <TextBlock Grid.Column="1" Text="Copy Error" FontWeight="SemiBold" VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
-          <Button x:Name="RestartBtn"
-                  Padding="12,6"
-                  Click="OnRestartClick"
-                  ToolTip.Tip="Restart the application">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-              <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-restart-20.png"
-Width="20" Height="20"
-                      Stretch="Uniform"/>
-              <TextBlock Grid.Column="1" Text="Restart" FontWeight="SemiBold" VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
+        <Grid Grid.Row="1"
+              ColumnDefinitions="*,Auto"
+              Margin="0,8,0,0">
+          <!-- Left: Close -->
           <Button Padding="12,6"
+                  HorizontalAlignment="Left"
                   Click="OnCloseClick"
                   ToolTip.Tip="Close this dialog">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
@@ -103,7 +80,37 @@ Width="20" Height="20"
               <TextBlock Grid.Column="1" Text="Close" FontWeight="SemiBold" VerticalAlignment="Center"/>
             </Grid>
           </Button>
-        </StackPanel>
+
+          <!-- Right: Copy + Restart -->
+          <StackPanel Grid.Column="1"
+                      Orientation="Horizontal"
+                      Spacing="8"
+                      HorizontalAlignment="Right">
+            <Button x:Name="CopyBtn"
+                    Classes="Accent"
+                    Padding="12,6"
+                    Click="OnCopyClick"
+                    ToolTip.Tip="Copy error details to clipboard">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-copy-20.png"
+Width="20" Height="20"
+                        Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Copy Error" FontWeight="SemiBold" VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+            <Button x:Name="RestartBtn"
+                    Padding="12,6"
+                    Click="OnRestartClick"
+                    ToolTip.Tip="Restart the application">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-restart-20.png"
+Width="20" Height="20"
+                        Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Restart" FontWeight="SemiBold" VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+          </StackPanel>
+        </Grid>
       </Grid>
     </Border>
 

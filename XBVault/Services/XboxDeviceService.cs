@@ -512,6 +512,14 @@ public class XboxDeviceService
                     Logger.Error($"  Dependency failed: {depName}");
             }
 
+            // Wait for final install to complete
+            var installOk = await WaitForPackageManagerReady();
+            if (!installOk)
+            {
+                Logger.Error("Install completed but package manager reported failure or timed out");
+                return false;
+            }
+
             return true;
         }
         catch (Exception ex)
@@ -559,7 +567,7 @@ public class XboxDeviceService
             content.Headers.TryAddWithoutValidation("Content-Type",
                 $"multipart/form-data; boundary={boundary}");
 
-            var url = $"/api/appx/packagemanager/package?package={Uri.EscapeDataString(fileName)}";
+            var url = $"/api/app/packagemanager/package?package={Uri.EscapeDataString(fileName)}";
             Logger.Info($">> POST {url}");
             Logger.Info($"   Content-Type: {content.Headers.ContentType}");
             Logger.Info($"   Content-Length: {content.Headers.ContentLength ?? 0}");
@@ -602,7 +610,7 @@ public class XboxDeviceService
         return false;
     }
 
-    private async Task WaitForPackageManagerReady()
+    private async Task<bool> WaitForPackageManagerReady()
     {
         Logger.Info("Waiting for package manager to be ready...");
         var deadline = DateTime.UtcNow.AddSeconds(120);
@@ -625,14 +633,14 @@ public class XboxDeviceService
                     if (IsIdleCode(resp2.StatusCode))
                     {
                         Logger.Info("Package manager ready (got idle status twice)");
-                        return;
+                        return true;
                     }
 
                     // Confirmation poll got 200+JSON — check Success
                     if (resp2.StatusCode == System.Net.HttpStatusCode.OK && IsJsonSuccess(await resp2.Content.ReadAsStringAsync(), out var statusMsg))
                     {
                         Logger.Info($"Package manager ready (idle then success: {statusMsg})");
-                        return;
+                        return true;
                     }
 
                     continue;
@@ -646,7 +654,7 @@ public class XboxDeviceService
                     if (IsJsonSuccess(body, out var statusMsg))
                     {
                         Logger.Info($"Package manager ready (operation completed: {statusMsg})");
-                        return;
+                        return true;
                     }
 
                     Logger.Warn($"Package manager state: {statusMsg} — not ready yet");
@@ -662,7 +670,8 @@ public class XboxDeviceService
             }
             await Task.Delay(RetryDelayMs);
         }
-        Logger.Warn("Timed out waiting for package manager, continuing anyway");
+        Logger.Warn("Timed out waiting for package manager");
+        return false;
     }
 
     private static bool IsIdleCode(HttpStatusCode code) =>

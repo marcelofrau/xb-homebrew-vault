@@ -44,6 +44,10 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# Generate helper scripts (.cmd wrappers)
+Write-Host "Generating helper scripts..." -ForegroundColor Green
+& (Join-Path $root "build\gen-helper-scripts.ps1") -PublishDir $publishDir
+
 # Zip
 if (Test-Path $zipPath) {
     Remove-Item $zipPath -Force

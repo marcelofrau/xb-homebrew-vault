@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using XBVault.Helpers;
 using XBVault.Services;
 using XBVault.ViewModels;
 using XBVault.Views;
@@ -23,6 +24,21 @@ public partial class App : Application
         SetupGlobalExceptionHandling();
 
         Logger.Init();
+
+        // Log pre-flight repairs from Program.Main
+        if (Program.PreFlightReport is { } report)
+        {
+            if (report.SettingsReset)
+                Logger.Warn($"Pre-flight: settings were corrupted, reset to defaults");
+            if (report.CacheCleared)
+                Logger.Warn("Pre-flight: cache was corrupted or incompatible, cleared");
+            if (report.LogDirUnavailable)
+                Logger.Warn("Pre-flight: log directory unavailable, file logging disabled");
+            foreach (var w in report.Warnings)
+                Logger.Warn($"Pre-flight: {w}");
+            foreach (var e in report.Errors)
+                Logger.Error($"Pre-flight error: {e}");
+        }
 
         // Apply saved log level from settings
         var savedLevel = SettingsService.Current.MinLogLevel;

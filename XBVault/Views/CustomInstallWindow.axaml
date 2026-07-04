@@ -438,89 +438,98 @@
           </StackPanel>
 
           <!-- Footer Buttons -->
-          <StackPanel Grid.Row="1"
-                      Orientation="Horizontal"
-                      HorizontalAlignment="Right"
-                      Spacing="8"
-                      Margin="0,12,0,0">
-            <Button Padding="16,8"
-                    Command="{Binding GoBackCommand}"
-                    IsEnabled="{Binding CanGoBack}"
-                    IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
-              <TextBlock Text="Back"
-                         FontSize="13" VerticalAlignment="Center"/>
-            </Button>
+          <Grid Grid.Row="1"
+                Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-            <!-- Step 0: Analyze -->
-            <Button x:Name="AnalyzeBtn"
-                    Classes="Accent"
-                    Padding="20,8"
-                    Command="{Binding AnalyzeCommand}"
-                    IsVisible="{Binding IsSourceStep}"
-                    IsEnabled="{Binding CanGoNext}">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Grid>
-                  <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-analyze-20.png"
-                         IsVisible="{Binding #AnalyzeBtn.IsEnabled}"
-                         Width="18" Height="18" Stretch="Uniform"/>
-                  <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-analyze-20-disabled.png"
-                         IsVisible="{Binding #AnalyzeBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
-                         Width="18" Height="18" Stretch="Uniform"/>
-                </Grid>
-                <TextBlock Grid.Column="1" Text="Analyze"
-                           FontSize="13" FontWeight="SemiBold"
-                           VerticalAlignment="Center"/>
-              </Grid>
-            </Button>
-
-            <!-- Step 2: Next -->
-            <Button Classes="Accent"
-                    Padding="20,8"
-                    Command="{Binding GoNextCommand}"
-                    IsVisible="{Binding IsConfirmStep}"
-                    IsEnabled="{Binding CanGoNext}">
-              <TextBlock Text="Next"
-                         FontSize="13" FontWeight="SemiBold"
-                         VerticalAlignment="Center"/>
-            </Button>
-
-            <!-- Step 3: Install -->
-            <Button Classes="Accent"
-                    Padding="20,8"
-                    Command="{Binding InstallCommand}"
-                    IsVisible="{Binding CanShowInstallButton}">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-install-20.png"
-                       Width="18" Height="18" Stretch="Uniform"/>
-                <TextBlock Grid.Column="1" Text="Install"
-                           FontSize="13" FontWeight="SemiBold"
-                           VerticalAlignment="Center"/>
-              </Grid>
-            </Button>
-
-            <!-- Close after complete -->
-            <Button Classes="Accent"
-                    Padding="20,8"
-                    Command="{Binding CloseCommand}"
-                    IsVisible="{Binding InstallComplete}">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                <Image Source="avares://XBVault/Assets/Icons/close-20.png"
-                       Width="18" Height="18" Stretch="Uniform"/>
-                <TextBlock Grid.Column="1" Text="Close"
-                           FontSize="13" FontWeight="SemiBold"
-                           VerticalAlignment="Center"/>
-              </Grid>
-            </Button>
-
-            <!-- Cancel button -->
+            <!-- Left: Cancel (dismiss) -->
             <Button Classes="Danger"
                     Padding="16,8"
+                    HorizontalAlignment="Left"
                     Command="{Binding CancelCommand}"
                     IsVisible="{Binding CanCancel}">
               <TextBlock Text="Cancel"
                          FontSize="12" VerticalAlignment="Center"/>
             </Button>
-          </StackPanel>
+
+            <!-- Right: Back + Action buttons -->
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        HorizontalAlignment="Right">
+              <Button Padding="16,8"
+                      Command="{Binding GoBackCommand}"
+                      IsEnabled="{Binding CanGoBack}"
+                      IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
+                <TextBlock Text="Back"
+                           FontSize="13" VerticalAlignment="Center"/>
+              </Button>
+
+              <!-- Step 0: Analyze -->
+              <Button x:Name="AnalyzeBtn"
+                      Classes="Accent"
+                      Padding="20,8"
+                      Command="{Binding AnalyzeCommand}"
+                      IsVisible="{Binding IsSourceStep}"
+                      IsEnabled="{Binding CanGoNext}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Grid>
+                    <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-analyze-20.png"
+                           IsVisible="{Binding #AnalyzeBtn.IsEnabled}"
+                           Width="18" Height="18" Stretch="Uniform"/>
+                    <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-analyze-20-disabled.png"
+                           IsVisible="{Binding #AnalyzeBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                           Width="18" Height="18" Stretch="Uniform"/>
+                  </Grid>
+                  <TextBlock Grid.Column="1" Text="Analyze"
+                             FontSize="13" FontWeight="SemiBold"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+
+              <!-- Step 2: Next -->
+              <Button Classes="Accent"
+                      Padding="20,8"
+                      Command="{Binding GoNextCommand}"
+                      IsVisible="{Binding IsConfirmStep}"
+                      IsEnabled="{Binding CanGoNext}">
+                <TextBlock Text="Next"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Button>
+
+              <!-- Step 3: Install -->
+              <Button Classes="Accent"
+                      Padding="20,8"
+                      Command="{Binding InstallCommand}"
+                      IsVisible="{Binding CanShowInstallButton}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-install-20.png"
+                         Width="18" Height="18" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Install"
+                             FontSize="13" FontWeight="SemiBold"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+
+              <!-- Done after complete -->
+              <Button Classes="Accent"
+                      Padding="20,8"
+                      Command="{Binding CloseCommand}"
+                      IsVisible="{Binding InstallComplete}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Icons/close-20.png"
+                         Width="18" Height="18" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Done"
+                             FontSize="13" FontWeight="SemiBold"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </StackPanel>
+          </Grid>
 
         </Grid>
       </Border>

@@ -21,7 +21,7 @@ public partial class CatalogApiService
 {
     private const string JsonApiUrl = "https://emulationrevival.github.io/api/catalog.json";
     private const int CacheTtlHours = 6;
-    private const int ExpectedSchemaVersion = 1;
+    internal const int ExpectedSchemaVersion = 1;
 
     private static readonly string CacheDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

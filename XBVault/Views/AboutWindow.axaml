@@ -96,9 +96,9 @@
     </StackPanel>
 
     <Button Grid.Row="1"
-            HorizontalAlignment="Center"
+            HorizontalAlignment="Left"
             Width="120"
-            Margin="0,0,0,20"
+            Margin="16,0,0,20"
             Padding="0,8"
             Click="OnCloseClick">
       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" HorizontalAlignment="Center">

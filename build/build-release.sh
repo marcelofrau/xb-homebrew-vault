@@ -36,8 +36,12 @@ dotnet publish "$PROJ_DIR" \
     -c Release \
     -r "$RID" \
     --self-contained true \
+    -p:PublishReadyToRun=true \
     -p:Version="$VERSION" \
     -o "$PUBLISH_DIR"
+
+echo "Generating helper scripts..."
+bash "$ROOT/build/gen-helper-scripts.sh" "$PUBLISH_DIR"
 
 echo "Packaging $ZIP_NAME..."
 cd "$PUBLISH_DIR" && zip -r "$ZIP_PATH" . && cd "$ROOT"

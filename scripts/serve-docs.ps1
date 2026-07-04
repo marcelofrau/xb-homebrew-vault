@@ -4,27 +4,39 @@ param(
 )
 
 $docsDir = Join-Path $PSScriptRoot ".." "docs" | Resolve-Path
+$siteDir = Join-Path $docsDir "_site"
 
-Write-Host "Installing Jekyll gems..." -ForegroundColor Green
-Push-Location $docsDir
-try {
-  bundle install --quiet 2>$null
-  if ($LASTEXITCODE -ne 0) {
-    bundle install
-  }
+# Try Docker first (best preview with Jekyll rendering)
+$dockerOk = $null -ne (Get-Command docker -ErrorAction SilentlyContinue)
+if ($dockerOk) {
+  $dockerOk = docker info 2>$null | Select-String "Server Version" -Quiet
+}
 
-  $jekyllArgs = "exec", "jekyll", "serve", "--port", $Port
-  if ($Open) {
-    $jekyllArgs += "--open-url"
-  }
-
-  Write-Host "" -ForegroundColor Green
-  Write-Host "Starting Jekyll at http://localhost:$Port ..." -ForegroundColor Green
+if ($dockerOk) {
+  Write-Host "Starting Jekyll via Docker at http://localhost:$Port ..." -ForegroundColor Green
   Write-Host "Ctrl+C to stop" -ForegroundColor Gray
-  Write-Host "" -ForegroundColor Green
+  docker run --rm -v "${docsDir}:/srv/jekyll" -p "${Port}:4000" jekyll/jekyll:3.8 jekyll serve --port 4000 --watch --force_polling
+  return
+}
 
-  & bundle $jekyllArgs
+# Fallback: serve static _site/ if it exists
+if (Test-Path $siteDir) {
+  Write-Host "Serving pre-built site from _site/ ..." -ForegroundColor Green
+  Write-Host "To rebuild: cd docs && bundle exec jekyll build (requires Ruby)" -ForegroundColor Gray
+  & {
+    $server = $null
+    if (Get-Command python -ErrorAction SilentlyContinue) {
+      python -m http.server $Port -d $siteDir
+    } elseif (Get-Command npx -ErrorAction SilentlyContinue) {
+      npx serve $siteDir -p $Port
+    } else {
+      throw "No HTTP server (Python/Node) found"
+    }
+  }
+  return
 }
-finally {
-  Pop-Location
-}
+
+# Nothing works
+Write-Host "=== No preview available ===" -ForegroundColor Red
+Write-Host "Start Docker Desktop and re-run this script for full Jekyll preview." -ForegroundColor Yellow
+Write-Host "Or check deployed site at https://xbvault.pages.dev" -ForegroundColor Yellow

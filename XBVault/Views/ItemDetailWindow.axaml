@@ -497,9 +497,25 @@
 
           <!-- Footer -->
           <StackPanel Grid.Row="4" Margin="0,12,0,0">
-            <Grid ColumnDefinitions="Auto,Auto,*">
-              <!-- Left: Check -->
-              <StackPanel Grid.Column="0"
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <!-- Left: Close -->
+              <Button Grid.Column="0"
+                      Padding="16,10"
+                      HorizontalAlignment="Left"
+                      Command="{Binding CloseDetailCommand}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Icons/close-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Close"
+                             FontSize="13"
+                             FontWeight="SemiBold"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+
+              <!-- Right: Check + Install -->
+              <StackPanel Grid.Column="2"
                           Orientation="Horizontal"
                           Spacing="8">
                 <Button x:Name="CheckBtn"
@@ -540,48 +556,28 @@
                                VerticalAlignment="Center"/>
                   </Grid>
                 </Button>
-              </StackPanel>
-
-              <!-- Install -->
-              <Button x:Name="InstallBtn"
-                      Classes="Accent"
-                      Grid.Column="1"
-                      Padding="20,10"
-                      Margin="8,0,0,0"
-                      Click="OnInstallClick"
-                      IsEnabled="{Binding CanInstallXboxItem}"
-                      IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Grid>
-                    <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
-                           IsVisible="{Binding #InstallBtn.IsEnabled}"
-                           Width="20" Height="20" Stretch="Uniform"/>
-                    <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20-disabled.png"
-                           IsVisible="{Binding #InstallBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
-                           Width="20" Height="20" Stretch="Uniform"/>
+                <Button x:Name="InstallBtn"
+                        Classes="Accent"
+                        Padding="20,10"
+                        Click="OnInstallClick"
+                        IsEnabled="{Binding CanInstallXboxItem}"
+                        IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    <Grid>
+                      <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
+                             IsVisible="{Binding #InstallBtn.IsEnabled}"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                      <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20-disabled.png"
+                             IsVisible="{Binding #InstallBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                    </Grid>
+                    <TextBlock Grid.Column="1" Text="Install"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
                   </Grid>
-                  <TextBlock Grid.Column="1" Text="Install"
-                             FontSize="13"
-                             FontWeight="SemiBold"
-                             VerticalAlignment="Center"/>
-                </Grid>
-              </Button>
-
-              <!-- Right: Close -->
-              <Button Grid.Column="2"
-                      Padding="16,10"
-                      HorizontalAlignment="Right"
-                      Command="{Binding CloseDetailCommand}">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Image Source="avares://XBVault/Assets/Icons/close-20.png"
-                         Width="20" Height="20"
-                         Stretch="Uniform"/>
-                  <TextBlock Grid.Column="1" Text="Close"
-                             FontSize="13"
-                             FontWeight="SemiBold"
-                             VerticalAlignment="Center"/>
-                </Grid>
-              </Button>
+                </Button>
+              </StackPanel>
             </Grid>
           </StackPanel>
 

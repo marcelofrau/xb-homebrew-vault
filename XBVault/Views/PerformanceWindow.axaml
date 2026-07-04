@@ -35,15 +35,15 @@
         <Grid RowDefinitions="Auto,*,Auto">
 
           <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
-            <Button Command="{Binding StartMonitoringCommand}"
-                    IsEnabled="{Binding IsMonitoring, Converter={StaticResource BoolInverse}}"
-                    Padding="14,8">
-              <TextBlock Text="Start Monitoring"/>
-            </Button>
             <Button Command="{Binding StopMonitoringCommand}"
                     IsEnabled="{Binding IsMonitoring}"
                     Padding="14,8">
               <TextBlock Text="Stop"/>
+            </Button>
+            <Button Command="{Binding StartMonitoringCommand}"
+                    IsEnabled="{Binding IsMonitoring, Converter={StaticResource BoolInverse}}"
+                    Padding="14,8">
+              <TextBlock Text="Start Monitoring"/>
             </Button>
             <TextBlock Text="{Binding LastUpdate, StringFormat='Last update: {0}'}"
                        FontSize="12" Foreground="{StaticResource TextMutedBrush}"

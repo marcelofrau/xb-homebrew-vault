@@ -100,14 +100,19 @@ public static class Logger
         }
     }
 
-    public static void AttachConsole()
+    public static void AttachConsole(bool allocNew = false)
     {
         if (_consoleAttached) return;
 
         try
         {
             if (OperatingSystem.IsWindows())
-                NativeMethods.AttachConsole(-1);
+            {
+                if (allocNew)
+                    NativeMethods.AllocConsole();
+                else
+                    NativeMethods.AttachConsole(-1);
+            }
 
             _ = Console.BufferWidth;
             _consoleAttached = true;
@@ -188,5 +193,8 @@ public static class Logger
     {
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern bool AttachConsole(int dwProcessId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern bool AllocConsole();
     }
 }

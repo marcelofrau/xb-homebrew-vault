@@ -130,7 +130,7 @@
             </Grid>
           </Border>
 
-          <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+          <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
             <Button x:Name="ProcRefreshBtn"
                     Grid.Column="0" Command="{Binding RefreshCommand}"
                     IsEnabled="{Binding IsLoading, Converter={StaticResource BoolInverse}}"
@@ -147,8 +147,14 @@
                 <TextBlock Grid.Column="1" Text="Refresh" VerticalAlignment="Center"/>
               </Grid>
             </Button>
+            <TextBlock Grid.Column="1"
+                       IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
+                       Text="{Binding StatusMessage}"
+                       Foreground="{StaticResource DangerBrush}"
+                       FontSize="12" FontWeight="SemiBold"
+                       VerticalAlignment="Center" Margin="8,0,0,0"/>
             <Button x:Name="KillBtn"
-                    Grid.Column="1" Command="{Binding KillSelectedCommand}"
+                    Grid.Column="2" Command="{Binding KillSelectedCommand}"
                     IsEnabled="{Binding IsProcessSelected}"
                     Background="{StaticResource CardBgBrush}"
                     BorderBrush="{StaticResource BorderBrush}"
@@ -165,12 +171,6 @@
                 <TextBlock Grid.Column="1" Text="Kill Selected" VerticalAlignment="Center"/>
               </Grid>
             </Button>
-            <TextBlock Grid.Column="2"
-                       IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
-                       Text="{Binding StatusMessage}"
-                       Foreground="{StaticResource DangerBrush}"
-                       FontSize="12" FontWeight="SemiBold"
-                       VerticalAlignment="Center" Margin="8,0,0,0"/>
           </Grid>
         </Grid>
       </Border>

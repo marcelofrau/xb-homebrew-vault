@@ -100,7 +100,7 @@
           <!-- Close button (always available) -->
           <Button Click="OnCloseClick"
                   Padding="10,6"
-                  HorizontalAlignment="Right">
+                  HorizontalAlignment="Left">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
               <Image Source="avares://XBVault/Assets/Views/RefreshWindow/refresh-closebtn-20.png"
                      Width="20" Height="20"

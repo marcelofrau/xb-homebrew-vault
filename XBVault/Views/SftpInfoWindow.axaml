@@ -167,7 +167,7 @@
 
           <!-- Close button -->
           <Button Content="Close"
-                  HorizontalAlignment="Right"
+                  HorizontalAlignment="Left"
                   Padding="16,6"
                   Click="OnCloseClick"/>
 
