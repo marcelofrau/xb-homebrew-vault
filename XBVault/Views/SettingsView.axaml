@@ -170,6 +170,31 @@
 
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Spacing="4">
+                <TextBlock Text="Reset window size"
+                           FontSize="13"/>
+                <TextBlock Text="Restore the default main window size on next start"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding ResetWindowSizeCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-reset-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Reset size"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+
+            <Separator Background="{StaticResource BorderBrush}" Height="1"/>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
                 <TextBlock Text="Minimum log level"
                            FontSize="13"/>
               </StackPanel>

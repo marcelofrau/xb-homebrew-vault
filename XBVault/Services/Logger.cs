@@ -1,5 +1,10 @@
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
+using Avalonia.Threading;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
+using Serilog.Sinks.SystemConsole.Themes;
 
 namespace XBVault.Services;
 
@@ -24,12 +29,12 @@ public class LogEntry
 
     public string Color => Level switch
     {
-        LogLevel.Trace => "#8B8D91",
-        LogLevel.Debug => "#5A5C60",
-        LogLevel.Info  => "#2ECC71",
-        LogLevel.Warn  => "#F39C12",
-        LogLevel.Error => "#E74C3C",
-        LogLevel.Fatal => "#E74C3C",
+        LogLevel.Trace => "#8AE234",
+        LogLevel.Debug => "#729FCF",
+        LogLevel.Info  => "#EEEEEC",
+        LogLevel.Warn  => "#FCE94F",
+        LogLevel.Error => "#EF2929",
+        LogLevel.Fatal => "#F57900",
         _              => "#F0F0F0"
     };
 
@@ -51,16 +56,25 @@ public class LogEntry
 
 public static class Logger
 {
+    private const int MaxEntries = 5_000;
+    private const int MaxRetainedLogFiles = 5;
+
     private static readonly object _lock = new();
     private static bool _consoleAttached;
     private static LogLevel _minLevel = LogLevel.Info;
-    private static StreamWriter? _fileWriter;
+    private static readonly LoggingLevelSwitch _levelSwitch = new(ToSerilogLevel(LogLevel.Info));
     private static string? _logDir;
+    private static ILogger _logger = Serilog.Core.Logger.None;
+    private static bool _initialized;
 
     public static LogLevel MinLevel
     {
         get => _minLevel;
-        set => _minLevel = value;
+        set
+        {
+            _minLevel = value;
+            _levelSwitch.MinimumLevel = ToSerilogLevel(value);
+        }
     }
 
     // in-memory log lines for UI
@@ -82,22 +96,60 @@ public static class Logger
             Directory.CreateDirectory(_logDir);
 
             // Rotate: keep 5 newest, delete rest
-            var existing = Directory.GetFiles(_logDir, "XBVault-*.log")
-                .OrderByDescending(f => f)
-                .ToList();
-            foreach (var old in existing.Skip(4))
-                File.Delete(old);
+            CleanupOldLogs();
 
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd-HHmmss");
             var logPath = Path.Combine(_logDir, $"XBVault-{timestamp}.log");
-            _fileWriter = new StreamWriter(logPath, append: false) { AutoFlush = true };
+            const string outputTemplate = "[{Timestamp:HH:mm:ss.fff}] [{Level:u4}] {Message:lj}{NewLine}{Exception}";
+
+            var loggerConfiguration = new LoggerConfiguration()
+                .MinimumLevel.ControlledBy(_levelSwitch)
+                .WriteTo.Sink(new ApplicationLogSink())
+                .WriteTo.File(logPath, outputTemplate: outputTemplate, shared: false);
+
+            if (_consoleAttached)
+            {
+                loggerConfiguration = loggerConfiguration.WriteTo.Console(
+                    theme: AnsiConsoleTheme.Code,
+                    outputTemplate: outputTemplate);
+            }
+
+            _logger = loggerConfiguration.CreateLogger();
+            Log.Logger = _logger;
+            _initialized = true;
             Info($"Log file: {logPath}");
         }
         catch (Exception ex)
         {
-            // File logging unavailable — continue without it
+            // File logging unavailable: keep UI/console logging alive.
+            ConfigureWithoutFile();
             try { System.Diagnostics.Debug.WriteLine($"Logger.Init failed: {ex.Message}"); } catch { }
         }
+    }
+
+    private static void ConfigureWithoutFile()
+    {
+        const string outputTemplate = "[{Timestamp:HH:mm:ss.fff}] [{Level:u4}] {Message:lj}{NewLine}{Exception}";
+
+        var loggerConfiguration = new LoggerConfiguration()
+            .MinimumLevel.ControlledBy(_levelSwitch)
+            .WriteTo.Sink(new ApplicationLogSink());
+
+        if (_consoleAttached)
+        {
+            loggerConfiguration = loggerConfiguration.WriteTo.Console(
+                theme: AnsiConsoleTheme.Code,
+                outputTemplate: outputTemplate);
+        }
+
+        _logger = loggerConfiguration.CreateLogger();
+        Log.Logger = _logger;
+        _initialized = true;
+    }
+
+    public static void Shutdown()
+    {
+        try { Log.CloseAndFlush(); } catch { }
     }
 
     public static void AttachConsole(bool allocNew = false)
@@ -135,21 +187,24 @@ public static class Logger
                 "FATAL" => LogLevel.Fatal,
                 _       => _minLevel
             };
+            _levelSwitch.MinimumLevel = ToSerilogLevel(_minLevel);
         }
     }
 
-    private static void WriteConsole(LogEntry e)
+    private static void WriteConsoleFallback(LogEntry e)
     {
+        if (!_consoleAttached) return;
+
         var orig = Console.ForegroundColor;
         Console.ForegroundColor = e.Level switch
         {
             LogLevel.Trace => ConsoleColor.DarkGray,
             LogLevel.Debug => ConsoleColor.Gray,
-            LogLevel.Info  => ConsoleColor.Green,
-            LogLevel.Warn  => ConsoleColor.Yellow,
+            LogLevel.Info => ConsoleColor.Green,
+            LogLevel.Warn => ConsoleColor.Yellow,
             LogLevel.Error => ConsoleColor.Red,
             LogLevel.Fatal => ConsoleColor.DarkRed,
-            _              => ConsoleColor.White
+            _ => ConsoleColor.White
         };
         Console.WriteLine(e.ToString());
         Console.ForegroundColor = orig;
@@ -159,17 +214,31 @@ public static class Logger
     {
         if (level < _minLevel) return;
 
-        var entry = new LogEntry { Level = level, Message = message, Timestamp = DateTime.Now };
-        lock (_lock)
+        if (!_initialized)
         {
-            try { Entries.Add(entry); } catch { }
-            try { OnLog?.Invoke(entry); } catch { }
-            try { WriteConsole(entry); } catch { }
-            if (_fileWriter is not null)
-            {
-                try { _fileWriter.WriteLine(entry.ToString()); } catch { }
-            }
+            var entry = new LogEntry { Level = level, Message = message, Timestamp = DateTime.Now };
+            try { AddEntry(entry); } catch { }
+            try { WriteConsoleFallback(entry); } catch { }
+            return;
         }
+
+        try { _logger.Write(ToSerilogLevel(level), "{LogMessage:l}", message); } catch { }
+    }
+
+    private static void Push(LogLevel level, Exception ex, string? context)
+    {
+        if (level < _minLevel) return;
+
+        var message = context ?? ex.Message;
+        if (!_initialized)
+        {
+            var entry = new LogEntry { Level = level, Message = context is null ? ex.ToString() : $"{context}: {ex}", Timestamp = DateTime.Now };
+            try { AddEntry(entry); } catch { }
+            try { WriteConsoleFallback(entry); } catch { }
+            return;
+        }
+
+        try { _logger.Write(ToSerilogLevel(level), ex, "{LogMessage:l}", message); } catch { }
     }
 
     public static void Trace(string msg) => Push(LogLevel.Trace, msg);
@@ -179,14 +248,96 @@ public static class Logger
     public static void Error(string msg) => Push(LogLevel.Error, msg);
     public static void Error(Exception ex, string? context = null)
     {
-        var msg = context is null ? ex.ToString() : $"{context}: {ex}";
-        Push(LogLevel.Error, msg);
+        Push(LogLevel.Error, ex, context);
     }
     public static void Fatal(string msg) => Push(LogLevel.Fatal, msg);
     public static void Fatal(Exception ex, string? context = null)
     {
-        var msg = context is null ? ex.ToString() : $"{context}: {ex}";
-        Push(LogLevel.Fatal, msg);
+        Push(LogLevel.Fatal, ex, context);
+    }
+
+    private static void CleanupOldLogs()
+    {
+        if (_logDir is null) return;
+
+        var existing = Directory.GetFiles(_logDir, "XBVault-*.log")
+            .OrderByDescending(path => path, StringComparer.Ordinal)
+            .Skip(MaxRetainedLogFiles - 1);
+
+        foreach (var old in existing)
+        {
+            try { File.Delete(old); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+    }
+
+    private static void AddEntry(LogEntry entry)
+    {
+        try
+        {
+            if (Dispatcher.UIThread.CheckAccess())
+            {
+                AddEntryCore(entry);
+                return;
+            }
+
+            Dispatcher.UIThread.Post(() => AddEntryCore(entry));
+        }
+        catch
+        {
+            AddEntryCore(entry);
+        }
+    }
+
+    private static void AddEntryCore(LogEntry entry)
+    {
+        lock (_lock)
+        {
+            try
+            {
+                Entries.Add(entry);
+                while (Entries.Count > MaxEntries)
+                    Entries.RemoveAt(0);
+                OnLog?.Invoke(entry);
+            }
+            catch { }
+        }
+    }
+
+    private static LogEventLevel ToSerilogLevel(LogLevel level) => level switch
+    {
+        LogLevel.Trace => LogEventLevel.Verbose,
+        LogLevel.Debug => LogEventLevel.Debug,
+        LogLevel.Info => LogEventLevel.Information,
+        LogLevel.Warn => LogEventLevel.Warning,
+        LogLevel.Error => LogEventLevel.Error,
+        LogLevel.Fatal => LogEventLevel.Fatal,
+        _ => LogEventLevel.Information
+    };
+
+    private static LogLevel FromSerilogLevel(LogEventLevel level) => level switch
+    {
+        LogEventLevel.Verbose => LogLevel.Trace,
+        LogEventLevel.Debug => LogLevel.Debug,
+        LogEventLevel.Information => LogLevel.Info,
+        LogEventLevel.Warning => LogLevel.Warn,
+        LogEventLevel.Error => LogLevel.Error,
+        LogEventLevel.Fatal => LogLevel.Fatal,
+        _ => LogLevel.Info
+    };
+
+    private sealed class ApplicationLogSink : ILogEventSink
+    {
+        public void Emit(LogEvent logEvent)
+        {
+            AddEntry(new LogEntry
+            {
+                Timestamp = logEvent.Timestamp.LocalDateTime,
+                Level = FromSerilogLevel(logEvent.Level),
+                Message = logEvent.RenderMessage() + (logEvent.Exception is null ? string.Empty : Environment.NewLine + logEvent.Exception)
+            });
+        }
     }
 
     private static class NativeMethods

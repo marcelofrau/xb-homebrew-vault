@@ -78,6 +78,7 @@ class Program
         finally
         {
             Logger.Info("Application exited");
+            Logger.Shutdown();
         }
     }
 

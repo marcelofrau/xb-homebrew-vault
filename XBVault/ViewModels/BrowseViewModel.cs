@@ -308,8 +308,11 @@ public partial class BrowseViewModel : ObservableObject
             Logger.Info($"Catalog loaded: {_allItems.Count} items total");
             OnCatalogLoaded?.Invoke();
 
-            foreach (var item in _allItems)
-                Logger.Info($"  {item.Name}");
+            for (var i = 0; i < _allItems.Count; i++)
+            {
+                var item = _allItems[i];
+                Logger.Info($"Catalog item [{i + 1}/{_allItems.Count}]: [{item.Category}] {item.Name} v{item.Version}");
+            }
 
             var byCategory = _allItems.GroupBy(i => i.Category)
                 .Select(g => $"{g.Key}={g.Count()}");
@@ -351,8 +354,11 @@ public partial class BrowseViewModel : ObservableObject
                 _allItems = await _catalogService.FetchCatalogAsync(forceRefresh: true);
                 Logger.Info($"Catalog refreshed: {_allItems.Count} items total");
 
-                foreach (var item in _allItems)
-                    Logger.Info($"  {item.Name}");
+                for (var i = 0; i < _allItems.Count; i++)
+                {
+                    var item = _allItems[i];
+                    Logger.Info($"Catalog refresh item [{i + 1}/{_allItems.Count}]: [{item.Category}] {item.Name} v{item.Version}");
+                }
 
                 ApplyFilters();
                 _ = LoadThumbnailsAsync();

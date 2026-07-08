@@ -6,7 +6,9 @@
          x:DataType="vm:MainViewModel"
          x:Name="Root"
         Title="XB Homebrew Vault"
-        Width="1140" Height="800"
+        Width="1140" Height="860"
+        MinWidth="960" MinHeight="720"
+        CanResize="True"
         WindowStartupLocation="CenterScreen"
         Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         Background="{StaticResource BgBrush}"
@@ -123,6 +125,22 @@
 
   <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
     <Grid RowDefinitions="32,*" ColumnDefinitions="220,*">
+      <Border Grid.RowSpan="2" Grid.ColumnSpan="2" Height="6" VerticalAlignment="Top" Background="Transparent" ZIndex="10"
+              Cursor="TopSide" PointerPressed="OnResizeNorthPointerPressed"/>
+      <Border Grid.RowSpan="2" Grid.ColumnSpan="2" Height="6" VerticalAlignment="Bottom" Background="Transparent" ZIndex="10"
+              Cursor="BottomSide" PointerPressed="OnResizeSouthPointerPressed"/>
+      <Border Grid.RowSpan="2" Grid.ColumnSpan="2" Width="6" HorizontalAlignment="Left" Background="Transparent" ZIndex="10"
+              Cursor="LeftSide" PointerPressed="OnResizeWestPointerPressed"/>
+      <Border Grid.RowSpan="2" Grid.ColumnSpan="2" Width="6" HorizontalAlignment="Right" Background="Transparent" ZIndex="10"
+              Cursor="RightSide" PointerPressed="OnResizeEastPointerPressed"/>
+      <Border Grid.RowSpan="2" Grid.ColumnSpan="2" Width="14" Height="14" HorizontalAlignment="Left" VerticalAlignment="Top" Background="Transparent" ZIndex="11"
+              Cursor="TopLeftCorner" PointerPressed="OnResizeNorthWestPointerPressed"/>
+      <Border Grid.RowSpan="2" Grid.ColumnSpan="2" Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Top" Background="Transparent" ZIndex="11"
+              Cursor="TopRightCorner" PointerPressed="OnResizeNorthEastPointerPressed"/>
+      <Border Grid.RowSpan="2" Grid.ColumnSpan="2" Width="14" Height="14" HorizontalAlignment="Left" VerticalAlignment="Bottom" Background="Transparent" ZIndex="11"
+              Cursor="BottomLeftCorner" PointerPressed="OnResizeSouthWestPointerPressed"/>
+      <Border Grid.RowSpan="2" Grid.ColumnSpan="2" Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Bottom" Background="Transparent" ZIndex="11"
+              Cursor="BottomRightCorner" PointerPressed="OnResizeSouthEastPointerPressed"/>
 
     <!-- Title Bar -->
       <Grid Grid.ColumnSpan="2" Height="32"

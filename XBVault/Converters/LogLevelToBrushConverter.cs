@@ -14,12 +14,12 @@ namespace XBVault.Converters
             {
                 return lvl switch
                 {
-                    LogLevel.Trace => new SolidColorBrush(Color.Parse("#8B8D91")),
-                    LogLevel.Debug => new SolidColorBrush(Color.Parse("#5A5C60")),
-                    LogLevel.Info  => new SolidColorBrush(Color.Parse("#2ECC71")),
-                    LogLevel.Warn  => new SolidColorBrush(Color.Parse("#F39C12")),
-                    LogLevel.Error => new SolidColorBrush(Color.Parse("#E74C3C")),
-                    LogLevel.Fatal => new SolidColorBrush(Color.Parse("#E74C3C")),
+                    LogLevel.Trace => new SolidColorBrush(Color.Parse("#8AE234")),
+                    LogLevel.Debug => new SolidColorBrush(Color.Parse("#729FCF")),
+                    LogLevel.Info  => new SolidColorBrush(Color.Parse("#EEEEEC")),
+                    LogLevel.Warn  => new SolidColorBrush(Color.Parse("#FCE94F")),
+                    LogLevel.Error => new SolidColorBrush(Color.Parse("#EF2929")),
+                    LogLevel.Fatal => new SolidColorBrush(Color.Parse("#F57900")),
                     _             => new SolidColorBrush(Color.Parse("#F0F0F0"))
                 };
             }

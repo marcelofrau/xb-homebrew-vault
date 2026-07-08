@@ -357,6 +357,21 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task ResetWindowSizeAsync()
+    {
+        if (ShowConfirmAsync is not null)
+        {
+            var ok = await ShowConfirmAsync("Reset Window Size", "Reset the saved main window size? The default size will be used next time the app starts.", "Reset", "Cancel", null, "avares://XBVault/Assets/Views/ErrorDialog/errordialog-restart-app-48.png");
+            if (!ok) return;
+        }
+
+        WindowSettingsService.ResetMainWindowSize();
+        SavedNotificationText = "Window size reset. Restart the app to apply default size.";
+        ShowSavedNotification = true;
+        Logger.Info("Main window size reset to defaults");
+    }
+
+    [RelayCommand]
     private void OpenSettingsFolder()
     {
         Logger.Debug("OpenSettingsFolder called");
