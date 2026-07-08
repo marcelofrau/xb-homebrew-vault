@@ -49,58 +49,53 @@ It sits in the gap between those tools — the **live insight** layer that mobil
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     LOCAL NETWORK (TCP/IP)                       │
-│                                                                  │
-│  ┌───────────────────────┐         ┌───────────────────────┐    │
-│  │     XBOX SERIES S/X   │         │     DEV PC             │    │
-│  │     (Dev Mode / UWP)  │         │  (XB Homebrew Vault)   │    │
-│  │                       │         │                        │    │
-│  │  ┌─────────────────┐  │   TCP   │  ┌──────────────────┐  │    │
-│  │  │  Homebrew App    │  │◄───────►│  │  Inspector Tab   │  │    │
-│  │  │  ┌───────────┐   │  │  JSON   │  │  ┌────────────┐  │  │    │
-│  │  │  │xb-inspector│   │  │         │  │  │ Console    │  │  │    │
-│  │  │  │ lib        │───┼──┤  logs   │  │  │ (Log Feed) │  │  │    │
-│  │  │  │           │   │  │         │  │  └────────────┘  │  │    │
-│  │  │  │ - spdlog  │   │  │         │  │  ┌────────────┐  │  │    │
-│  │  │  │ - Lua 5.4 │◄──┼──┤  repl   │  │  │ REPL Input │  │  │    │
-│  │  │  │ - Sockets │   │  │  commands│  │  └────────────┘  │  │    │
-│  │  │  └───────────┘   │  │         │  │  ┌────────────┐  │  │    │
-│  │  └─────────────────┘  │         │  │  │ State Watch│  │  │    │
-│  │                       │         │  │  │ (future)   │  │  │    │
-│  └───────────────────────┘         │  └──────────────────┘  │    │
-│                                     └───────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Network["LOCAL NETWORK (TCP/IP)"]
+        direction LR
+
+        subgraph Xbox["Xbox Series S/X<br/>Dev Mode UWP"]
+            App["Homebrew App"]
+            InspectorLib["xb-inspector library"]
+            LogSink["spdlog"]
+            LuaVM["Lua 5.4"]
+            Sockets["xray-sock TCP"]
+        end
+
+        subgraph PC["Dev PC<br/>XB Homebrew Vault"]
+            InspectorTab["Inspector Tab"]
+            Console["Console<br/>(Log Feed)"]
+            REPL["REPL Input"]
+            StateWatch["State Watch<br/>(future)"]
+        end
+
+        App --- InspectorLib
+        InspectorLib --- LogSink
+        InspectorLib --- LuaVM
+        InspectorLib --- Sockets
+
+        Sockets <-->|"TCP / JSON"| InspectorTab
+        InspectorTab --- Console
+        InspectorTab --- REPL
+        InspectorTab --- StateWatch
+    end
 ```
 
 ### Data flow
 
-```
-                    ┌──────────────────┐
-                    │  Any Thread      │
-                    │  (audio, render, │
-                    │   IO, etc.)      │
-                    │                  │
-                    │  log_info()      │
-                    └────────┬─────────┘
-                             │ MPSC queue (multi-producer)
-                             ▼
-                    ┌──────────────────┐
-                    │  Network Thread  │─── TCP ──► Vault (Console)
-                    │  (xray-sock)     │◄── TCP ─── Vault (REPL input)
-                    │                  │
-                    └────────┬─────────┘
-                             │ SPSC queue (single-producer)
-                             ▼
-                    ┌──────────────────┐
-                    │  Main Thread     │
-                    │  (game loop)     │── executes Lua ──► mutates native state
-                    │                  │
-                    │  consume REPL    │
-                    │  cmd at frame    │
-                    │  start           │
-                    └──────────────────┘
+```mermaid
+flowchart TB
+    AnyThread["Any Thread<br/>(audio, render, IO)"]
+    NetThread["Network Thread<br/>(xray-sock)"]
+    MainThread["Main Thread<br/>(game loop)"]
+    VaultConsole[("Vault Console")]
+    VaultREPL[("Vault REPL")]
+
+    AnyThread -->|"log_info() → MPSC queue"| NetThread
+    NetThread -->|"TCP logs"| VaultConsole
+    VaultREPL -->|"TCP repl_eval → SPSC queue"| NetThread
+    NetThread -->|"SPSC queue"| MainThread
+    MainThread -->|"executes Lua → mutates native state"| MainThread
 ```
 
 | Direction | What | Queue | Producer | Consumer |
@@ -124,18 +119,24 @@ It sits in the gap between those tools — the **live insight** layer that mobil
 
 The logging system combines spdlog with dual sinks — file + TCP forward.
 
-```
-  App code
-      │
-      ▼
-  spdlog logger
-      │
-      ├──► [uwp_file_sink]  ──► LocalState/xray.log
-      │
-      └──► [uwp_net_sink]   ──► TCP ──► Vault (when connected)
-                                  │
-                                  ▼
-                              [MPSC queue] ──► network thread ──► send()
+```mermaid
+flowchart LR
+    AppCode["App code"]
+    Logger["spdlog logger"]
+    FileSink["uwp_file_sink"]
+    NetSink["uwp_net_sink"]
+    LogFile["LocalState/xray.log"]
+    MPSC["MPSC queue"]
+    NetThread["Network thread"]
+    Vault["Vault"]
+
+    AppCode --> Logger
+    Logger --> FileSink
+    FileSink --> LogFile
+    Logger --> NetSink
+    NetSink -.->|"when connected"| MPSC
+    MPSC --> NetThread
+    NetThread -->|"send() TCP"| Vault
 ```
 
 ### Log levels
@@ -299,22 +300,20 @@ Sent immediately on connection:
 
 ### Connection lifecycle
 
-```
-Vault                          Xbox
-  │                              │
-  │────── TCP Connect ──────────►│ (port 9000-9009)
-  │                              │
-  │◄────── Handshake ────────────│ (app_name, protocol_version, capabilities)
-  │                              │
-  │◄────── Log stream ──────────►│ (bidirectional, continuous)
-  │────── repl_eval ────────────►│
-  │◄────── repl_result ──────────│
-  │                              │
-  │         ...                  │
-  │                              │
-  │◄────── TCP Disconnect ───────│ (app closed or crashed)
-  │                              │
-  │   UI: "Waiting for app..."   │
+```mermaid
+sequenceDiagram
+    participant Vault as Vault
+    participant Xbox as Xbox
+
+    Vault->>Xbox: TCP Connect (port 9000-9009)
+    Xbox-->>Vault: Handshake (app_name, protocol_version, capabilities)
+    Note over Vault,Xbox: Bidirectional continuous flow
+    Xbox-->>Vault: Log stream
+    Vault->>Xbox: repl_eval
+    Xbox-->>Vault: repl_result
+    Note over Vault,Xbox: ...
+    Xbox-->>Vault: TCP Disconnect (app closed or crashed)
+    Note left of Vault: UI: "Waiting for app..."
 ```
 
 ### Port scan

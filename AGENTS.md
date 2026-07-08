@@ -52,6 +52,10 @@ Branching
 - Feature branches: `feat/<name>`, `fix/<name>`, `chore/<name>`.
 - Branch off `main`, merge back, delete branch. No commits directly on `main` for app code.
 
+Docs
+- Always use Mermaid (```mermaid) for diagrams — never ASCII art.
+- Supported diagram types: flowchart, sequenceDiagram, classDiagram, stateDiagram, gantt.
+
 When unsure
 - Prefer executable sources (build scripts, csproj) over prose docs.
 - If change touches build scripts, verify on Windows with PowerShell 7+ and .NET 8.
