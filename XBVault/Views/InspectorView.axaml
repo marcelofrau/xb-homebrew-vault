@@ -142,13 +142,9 @@
                   Background="Transparent"
                   BorderThickness="0"
                   Foreground="{StaticResource AccentBrush}">
-            <StackPanel Orientation="Horizontal" Spacing="4">
-              <TextBlock Text="?" TextDecorations="Underline"
-                         VerticalAlignment="Center"/>
-              <TextBlock Text="Read the Inspector Guide"
-                         TextDecorations="Underline"
-                         VerticalAlignment="Center"/>
-            </StackPanel>
+            <TextBlock Text="Read the Inspector Guide"
+                       TextDecorations="Underline"
+                       VerticalAlignment="Center"/>
           </Button>
         </StackPanel>
       </Grid>
