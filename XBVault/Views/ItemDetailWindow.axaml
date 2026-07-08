@@ -305,21 +305,13 @@
                              FontSize="22" FontWeight="Bold"
                              Foreground="{StaticResource DangerBrush}"
                              TextAlignment="Center"/>
-                  <Border Padding="16" CornerRadius="6"
-                          BorderBrush="#55E74C3C"
-                          BorderThickness="1"
-                          Background="#1AE74C3C"
-                          MinHeight="100"
-                          MaxHeight="180"
-                          IsVisible="{Binding InstallResultMessage, Converter={StaticResource StringNotEmpty}}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                      <TextBlock Text="{Binding InstallResultMessage}"
-                                 FontSize="13"
-                                 Foreground="#EEE"
-                                 TextWrapping="Wrap"
-                                 VerticalAlignment="Center"/>
-                    </ScrollViewer>
-                  </Border>
+                  <TextBlock Text="{Binding InstallResultMessage}"
+                             FontSize="13"
+                             Foreground="{StaticResource TextMutedBrush}"
+                             HorizontalAlignment="Center"
+                             TextWrapping="Wrap"
+                             MaxWidth="300"
+                             TextAlignment="Center"/>
                 </StackPanel>
               </StackPanel>
               <ProgressBar Value="{Binding InstallProgress}"
