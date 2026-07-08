@@ -32,6 +32,15 @@ public partial class InspectorView : UserControl
         }, DispatcherPriority.Background);
     }
 
+    private void OnFilterKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && DataContext is ViewModels.InspectorViewModel vm)
+        {
+            vm.CloseFilterCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
     private void OnReplInputKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Control))

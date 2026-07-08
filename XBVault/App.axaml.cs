@@ -576,6 +576,23 @@ public partial class App : Application
             inspectorViewModel.ShowConnectAction = mainViewModel.ShowConnectAction;
             inspectorViewModel.ShowGuideAction = () =>
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://xbvault.pages.dev/inspector") { UseShellExecute = true });
+            inspectorViewModel.ShowConfirmAsync = async (title, message, confirmText, cancelText, iconSource, messageIconSource) =>
+            {
+                var vm = new ConfirmViewModel(title, message, confirmText, cancelText, iconSource, messageIconSource);
+                var win = new Views.ConfirmWindow { DataContext = vm };
+                await win.ShowDialog(main);
+                return vm.Confirmed;
+            };
+            inspectorViewModel.ShowSaveFileDialogAsync = async (suggestedName) =>
+            {
+                var topLevel = TopLevel.GetTopLevel(main);
+                if (topLevel is null) return null;
+                var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+                {
+                    SuggestedFileName = suggestedName
+                });
+                return file?.TryGetLocalPath();
+            };
             var inspectorView = new Views.InspectorView { DataContext = inspectorViewModel };
 
             Logger.Info("Creating SettingsView");

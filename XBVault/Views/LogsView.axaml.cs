@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.Text;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using XBVault.ViewModels;
@@ -65,5 +66,14 @@ public partial class LogsView : UserControl
     {
         if (DataContext is LogsViewModel vm)
             vm.Logs.Clear();
+    }
+
+    private void OnFilterKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && DataContext is LogsViewModel vm)
+        {
+            vm.CloseFilterCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 }

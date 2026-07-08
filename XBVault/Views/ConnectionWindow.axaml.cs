@@ -26,6 +26,7 @@ public partial class ConnectionWindow : Window
         {
             vm.OutputLines.CollectionChanged += OnOutputLinesChanged;
             vm.Completed += OnConnectionCompleted;
+            vm.CloseAction = Close;
         }
     }
 

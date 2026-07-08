@@ -450,7 +450,7 @@ public partial class InstalledViewModel : ObservableObject
             await Parallel.ForEachAsync(_allPackages, bannerOpts, async (pkg, ct) =>
             {
                 pkg.BannerImage = ResolveBannerAsync is not null
-                    ? await ResolveBannerAsync(pkg)
+                    ? await ResolveBannerAsync(pkg) ?? _genericBanner
                     : _genericBanner;
             });
 

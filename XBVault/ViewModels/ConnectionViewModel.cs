@@ -91,6 +91,7 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
     private static readonly Cursor WaitCursor = new(StandardCursorType.Wait);
 
     public event Action<bool>? Completed;
+    public Action? CloseAction { get; set; }
 
     private void AddLine(string text)
     {
@@ -145,7 +146,7 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
         else
         {
             AddLine("CANCELLED — User cancelled connection");
-            Completed?.Invoke(false);
+            CloseAction?.Invoke();
         }
     }
 

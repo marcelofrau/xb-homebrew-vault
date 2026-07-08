@@ -315,13 +315,13 @@
         <ItemsRepeater ItemsSource="{Binding Packages}">
           <ItemsRepeater.Layout>
             <UniformGridLayout MinItemWidth="217"
-                               MinItemHeight="120"
+                               MinItemHeight="210"
                                MinColumnSpacing="8"
                                MinRowSpacing="8" />
           </ItemsRepeater.Layout>
           <ItemsRepeater.ItemTemplate>
             <DataTemplate x:DataType="models:InstalledPackage">
-              <controls:PackageCard MinHeight="120"
+              <controls:PackageCard MinHeight="210"
                                     Cursor="Hand"
                                     IsSelected="{Binding IsSelected}"
                                     PointerPressed="OnItemPointerPressed">
