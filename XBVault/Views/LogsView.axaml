@@ -28,7 +28,6 @@
         </StackPanel>
         <TextBlock Grid.Column="1"/>
         <Button Grid.Column="2"
-                Classes="Accent"
                 Command="{Binding DecreaseLogFontSizeCommand}"
                 Padding="8,4"
                 ToolTip.Tip="Decrease log font size">
@@ -36,7 +35,6 @@
                  Width="16" Height="16" Stretch="Uniform"/>
         </Button>
         <Button Grid.Column="3"
-                Classes="Accent"
                 Command="{Binding IncreaseLogFontSizeCommand}"
                 Padding="8,4"
                 ToolTip.Tip="Increase log font size">
@@ -44,7 +42,6 @@
                  Width="16" Height="16" Stretch="Uniform"/>
         </Button>
         <Button Grid.Column="4" x:Name="CopyButton"
-                Classes="Accent"
                 Click="OnCopyClick"
                 Padding="8,4"
                 ToolTip.Tip="Copy all log entries">
@@ -56,7 +53,6 @@
           </Grid>
         </Button>
         <Button Grid.Column="5" x:Name="ClearButton"
-                Classes="Accent"
                 Click="OnClearClick"
                 Padding="8,4"
                 ToolTip.Tip="Clear all log entries">

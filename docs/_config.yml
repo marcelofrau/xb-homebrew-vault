@@ -16,6 +16,7 @@ header_pages:
   - index.md
   - architecture.md
   - api.md
+  - inspector.md
   - roadmap.md
   - tech-debt.md
 

@@ -10,6 +10,7 @@ public class AppSettings
     public bool CheckForUpdatesOnStartup { get; set; } = true;
     public string MinLogLevel { get; set; } = "Info";
     public double LogFontSize { get; set; } = 15;
+    public double ConsoleFontSize { get; set; } = 13;
     public double MainWindowWidth { get; set; }
     public double MainWindowHeight { get; set; }
 }

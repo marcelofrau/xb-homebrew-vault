@@ -4,7 +4,7 @@
              x:Class="XBVault.Views.InspectorView"
              x:DataType="vm:InspectorViewModel">
 
-  <Grid RowDefinitions="Auto,*" Margin="32">
+  <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="32,22,32,32">
 
     <!-- Row 0: Header -->
     <StackPanel Grid.Row="0" Margin="0,14,0,16">
@@ -13,129 +13,221 @@
                  Classes="Muted" FontSize="14" Margin="0,4,0,0"/>
     </StackPanel>
 
-    <!-- Row 1: Content -->
-    <Grid Grid.Row="1">
-
-      <!-- Disconnected state -->
-      <StackPanel IsVisible="{Binding ShowDisconnected}"
-                  HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-        <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-search-64.png"
-               Width="64" Height="64" Stretch="Uniform"
-               HorizontalAlignment="Center" Opacity="0.6"/>
-        <TextBlock Text="Not connected" FontSize="16" FontWeight="SemiBold"
-                   Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-        <TextBlock Text="Connect to scan for inspector-enabled apps"
-                   FontSize="13" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
-        <Button Command="{Binding ConnectCommand}"
-                Padding="16,8"
-                FontSize="14"
-                HorizontalAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+    <!-- Row 1: Toolbar (connected only) -->
+    <Border Grid.Row="1" Padding="8,6" CornerRadius="6"
+            Background="{StaticResource SurfaceAltBrush}"
+            IsVisible="{Binding ShowContent}">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+        <Button Command="{Binding ScanCommand}"
+                IsEnabled="{Binding ShowScanReady}"
+                Padding="10,6"
+                ToolTip.Tip="Scan ports 9000-9010 for inspector-enabled agents">
+          <StackPanel Orientation="Horizontal" Spacing="5">
+            <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-radar-20.png"
                    Width="20" Height="20" Stretch="Uniform"/>
-            <TextBlock Text="Connect" VerticalAlignment="Center"/>
+            <TextBlock Text="Scan" FontSize="13" VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
-      </StackPanel>
-
-      <!-- Connected content -->
-      <ScrollViewer IsVisible="{Binding ShowContent}">
-        <StackPanel Spacing="16" MaxWidth="720">
-
-          <!-- Status message banner -->
-          <Border IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
-                  Background="#1AE74C3C" BorderBrush="{StaticResource DangerBrush}"
-                  BorderThickness="1" CornerRadius="6" Padding="14,10">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="{Binding StatusMessage}"
-                         Foreground="{StaticResource DangerBrush}"
-                         FontSize="13" FontWeight="SemiBold"
-                         VerticalAlignment="Center"/>
-              <Button Grid.Column="1" Command="{Binding ClearStatusCommand}"
-                      Background="Transparent" BorderThickness="0"
-                      Padding="4" Margin="0,0,0,0">
-                <TextBlock Text="✕" FontSize="14" Foreground="{StaticResource DangerBrush}"/>
-              </Button>
-            </Grid>
-          </Border>
-
-          <!-- Scan card -->
-          <Border Classes="Card" Padding="24">
-            <StackPanel Spacing="16">
-              <TextBlock Text="SCAN FOR AGENTS" Classes="SectionHeader"/>
-              <TextBlock Text="Scan ports 9000–9010 on the configured Xbox to discover inspector-enabled homebrew apps."
-                         Classes="Muted" FontSize="13"/>
-              <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
-                <Button Command="{Binding ScanCommand}"
-                        Padding="16,8"
-                        FontSize="14"
-                        FontWeight="SemiBold"
-                        IsEnabled="{Binding ShowScanReady}"
-                        Classes="Primary">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="Scan" VerticalAlignment="Center"/>
-                  </StackPanel>
-                </Button>
-                <Button IsVisible="{Binding ShowScanning}"
-                        Padding="16,8"
-                        IsEnabled="False"
-                        Grid.Column="1"
-                        FontSize="14">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="Scanning..." VerticalAlignment="Center"/>
-                  </StackPanel>
-                </Button>
-              </Grid>
-              <TextBlock Text="{Binding ScannedHost, StringFormat='Target: {0}'}"
-                         Classes="Muted" FontSize="12"
-                         IsVisible="{Binding ScannedHost, Converter={StaticResource StringNotEmpty}}"/>
-            </StackPanel>
-          </Border>
-
-          <!-- Sessions list placeholder -->
-          <Border Classes="Card" Padding="24"
-                  IsVisible="{Binding ShowEmptySessions}">
-            <StackPanel Spacing="12" HorizontalAlignment="Center">
-              <TextBlock Text="No agents found"
-                         FontSize="15" FontWeight="SemiBold"
-                         Foreground="{StaticResource TextMutedBrush}"
-                         HorizontalAlignment="Center"/>
-              <TextBlock Text="Click Scan to discover inspector-enabled apps on your Xbox."
-                         Classes="Muted" FontSize="13"
-                         HorizontalAlignment="Center"
-                         TextWrapping="Wrap"
-                         MaxWidth="400"/>
-            </StackPanel>
-          </Border>
-
-          <!-- Sessions list (future) -->
-          <Border Classes="Card" Padding="24"
-                  IsVisible="{Binding ShowSessions}">
-            <StackPanel Spacing="12">
-              <TextBlock Text="DISCOVERED AGENTS" Classes="SectionHeader"/>
-              <!-- TODO: ItemsControl bound to sessions collection -->
-            </StackPanel>
-          </Border>
-
-          <!-- Log feed placeholder -->
-          <Border Classes="Card" Padding="24" MinHeight="200">
-            <StackPanel Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center">
-              <TextBlock Text="No active session"
-                         FontSize="15" FontWeight="SemiBold"
-                         Foreground="{StaticResource TextMutedBrush}"
-                         HorizontalAlignment="Center"/>
-              <TextBlock Text="Select a discovered agent to view its live log stream."
-                         Classes="Muted" FontSize="13"
-                         HorizontalAlignment="Center"
-                         TextWrapping="Wrap"
-                         MaxWidth="400"/>
-            </StackPanel>
-          </Border>
-
+        <Button Grid.Column="1"
+                IsVisible="{Binding ShowScanning}"
+                IsEnabled="False"
+                Padding="10,6">
+          <StackPanel Orientation="Horizontal" Spacing="5">
+            <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-radar-20.png"
+                   Width="20" Height="20" Stretch="Uniform" Opacity="0.5"/>
+            <TextBlock Text="Scanning..." FontSize="13" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+        <ComboBox Grid.Column="2"
+                  ItemsSource="{Binding ScannedSessions}"
+                  SelectedItem="{Binding SelectedSession, Mode=TwoWay}"
+                  PlaceholderText="No agents"
+                  MinWidth="140"
+                  FontSize="13"
+                  IsVisible="{Binding ShowNoSessionsFound, Converter={StaticResource BoolInverse}}"/>
+        <TextBlock Grid.Column="2"
+                   Text="No agents"
+                   Classes="Muted" FontSize="12"
+                   IsVisible="{Binding ShowNoSessionsFound}"
+                   VerticalAlignment="Center"/>
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4">
+          <CheckBox IsChecked="{Binding AutoScroll}"
+                    FontSize="13" Foreground="White"/>
+          <TextBlock Text="Auto-scroll"
+                     FontSize="13" Foreground="White"
+                     VerticalAlignment="Center"/>
         </StackPanel>
-      </ScrollViewer>
+        <Button Grid.Column="4"
+                Command="{Binding DecreaseConsoleFontSizeCommand}"
+                Padding="8,4"
+                ToolTip.Tip="Decrease console font size">
+          <Image Source="avares://XBVault/Assets/Views/LogsView/logs-font-decrease-16.png"
+                 Width="16" Height="16" Stretch="Uniform"/>
+        </Button>
+        <Button Grid.Column="5"
+                Command="{Binding IncreaseConsoleFontSizeCommand}"
+                Padding="8,4"
+                ToolTip.Tip="Increase console font size">
+          <Image Source="avares://XBVault/Assets/Views/LogsView/logs-font-increase-16.png"
+                 Width="16" Height="16" Stretch="Uniform"/>
+        </Button>
+        <Button Grid.Column="6"
+                Command="{Binding ClearConsoleCommand}"
+                Padding="10,6"
+                ToolTip.Tip="Clear console output">
+          <StackPanel Orientation="Horizontal" Spacing="5">
+            <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-clear-20.png"
+                   Width="16" Height="16" Stretch="Uniform"/>
+            <TextBlock Text="Clear" FontSize="13" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="7"
+                Command="{Binding OpenGuideCommand}"
+                Padding="10,6"
+                ToolTip.Tip="Open Inspector guide documentation">
+          <StackPanel Orientation="Horizontal" Spacing="5">
+            <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-help-20.png"
+                   Width="16" Height="16" Stretch="Uniform"/>
+            <TextBlock Text="Guide" FontSize="13" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
 
-    </Grid>
+    <!-- Row 2: Console output -->
+    <Border Grid.Row="2"
+            IsVisible="{Binding ShowContent}"
+            Background="{StaticResource SurfaceAltBrush}"
+            CornerRadius="6"
+            Padding="12"
+            Margin="0,12,0,0">
+      <Grid>
+        <ScrollViewer Name="ConsoleScrollViewer">
+          <ItemsControl Name="ConsoleList"
+                         ItemsSource="{Binding ConsoleEntries}"
+                         BorderThickness="0"
+                         Background="Transparent">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <SelectableTextBlock Text="{Binding}"
+                                     FontFamily="{StaticResource MonoFont}"
+                                     FontSize="{Binding $parent[UserControl].DataContext.ConsoleFontSize}"
+                                     TextWrapping="NoWrap"
+                                     Foreground="{StaticResource TextBrush}"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <!-- Empty-state overlay: connected, no scan done, no entries -->
+        <StackPanel IsVisible="{Binding ShowNoSessionsFound}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+          <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-radar-20.png"
+                 Width="32" Height="32" Stretch="Uniform"
+                 HorizontalAlignment="Center" Opacity="0.4"/>
+          <TextBlock Text="No agents found"
+                     FontSize="14" FontWeight="SemiBold"
+                     Foreground="{StaticResource TextMutedBrush}"
+                     HorizontalAlignment="Center"/>
+          <TextBlock Text="Hit Scan to discover homebrew agents on ports 9000–9010"
+                     FontSize="12"
+                     Foreground="{StaticResource TextDimBrush}"
+                     HorizontalAlignment="Center"
+                     TextWrapping="Wrap"
+                     MaxWidth="360"
+                     TextAlignment="Center"/>
+          <Button Command="{Binding OpenGuideCommand}"
+                  Padding="12,6"
+                  FontSize="12"
+                  HorizontalAlignment="Center"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Foreground="{StaticResource AccentBrush}">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="?" TextDecorations="Underline"
+                         VerticalAlignment="Center"/>
+              <TextBlock Text="Read the Inspector Guide"
+                         TextDecorations="Underline"
+                         VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Row 3: GridSplitter (invisible) -->
+    <GridSplitter Grid.Row="3"
+                  Height="6"
+                  HorizontalAlignment="Stretch"
+                  Background="Transparent"
+                  IsVisible="{Binding ShowContent}"
+                  Margin="0"/>
+
+    <!-- Row 4: REPL input (min 3 lines, resizable via splitter) -->
+    <Border Grid.Row="4"
+            IsVisible="{Binding ShowContent}"
+            Background="{StaticResource SurfaceAltBrush}"
+            CornerRadius="6"
+            Padding="8,6"
+            Margin="0,0,0,0"
+            MinHeight="60">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox Text="{Binding ReplInput, Mode=TwoWay}"
+                 PlaceholderText="Type a command..."
+                 FontFamily="{StaticResource MonoFont}"
+                 FontSize="13"
+                 Background="{StaticResource SurfaceBrush}"
+                 BorderThickness="0"
+                 CornerRadius="4"
+                 Padding="8,6"
+                 AcceptsReturn="True"
+                 TextWrapping="NoWrap"
+                 KeyDown="OnReplInputKeyDown"/>
+        <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="4"
+                    VerticalAlignment="Bottom">
+          <Button Command="{Binding ShowHelpCommand}"
+                  Padding="10,6"
+                  ToolTip.Tip="Show REPL help">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+              <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-help-20.png"
+                     Width="20" Height="20" Stretch="Uniform"/>
+              <TextBlock Text="Help" FontSize="13" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <Button Command="{Binding SendCommand}"
+                  Padding="10,6"
+                  ToolTip.Tip="Send command (Ctrl+Enter)">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+              <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-terminal-20.png"
+                     Width="20" Height="20" Stretch="Uniform"/>
+              <TextBlock Text="Send" FontSize="13" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Disconnected state -->
+    <StackPanel Grid.Row="1" Grid.RowSpan="4"
+                IsVisible="{Binding ShowDisconnected}"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+      <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-search-64.png"
+             Width="64" Height="64" Stretch="Uniform"
+             HorizontalAlignment="Center" Opacity="0.6"/>
+      <TextBlock Text="Not connected" FontSize="16" FontWeight="SemiBold"
+                 Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+      <TextBlock Text="Connect to scan for inspector-enabled apps"
+                 FontSize="13" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
+      <Button Command="{Binding ConnectCommand}"
+              Padding="16,8"
+              FontSize="14"
+              HorizontalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <TextBlock Text="Connect" VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
+    </StackPanel>
 
   </Grid>
 

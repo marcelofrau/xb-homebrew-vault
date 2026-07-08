@@ -125,6 +125,20 @@
 
   <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
     <Grid RowDefinitions="32,*" ColumnDefinitions="220,*">
+
+      <!-- Modal dim overlay (covers entire window when dialog is open) -->
+      <Border x:Name="ModalDimOverlay"
+              Grid.RowSpan="2" Grid.ColumnSpan="2"
+              Background="#B3000000"
+              Opacity="0"
+              IsHitTestVisible="False"
+              ZIndex="100">
+        <Border.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
+          </Transitions>
+        </Border.Transitions>
+      </Border>
       <Border Grid.RowSpan="2" Grid.ColumnSpan="2" Height="6" VerticalAlignment="Top" Background="Transparent" ZIndex="10"
               Cursor="TopSide" PointerPressed="OnResizeNorthPointerPressed"/>
       <Border Grid.RowSpan="2" Grid.ColumnSpan="2" Height="6" VerticalAlignment="Bottom" Background="Transparent" ZIndex="10"

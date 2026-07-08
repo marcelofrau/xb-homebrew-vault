@@ -23,6 +23,16 @@ public partial class MainWindow : Window
         UpdateWindowStateIcons();
     }
 
+    public bool IsModalDimmed
+    {
+        get => ModalDimOverlay.Opacity > 0.5;
+        set
+        {
+            ModalDimOverlay.Opacity = value ? 1.0 : 0.0;
+            ModalDimOverlay.IsHitTestVisible = value;
+        }
+    }
+
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         if (WindowState == WindowState.Normal)

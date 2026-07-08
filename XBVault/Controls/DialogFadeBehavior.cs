@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using System;
 using System.Threading.Tasks;
+using XBVault;
 
 namespace XBVault.Controls;
 
@@ -35,6 +36,9 @@ public static class DialogFadeBehavior
         if (sender is not Window window) return;
         window.Opened -= OnOpened;
         window.Opacity = 1;
+
+        if (window.Owner is MainWindow main)
+            main.IsModalDimmed = true;
     }
 
     private static async void OnClosing(object? sender, WindowClosingEventArgs e)
@@ -45,6 +49,10 @@ public static class DialogFadeBehavior
         window.Closing -= OnClosing;
         window.Opacity = 0;
         await Task.Delay(200);
+
+        if (window.Owner is MainWindow main)
+            main.IsModalDimmed = false;
+
         window.Close();
     }
 }
