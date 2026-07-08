@@ -5,9 +5,11 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using XBVault.Models;
 using XBVault.Services;
 using XBVault.ViewModels;
 
@@ -17,12 +19,14 @@ public partial class BrowseView : UserControl
 {
     private DispatcherTimer? _spinTimer;
     private double _angle;
+    private DispatcherTimer? _scrollDebounce;
 
     public BrowseView()
     {
         InitializeComponent();
         Loaded += (_, _) => StartSpin();
         Unloaded += (_, _) => StopSpin();
+        CatalogScrollViewer.ScrollChanged += OnCatalogScrollChanged;
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -121,6 +125,15 @@ public partial class BrowseView : UserControl
             await vm.OpenCustomInstallWithFileAction(path);
     }
 
+    private void OnItemPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is StyledElement { DataContext: CatalogItem item })
+        {
+            if (DataContext is BrowseViewModel vm)
+                vm.SelectedItem = item;
+        }
+    }
+
     private void StartSpin()
     {
         _spinTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
@@ -141,5 +154,32 @@ public partial class BrowseView : UserControl
         _angle = (_angle - 6 + 360) % 360;
         if (SpinnerImage.RenderTransform is RotateTransform rt)
             rt.Angle = _angle;
+    }
+
+    private void OnCatalogScrollChanged(object? sender, ScrollChangedEventArgs e)
+    {
+        RenderOptions.SetBitmapInterpolationMode(CatalogScrollViewer, BitmapInterpolationMode.LowQuality);
+
+        if (_scrollDebounce is null)
+        {
+            _scrollDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+            _scrollDebounce.Tick += OnScrollDebounceTick;
+        }
+        else
+        {
+            _scrollDebounce.Stop();
+        }
+        _scrollDebounce.Start();
+    }
+
+    private void OnScrollDebounceTick(object? sender, EventArgs e)
+    {
+        if (_scrollDebounce is not null)
+        {
+            _scrollDebounce.Tick -= OnScrollDebounceTick;
+            _scrollDebounce.Stop();
+            _scrollDebounce = null;
+        }
+        RenderOptions.SetBitmapInterpolationMode(CatalogScrollViewer, BitmapInterpolationMode.HighQuality);
     }
 }

@@ -9,7 +9,7 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly XboxDeviceService _xboxService;
 
-    private static readonly string[] TabNames = ["Browse", "Installed", "FileExplorer", "Tools", "Settings", "Logs"];
+    private static readonly string[] TabNames = ["Browse", "Installed", "FileExplorer", "Tools", "Inspector", "Settings", "Logs"];
 
     public MainViewModel(XboxDeviceService xboxService)
     {
@@ -71,6 +71,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsToolsActive));
         OnPropertyChanged(nameof(IsSettingsActive));
         OnPropertyChanged(nameof(IsLogsActive));
+        OnPropertyChanged(nameof(IsInspectorActive));
         UpdateActiveView();
 
         OnTabChanged?.Invoke(value);
@@ -80,15 +81,16 @@ public partial class MainViewModel : ObservableObject
     public bool IsInstalledActive => SelectedTab == 1;
     public bool IsFileExplorerActive => SelectedTab == 2;
     public bool IsToolsActive => SelectedTab == 3;
-    public bool IsSettingsActive => SelectedTab == 4;
-    public bool IsLogsActive => SelectedTab == 5;
+    public bool IsInspectorActive => SelectedTab == 4;
+    public bool IsSettingsActive => SelectedTab == 5;
+    public bool IsLogsActive => SelectedTab == 6;
 
     public int ActiveViewIndex
     {
         get => SelectedTab;
         set
         {
-            if (value >= 0 && value <= 5)
+            if (value >= 0 && value <= 6)
                 SelectedTab = value;
         }
     }

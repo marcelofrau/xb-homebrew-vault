@@ -4,13 +4,19 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using System.Collections.Generic;
 
 namespace XBVault.Controls;
 
 public class CdSpinner : Grid
 {
+    private static readonly List<CdSpinner> _activeSpinners = [];
+    private static readonly DispatcherTimer _sharedTimer = new()
+    {
+        Interval = TimeSpan.FromMilliseconds(16)
+    };
+
     private readonly RotateTransform _rotate = new();
-    private DispatcherTimer? _timer;
     private double _angle;
 
     public CdSpinner()
@@ -53,23 +59,31 @@ public class CdSpinner : Grid
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
-        _timer.Tick += OnTick;
-        _timer.Start();
+        _activeSpinners.Add(this);
+        if (_activeSpinners.Count == 1)
+            _sharedTimer.Start();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        if (_timer is null) return;
-        _timer.Tick -= OnTick;
-        _timer.Stop();
-        _timer = null;
+        _activeSpinners.Remove(this);
+        if (_activeSpinners.Count == 0)
+            _sharedTimer.Stop();
     }
 
-    private void OnTick(object? sender, EventArgs e)
+    private static void OnSharedTick(object? sender, EventArgs e)
     {
-        _angle = (_angle - 6 + 360) % 360;
-        _rotate.Angle = _angle;
+        for (var i = 0; i < _activeSpinners.Count; i++)
+        {
+            var spinner = _activeSpinners[i];
+            spinner._angle = (spinner._angle - 6 + 360) % 360;
+            spinner._rotate.Angle = spinner._angle;
+        }
+    }
+
+    static CdSpinner()
+    {
+        _sharedTimer.Tick += OnSharedTick;
     }
 }

@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Avalonia.Input;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
@@ -16,9 +17,10 @@ using XBVault.Services;
 
 namespace XBVault.ViewModels;
 
-public partial class BrowseViewModel : ObservableObject
+public partial class BrowseViewModel : ObservableObject, IDisposable
 {
     private const int SlowThumbnailDelayMs = 3000;
+    private const int ThumbnailDecodeWidth = 520;
 
     private readonly CatalogApiService _catalogService;
     private readonly PackageInstallService _installService;
@@ -41,7 +43,8 @@ public partial class BrowseViewModel : ObservableObject
     public Func<Task>? ShowRefreshDialogAsync;
 
     private static readonly HttpClient ImageHttp = new();
-    private readonly ConcurrentDictionary<string, Bitmap?> _overrideImageCache = new();
+    private readonly ConcurrentDictionary<string, Task<Bitmap?>> _overrideImageCache = new();
+    private CancellationTokenSource? _thumbnailCts;
 
     public BrowseViewModel(PackageInstallService installService, XboxDeviceService xboxService, CatalogApiService catalogService, PackageOverrideService overrideService)
     {
@@ -269,10 +272,17 @@ public partial class BrowseViewModel : ObservableObject
     partial void OnSelectedCategoryChanged(string value) => ApplyFilters();
     partial void OnShowExperimentalChanged(bool value) => ApplyFilters();
 
+    private CatalogItem? _prevSelectedItem;
+
     partial void OnSelectedItemChanged(CatalogItem? value)
     {
+        if (_prevSelectedItem is not null)
+            _prevSelectedItem.IsSelected = false;
+        _prevSelectedItem = value;
+
         if (value is not null)
         {
+            value.IsSelected = true;
             IsInstalling = false;
             IsCheckingInstalled = false;
             InstallComplete = false;
@@ -321,7 +331,9 @@ public partial class BrowseViewModel : ObservableObject
             RebuildCategories();
             ApplyFilters();
             IsLoading = false;
-            _ = LoadThumbnailsAsync();
+            _thumbnailCts?.Cancel();
+            _thumbnailCts = new CancellationTokenSource();
+            _ = LoadThumbnailsAsync(_thumbnailCts.Token);
         }
         catch (Exception ex)
         {
@@ -340,6 +352,9 @@ public partial class BrowseViewModel : ObservableObject
 
         // Clear cache to force fresh fetch
         CatalogApiService.ClearCache();
+
+        _thumbnailCts?.Cancel();
+        _thumbnailCts = new CancellationTokenSource();
 
         if (ShowRefreshDialogAsync is not null)
         {
@@ -361,7 +376,7 @@ public partial class BrowseViewModel : ObservableObject
                 }
 
                 ApplyFilters();
-                _ = LoadThumbnailsAsync();
+                _ = LoadThumbnailsAsync(_thumbnailCts.Token);
             }
             catch (Exception ex)
             {
@@ -570,7 +585,8 @@ public partial class BrowseViewModel : ObservableObject
         if (!ShowExperimental)
             filtered = filtered.Where(i => !i.IsExperimental);
 
-        foreach (var item in filtered)
+        var result = filtered.ToList();
+        foreach (var item in result)
             Items.Add(item);
 
         HasItems = Items.Count > 0;
@@ -581,39 +597,76 @@ public partial class BrowseViewModel : ObservableObject
     public static bool SlowThumbnails { get; set; }
 #endif
 
-    private async Task LoadThumbnailsAsync()
+    private async Task LoadThumbnailsAsync(CancellationToken ct = default)
     {
-        var total = _allItems.Count(i => !string.IsNullOrEmpty(i.ImageUrl) && i.Thumbnail is null);
+        var pending = _allItems.Where(i => !string.IsNullOrEmpty(i.ImageUrl) && i.Thumbnail is null).ToList();
+        var total = pending.Count;
         Logger.Debug($"Loading {total} thumbnails");
 
-        int loaded = 0;
-        foreach (var item in _allItems)
+        var loaded = 0;
+        var cache = new CacheService();
+        var results = new ConcurrentBag<(CatalogItem Item, Bitmap Bitmap)>();
+        var options = new ParallelOptions
         {
-            if (string.IsNullOrEmpty(item.ImageUrl) || item.Thumbnail is not null)
-                continue;
+            MaxDegreeOfParallelism = 4,
+            CancellationToken = ct
+        };
 
+        await Parallel.ForEachAsync(pending, options, async (item, token) =>
+        {
             try
             {
 #if DEBUG
                 if (SlowThumbnails)
-                    await Task.Delay(SlowThumbnailDelayMs);
+                    await Task.Delay(SlowThumbnailDelayMs, token);
 #endif
-                Logger.Trace($"Fetching thumbnail: {item.ImageUrl}");
-                var bytes = await ImageHttp.GetByteArrayAsync(item.ImageUrl);
-                using var ms = new MemoryStream(bytes);
-                item.Thumbnail = new Bitmap(ms);
-                loaded++;
+                var url = item.ImageUrl!;
+
+                var cached = await cache.TryLoadThumbnailDataAsync(url);
+                Bitmap bitmap;
+                if (cached is not null)
+                {
+                    using var ms = new MemoryStream(cached);
+                    bitmap = Bitmap.DecodeToWidth(ms, ThumbnailDecodeWidth);
+                }
+                else
+                {
+                    Logger.Trace($"Fetching thumbnail: {url}");
+                    var bytes = await ImageHttp.GetByteArrayAsync(url, token);
+                    using var ms = new MemoryStream(bytes);
+                    bitmap = Bitmap.DecodeToWidth(ms, ThumbnailDecodeWidth);
+                    _ = cache.SaveThumbnailAsync(url, bytes);
+                }
+
+                results.Add((item, bitmap));
+                Interlocked.Increment(ref loaded);
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Trace("Thumbnail loading cancelled");
             }
             catch (Exception ex)
             {
                 Logger.Trace($"Thumbnail failed for {item.Name}: {ex.Message}");
             }
+        });
+
+        // Batch-apply on UI thread (5 per frame) to avoid storm
+        var items = results.ToArray();
+        for (var i = 0; i < items.Length; i += 5)
+        {
+            var batch = items.Skip(i).Take(5).ToList();
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                foreach (var (item, bitmap) in batch)
+                    item.Thumbnail = bitmap;
+            });
         }
 
         Logger.Debug($"Thumbnails loaded: {loaded}/{total}");
     }
 
-    public Bitmap? FindThumbnailByPackage(InstalledPackage pkg)
+    public async Task<Bitmap?> FindThumbnailByPackageAsync(InstalledPackage pkg)
     {
         var match = _allItems.FirstOrDefault(i => IsPackageMatch(i, pkg));
         if (match?.Thumbnail is not null)
@@ -622,19 +675,21 @@ public partial class BrowseViewModel : ObservableObject
         var url = GetOverrideImageUrl(pkg);
         if (url is null) return null;
 
-        return _overrideImageCache.GetOrAdd(url, u =>
+        return await _overrideImageCache.GetOrAdd(url, FetchImageAsync);
+    }
+
+    private static async Task<Bitmap?> FetchImageAsync(string url)
+    {
+        try
         {
-            try
-            {
-                var bytes = Task.Run(() => ImageHttp.GetByteArrayAsync(u)).GetAwaiter().GetResult();
-                using var ms = new MemoryStream(bytes);
-                return new Bitmap(ms);
-            }
-            catch
-            {
-                return null;
-            }
-        });
+            var bytes = await ImageHttp.GetByteArrayAsync(url);
+            using var ms = new MemoryStream(bytes);
+            return Bitmap.DecodeToWidth(ms, ThumbnailDecodeWidth);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private string? GetOverrideImageUrl(InstalledPackage pkg)
@@ -759,5 +814,12 @@ public partial class BrowseViewModel : ObservableObject
         }
 
         return false;
+    }
+
+    public void Dispose()
+    {
+        _thumbnailCts?.Cancel();
+        _thumbnailCts?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

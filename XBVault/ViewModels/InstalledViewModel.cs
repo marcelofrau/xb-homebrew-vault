@@ -120,7 +120,8 @@ public partial class InstalledViewModel : ObservableObject
                 p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                 (p.DisplayName?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 (p.Publisher?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ?? false));
-        foreach (var pkg in filtered)
+        var result = filtered.ToList();
+        foreach (var pkg in result)
             Packages.Add(pkg);
         HasPackages = Packages.Count > 0;
     }
@@ -173,8 +174,17 @@ public partial class InstalledViewModel : ObservableObject
     public bool IsPackageSelectedNotRunning => !IsLoading && !IsUninstalling && SelectedPackage is not null && !SelectedPackage.IsRunning;
     public bool CanRefresh => !IsUninstalling && IsConnected;
 
+    private InstalledPackage? _prevSelectedPackage;
+
     partial void OnSelectedPackageChanged(InstalledPackage? value)
     {
+        if (_prevSelectedPackage is not null)
+            _prevSelectedPackage.IsSelected = false;
+        _prevSelectedPackage = value;
+
+        if (value is not null)
+            value.IsSelected = true;
+
         OnPropertyChanged(nameof(IsPackageSelected));
         OnPropertyChanged(nameof(IsPackageRunning));
         OnPropertyChanged(nameof(IsPackageNotRunning));
@@ -194,7 +204,7 @@ public partial class InstalledViewModel : ObservableObject
 
     public Func<Task<bool>>? ShowConnectAction { get; set; }
     public Func<string, string, string, Task>? ShowErrorAction { get; set; }
-    public Func<InstalledPackage, Bitmap?>? ResolveBanner { get; set; }
+    public Func<InstalledPackage, Task<Bitmap?>>? ResolveBannerAsync { get; set; }
     public Action? OnCatalogReady { get; set; }
 
     [ObservableProperty]
@@ -436,10 +446,13 @@ public partial class InstalledViewModel : ObservableObject
                 catch { }
             }
 
-            foreach (var pkg in _allPackages)
+            var bannerOpts = new ParallelOptions { MaxDegreeOfParallelism = 4 };
+            await Parallel.ForEachAsync(_allPackages, bannerOpts, async (pkg, ct) =>
             {
-                pkg.BannerImage = ResolveBanner?.Invoke(pkg) ?? _genericBanner;
-            }
+                pkg.BannerImage = ResolveBannerAsync is not null
+                    ? await ResolveBannerAsync(pkg)
+                    : _genericBanner;
+            });
 
             await RefreshRunningStateAsync();
             LastUpdated = "Updated: " + DateTime.Now.ToString("HH:mm:ss");

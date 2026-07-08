@@ -289,6 +289,23 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
+           <ListBoxItem Tag="Inspector" Classes="nav-item" Padding="16,10">
+              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
+               <Border Background="Transparent" Opacity="0"
+                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
+               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-inspector-32.png"
+                      Width="32" Height="32"
+                      Grid.Column="1"
+                      Stretch="Uniform"/>
+               <TextBlock Text="INSPECTOR"
+                          Grid.Column="2"
+                          VerticalAlignment="Center"
+                          FontSize="13"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextMutedBrush}"
+                          LetterSpacing="1"/>
+             </Grid>
+           </ListBoxItem>
           <ListBoxItem Tag="Settings" Classes="nav-item" Padding="16,10">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
@@ -306,24 +323,24 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Logs" Classes="nav-item" Padding="16,10">
-             <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
-              <Border Background="Transparent" Opacity="0"
-                      Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
-              <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-logs-32.png"
-                     Width="32" Height="32"
-                     Grid.Column="1"
-                     Stretch="Uniform"/>
-              <TextBlock Text="LOGS"
-                         Grid.Column="2"
-                         VerticalAlignment="Center"
-                         FontSize="13"
-                         FontWeight="SemiBold"
-                         Foreground="{StaticResource TextMutedBrush}"
-                         LetterSpacing="1"/>
-            </Grid>
-          </ListBoxItem>
-        </ListBox>
+           <ListBoxItem Tag="Logs" Classes="nav-item" Padding="16,10">
+              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
+               <Border Background="Transparent" Opacity="0"
+                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
+               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-logs-32.png"
+                      Width="32" Height="32"
+                      Grid.Column="1"
+                      Stretch="Uniform"/>
+               <TextBlock Text="LOGS"
+                          Grid.Column="2"
+                          VerticalAlignment="Center"
+                          FontSize="13"
+                          FontWeight="SemiBold"
+                          Foreground="{StaticResource TextMutedBrush}"
+                          LetterSpacing="1"/>
+             </Grid>
+           </ListBoxItem>
+         </ListBox>
 
         <!-- ER Logo + Discord -->
         <StackPanel Grid.Row="2" Spacing="4" Margin="0,0,0,8">

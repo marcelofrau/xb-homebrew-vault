@@ -67,6 +67,10 @@ public partial class CatalogItem : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsThumbnailLoading))]
     private Bitmap? _thumbnail;
 
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool _isSelected;
+
     [JsonIgnore]
     public bool IsThumbnailLoading => Thumbnail is null;
 }

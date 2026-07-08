@@ -517,6 +517,18 @@
     <Setter Property="CornerRadius" Value="8"/>
   </Style>
 
+  <!-- PackageCard: inherits Card look + selection visual -->
+  <Style Selector="controls|PackageCard">
+    <Setter Property="Background" Value="{StaticResource CardBgBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+  </Style>
+  <Style Selector="controls|PackageCard:selected">
+    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+  </Style>
+
   <!-- Section headers -->
   <Style Selector="TextBlock.PageTitle">
     <Setter Property="FontSize" Value="28"/>

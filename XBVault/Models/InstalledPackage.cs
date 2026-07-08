@@ -133,6 +133,19 @@ public class InstalledPackage : INotifyPropertyChanged
     [JsonIgnore]
     public Bitmap? BannerImage { get; set; }
 
+    [JsonIgnore]
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value) return;
+            _isSelected = value;
+            OnPropertyChanged();
+        }
+    }
+    private bool _isSelected;
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     protected void OnPropertyChanged([CallerMemberName] string? name = null)

@@ -163,67 +163,60 @@
       </Border>
 
       <!-- Catalog Grid -->
-      <ListBox x:Name="PackageListBox"
-               ItemsSource="{Binding Items}"
-               SelectedItem="{Binding SelectedItem}"
-               BorderThickness="0"
-               Background="Transparent"
-               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-               IsVisible="{Binding HasItems}">
-      <ListBox.ItemsPanel>
-        <ItemsPanelTemplate>
-          <WrapPanel Orientation="Horizontal"/>
-        </ItemsPanelTemplate>
-      </ListBox.ItemsPanel>
-      <ListBox.ItemTemplate>
-        <DataTemplate x:DataType="models:CatalogItem">
-          <Border Classes="Card"
-                  Padding="0"
-                  Width="240"
-                  MinHeight="220"
-                  Margin="0,0,16,16"
-                  Cursor="Hand">
-            <Border.Styles>
-              <Style Selector="Border:pointerover">
-                <Setter Property="BorderBrush" Value="{StaticResource AccentDimBrush}"/>
-              </Style>
-            </Border.Styles>
-            <Grid RowDefinitions="Auto,*">
-              <Border CornerRadius="8,8,0,0"
-                      Height="130"
-                      Background="{StaticResource SurfaceAltBrush}"
-                      HorizontalAlignment="Stretch">
-                <Grid>
-                  <Image Source="{Binding Thumbnail}"
-                         Stretch="UniformToFill"
-                         RenderOptions.BitmapInterpolationMode="HighQuality"
-                         IsVisible="{Binding IsThumbnailLoading, Converter={StaticResource BoolInverse}}"/>
-                  <Border Background="{StaticResource SurfaceAltBrush}"
-                          IsVisible="{Binding IsThumbnailLoading}">
-                    <controls:CdSpinner/>
+      <ScrollViewer x:Name="CatalogScrollViewer"
+                    HorizontalScrollBarVisibility="Disabled"
+                    IsVisible="{Binding HasItems}">
+        <ItemsRepeater ItemsSource="{Binding Items}">
+          <ItemsRepeater.Layout>
+            <UniformGridLayout MinItemWidth="240"
+                               MinItemHeight="220"
+                               MinColumnSpacing="16"
+                               MinRowSpacing="16" />
+          </ItemsRepeater.Layout>
+          <ItemsRepeater.ItemTemplate>
+            <DataTemplate x:DataType="models:CatalogItem">
+              <controls:PackageCard Padding="0"
+                                    MinHeight="220"
+                                    Cursor="Hand"
+                                    IsSelected="{Binding IsSelected}"
+                                    PointerPressed="OnItemPointerPressed">
+                <Grid RowDefinitions="Auto,*">
+                  <Border CornerRadius="8,8,0,0"
+                          Height="130"
+                          Background="{StaticResource SurfaceAltBrush}"
+                          HorizontalAlignment="Stretch">
+                    <Grid>
+                      <Image Source="{Binding Thumbnail}"
+                             Stretch="UniformToFill"
+                             RenderOptions.BitmapInterpolationMode="HighQuality"
+                             IsVisible="{Binding IsThumbnailLoading, Converter={StaticResource BoolInverse}}"/>
+                      <Border Background="{StaticResource SurfaceAltBrush}"
+                              IsVisible="{Binding IsThumbnailLoading}">
+                        <controls:CdSpinner/>
+                      </Border>
+                    </Grid>
                   </Border>
+                  <StackPanel Grid.Row="1" Spacing="6" Margin="12">
+                    <TextBlock Text="{Binding Name}"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding Description}"
+                               FontSize="11"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               TextWrapping="Wrap"
+                               MaxHeight="36"/>
+                    <TextBlock Text="{Binding Category}"
+                               FontSize="10"
+                               Foreground="{StaticResource AccentBrush}"
+                               TextWrapping="Wrap"/>
+                  </StackPanel>
                 </Grid>
-              </Border>
-              <StackPanel Grid.Row="1" Spacing="6" Margin="12">
-                <TextBlock Text="{Binding Name}"
-                           FontSize="14"
-                           FontWeight="SemiBold"
-                           TextWrapping="Wrap"/>
-                <TextBlock Text="{Binding Description}"
-                           FontSize="11"
-                           Foreground="{StaticResource TextMutedBrush}"
-                           TextWrapping="Wrap"
-                           MaxHeight="36"/>
-                <TextBlock Text="{Binding Category}"
-                           FontSize="10"
-                           Foreground="{StaticResource AccentBrush}"
-                           TextWrapping="Wrap"/>
-              </StackPanel>
-            </Grid>
-          </Border>
-        </DataTemplate>
-      </ListBox.ItemTemplate>
-    </ListBox>
+              </controls:PackageCard>
+            </DataTemplate>
+          </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+      </ScrollViewer>
 
     </Panel>
 

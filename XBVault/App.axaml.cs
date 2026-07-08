@@ -302,7 +302,7 @@ public partial class App : Application
                 await errDlg.ShowDialog(main);
             };
 
-            installedViewModel.ResolveBanner = pkg => browseViewModel.FindThumbnailByPackage(pkg);
+            installedViewModel.ResolveBannerAsync = pkg => browseViewModel.FindThumbnailByPackageAsync(pkg);
             browseViewModel.OnCatalogLoaded = () =>
             {
                 if (installedViewModel is not null)
@@ -569,6 +569,11 @@ public partial class App : Application
                 return vm.Confirmed;
             };
 
+            Logger.Info("Creating InspectorView");
+            var inspectorViewModel = new InspectorViewModel(xboxService);
+            inspectorViewModel.ShowConnectAction = mainViewModel.ShowConnectAction;
+            var inspectorView = new Views.InspectorView { DataContext = inspectorViewModel };
+
             Logger.Info("Creating SettingsView");
             var settingsView = new Views.SettingsView { DataContext = settingsViewModel };
             Logger.Info("Creating LogsView");
@@ -578,6 +583,7 @@ public partial class App : Application
             main.ViewCarousel.Items.Add(installedView);
             main.ViewCarousel.Items.Add(fileExplorerView);
             main.ViewCarousel.Items.Add(toolsView);
+            main.ViewCarousel.Items.Add(inspectorView);
             main.ViewCarousel.Items.Add(settingsView);
             main.ViewCarousel.Items.Add(logsView);
 
