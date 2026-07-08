@@ -1,4 +1,6 @@
 using Avalonia;
+using Avalonia.Rendering.Composition;
+using Avalonia.Skia;
 using XBVault;
 using XBVault.Helpers;
 using XBVault.Services;
@@ -87,7 +89,9 @@ class Program
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
-            .LogToTrace();
+            .LogToTrace()
+            .With(new SkiaOptions { MaxGpuResourceSizeBytes = 512 * 1024 * 1024 })
+            .With(new CompositionOptions { UseRegionDirtyRectClipping = true });
     }
 
     static void ShowHelp()

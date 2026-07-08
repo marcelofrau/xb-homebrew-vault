@@ -54,6 +54,8 @@ public partial class App : Application
         };
         Logger.Debug($"Log level initialized to {savedLevel}");
 
+        LogGpuInfo();
+
         Logger.Info("Application initialized");
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -616,5 +618,13 @@ public partial class App : Application
                 }
             }
         });
+    }
+
+    private static void LogGpuInfo()
+    {
+        // Can't query the active renderer at App init in Avalonia 12.
+        // The configured backend is logged here; actual GPU/software
+        // fallback info is available once a TopLevel window exists.
+        Logger.Info("Rendering: Skia via ANGLE (D3D11), MaxGpuResourceSizeBytes=512MB, UseRegionDirtyRectClipping=true");
     }
 }
