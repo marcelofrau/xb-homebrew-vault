@@ -4,142 +4,204 @@ title: Feature - Inspector
 published: true
 ---
 
-# Inspector — Homebrew Agent Discovery & REPL
+# Inspector — ADB for Xbox Homebrew
 
 ## Status
-<!-- {{ site.time | date: '%Y-%m-%d' }} -->
 
 > 🚧 **Under development.** Scan logic, protocol handling, and REPL command forwarding are stubs. The UI shell, console with REPL input, font controls, and state management (disconnected/scanning/ready/sessions) are complete.
 
-## Vision
+## The Problem
 
-The Inspector is a built-in tool for discovering, inspecting, and interacting with homebrew agents running on your Xbox Dev Mode console.
+Developing UWP apps for Xbox Dev Mode means flying blind.
 
-Think of it as a **debug terminal for your Xbox** — similar in spirit to Android's `adb` or iOS's `idevice` tools, but purpose-built for Xbox homebrew development.
+- No `Console.WriteLine` you can actually see without Visual Studio attached
+- Remote debugging is slow, unreliable, and ties you to a full dev environment
+- Want to check if your app loaded a config file correctly? Good luck — you're guessing
+- Crash at startup? Zero diagnostics unless you set up ETW tracing
+- No way to inspect app state at runtime without building a custom debug UI in your app
 
-When a homebrew app registers as an **inspector agent** (e.g., a test runner, a performance monitor, a custom game server), the Inspector discovers it via a port scan and opens a REPL session for sending commands and receiving responses in real time.
+Every homebrew developer has been there: deploy, launch, stare at the TV, wonder what's happening inside.
+
+## The Solution
+
+Inspector gives you a **live debug terminal** for your Xbox — the same mental model as Android's `adb logcat` or iOS device logs, purpose-built for Xbox homebrew.
+
+Your app speaks a simple text-over-TCP protocol. Inspector discovers it, connects, and shows you everything in real time.
+
+```mermaid
+flowchart TB
+    subgraph XBVault["XBVault App"]
+        Console["REPL Console"]
+    end
+
+    subgraph Scan["Port Scan 9000-9010"]
+        S1["Scan Xbox IP"]
+        S2["List agents"]
+    end
+
+    subgraph Xbox["Xbox Dev Mode"]
+        App["Your UWP App"]
+        Logger["Built-in logging"]
+        State["Inspect variables"]
+        App -->|"TCP text output"| Logger
+        App -->|"state queries"| State
+    end
+
+    Console <-->|"connect & read"| S2
+    S1 --> S2
+    S2 -->|"discover"| Xbox
+```
+
+### What it does
+
+| Capability | Like `adb` ... | For Xbox |
+|---|---|---|
+| Live log output | `adb logcat` | Your app writes to a TCP socket, Inspector shows it |
+| Send commands | `adb shell` | Type in the REPL, app receives and responds |
+| Multiple targets | `adb devices` | Scan discovers all listening apps on ports 9000-9010 |
+| Zero config | plug and play | Connect Xbox, click Scan, see your app |
+
+### What it is NOT
+
+- Not a file transfer tool (File Explorer already does that)
+- Not a debugger (you still need VS for breakpoints)
+- Not a crash reporter (that's a separate system)
+- It sits between those — the **live insight** layer that mobile developers take for granted and Xbox developers don't have
+
+## Why Your App Should Support Inspector
+
+Adding Inspector support is trivial. Your UWP app opens a TCP socket on a port between 9000-9010 and speaks plain text. The protocol is whatever you want — structured JSON, key-value pairs, raw strings.
+
+You get immediate value:
+
+- **Log real-time events** — track app lifecycle, user actions, background tasks
+- **Verify integrity** — did your asset bundle load? Is the config valid? Confirm from the console
+- **Inspect state** — build a simple command handler: `> status`, `> cache`, `> connections`
+- **Debug deployment issues** — app crashes on launch? Add a startup log socket
+- **Test without VS** — deploy via XBVault, open Inspector, verify everything works
+
+### Example: a minimal C# agent
+
+```csharp
+using var listener = new TcpListener(IPAddress.Any, 9002);
+listener.Start();
+var client = await listener.AcceptTcpClientAsync();
+using var stream = client.GetStream();
+using var writer = new StreamWriter(stream) { AutoFlush = true };
+
+writer.WriteLine("[INFO] App started — config loaded OK");
+writer.WriteLine("[DATA] AssetBundle: 124 files, 340MB");
+
+// REPL: read commands from Inspector
+var reader = new StreamReader(stream);
+while (true)
+{
+    var cmd = await reader.ReadLineAsync();
+    if (cmd == "status") writer.WriteLine("Status: running, 340MB RAM");
+    if (cmd == "cache")  writer.WriteLine("Cache: 12 entries, 45MB");
+}
+```
+
+That's it. No SDK, no NuGet package, no boilerplate. A `TcpListener` and a few `WriteLine` calls.
 
 ## Architecture
 
 ```mermaid
 flowchart TB
-    subgraph XBVault["XBVault App"]
+    subgraph XBVault["XBVault — dev machine"]
+        Console["REPL Console"]
+        ChannelList["Agent selector"]
+    end
+
+    subgraph ScanAgent["Inspector Scan"]
+        ScanProcess["TCP scan 9000-9010"]
+        Registry["Agent registry"]
+    end
+
+    subgraph Xbox["Xbox — Dev Mode"]
         direction TB
-        Console["Console / REPL"]
-        ChannelList["Channel List<br/>(port selector)"]
+        A1["App A: Test Runner<br/>port 9002"]
+        A2["App B: Game Server<br/>port 9005"]
+        A3["App C: Config Tool<br/>port 9009"]
     end
 
-    subgraph Scan["TCP Port Scan"]
-        ScanProcess["Scan ports 9000-9010"]
-        Registry["Agent Registry<br/>Session #1, Session #2"]
-    end
-
-    subgraph Xbox["Xbox Dev Mode"]
-        Agent1["Agent #1<br/>(port N)"]
-        Agent2["Agent #2<br/>(port M)"]
-    end
-
-    Console <-->|"REPL commands"| Registry
-    ChannelList -->|"select agent"| Console
-    ScanProcess -->|"discover"| Registry
-    Registry -->|"forward to"| Agent1
-    Registry -->|"forward to"| Agent2
-    XBVault --> ScanProcess
-    ScanProcess --> Xbox
+    Console <--> Registry
+    ChannelList --> Console
+    ScanProcess --> Registry
+    Registry --> A1
+    Registry --> A2
+    Registry --> A3
+    XBVault --> ScanProcess --> Xbox
 ```
 
-**Agent discovery flow:**
+**Flow:**
 
-1. User clicks **Scan** (or types `scan` in REPL)
-2. Inspector scans TCP ports 9000–9010 on the connected Xbox
-3. Each responding port is listed as a discoverable **agent session**
-4. User selects an agent from the channel list to target commands
-5. All REPL input is forwarded to the selected agent via TCP socket
+1. **Connect** your Xbox via XBVault sidebar
+2. **Scan** — Inspector probes ports 9000-9010 on the Xbox IP
+3. Any app listening on those ports appears as an **agent**
+4. **Select** an agent, see its output in the console
+5. **Type** commands in the REPL — they go straight to your app
 
-**Agent protocol (future):**
-
-Inspector speaks a simple text-over-TCP protocol:
-- Agent responds to `HELLO` with identity and capabilities
-- All other text is forwarded as raw commands
-- Agent may push unsolicited data (logs, status updates) at any time
-- Connection is persistent per agent — no HTTP-style request/response
-
-## Features
-
-### Agent Discovery
-- Scans TCP ports 9000–9010 on the connected Xbox
-- Identifies responding agents by sending a `HELLO` handshake
-- Lists discovered agents in the channel combo box
-- Manually triggered — avoids unwanted network activity
-
-### REPL Console
-- Monospace terminal-style console with timestamped entries
-- Input box supports multi-line commands, Ctrl+Enter to send
-- `help` prints built-in command reference
-- `clear` clears console output
-- `scan` triggers agent discovery
-- `status` shows connection info and selected agent
-
-### Console Controls
-| Control | Description |
-|---------|-------------|
-| Auto-scroll | Follow new output automatically |
-| Font size | Increase / decrease (10–24 px, persisted) |
-| Clear | Remove all console entries |
-
-### Session Management
-- Each discovered agent is a selectable session
-- Selecting a session targets subsequent REPL commands to that agent
-- Session list clears on disconnect
-
-## Live Data (In-App)
-
-When viewing the Inspector in-game, the console and session list reflect the **current** connection state. This page is a static reference — the app itself is the source of truth.
-
-## Getting Started
-
-1. **Connect** your Xbox via the sidebar (or click Connect in the Inspector view)
-2. Click **Scan** to discover agents on ports 9000–9010
-3. An **agent** is any homebrew app that listens on these ports and responds to the Inspector protocol
-4. Select an agent from the **channel list** to target your commands
-5. Type commands in the REPL input and press **Send** (or Ctrl+Enter)
+Yours apps don't need to know about XBVault. Just listen on a port and speak text.
 
 ## REPL Reference
 
 | Command | Description |
-|---------|-------------|
-| `help`  | Show command reference |
+|---|---|
+| `help` | Show command reference |
 | `clear` | Clear console |
-| `scan`  | Run agent discovery scan |
+| `scan` | Run agent discovery |
 | `connect` | Open connection dialog |
 | `status` | Show connection info |
 | `<any>` | Forward raw command to selected agent |
 
+## Getting Started
+
+1. **Add a TCP listener** to your UWP app (port 9000-9010)
+2. **Write log data** to connected clients via `StreamWriter`
+3. **Handle commands** by reading lines from the same stream
+4. **Deploy** your app to Xbox via XBVault
+5. **Open Inspector**, click **Scan**, see your app appear
+6. **Select** your app, watch live output, send commands
+
+## For App Developers
+
+The protocol is intentionally minimal. No handshake required. No SDK to bundle. If your app can open a `TcpListener` and print text, it supports Inspector.
+
+Design your command set however you want:
+
+```
+> status       → "uptime: 4h, sessions: 12, cache: 340MB"
+> log level 3  → "Log level set to 3"
+> config       → "Config: { theme: dark, fps: 60, vsync: true }"
+> ping         → "pong (4ms)"
+```
+
+Want structured data? Send JSON. Want human-readable? Send plain text. Inspector doesn't care — it's a pipe.
+
+The value compounds when multiple apps support it. Scan once, see every debug-enabled app on your Xbox. No more switching between deploy tools, log viewers, and game windows.
+
 ## Non-Goals (v1)
 
-- Bi-directional file transfer via REPL
-- Agent process management (start/stop agents from Inspector)
-- Multiple simultaneous connections to the same agent
-- Rich agent metadata (protocol version, feature list)
-- Agent-side event subscription (push model)
-- TLS/encryption on agent channels
+- File transfer (handled by File Explorer via SFTP)
+- App deployment or lifecycle management
+- Rich agent metadata or capability negotiation
+- TLS or encryption on agent channels (local network only)
+- Binary protocol support (text-only)
 
 ## Future
 
-| Feature | Description |
-|---------|-------------|
-| Agent handshake | Send `HELLO` to confirm identity before listing |
-| Raw TCP socket | Forward REPL input as raw TCP to selected port |
-| Agent capabilities | Report version, features, uptime per agent |
-| Persistent sessions | Keep TCP connection open per selected agent |
-| Unsolicited output | Agent can push log lines without a command |
-| Connection auto-retry | Reconnect on agent disconnect |
-| Scan progress | Real-time port status during scan |
-| Agent icons/badges | Visual indicators for agent type/state |
+| Feature | Benefit |
+|---|---|
+| Agent handshake (`HELLO`) | Auto-identify app name and version |
+| Persistent TCP connections | No reconnect overhead between commands |
+| Unsolicited agent output | Push logs without a command |
+| Structured data mode | Parse and display JSON/formatted output |
+| Connection auto-retry | Survive agent restarts |
+| Per-agent icons | Visual identity in the channel list |
 
 ## Reference
 
-- OpenSpec change: (none yet — exploratory feature)
-- Related: `XBVault/ViewModels/InspectorViewModel.cs`
-- Related: `XBVault/Views/InspectorView.axaml`
-- Related: `XBVault/Assets/Views/InspectorView/*.png`
+- `XBVault/ViewModels/InspectorViewModel.cs`
+- `XBVault/Views/InspectorView.axaml`
+- `XBVault/Assets/Views/InspectorView/*.png`
