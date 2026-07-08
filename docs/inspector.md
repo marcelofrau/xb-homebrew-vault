@@ -21,20 +21,31 @@ When a homebrew app registers as an **inspector agent** (e.g., a test runner, a 
 
 ## Architecture
 
-```
-┌──────────────────┐     ┌──────────────────┐     ┌────────────────┐
-│  XBVault         │────→│  TCP port scan   │────→│  Xbox Dev Mode │
-│  Inspector View  │     │  9000-9010       │     │  (IP: port)    │
-│                  │     │                  │     │                │
-│  ┌──────────┐    │     │  Agent registry  │     │  ┌──────────┐  │
-│  │ Console  │←───│←────│  per port        │←────│←─│ Agent #1 │  │
-│  │ REPL     │    │     │                  │     │  │ (port N) │  │
-│  │ Auto-src │    │     │  ┌────────────┐  │     │  └──────────┘  │
-│  └──────────┘    │     │  │ Session #1 │  │     │  ┌──────────┐  │
-│                  │     │  │ Session #2 │  │     │  │ Agent #2 │  │
-│  Channel list    │     │  └────────────┘  │     │  └──────────┘  │
-│  (port selector) │     └──────────────────┘     └────────────────┘
-└──────────────────┘
+```mermaid
+flowchart TB
+    subgraph XBVault["XBVault App"]
+        direction TB
+        Console["Console / REPL"]
+        ChannelList["Channel List<br/>(port selector)"]
+    end
+
+    subgraph Scan["TCP Port Scan"]
+        ScanProcess["Scan ports 9000-9010"]
+        Registry["Agent Registry<br/>Session #1, Session #2"]
+    end
+
+    subgraph Xbox["Xbox Dev Mode"]
+        Agent1["Agent #1<br/>(port N)"]
+        Agent2["Agent #2<br/>(port M)"]
+    end
+
+    Console <-->|"REPL commands"| Registry
+    ChannelList -->|"select agent"| Console
+    ScanProcess -->|"discover"| Registry
+    Registry -->|"forward to"| Agent1
+    Registry -->|"forward to"| Agent2
+    XBVault --> ScanProcess
+    ScanProcess --> Xbox
 ```
 
 **Agent discovery flow:**
@@ -52,34 +63,6 @@ Inspector speaks a simple text-over-TCP protocol:
 - All other text is forwarded as raw commands
 - Agent may push unsolicited data (logs, status updates) at any time
 - Connection is persistent per agent — no HTTP-style request/response
-
-## Layout
-
-```
-┌───────────────────────────────────────────────────────────────┐
-│ INSPECTOR                                                     │
-│ Discover and inspect homebrew agents running on your Xbox     │
-├───────────────────────────────────────────────────────────────┤
-│ [🔍 Scan]  [v channel list ▼]  [☑ Auto-scroll]  [A-] [A+] [X]│
-├───────────────────────────────────────────────────────────────┤
-│                                                               │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │  [14:30:01] Scanning ports 9000-9010 on 192.168.1.100..│  │
-│  │  [14:30:03] Port 9002 — agent detected                  │  │
-│  │  [14:30:03] Port 9004 — agent detected                  │  │
-│  │  [14:30:04] Scan complete — 2 agents found              │  │
-│  │  > status                                                │  │
-│  │  [Agent: TestRunner @ 9002] Connected. 12 tests queued. │  │
-│  │  > run tests                                             │  │
-│  │  [14:30:10] Test run started...                          │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                                                               │
-│  ┌───────────────────────────────────┬───────────────────────┐ │
-│  │ Type a command...          [Help]│                       │ │
-│  │                                [Send]│                   │ │
-│  └───────────────────────────────────┴───────────────────────┘ │
-└───────────────────────────────────────────────────────────────┘
-```
 
 ## Features
 
