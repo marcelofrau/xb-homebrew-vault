@@ -575,11 +575,7 @@ public partial class App : Application
             var inspectorViewModel = new InspectorViewModel(xboxService);
             inspectorViewModel.ShowConnectAction = mainViewModel.ShowConnectAction;
             inspectorViewModel.ShowGuideAction = () =>
-            {
-                var docPath = System.IO.Path.Combine(Environment.CurrentDirectory, "docs", "inspector.md");
-                if (System.IO.File.Exists(docPath))
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(docPath) { UseShellExecute = true });
-            };
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://xbvault.pages.dev/xb-homebrew-vault/inspector.html") { UseShellExecute = true });
             var inspectorView = new Views.InspectorView { DataContext = inspectorViewModel };
 
             Logger.Info("Creating SettingsView");
