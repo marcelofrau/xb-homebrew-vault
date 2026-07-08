@@ -146,7 +146,7 @@
       <Grid Grid.ColumnSpan="2" Height="32"
             PointerPressed="OnTitleBarPointerPressed"
             Background="{StaticResource TitleGradient}">
-      <Grid.ColumnDefinitions>*,Auto,Auto</Grid.ColumnDefinitions>
+      <Grid.ColumnDefinitions>*,Auto,Auto,Auto</Grid.ColumnDefinitions>
       <TextBlock Text="XB Homebrew Vault"
                  Foreground="#1A1A1A"
                  FontSize="14"
@@ -154,13 +154,14 @@
                  VerticalAlignment="Center"
                  Margin="12,0"/>
       <Button Grid.Column="1" Width="32" Height="32"
-              Padding="0"
-              BorderThickness="0" Click="OnMinimizeClick"
+              Padding="0" BorderThickness="0"
+              Click="OnMinimizeClick"
               Cursor="Hand" Focusable="False"
               ToolTip.Tip="Minimize">
-        <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-minimize-20.png"
-               Width="20" Height="20"
-               Stretch="Uniform"/>
+        <Grid>
+          <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-minimize-20.png"
+                 Width="20" Height="20" Stretch="Uniform"/>
+        </Grid>
         <Button.Styles>
           <Style Selector="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -173,7 +174,34 @@
           </Style>
         </Button.Styles>
       </Button>
-      <Button Grid.Column="2" Classes="WindowClose"
+      <Button Grid.Column="2" Width="32" Height="32"
+              x:Name="MaximizeRestoreButton"
+              Padding="0" BorderThickness="0"
+              Click="OnMaximizeRestoreClick"
+              Cursor="Hand" Focusable="False"
+              ToolTip.Tip="Maximize">
+        <Grid>
+          <Image x:Name="MaximizeIcon"
+                 Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-maximize-20.png"
+                 Width="20" Height="20" Stretch="Uniform"/>
+          <Image x:Name="RestoreIcon"
+                 Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-restore-20.png"
+                 Width="20" Height="20" Stretch="Uniform"
+                 IsVisible="False"/>
+        </Grid>
+        <Button.Styles>
+          <Style Selector="Button">
+            <Setter Property="Background" Value="Transparent"/>
+          </Style>
+          <Style Selector="Button:pointerover">
+            <Setter Property="Background" Value="#33555555"/>
+          </Style>
+          <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#33555555"/>
+          </Style>
+        </Button.Styles>
+      </Button>
+      <Button Grid.Column="3" Classes="WindowClose"
               Click="OnCloseClick" ToolTip.Tip="Close"/>
     </Grid>
 
@@ -469,12 +497,10 @@
             Padding="0">
       <Grid RowDefinitions="*,28">
         <Carousel x:Name="ViewCarousel"
-                  SelectedIndex="{Binding SelectedTab}">
+                  SelectedIndex="{Binding SelectedTab}"
+                  RenderOptions.BitmapInterpolationMode="LowQuality">
           <Carousel.PageTransition>
-            <CompositePageTransition>
-              <CrossFade Duration="0:0:0.3"/>
-              <PageSlide Duration="0:0:0.3" Orientation="Horizontal"/>
-            </CompositePageTransition>
+            <CrossFade Duration="0:0:0.15"/>
           </Carousel.PageTransition>
         </Carousel>
 

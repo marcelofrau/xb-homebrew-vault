@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using XBVault.Helpers;
@@ -19,6 +20,7 @@ public partial class MainWindow : Window
         Width = size.Width;
         Height = size.Height;
         VersionText.Text = BuildInfo.DisplayVersion;
+        UpdateWindowStateIcons();
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -34,6 +36,26 @@ public partial class MainWindow : Window
         WindowState = WindowState.Minimized;
     }
 
+    private void OnMaximizeRestoreClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    }
+
+    private void UpdateWindowStateIcons()
+    {
+        var isMaximized = WindowState == WindowState.Maximized;
+        MaximizeIcon.IsVisible = !isMaximized;
+        RestoreIcon.IsVisible = isMaximized;
+        ToolTip.SetTip(MaximizeRestoreButton, isMaximized ? "Restore" : "Maximize");
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == WindowStateProperty)
+            UpdateWindowStateIcons();
+    }
+
     private void OnCloseClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Close();
@@ -42,7 +64,12 @@ public partial class MainWindow : Window
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
-            BeginMoveDrag(e);
+        {
+            if (e.ClickCount == 2)
+                WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+            else
+                BeginMoveDrag(e);
+        }
     }
 
     private void BeginResize(WindowEdge edge, PointerPressedEventArgs e)
