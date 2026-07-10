@@ -289,6 +289,15 @@
               </Grid>
             </Button>
 
+            <Separator Height="1" Background="{StaticResource BorderBrush}" Margin="0,4"/>
+
+            <CheckBox IsChecked="{Binding PerformCleanInstall}"
+                      FontSize="13"
+                      ToolTip.Tip="Check to uninstall the existing version before installing. This can prevent conflicts with the new installation.">
+              <TextBlock Text="Perform clean installation"
+                         FontSize="13"
+                         VerticalAlignment="Center"/>
+            </CheckBox>
 
           </StackPanel>
 

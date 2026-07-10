@@ -12,6 +12,8 @@ public partial class ConfirmWindow : Window
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        Loaded += OnLoaded;
+        KeyDown += OnKeyDown;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -21,6 +23,22 @@ public partial class ConfirmWindow : Window
             vm.Completed += OnCompleted;
             if (vm.IsDestructive)
                 ConfirmBtn.Classes.Add("Danger");
+        }
+    }
+
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        ConfirmBtn?.Focus();
+    }
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            if (DataContext is ConfirmViewModel vm)
+                vm.CancelCommand.Execute(null);
+            Close();
+            e.Handled = true;
         }
     }
 

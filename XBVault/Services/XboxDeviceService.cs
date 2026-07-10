@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using XBVault.Models;
@@ -78,6 +80,7 @@ public class XboxDeviceService
     public bool IsConfigured => _configured;
     public bool IsConnected => _connected;
     public string? SmbPassword => _smbPassword;
+    public string? Host => _baseUrl is not null ? new Uri(_baseUrl).Host : null;
 
     public SshConnectionInfo GetSshCredentials()
     {
@@ -432,6 +435,57 @@ public class XboxDeviceService
         return null;
     }
 
+    private async Task TerminateRunningPackageAsync(string packagePath)
+    {
+        try
+        {
+            var pkgName = ParseMsixPackageName(packagePath);
+            if (string.IsNullOrEmpty(pkgName))
+            {
+                Logger.Debug("Could not parse package name from MSIX, skipping terminate check");
+                return;
+            }
+
+            var runningNames = await GetRunningPackageNamesAsync();
+            if (runningNames.Count == 0) return;
+
+            var match = runningNames.FirstOrDefault(n =>
+                n.StartsWith(pkgName + "_", StringComparison.OrdinalIgnoreCase));
+
+            if (match is not null)
+            {
+                Logger.Info($"Running package matches '{pkgName}': {match}, terminating...");
+                await TerminatePackageAsync(match);
+                await Task.Delay(1000);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"Failed to terminate running package: {ex.Message}");
+        }
+    }
+
+    private static string? ParseMsixPackageName(string msixPath)
+    {
+        try
+        {
+            using var archive = ZipFile.OpenRead(msixPath);
+            var entry = archive.GetEntry("AppxManifest.xml");
+            if (entry is null) return null;
+
+            using var reader = new StreamReader(entry.Open());
+            var xml = reader.ReadToEnd();
+
+            var match = Regex.Match(xml, @"<Identity\s[^>]*\bName\s*=\s*""([^""]+)""");
+            return match.Success ? match.Groups[1].Value : null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"Failed to parse MSIX manifest: {ex.Message}");
+            return null;
+        }
+    }
+
     public async Task<bool> InstallPackageAsync(string filePath, IProgress<double>? progress = null)
     {
         var wrapped = progress is not null
@@ -455,6 +509,9 @@ public class XboxDeviceService
 
         try
         {
+            // Kill any running instance of this package before upload
+            await TerminateRunningPackageAsync(packagePath);
+
             var totalFiles = 1 + dependencies.Length;
             var mainName = Path.GetFileName(packagePath);
             Logger.Info($"Install starting: {mainName} ({dependencies.Length} dependencies)");

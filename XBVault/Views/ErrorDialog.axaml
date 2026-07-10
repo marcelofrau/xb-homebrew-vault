@@ -69,7 +69,8 @@
               ColumnDefinitions="*,Auto"
               Margin="0,8,0,0">
           <!-- Left: Close -->
-          <Button Padding="12,6"
+          <Button x:Name="CloseBtn"
+                  Padding="12,6"
                   HorizontalAlignment="Left"
                   Click="OnCloseClick"
                   ToolTip.Tip="Close this dialog">
@@ -81,11 +82,24 @@
             </Grid>
           </Button>
 
-          <!-- Right: Copy + Restart -->
+          <!-- Right: Connect (optional) + Copy + Restart -->
           <StackPanel Grid.Column="1"
                       Orientation="Horizontal"
                       Spacing="8"
                       HorizontalAlignment="Right">
+            <Button x:Name="ConnectBtn"
+                    Classes="Accent"
+                    Padding="12,6"
+                    Click="OnConnectClick"
+                    IsVisible="False"
+                    ToolTip.Tip="Connect to your Xbox now">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                       Width="20" Height="20"
+                       Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Connect" FontWeight="SemiBold" VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
             <Button x:Name="CopyBtn"
                     Classes="Accent"
                     Padding="12,6"

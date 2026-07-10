@@ -24,6 +24,7 @@
 
   <Application.Styles>
     <FluentTheme/>
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"/>
     <StyleInclude Source="avares://XBVault/Assets/Themes/BladesTheme.axaml"/>
   </Application.Styles>
 

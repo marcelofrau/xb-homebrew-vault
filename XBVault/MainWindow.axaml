@@ -31,6 +31,7 @@
       <Setter Property="Foreground" Value="#CCC"/>
       <Setter Property="FontSize" Value="11"/>
       <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FocusAdorner" Value="{x:Null}"/>
     </Style>
 
     <Style Selector="Button#ConnectPulseBtn">
@@ -139,6 +140,7 @@
           </Transitions>
         </Border.Transitions>
       </Border>
+
       <Border Grid.RowSpan="2" Grid.ColumnSpan="2" Height="6" VerticalAlignment="Top" Background="Transparent" ZIndex="10"
               Cursor="TopSide" PointerPressed="OnResizeNorthPointerPressed"/>
       <Border Grid.RowSpan="2" Grid.ColumnSpan="2" Height="6" VerticalAlignment="Bottom" Background="Transparent" ZIndex="10"
@@ -261,9 +263,10 @@
         <ListBox Grid.Row="1"
                  BorderThickness="0"
                  Background="Transparent"
+                 Focusable="False"
                  SelectedIndex="{Binding SelectedTab}"
                  SelectionMode="Single">
-          <ListBoxItem Tag="Browse" Classes="nav-item" Padding="16,10">
+          <ListBoxItem Tag="Browse" Classes="nav-item" Padding="16,10" Focusable="False">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
@@ -280,7 +283,7 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Installed" Classes="nav-item" Padding="16,10">
+          <ListBoxItem Tag="Installed" Classes="nav-item" Padding="16,10" Focusable="False">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
@@ -297,7 +300,7 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="FileExplorer" Classes="nav-item" Padding="16,10">
+          <ListBoxItem Tag="FileExplorer" Classes="nav-item" Padding="16,10" Focusable="False">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
@@ -314,7 +317,7 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Tools" Classes="nav-item" Padding="16,10">
+          <ListBoxItem Tag="Tools" Classes="nav-item" Padding="16,10" Focusable="False">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
@@ -331,7 +334,7 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-           <ListBoxItem Tag="Inspector" Classes="nav-item" Padding="16,10">
+           <ListBoxItem Tag="Inspector" Classes="nav-item" Padding="16,10" Focusable="False">
               <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
                <Border Background="Transparent" Opacity="0"
                        Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
@@ -348,7 +351,7 @@
                           LetterSpacing="1"/>
              </Grid>
            </ListBoxItem>
-          <ListBoxItem Tag="Settings" Classes="nav-item" Padding="16,10">
+          <ListBoxItem Tag="Settings" Classes="nav-item" Padding="16,10" Focusable="False">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
@@ -365,7 +368,7 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-           <ListBoxItem Tag="Logs" Classes="nav-item" Padding="16,10">
+           <ListBoxItem Tag="Logs" Classes="nav-item" Padding="16,10" Focusable="False">
               <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
                <Border Background="Transparent" Opacity="0"
                        Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
@@ -391,6 +394,7 @@
           <Button Cursor="Hand"
                   Background="Transparent"
                   BorderThickness="0"
+                  Focusable="False"
                   HorizontalAlignment="Center"
                   ToolTip.Tip="Visit Emulation Revival website"
                   Click="OnErLinkClick">
@@ -437,14 +441,20 @@
                   FontWeight="SemiBold"
                   Command="{Binding ConnectCommand}"
                   IsVisible="{Binding CanConnect}">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-connect-32.png"
                      Width="32" Height="32"
                      Stretch="Uniform"
                      VerticalAlignment="Center"/>
               <TextBlock Grid.Column="1"
-                          Text="CONNECT"
-                          VerticalAlignment="Center"/>
+                           Text="CONNECT"
+                           VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="2"
+                         Text="F5"
+                         FontSize="9"
+                         Foreground="#284325"
+                         VerticalAlignment="Center"
+                         Margin="0,0,4,0"/>
             </Grid>
           </Button>
 
@@ -488,14 +498,20 @@
                   HorizontalAlignment="Stretch"
                   FontWeight="SemiBold"
                   Command="{Binding OpenAboutCommand}">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-about-32.png"
                      Width="32" Height="32"
                      Stretch="Uniform"
                      VerticalAlignment="Center"/>
               <TextBlock Grid.Column="1"
-                          Text="ABOUT"
-                          VerticalAlignment="Center"/>
+                           Text="ABOUT"
+                           VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="2"
+                         Text="F1"
+                         FontSize="9"
+                         Foreground="#284325"
+                         VerticalAlignment="Center"
+                         Margin="0,0,4,0"/>
             </Grid>
           </Button>
 
@@ -512,6 +528,7 @@
       <Grid RowDefinitions="*,28">
         <Carousel x:Name="ViewCarousel"
                   SelectedIndex="{Binding SelectedTab}"
+                  Focusable="False"
                   RenderOptions.BitmapInterpolationMode="LowQuality">
           <Carousel.PageTransition>
             <CrossFade Duration="0:0:0.15"/>

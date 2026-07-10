@@ -1,12 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-              xmlns:vm="using:XBVault.ViewModels"
-              xmlns:models="using:XBVault.Models"
-              xmlns:conv="using:XBVault.Converters"
-              xmlns:controls="using:XBVault.Controls"
-              x:Class="XBVault.Views.InstalledView"
-              x:Name="ThisRoot"
-              Cursor="{Binding Cursor}" x:DataType="vm:InstalledViewModel">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:XBVault.ViewModels"
+             xmlns:models="using:XBVault.Models"
+             xmlns:conv="using:XBVault.Converters"
+             xmlns:controls="using:XBVault.Controls"
+
+             x:Class="XBVault.Views.InstalledView"
+             x:Name="ThisRoot"
+             Cursor="{Binding Cursor}" x:DataType="vm:InstalledViewModel">
 
   <UserControl.Resources>
     <SolidColorBrush x:Key="RunningVersionFgBrush" Color="#CEE5A0"/>

@@ -24,9 +24,14 @@ public partial class InstalledView : UserControl
     public InstalledView()
     {
         InitializeComponent();
-        Loaded += (_, _) => StartSpin();
+        Loaded += OnLoaded;
         Unloaded += (_, _) => StopSpin();
         PackageScrollViewer.ScrollChanged += OnPackageScrollChanged;
+    }
+
+    private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        StartSpin();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)

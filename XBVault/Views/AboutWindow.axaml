@@ -68,6 +68,7 @@
       <Button Cursor="Hand"
               Background="Transparent"
               BorderThickness="0"
+              Focusable="False"
               HorizontalAlignment="Center"
               ToolTip.Tip="Visit Emulation Revival website"
               Click="OnErLinkClick">

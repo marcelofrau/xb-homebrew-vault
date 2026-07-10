@@ -1,0 +1,3 @@
+xb-vault issues:
+- remove accent of send button on inspector
+- depois de instalar um app dropando na aba installed, tem q dar refresh dos pacotes automaticamente

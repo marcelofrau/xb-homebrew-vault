@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -109,6 +111,9 @@ public partial class CustomInstallViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _installSuccess;
+
+    [ObservableProperty]
+    private bool _performCleanInstall;
 
     public Cursor? Cursor => (IsAnalyzing || IsInstalling) ? AppStartingCursor : null;
 
@@ -307,10 +312,12 @@ public partial class CustomInstallViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void GoNext()
+    private async Task GoNextAsync()
     {
         if (CurrentStep < 3)
+        {
             CurrentStep++;
+        }
     }
 
     [RelayCommand]
@@ -338,6 +345,39 @@ public partial class CustomInstallViewModel : ObservableObject
         });
 
         var startTime = DateTime.UtcNow;
+
+        // Clean install: uninstall existing version first
+        if (PerformCleanInstall)
+        {
+            var identityName = ExtractPackageIdentity(analysis.MainPackage);
+            if (!string.IsNullOrEmpty(identityName))
+            {
+                try
+                {
+                    InstallStatus = "Checking for existing version...";
+                    var packages = await _xboxService.GetInstalledPackagesAsync();
+                    var existing = packages.FirstOrDefault(p =>
+                        string.Equals(p.Name, identityName, StringComparison.OrdinalIgnoreCase));
+
+                    if (existing is not null)
+                    {
+                        InstallStatus = $"Uninstalling {existing.DisplayName ?? existing.Name}...";
+                        var uninstalled = await _xboxService.UninstallPackageAsync(existing.FullName);
+                        if (!uninstalled)
+                        {
+                            InstallStatus = "Warning: uninstall failed, continuing anyway...";
+                            await Task.Delay(1500);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Clean install: failed to check/uninstall existing package");
+                    InstallStatus = "Warning: could not check for existing version...";
+                    await Task.Delay(1500);
+                }
+            }
+        }
 
         var selectedDeps = DepItems
             .Select(d => d.FilePath)
@@ -420,6 +460,29 @@ public partial class CustomInstallViewModel : ObservableObject
         if (_analysis?.WorkingDirectory is not null && Directory.Exists(_analysis.WorkingDirectory))
         {
             try { Directory.Delete(_analysis.WorkingDirectory, true); } catch { }
+        }
+    }
+
+    private static string? ExtractPackageIdentity(string? packagePath)
+    {
+        if (string.IsNullOrEmpty(packagePath) || !File.Exists(packagePath))
+            return null;
+
+        try
+        {
+            using var archive = ZipFile.OpenRead(packagePath);
+            var manifestEntry = archive.GetEntry("AppxManifest.xml");
+            if (manifestEntry is null) return null;
+
+            using var stream = manifestEntry.Open();
+            var doc = XDocument.Load(stream);
+            var ns = doc.Root?.Name.Namespace ?? XNamespace.None;
+            var identity = doc.Root?.Element(ns + "Identity");
+            return identity?.Attribute("Name")?.Value;
+        }
+        catch
+        {
+            return null;
         }
     }
 }

@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
 using XBVault.Services;
+using XBVault.ViewModels;
 
 namespace XBVault.Views;
 
@@ -26,6 +27,16 @@ public partial class CustomInstallWindow : Window
         }
         Loaded += (_, _) => StartSpin();
         Unloaded += (_, _) => StopSpin();
+        KeyDown += OnKeyDown;
+    }
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && DataContext is CustomInstallViewModel vm && vm.CanCancel)
+        {
+            vm.CancelCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 
     private void StartSpin()

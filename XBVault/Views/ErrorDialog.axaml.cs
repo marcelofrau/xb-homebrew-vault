@@ -13,9 +13,22 @@ public enum ErrorDialogType { Info, Warn, Error }
 
 public partial class ErrorDialog : Window
 {
+    private Func<Task>? _connectAction;
+    public Func<Task>? ConnectAction
+    {
+        get => _connectAction;
+        set
+        {
+            _connectAction = value;
+            ConnectBtn.IsVisible = value is not null;
+        }
+    }
+
     public ErrorDialog()
     {
         InitializeComponent();
+        Loaded += OnLoaded;
+        KeyDown += OnKeyDown;
     }
 
     public ErrorDialog(string title, string description, string details, ErrorDialogType type) : this()
@@ -45,10 +58,42 @@ public partial class ErrorDialog : Window
         Logger.Debug($"ErrorDialog shown: type={type} title='{title}'");
     }
 
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        if (ConnectBtn.IsVisible)
+            ConnectBtn.Focus();
+        else
+            CloseBtn.Focus();
+    }
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            Close();
+            e.Handled = true;
+        }
+    }
+
     private void OnCloseClick(object? sender, RoutedEventArgs e)
     {
         Logger.Trace("ErrorDialog closed by user");
         Close();
+    }
+
+    private async void OnConnectClick(object? sender, RoutedEventArgs e)
+    {
+        if (ConnectAction is null) return;
+        Logger.Trace("ErrorDialog connect button clicked");
+        try
+        {
+            await ConnectAction();
+            Close();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "ErrorDialog connect action failed");
+        }
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)

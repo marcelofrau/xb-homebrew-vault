@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using System;
 using System.Threading.Tasks;
 using XBVault;
+using XBVault.Services;
 
 namespace XBVault.Controls;
 
@@ -28,6 +29,7 @@ public static class DialogFadeBehavior
         {
             window.Opened += OnOpened;
             window.Closing += OnClosing;
+            window.Closed += OnClosed;
         }
     }
 
@@ -50,9 +52,27 @@ public static class DialogFadeBehavior
         window.Opacity = 0;
         await Task.Delay(200);
 
-        if (window.Owner is MainWindow main)
-            main.IsModalDimmed = false;
-
+        ClearDim(window);
         window.Close();
+    }
+
+    private static void OnClosed(object? sender, EventArgs e)
+    {
+        if (sender is not Window window) return;
+        window.Closed -= OnClosed;
+        ClearDim(window);
+    }
+
+    private static void ClearDim(Window window)
+    {
+        if (window.Owner is MainWindow main)
+        {
+            Logger.Trace("[DialogFade] Clearing IsModalDimmed");
+            main.IsModalDimmed = false;
+        }
+        else
+        {
+            Logger.Debug($"[DialogFade] Owner is {window.Owner?.GetType().Name ?? "null"}, cannot clear dim");
+        }
     }
 }

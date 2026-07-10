@@ -18,6 +18,8 @@ public partial class ConnectionWindow : Window
         DataContextChanged += OnDataContextChanged;
         Opened += (_, _) => Logger.Debug("ConnectionWindow opened");
         Closing += OnClosing;
+        Loaded += OnLoaded;
+        KeyDown += OnKeyDown;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -27,6 +29,22 @@ public partial class ConnectionWindow : Window
             vm.OutputLines.CollectionChanged += OnOutputLinesChanged;
             vm.Completed += OnConnectionCompleted;
             vm.CloseAction = Close;
+        }
+    }
+
+    private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        ConnectBtn?.Focus();
+    }
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            if (DataContext is ConnectionViewModel vm && vm.IsActive)
+                vm.CancelCommand.Execute(null);
+            Close();
+            e.Handled = true;
         }
     }
 

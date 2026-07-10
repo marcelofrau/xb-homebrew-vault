@@ -4,6 +4,7 @@
              xmlns:models="using:XBVault.Models"
              xmlns:converters="using:XBVault.Converters"
              xmlns:svc="using:XBVault.Services"
+
              x:Class="XBVault.Views.LogsView"
              x:DataType="vm:LogsViewModel">
 
@@ -80,6 +81,7 @@
             <ListBox Name="LogListBox"
                      ItemsSource="{Binding FilteredLogs}"
                      SelectionMode="Multiple"
+                     Focusable="False"
                      BorderThickness="0"
                      Background="Transparent">
               <ListBox.Styles>

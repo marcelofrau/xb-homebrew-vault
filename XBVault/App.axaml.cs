@@ -304,6 +304,15 @@ public partial class App : Application
                 await errDlg.ShowDialog(main);
             };
 
+            installedViewModel.ShowErrorWithConnectAction = async (title, description, details, connectAction) =>
+            {
+                var errDlg = new ErrorDialog(title, description, details, ErrorDialogType.Warn)
+                {
+                    ConnectAction = connectAction
+                };
+                await errDlg.ShowDialog(main);
+            };
+
             installedViewModel.ResolveBannerAsync = pkg => browseViewModel.FindThumbnailByPackageAsync(pkg);
             browseViewModel.OnCatalogLoaded = () =>
             {
@@ -431,6 +440,7 @@ public partial class App : Application
                         "Connect to an Xbox first before using Custom Install.",
                         "Go to the sidebar and connect to your Xbox Developer Mode console.",
                         ErrorDialogType.Warn);
+                    errDlg.ConnectAction = () => mainViewModel.ConnectCommand.ExecuteAsync(null);
                     errDlg.ShowDialog(main);
                     return;
                 }
@@ -502,6 +512,7 @@ public partial class App : Application
                         "Connect to an Xbox first before using Custom Install.",
                         "Go to the sidebar and connect to your Xbox Developer Mode console.",
                         ErrorDialogType.Warn);
+                    errDlg.ConnectAction = () => mainViewModel.ConnectCommand.ExecuteAsync(null);
                     await errDlg.ShowDialog(main);
                     return;
                 }
@@ -542,6 +553,7 @@ public partial class App : Application
                     await vm.AnalyzeCommand.ExecuteAsync(null);
                 };
                 await win.ShowDialog(main);
+                installedViewModel.RefreshPackagesCommand.Execute(null);
             };
             browseViewModel.OpenCustomInstallWithFileAction = openCustomInstallWithFile;
             installedViewModel.OpenCustomInstallWithFileAction = openCustomInstallWithFile;
@@ -572,7 +584,8 @@ public partial class App : Application
             };
 
             Logger.Info("Creating InspectorView");
-            var inspectorViewModel = new InspectorViewModel(xboxService);
+            var agentService = new XrayAgentService();
+            var inspectorViewModel = new InspectorViewModel(xboxService, agentService);
             inspectorViewModel.ShowConnectAction = mainViewModel.ShowConnectAction;
             inspectorViewModel.ShowGuideAction = () =>
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://xbvault.pages.dev/inspector") { UseShellExecute = true });
@@ -593,6 +606,13 @@ public partial class App : Application
                 });
                 return file?.TryGetLocalPath();
             };
+            inspectorViewModel.ShowInputPromptAsync = async (title, message, defaultValue, iconUri) =>
+            {
+                var dlg = new Views.InputDialog(title, message, defaultValue, iconUri);
+                await dlg.ShowDialog(main);
+                return dlg.Value;
+            };
+            inspectorViewModel.OpenCustomInstallWithFileAction = openCustomInstallWithFile;
             var inspectorView = new Views.InspectorView { DataContext = inspectorViewModel };
 
             Logger.Info("Creating SettingsView");

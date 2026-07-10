@@ -204,6 +204,7 @@ public partial class InstalledViewModel : ObservableObject
 
     public Func<Task<bool>>? ShowConnectAction { get; set; }
     public Func<string, string, string, Task>? ShowErrorAction { get; set; }
+    public Func<string, string, string, Func<Task>?, Task>? ShowErrorWithConnectAction { get; set; }
     public Func<InstalledPackage, Task<Bitmap?>>? ResolveBannerAsync { get; set; }
     public Action? OnCatalogReady { get; set; }
 
@@ -407,11 +408,29 @@ public partial class InstalledViewModel : ObservableObject
         if (!_xboxService.IsConnected)
         {
             Logger.Info("Xbox not connected — showing error dialog");
-            if (ShowErrorAction is not null)
+            if (ShowErrorWithConnectAction is not null)
+            {
+                Func<Task> connectAndRetry = async () =>
+                {
+                    if (ShowConnectAction is not null)
+                    {
+                        var ok = await ShowConnectAction();
+                        if (ok) await RefreshPackagesAsync();
+                    }
+                };
+                await ShowErrorWithConnectAction(
+                    "Not Connected",
+                    "Connect to your Xbox before refreshing packages.",
+                    "Go to the sidebar and connect to your Xbox Developer Mode console.",
+                    connectAndRetry);
+            }
+            else if (ShowErrorAction is not null)
+            {
                 await ShowErrorAction(
                     "Not Connected",
                     "Connect to your Xbox before refreshing packages.",
                     "Go to the sidebar and connect to your Xbox Developer Mode console.");
+            }
             return;
         }
 

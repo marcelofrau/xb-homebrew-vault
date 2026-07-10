@@ -1,9 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-              xmlns:models="using:XBVault.Models"
-               xmlns:controls="using:XBVault.Controls"
-               xmlns:vm="using:XBVault.ViewModels"
-               Cursor="{Binding Cursor}" x:Class="XBVault.Views.FileExplorerView" x:DataType="vm:FileExplorerViewModel">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="using:XBVault.Models"
+              xmlns:controls="using:XBVault.Controls"
+              xmlns:vm="using:XBVault.ViewModels"
+
+
+              Cursor="{Binding Cursor}" x:Class="XBVault.Views.FileExplorerView" x:DataType="vm:FileExplorerViewModel">
 
   <UserControl.Styles>
     <Style Selector="TreeViewItem">
@@ -356,6 +358,7 @@
         <ListBox x:Name="FileListBox"
                  ItemsSource="{ReflectionBinding CurrentEntries}"
                  SelectionMode="Multiple"
+                 Focusable="False"
                  BorderThickness="0"
                  Background="Transparent"
                  Foreground="White">

@@ -4,6 +4,7 @@ using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
@@ -24,9 +25,14 @@ public partial class BrowseView : UserControl
     public BrowseView()
     {
         InitializeComponent();
-        Loaded += (_, _) => StartSpin();
+        Loaded += OnLoaded;
         Unloaded += (_, _) => StopSpin();
         CatalogScrollViewer.ScrollChanged += OnCatalogScrollChanged;
+    }
+
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        StartSpin();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
