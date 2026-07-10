@@ -247,6 +247,13 @@
     <Setter Property="FontSize" Value="13"/>
     <Setter Property="FontWeight" Value="Bold"/>
     <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="FocusAdorner">
+      <FocusAdornerTemplate>
+        <Border BorderThickness="1.5"
+                BorderBrush="#AA447F3E"
+                CornerRadius="4"/>
+      </FocusAdornerTemplate>
+    </Setter>
     <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
     <Setter Property="Transitions">
       <Setter.Value>
@@ -344,6 +351,7 @@
     <Setter Property="Height" Value="32"/>
     <Setter Property="Padding" Value="0"/>
     <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="IsTabStop" Value="False"/>
     <Setter Property="Cursor" Value="Hand"/>
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="Content">
@@ -454,16 +462,29 @@
 
   <!-- CheckBox -->
   <Style Selector="CheckBox">
-    <Setter Property="Foreground" Value="White"/>
+    <Style.Resources>
+      <SolidColorBrush x:Key="CheckBoxBackground" Color="#0F1F0F"/>
+      <SolidColorBrush x:Key="CheckBoxBorderBrush" Color="#4A7A20"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFill" Color="#9ACA3C"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStroke" Color="#9ACA3C"/>
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForeground" Color="#0D1117"/>
+      <SolidColorBrush x:Key="CheckBoxForeground" Color="#F0F0F0"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillPointerOver" Color="#B5E665"/>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokePointerOver" Color="#B5E665"/>
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundPointerOver" Color="#0D1117"/>
+      <SolidColorBrush x:Key="CheckBoxBorderBrushPointerOver" Color="#6B8F2A"/>
+      <SolidColorBrush x:Key="CheckBoxBackgroundPointerOver" Color="#1A3A1A"/>
+    </Style.Resources>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
   </Style>
   <Style Selector="CheckBox:pointerover">
-    <Setter Property="Foreground" Value="#9ACA3C"/>
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
   </Style>
   <Style Selector="CheckBox TextBlock">
-    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
   </Style>
   <Style Selector="CheckBox:pointerover TextBlock">
-    <Setter Property="Foreground" Value="#9ACA3C"/>
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
   </Style>
 
   <!-- RadioButton -->
