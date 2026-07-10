@@ -2,20 +2,21 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:XBVault.ViewModels"
              xmlns:models="using:XBVault.Models"
-             xmlns:converters="using:XBVault.Converters"
+             xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
              x:Class="XBVault.Views.InspectorView"
              x:DataType="vm:InspectorViewModel">
-  <UserControl.Resources>
-    <converters:BoolToHighlightBgConverter x:Key="BoolToHighlightBg"/>
-  </UserControl.Resources>
+
+  <Panel x:Name="DropPanel"
+         Background="Transparent"
+         DragDrop.AllowDrop="True">
 
   <Grid Margin="32,22,32,32">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="*" MinHeight="100"/>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="6"/>
+      <RowDefinition Height="160" MinHeight="90" MaxHeight="300"/>
     </Grid.RowDefinitions>
 
     <!-- Row 0: Header -->
@@ -104,6 +105,24 @@
                    Width="16" Height="16" Stretch="Uniform"/>
           </Grid>
         </Button>
+        <Button Grid.Column="6"
+                Command="{Binding SetOverrideAddressCommand}"
+                Padding="8,4"
+                ToolTip.Tip="Override Xbox IP address">
+          <Grid>
+            <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-override-20.png"
+                   Width="16" Height="16" Stretch="Uniform"
+                   IsVisible="{Binding HasOverride, Converter={StaticResource BoolInverse}}"/>
+            <StackPanel Orientation="Horizontal" Spacing="3"
+                        IsVisible="{Binding HasOverride}">
+              <Ellipse Width="6" Height="6" Fill="#9ACA3C"
+                       VerticalAlignment="Center"/>
+              <TextBlock Text="{Binding OverrideAddress}"
+                         FontSize="11" Foreground="#9ACA3C"
+                         VerticalAlignment="Center"/>
+            </StackPanel>
+          </Grid>
+        </Button>
         <Button Grid.Column="7"
                 Command="{Binding ToggleFilterCommand}"
                 Padding="8,4"
@@ -152,52 +171,101 @@
               Padding="12"
               Margin="0,12,0,0">
         <Grid>
-          <ScrollViewer Name="ConsoleScrollViewer">
-            <ItemsControl Name="ConsoleList"
-                           ItemsSource="{Binding FilteredConsoleEntries}"
-                           BorderThickness="0"
-                           Background="Transparent">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="models:InspectorConsoleEntry">
-                  <SelectableTextBlock Text="{Binding Text}"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       FontSize="{Binding $parent[UserControl].DataContext.ConsoleFontSize}"
-                                       TextWrapping="NoWrap"
-                                       Foreground="{Binding Foreground}"
-                                       Background="{Binding IsMatch, Converter={StaticResource BoolToHighlightBg}}"/>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
+          <ae:TextEditor x:Name="ConsoleEditor"
+                         IsReadOnly="True"
+                         ShowLineNumbers="False"
+                         WordWrap="False"
+                         FontFamily="{StaticResource MonoFont}"
+                         FontSize="{Binding ConsoleFontSize}"
+                         Background="Transparent"
+                         BorderThickness="0">
+            <ae:TextEditor.ContextFlyout>
+              <MenuFlyout>
+                <MenuItem Header="Copy" Click="OnCopyClick"/>
+                <MenuItem Header="Select All" Click="OnSelectAllClick"/>
+              </MenuFlyout>
+            </ae:TextEditor.ContextFlyout>
+          </ae:TextEditor>
           <!-- Empty-state overlay: connected, no scan done, no entries -->
-          <StackPanel IsVisible="{Binding ShowNoSessionsFound}"
-                      HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
-            <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-radar-20.png"
-                   Width="32" Height="32" Stretch="Uniform"
-                   HorizontalAlignment="Center" Opacity="0.4"/>
-            <TextBlock Text="No agents found"
-                       FontSize="14" FontWeight="SemiBold"
-                       Foreground="{StaticResource TextMutedBrush}"
-                       HorizontalAlignment="Center"/>
-            <TextBlock Text="Hit Scan to discover homebrew agents on ports 9000–9010"
-                       FontSize="12"
-                       Foreground="{StaticResource TextDimBrush}"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap"
-                       MaxWidth="360"
-                       TextAlignment="Center"/>
-            <Button Command="{Binding OpenGuideCommand}"
-                    Padding="12,6"
-                    FontSize="12"
-                    HorizontalAlignment="Center"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Foreground="{StaticResource AccentBrush}">
-               <TextBlock Text="Read the Inspector Guide"
-                          TextDecorations="Underline"
-                          VerticalAlignment="Center"/>
-            </Button>
-          </StackPanel>
+          <ScrollViewer IsVisible="{Binding ShowNoSessionsFound}"
+                        HorizontalScrollBarVisibility="Hidden">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Spacing="16" MaxWidth="440" Margin="0,8">
+              <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-radar-20.png"
+                     Width="32" Height="32" Stretch="Uniform"
+                     HorizontalAlignment="Center" Opacity="0.4"/>
+              <TextBlock Text="No agents found"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         HorizontalAlignment="Center"/>
+              <TextBlock Text="Hit Scan to discover homebrew agents on ports 9000–9010"
+                         FontSize="12"
+                         Foreground="{StaticResource TextDimBrush}"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap"
+                         MaxWidth="360"
+                         TextAlignment="Center"/>
+
+              <!-- Feature list -->
+              <Border Background="{StaticResource SurfaceAltBrush}"
+                      CornerRadius="8" Padding="14,10">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="Real-time log streaming from your UWP app"
+                             FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                  <TextBlock Text="Lua REPL — evaluate scripts and inspect state live"
+                             FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                  <TextBlock Text="Bind C# / C++ variables and read them from your PC"
+                             FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                </StackPanel>
+              </Border>
+
+              <!-- uwp-xray-depot card -->
+              <Border Background="{StaticResource SurfaceAltBrush}"
+                      CornerRadius="8" Padding="14,10">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="uwp-xray-depot" FontSize="12" FontWeight="SemiBold"
+                             Foreground="{StaticResource AccentBrush}"/>
+                  <TextBlock TextWrapping="Wrap"
+                             FontSize="11" Foreground="{StaticResource TextMutedBrush}">
+                    C++ library — add to your UWP project for TCP-based log streaming and a Lua 5.4 REPL.
+                  </TextBlock>
+                  <TextBlock Text="Visit project ▸"
+                             FontSize="11" Foreground="{StaticResource AccentBrush}"
+                             Cursor="Hand"
+                             PointerPressed="OnXrayDepotLinkClick"/>
+                </StackPanel>
+              </Border>
+
+              <!-- xb-xray-py-connector card -->
+              <Border Background="{StaticResource SurfaceAltBrush}"
+                      CornerRadius="8" Padding="14,10">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="xb-xray-py-connector" FontSize="12" FontWeight="SemiBold"
+                             Foreground="{StaticResource AccentBrush}"/>
+                  <TextBlock TextWrapping="Wrap"
+                             FontSize="11" Foreground="{StaticResource TextMutedBrush}">
+                    Python CLI — auto-scan ports, colorized output, zero dependencies. Connect from your terminal.
+                  </TextBlock>
+                  <TextBlock Text="Visit project ▸"
+                             FontSize="11" Foreground="{StaticResource AccentBrush}"
+                             Cursor="Hand"
+                             PointerPressed="OnPyConnectorLinkClick"/>
+                </StackPanel>
+              </Border>
+
+              <Button Command="{Binding OpenGuideCommand}"
+                      Padding="12,6"
+                      FontSize="12"
+                      HorizontalAlignment="Center"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      Foreground="{StaticResource AccentBrush}">
+                 <TextBlock Text="Read the Inspector Guide"
+                            TextDecorations="Underline"
+                            VerticalAlignment="Center"/>
+              </Button>
+            </StackPanel>
+          </ScrollViewer>
         </Grid>
       </Border>
 
@@ -217,66 +285,8 @@
                      Background="{StaticResource SurfaceAltBrush}"
                      KeyDown="OnFilterKeyDown"/>
              <TextBlock Text="{Binding FilterMatchText}"
-                        FontSize="11"
-                        Foreground="{StaticResource WarningBrush}"/>
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-            <TextBlock Text="Above Lines" FontSize="12" VerticalAlignment="Center"
-                       Foreground="{StaticResource TextMutedBrush}"/>
-            <Grid Grid.Column="1" HorizontalAlignment="Right"
-                  ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="0">
-              <Button Grid.Column="0"
-                      Command="{Binding DecrementFilterLinesAboveCommand}"
-                      Background="Transparent" BorderThickness="0"
-                      Padding="0" Width="12" Height="14"
-                      Margin="0,0,2,0">
-                <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-filter-dec-10.png"
-                       Width="10" Height="10" Stretch="Uniform"/>
-              </Button>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding FilterLinesAbove}"
-                         FontSize="13" FontFamily="{StaticResource MonoFont}"
-                         VerticalAlignment="Center"
-                         HorizontalAlignment="Center"
-                         MinWidth="8"
-                         Foreground="{StaticResource TextMutedBrush}"/>
-              <Button Grid.Column="2"
-                      Command="{Binding IncrementFilterLinesAboveCommand}"
-                      Background="Transparent" BorderThickness="0"
-                      Padding="0" Width="12" Height="14">
-                <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-filter-inc-10.png"
-                       Width="10" Height="10" Stretch="Uniform"/>
-              </Button>
-            </Grid>
-          </Grid>
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-            <TextBlock Text="Below Lines" FontSize="12" VerticalAlignment="Center"
-                       Foreground="{StaticResource TextMutedBrush}"/>
-            <Grid Grid.Column="1" HorizontalAlignment="Right"
-                  ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="0">
-              <Button Grid.Column="0"
-                      Command="{Binding DecrementFilterLinesBelowCommand}"
-                      Background="Transparent" BorderThickness="0"
-                      Padding="0" Width="12" Height="14"
-                      Margin="0,0,2,0">
-                <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-filter-dec-10.png"
-                       Width="10" Height="10" Stretch="Uniform"/>
-              </Button>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding FilterLinesBelow}"
-                         FontSize="13" FontFamily="{StaticResource MonoFont}"
-                         VerticalAlignment="Center"
-                         HorizontalAlignment="Center"
-                         MinWidth="8"
-                         Foreground="{StaticResource TextMutedBrush}"/>
-              <Button Grid.Column="2"
-                      Command="{Binding IncrementFilterLinesBelowCommand}"
-                      Background="Transparent" BorderThickness="0"
-                      Padding="0" Width="12" Height="14">
-                <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-filter-inc-10.png"
-                       Width="10" Height="10" Stretch="Uniform"/>
-              </Button>
-            </Grid>
-          </Grid>
+                         FontSize="11"
+                         Foreground="{StaticResource WarningBrush}"/>
         </StackPanel>
       </Border>
     </Grid>
@@ -287,19 +297,19 @@
                   HorizontalAlignment="Stretch"
                   Background="Transparent"
                   IsVisible="{Binding ShowContent}"
-                  Margin="0"/>
+                  ResizeBehavior="PreviousAndNext"
+                  Margin="0,0,0,0"/>
 
-    <!-- Row 4: REPL input (clamped between 60-200px, resizable via splitter) -->
+    <!-- Row 4: REPL input (resizable via splitter) -->
     <Border Grid.Row="4"
             IsVisible="{Binding ShowContent}"
             Background="{StaticResource SurfaceAltBrush}"
             CornerRadius="6"
             Padding="8,6"
-            Margin="0,0,0,0"
-            MinHeight="60"
-            MaxHeight="200">
+            Margin="0,0,0,0">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-        <TextBox Text="{Binding ReplInput, Mode=TwoWay}"
+        <TextBox x:Name="ReplInput"
+                 Text="{Binding ReplInput, Mode=TwoWay}"
                  PlaceholderText="Type a command..."
                  FontFamily="{StaticResource MonoFont}"
                  FontSize="13"
@@ -308,8 +318,7 @@
                  CornerRadius="4"
                  Padding="8,6"
                  AcceptsReturn="True"
-                 TextWrapping="NoWrap"
-                 KeyDown="OnReplInputKeyDown"/>
+                 TextWrapping="NoWrap"/>
         <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="4"
                     VerticalAlignment="Bottom">
           <Button Command="{Binding ShowHelpCommand}"
@@ -335,28 +344,147 @@
     </Border>
 
     <!-- Disconnected state -->
-    <StackPanel Grid.Row="1" Grid.RowSpan="4"
-                IsVisible="{Binding ShowDisconnected}"
-                HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-      <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-search-64.png"
-             Width="64" Height="64" Stretch="Uniform"
-             HorizontalAlignment="Center" Opacity="0.6"/>
-      <TextBlock Text="Not connected" FontSize="16" FontWeight="SemiBold"
-                 Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-      <TextBlock Text="Connect to scan for inspector-enabled apps"
-                 FontSize="13" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
-      <Button Command="{Binding ConnectCommand}"
-              Padding="16,8"
-              FontSize="14"
-              HorizontalAlignment="Center">
-        <StackPanel Orientation="Horizontal" Spacing="6">
-          <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
-                 Width="20" Height="20" Stretch="Uniform"/>
-          <TextBlock Text="Connect" VerticalAlignment="Center"/>
+    <ScrollViewer Grid.Row="1" Grid.RowSpan="4"
+                  IsVisible="{Binding ShowDisconnected}"
+                  HorizontalScrollBarVisibility="Hidden">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                  Spacing="20" MaxWidth="480" Margin="0,16">
+        <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-search-64.png"
+               Width="64" Height="64" Stretch="Uniform"
+               HorizontalAlignment="Center" Opacity="0.6"/>
+        <StackPanel Spacing="4">
+          <TextBlock Text="XB INSPECTOR" FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+          <TextBlock Text="Remote diagnostics for Xbox homebrews"
+                     FontSize="13" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
         </StackPanel>
-      </Button>
-    </StackPanel>
+
+        <!-- Feature list -->
+        <Border Background="{StaticResource SurfaceAltBrush}"
+                CornerRadius="8" Padding="16,12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Real-time log streaming from your UWP app"
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+            <TextBlock Text="Lua REPL — evaluate scripts and inspect state live"
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+            <TextBlock Text="Bind C# / C++ variables and read them from your PC"
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+            <TextBlock Text="Auto-scan TCP ports 9000–9009"
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+          </StackPanel>
+        </Border>
+
+        <!-- uwp-xray-depot card -->
+        <Border Background="{StaticResource SurfaceAltBrush}"
+                CornerRadius="8" Padding="16,12">
+          <StackPanel Spacing="6">
+            <TextBlock Text="uwp-xray-depot" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{StaticResource AccentBrush}"/>
+            <TextBlock TextWrapping="Wrap"
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}">
+              C++ library you add to your UWP project. Opens a TCP socket and streams logs, runs a Lua 5.4 sandboxed REPL, and exposes live C# / C++ variables for remote inspection.
+            </TextBlock>
+            <TextBlock Text="Visit project ▸"
+                       FontSize="11" Foreground="{StaticResource AccentBrush}"
+                       Cursor="Hand"
+                       PointerPressed="OnXrayDepotLinkClick"/>
+          </StackPanel>
+        </Border>
+
+        <!-- xb-xray-py-connector card -->
+        <Border Background="{StaticResource SurfaceAltBrush}"
+                CornerRadius="8" Padding="16,12">
+          <StackPanel Spacing="6">
+            <TextBlock Text="xb-xray-py-connector" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{StaticResource AccentBrush}"/>
+            <TextBlock TextWrapping="Wrap"
+                       FontSize="12" Foreground="{StaticResource TextMutedBrush}">
+              Python CLI to connect from your terminal. Auto-scans ports, colorized log output, zero dependencies (pure stdlib). Use this if you prefer a command-line workflow.
+            </TextBlock>
+            <TextBlock Text="Visit project ▸"
+                       FontSize="11" Foreground="{StaticResource AccentBrush}"
+                       Cursor="Hand"
+                       PointerPressed="OnPyConnectorLinkClick"/>
+          </StackPanel>
+        </Border>
+
+        <!-- Action buttons -->
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <Button Command="{Binding ConnectCommand}"
+                  Padding="16,8"
+                  FontSize="14">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                     Width="20" Height="20" Stretch="Uniform"/>
+              <TextBlock Text="Connect" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <Button Command="{Binding SetOverrideAddressCommand}"
+                  Padding="16,8"
+                  FontSize="14"
+                  ToolTip.Tip="Override Xbox IP address">
+            <Grid>
+              <StackPanel Orientation="Horizontal" Spacing="4"
+                          IsVisible="{Binding HasOverride, Converter={StaticResource BoolInverse}}">
+                <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-override-20.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+                <TextBlock Text="Override IP" VerticalAlignment="Center"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="4"
+                          IsVisible="{Binding HasOverride}">
+                <Ellipse Width="6" Height="6" Fill="#9ACA3C"
+                         VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding OverrideAddress}"
+                           FontSize="14" Foreground="#9ACA3C"
+                           VerticalAlignment="Center"/>
+              </StackPanel>
+            </Grid>
+          </Button>
+          <Button Command="{Binding OpenGuideCommand}"
+                  Padding="16,8"
+                  FontSize="14"
+                  ToolTip.Tip="Open Inspector documentation">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Image Source="avares://XBVault/Assets/Views/InspectorView/inspector-help-20.png"
+                     Width="20" Height="20" Stretch="Uniform"/>
+              <TextBlock Text="Guide" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
 
   </Grid>
+
+    <!-- Drop overlay (on top of all content) -->
+    <Border x:Name="DropOverlay"
+            IsVisible="False"
+            IsHitTestVisible="False"
+            ZIndex="100"
+            Background="#CC1A1A2E"
+            BorderThickness="2"
+            BorderBrush="#B40078D7"
+            CornerRadius="12"
+            Margin="4">
+      <StackPanel VerticalAlignment="Center"
+                  HorizontalAlignment="Center"
+                  Spacing="12">
+        <Image Source="avares://XBVault/Assets/Icons/droppackage-64.png"
+               Width="64" Height="64"
+               Stretch="Uniform"
+               HorizontalAlignment="Center"
+               Opacity="0.8"/>
+        <TextBlock Text="Drop a package to install"
+                   FontSize="16"
+                   FontWeight="SemiBold"
+                   Foreground="White"
+                   HorizontalAlignment="Center"/>
+        <TextBlock Text=".appx  .msix  .appxbundle  .zip"
+                   FontSize="12"
+                   Foreground="#AAAAAA"
+                   HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+  </Panel>
 
 </UserControl>
