@@ -446,7 +446,8 @@ A CI step verifies no `XB_INSPECTOR_ENABLED` symbols exist in release builds.
 
 ## Reference
 
-- **Xbox library:** [uwp-xray-depot](https://github.com/marcelofrau/uwp-xray-depot) — `xb-inspector` C++ implementation with full docs
+- **Xbox library (C++):** [uwp-xray-depot](https://github.com/marcelofrau/uwp-xray-depot) — `xb-inspector` native implementation with full docs, CMake integration, Lua prebuilt, and examples
+- **Python connector (standalone):** [xb-xray-py-connector](https://github.com/marcelofrau/xb-xray-py-connector) — standalone Python client for XRay TCP protocol, use outside of XBVault for scripting, automation, or custom tools
 - **Desktop app:** `XBVault/ViewModels/InspectorViewModel.cs`
 - **Desktop UI:** `XBVault/Views/InspectorView.axaml`
 - **Icons:** `XBVault/Assets/Views/InspectorView/*.png`
