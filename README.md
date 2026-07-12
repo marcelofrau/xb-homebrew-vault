@@ -46,6 +46,8 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 | 🌙 | **Blades Theme** | Xbox 360-inspired dark theme with green accents |
 | 🔐 | **Secure Credentials** | Obfuscated local storage — no cloud, no accounts, no telemetry |
 | 📋 | **Activity Log** | Full in-app log with multi-select, copy, auto-scroll, and configurable log level |
+| 🔬 | **XRay / Inspector** | Live Xbox log streaming and Lua REPL via TCP — connect to agents on ports 9000–9009, send commands, view real-time logs, run diagnostics |
+| ⌨️ | **Keyboard Shortcuts** | Escape to close, Ctrl+Enter for quick actions — built-in shortcuts for common workflows |
 
 ---
 
@@ -120,9 +122,27 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 | Dev Tools | ✅ | Screenshot, system info, processes, network, performance chart |
 | USB permission wizard | ✅ | WMI drive detection, icacls permission grant |
 | File Explorer (SSH/SFTP) | ✅ | Browse, upload/download, delete, create folders — dual-pane tree + list |
+| XRay / Inspector | ✅ | TCP agent discovery, Lua REPL, live log streaming |
 | Cross-platform polish | ⏳ | macOS build v0.8.6, Linux/macOS runtime guards v0.9.2 |
 
 See the full [Roadmap](https://marcelofrau.github.io/xb-homebrew-vault/roadmap) for details and future plans.
+
+---
+
+## 🔬 XRay — Live Xbox Diagnostics
+
+XB Homebrew Vault includes built-in support for [XRay](https://github.com/marcelofrau/xb-xray-py-connector), a lightweight TCP-based diagnostics agent for Xbox homebrew.
+
+| Capability | Description |
+|------------|-------------|
+| **Agent Discovery** | Automatically scans ports 9000–9009 for XRay agents |
+| **Lua REPL** | Send Lua commands directly to your Xbox — output streamed in real time |
+| **Live Log Streaming** | View Xbox application logs as they happen |
+| **Syntax Highlighting** | AvaloniaEdit-powered console with FiraCode Nerd Font |
+
+XRay runs as a separate agent on your Xbox. XB Homebrew Vault discovers it and provides a built-in Inspector console for sending commands and viewing output — no separate tools needed.
+
+[Learn more →](https://marcelofrau.github.io/xb-homebrew-vault/inspector)
 
 ---
 

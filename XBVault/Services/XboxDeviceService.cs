@@ -714,6 +714,12 @@ public class XboxDeviceService
                         return true;
                     }
 
+                    if (IsSignatureError(body))
+                    {
+                        Logger.Info("Package manager ready (TRUST_E_NOSIGNATURE — no operation in progress)");
+                        return true;
+                    }
+
                     Logger.Warn($"Package manager state: {statusMsg} — not ready yet");
                     continue;
                 }
@@ -733,6 +739,19 @@ public class XboxDeviceService
 
     private static bool IsIdleCode(HttpStatusCode code) =>
         code == HttpStatusCode.NotFound || code == HttpStatusCode.NoContent;
+
+    private static bool IsSignatureError(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("Code", out var el) && el.GetInt32() == unchecked((int)0x800B0100))
+                return true;
+        }
+        catch { }
+        return false;
+    }
 
     private static bool IsJsonSuccess(string json, out string statusMessage)
     {

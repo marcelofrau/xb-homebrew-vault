@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] — 2026-07-12
+
+### Added
+
+- **XRay / Inspector integration** — TCP agent discovery on ports 9000–9009, real-time Xbox log streaming, Lua REPL with command history and output formatting
+- **Keyboard shortcuts** — Escape to close dialogs/windows, Ctrl+Enter for quick actions
+- **AvaloniaEdit console** — syntax-highlighted Lua REPL in Inspector view with `FiraCode Nerd Font`
+- **Inspector guide docs** — comprehensive developer pitch page: what XRay is, advantages over ad-hoc tools, connection guide
+- **Window maximize/restore button** — toggle between maximized and restored window state from title bar
+- **Filter overlay** — catalog filter panel with improved layout and UX
+- **Custom install wizard logging** — Trace/Debug/Info/Warn/Error logging across `CustomInstallViewModel`, `PackageInstallService`, and `XboxDeviceService` for diagnosability
+
+### Fixed
+
+- **File lock on custom install** — ZIP extraction kept file handle open during `ZipFile.ExtractToDirectory`; switched to explicit `using` block to close before analysis
+- **WaitForPackageManagerReady infinite loop** — error `-2146762496` (0x800B0100, TRUST_E_NOSIGNATURE) not recognized as "idle" state; added `IsSignatureError()` helper to break the loop after 120s timeout
+- **Input validation in custom install** — `AnalyzeAsync` now validates `SourcePath`/`SourceUrl` before use; empty or whitespace-only input shows error message instead of proceeding
+- **BladesTheme CheckBox/RadioButton resource keys** — corrected Avalonia Fluent resource keys (`RadioButtonOuterEllipseStroke*`, `CheckBoxCheckBackgroundStroke*`, `*Foreground*`); stroke colors corrected to `#8B8D91` normal, `#B5E665` on hover
+- **Item detail error display** — replaced red error card with plain text below "Install failed" message
+
+### Changed
+
+- **Performance tuning** — Skia GPU cache increased, dirty-rect clipping enabled for reduced CPU usage
+- **Tab transitions** — smoother cross-fade between Browse/Installed/Tools/Logs tabs
+- **Disabled icon set** — visual feedback for inactive/disabled UI elements
+- **Inspector console polish** — improved log streaming display and REPL output formatting
+
+---
+
+## [1.0.1] — 2026-07-05
+
+### Added
+
+- **Pre-flight checks** — validates Xbox connection before install/uninstall operations
+- **CLI parameters** — command-line flags for headless or scripted usage
+- **Helper scripts** — convenience scripts for common development tasks
+
+### Fixed
+
+- **Package manager state polling** — improved detection of install/uninstall completion states
+
+---
+
+## [1.0.0] — 2026-07-01
+
+### Added
+
+- **Installed card overhaul** — redesigned package cards with status indicators and action buttons
+- **Catalog overlay** — detailed overlay view for catalog items with install/dependency info
+- **Multi-strategy package matching** — improved matching of installed packages to catalog entries using name, version, and family
+- **Download flyout** — progress flyout during package download with speed and ETA
+- **Disabled icon set** — visual treatment for inactive/disabled toolbar buttons
+- **File drop dialog** — enhanced drag-and-drop with file type validation and unsupported format warnings
+
+### Changed
+
+- **Post-1.0 stabilization complete** — feature-complete, refactored, tech-debt-reduced for stable release
+
+---
+
 ## [0.9.6] — 2026-06-30
 
 ### Added

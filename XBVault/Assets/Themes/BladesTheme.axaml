@@ -91,6 +91,30 @@
     <SolidColorBrush x:Key="SystemControlPageBackgroundAltHighBrush" Color="{StaticResource BladesSurface}"/>
     <SolidColorBrush x:Key="SystemControlPageBackgroundChromeLowBrush" Color="{StaticResource BladesSurface}"/>
 
+    <!-- CheckBox indicator stroke overrides (correct Avalonia Fluent keys) -->
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUnchecked" Color="#8B8D91"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" Color="#B5E665"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#8B8D91"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#B5E665"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUncheckedDisabled" Color="#3A3D43"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="#3A3D43"/>
+    <SolidColorBrush x:Key="CheckBoxForegroundUnchecked" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="CheckBoxForegroundUncheckedPointerOver" Color="#9ACA3C"/>
+    <SolidColorBrush x:Key="CheckBoxForegroundChecked" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="CheckBoxForegroundCheckedPointerOver" Color="#9ACA3C"/>
+
+    <!-- RadioButton indicator stroke overrides (correct Avalonia Fluent keys) -->
+    <SolidColorBrush x:Key="RadioButtonOuterEllipseStroke" Color="#8B8D91"/>
+    <SolidColorBrush x:Key="RadioButtonOuterEllipseStrokePointerOver" Color="#B5E665"/>
+    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="#8B8D91"/>
+    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#B5E665"/>
+    <SolidColorBrush x:Key="RadioButtonOuterEllipseStrokeDisabled" Color="#3A3D43"/>
+    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" Color="#3A3D43"/>
+    <SolidColorBrush x:Key="RadioButtonForeground" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="RadioButtonForegroundPointerOver" Color="#9ACA3C"/>
+    <SolidColorBrush x:Key="RadioButtonForegroundChecked" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="RadioButtonForegroundCheckedPointerOver" Color="#9ACA3C"/>
+
     <!-- TreeViewItem theme with connector lines -->
     <ControlTheme x:Key="{x:Type TreeViewItem}" TargetType="TreeViewItem"
                   BasedOn="{StaticResource {x:Type TreeViewItem}}">
@@ -462,19 +486,6 @@
 
   <!-- CheckBox -->
   <Style Selector="CheckBox">
-    <Style.Resources>
-      <SolidColorBrush x:Key="CheckBoxBackground" Color="#0F1F0F"/>
-      <SolidColorBrush x:Key="CheckBoxBorderBrush" Color="#4A7A20"/>
-      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFill" Color="#9ACA3C"/>
-      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStroke" Color="#9ACA3C"/>
-      <SolidColorBrush x:Key="CheckBoxCheckGlyphForeground" Color="#0D1117"/>
-      <SolidColorBrush x:Key="CheckBoxForeground" Color="#F0F0F0"/>
-      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillPointerOver" Color="#B5E665"/>
-      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokePointerOver" Color="#B5E665"/>
-      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundPointerOver" Color="#0D1117"/>
-      <SolidColorBrush x:Key="CheckBoxBorderBrushPointerOver" Color="#6B8F2A"/>
-      <SolidColorBrush x:Key="CheckBoxBackgroundPointerOver" Color="#1A3A1A"/>
-    </Style.Resources>
     <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
   </Style>
   <Style Selector="CheckBox:pointerover">
@@ -489,16 +500,16 @@
 
   <!-- RadioButton -->
   <Style Selector="RadioButton">
-    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
   </Style>
   <Style Selector="RadioButton:pointerover">
-    <Setter Property="Foreground" Value="#9ACA3C"/>
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
   </Style>
   <Style Selector="RadioButton TextBlock">
-    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
   </Style>
   <Style Selector="RadioButton:pointerover TextBlock">
-    <Setter Property="Foreground" Value="#9ACA3C"/>
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
   </Style>
 
   <!-- ListBox -->

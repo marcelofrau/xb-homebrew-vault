@@ -17,6 +17,7 @@ Everything you need to understand, build, and contribute to XB Homebrew Vault.
 | [Troubleshooting](troubleshooting) | Fix common problems — connection, installs, crashes |
 | [Requirements](requirements) | Functional and non-functional requirements — what the app must do and how |
 | [Roadmap](roadmap) | Version history, shipped features, and what's planned next |
+| [Inspector](inspector) | XRay TCP agent discovery, Lua REPL, live log streaming — Xbox diagnostics built-in |
 
 ---
 
