@@ -8,7 +8,7 @@ published: true
 
 ## Status
 
-> 🚧 **Under development.** Protocol handling, scan logic, and REPL command forwarding are stubs on the XBVault side. The Xbox-side native library (`xb-inspector`) has full architecture defined and is under active implementation at [uwp-xray-depot](https://github.com/marcelofrau/uwp-xray-depot). UI shell, console, font controls, and state management are complete.
+> ✅ **Functional.** Live logging, Lua REPL, TCP agent discovery, and port scanning all work. XBVault connects to running XRay agents on ports 9000–9009, streams logs in real time, and executes Lua commands remotely. The Lua binding layer uses manual `bindstruct` and C API calls — Sol2 integration was planned but moved out of scope.
 
 ## The Problem
 
@@ -194,7 +194,7 @@ OK
 
 ### How it works
 
-1. Developer declares bindings in C++ using `xb::Inspector::bind()` and `xb::Inspector::bind_type()`
+1. Developer manually binds C++ variables and functions to Lua via the C API (`lua_pushlightuserdata`, `luaL_newmetatable`, `bindstruct`) — no Sol2, no macros, full control
 2. Lua runs on the **main thread** at the start of each frame — zero data races
 3. Commands arrive from Vault via TCP, queued in an SPSC queue
 4. Each command is executed via `luaL_dostring` wrapped in `lua_pcall` — errors don't crash the app
@@ -214,21 +214,31 @@ OK
 
 ### Exposing C++ to Lua
 
+Bindings use the raw Lua C API — manual but full control over what's exposed:
+
 ```cpp
-// Register a type with its fields
-xb::Inspector::bind_type<Player>("Player",
-    "health", &Player::health,
-    "name", &Player::name
-);
+// Define a struct binding
+struct Player {
+    float health;
+    char name[64];
+};
 
-// Expose a specific instance
-Player player1;
-xb::Inspector::bind("player", &player1);
+// Register via bindstruct — pushes fields into Lua table
+static int lua_player_get_health(lua_State* L) {
+    Player* p = (Player*)lua_touserdata(L, 1);
+    lua_pushnumber(L, p->health);
+    return 1;
+}
 
-// Expose a function
-xb::Inspector::bind_function("engine_reset", []() {
-    Engine::reset();
-});
+static int lua_player_set_health(lua_State* L) {
+    Player* p = (Player*)lua_touserdata(L, 1);
+    p->health = (float)lua_tonumber(L, 2);
+    return 0;
+}
+
+// Bind in init
+xb::Inspector::bind("player", &g_player);
+xb::Inspector::bind_function("engine_reset", []() { Engine::reset(); });
 ```
 
 In the Vault terminal:
@@ -236,6 +246,8 @@ In the Vault terminal:
 > player.health = 50   -- modifies the real C++ Player object
 > engine_reset()       -- calls the engine reset function
 ```
+
+> **Note:** Sol2 (automatic C++ ↔ Lua binding) was originally planned but moved out of scope. Current bindings are manual via `lua_push*`/`lua_to*` C API calls and `bindstruct` helpers. This keeps the dependency footprint minimal and avoids Sol2's UWP compatibility issues.
 
 ## Network Protocol
 
@@ -327,15 +339,17 @@ The Vault scans ports 9000-9009 on the Xbox IP. Each open port that sends a vali
 ```cpp
 #include <xray/inspector.hpp>
 
+struct Player {
+    float health;
+    char name[64];
+};
+
 int main() {
     xb::Inspector::start();
 
-    // Bind variables for REPL inspection
-    xb::Inspector::bind_type<Player>("Player",
-        "health", &Player::health,
-        "name", &Player::name
-    );
+    // Bind variables for REPL inspection (manual C API)
     xb::Inspector::bind("player", &g_player);
+    xb::Inspector::bind_function("engine_reset", []() { Engine::reset(); });
 
     // Logging with tags
     xb::Inspector::log_info("Engine initialized");
@@ -417,16 +431,18 @@ A CI step verifies no `XB_INSPECTOR_ENABLED` symbols exist in release builds.
 - TLS/authentication (trusted LAN only, Dev Mode only)
 - Binary protocol support (text-only)
 - Multi-language REPL (Lua only for v1)
+- Sol2 automatic bindings (out of scope — manual C API bindings sufficient for Xbox homebrew use cases)
 
 ## Roadmap
 
 | Phase | Status | What |
 |---|---|---|
 | **0 — Depot scaffold** | ✅ Docs, submodules, Lua prebuilt, CMake targets | [uwp-xray-depot](https://github.com/marcelofrau/uwp-xray-depot) |
-| **1 — TCP + API** | 🔄 Implementing | `start/stop/log`, handshake, port fallback |
-| **2 — Dual logging** | 📅 Planned | spdlog file + TCP sinks, backpressure |
-| **3 — Lua REPL** | 📅 Planned | Sol2 bindings, SPSC queue, sandbox |
-| **4 — CI + cross-language** | 📅 Planned | Build scripts, C# + Rust guides |
+| **1 — TCP + API** | ✅ `start/stop/log`, handshake, port fallback | Live |
+| **2 — Dual logging** | ✅ spdlog file + TCP sinks, backpressure | Live |
+| **3 — Lua REPL** | ✅ Manual bindings (bindstruct + C API), SPSC queue, sandbox | Live |
+| **4 — CI + cross-language** | ⏳ Build scripts, C# + Rust guides | Pending |
+| **5 — Sol2 bindings** | ❌ Out of scope — UWP compatibility issues, manual bindings sufficient | Cancelled |
 
 ## Reference
 
