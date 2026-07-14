@@ -51,7 +51,7 @@ public partial class BrowseView : UserControl
         DragDrop.RemoveDropHandler(DropPanel, OnDrop);
     }
 
-    private static readonly HashSet<string> _packageExts = [".appx", ".msix", ".appxbundle", ".zip"];
+    private static readonly HashSet<string> _packageExts = [".appx", ".msix", ".appxbundle", ".msixbundle", ".zip"];
 
     private void OnDragOver(object? sender, DragEventArgs e)
     {

@@ -20,7 +20,7 @@ namespace XBVault.Views;
 
 public partial class InspectorView : UserControl
 {
-    private static readonly HashSet<string> _packageExts = [".appx", ".msix", ".appxbundle", ".zip"];
+    private static readonly HashSet<string> _packageExts = [".appx", ".msix", ".appxbundle", ".msixbundle", ".zip"];
     private InspectorConsoleColorizer? _colorizer;
     private ViewModels.InspectorViewModel? _vm;
 

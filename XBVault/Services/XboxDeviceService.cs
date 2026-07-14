@@ -720,6 +720,12 @@ public class XboxDeviceService
                         return true;
                     }
 
+                    if (IsResourceInUseError(body, out var busyApps))
+                    {
+                        Logger.Error($"Package manager blocked — apps need to be closed: {busyApps}");
+                        return false;
+                    }
+
                     Logger.Warn($"Package manager state: {statusMsg} — not ready yet");
                     continue;
                 }
@@ -748,6 +754,22 @@ public class XboxDeviceService
             var root = doc.RootElement;
             if (root.TryGetProperty("Code", out var el) && el.GetInt32() == unchecked((int)0x800B0100))
                 return true;
+        }
+        catch { }
+        return false;
+    }
+
+    private static bool IsResourceInUseError(string json, out string busyApps)
+    {
+        busyApps = "";
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("Code", out var el)) return false;
+            if (el.GetInt32() != unchecked((int)0x80073D02)) return false;
+            busyApps = root.TryGetProperty("Reason", out var r) ? r.GetString() ?? "" : "";
+            return true;
         }
         catch { }
         return false;

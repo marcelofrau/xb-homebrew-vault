@@ -156,7 +156,7 @@
                      FontWeight="SemiBold"
                      Foreground="White"
                      HorizontalAlignment="Center"/>
-          <TextBlock Text=".appx, .msix, .appxbundle or .zip"
+          <TextBlock Text=".appx, .msix, .appxbundle, .msixbundle or .zip"
                      FontSize="12"
                      Foreground="#CCFFFFFF"
                      HorizontalAlignment="Center"/>

@@ -167,7 +167,7 @@
                   Opacity="0.45">
         <Image Source="avares://XBVault/Assets/Icons/droppackage-64.png"
                Width="14" Height="14" Stretch="Uniform"/>
-        <TextBlock Text="Drop .appx/.msix to install"
+        <TextBlock Text="Drop .appx/.msix/.msixbundle to install"
                    FontSize="11"
                    Foreground="{StaticResource TextMutedBrush}"
                    VerticalAlignment="Center"/>
@@ -470,7 +470,7 @@
                    FontWeight="SemiBold"
                    Foreground="White"
                    HorizontalAlignment="Center"/>
-        <TextBlock Text=".appx, .msix, .appxbundle or .zip"
+        <TextBlock Text=".appx, .msix, .appxbundle, .msixbundle or .zip"
                    FontSize="12"
                    Foreground="#CCFFFFFF"
                    HorizontalAlignment="Center"/>
