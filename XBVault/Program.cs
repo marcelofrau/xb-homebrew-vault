@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Rendering.Composition;
 using Avalonia.Skia;
@@ -8,6 +10,8 @@ using XBVault.Services;
 class Program
 {
     public static PreFlightReport? PreFlightReport { get; private set; }
+
+    private const string MutexName = "Global\\XBVault_SingleInstance";
 
     [STAThread]
     static void Main(string[] args)
@@ -54,6 +58,15 @@ class Program
 
             Logger.Info("Application starting");
 
+            // Single instance check
+            using var mutex = new Mutex(true, MutexName, out bool createdNew);
+            if (!createdNew)
+            {
+                Logger.Warn("Another instance is already running — attempting to activate it");
+                TryActivateExistingInstance();
+                return;
+            }
+
             // Pre-flight: detect and auto-repair corruption
             PreFlightReport = PreFlightChecker.Run();
 
@@ -83,6 +96,42 @@ class Program
             Logger.Shutdown();
         }
     }
+
+    private static void TryActivateExistingInstance()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return;
+
+        try
+        {
+            var currentPid = Environment.ProcessId;
+            var procs = Process.GetProcessesByName("XBVault");
+            foreach (var proc in procs)
+            {
+                if (proc.Id == currentPid || proc.MainWindowHandle == IntPtr.Zero)
+                    continue;
+
+                ShowWindow(proc.MainWindowHandle, SW_RESTORE);
+                SetForegroundWindow(proc.MainWindowHandle);
+                Logger.Info($"Activated existing instance (PID {proc.Id})");
+                return;
+            }
+
+            Logger.Warn("Could not find existing instance window to activate");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to activate existing instance");
+        }
+    }
+
+    private const int SW_RESTORE = 9;
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
     static AppBuilder BuildAvaloniaApp()
     {

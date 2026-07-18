@@ -726,6 +726,12 @@ public class XboxDeviceService
                         return false;
                     }
 
+                    if (IsFatalDeploymentError(body, out var deployError))
+                    {
+                        Logger.Error($"Package manager deployment failed: {deployError}");
+                        return false;
+                    }
+
                     Logger.Warn($"Package manager state: {statusMsg} — not ready yet");
                     continue;
                 }
@@ -769,6 +775,23 @@ public class XboxDeviceService
             if (!root.TryGetProperty("Code", out var el)) return false;
             if (el.GetInt32() != unchecked((int)0x80073D02)) return false;
             busyApps = root.TryGetProperty("Reason", out var r) ? r.GetString() ?? "" : "";
+            return true;
+        }
+        catch { }
+        return false;
+    }
+
+    private static bool IsFatalDeploymentError(string json, out string error)
+    {
+        error = "";
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("Success", out var s) || s.GetBoolean()) return false;
+            var code = root.TryGetProperty("Code", out var c) ? c.GetInt32() : 0;
+            var reason = root.TryGetProperty("Reason", out var r) ? r.GetString() ?? "" : "";
+            error = $"Code={code} {reason}";
             return true;
         }
         catch { }

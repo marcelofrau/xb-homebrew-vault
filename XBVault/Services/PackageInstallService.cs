@@ -58,12 +58,30 @@ public class PackageInstallService
         {
             var name = Path.GetFileNameWithoutExtension(f);
             var match = ArchPattern.Match(name);
-            if (!match.Success)
-                return true;
+            if (match.Success)
+            {
+                var fileArch = match.Groups[1].Value.ToLowerInvariant();
+                return fileArch == targetSuffix || fileArch == "neutral";
+            }
 
-            var fileArch = match.Groups[1].Value.ToLowerInvariant();
-            return fileArch == targetSuffix || fileArch == "neutral";
+            var pathArch = GetPathArchitecture(f);
+            if (pathArch is not null)
+                return pathArch == targetSuffix;
+
+            return true;
         }).ToArray();
+    }
+
+    private static string? GetPathArchitecture(string filePath)
+    {
+        var segments = filePath.Replace('\\', '/').Split('/');
+        foreach (var seg in segments)
+        {
+            var segLower = seg.ToLowerInvariant();
+            if (segLower is "x64" or "x86" or "arm64" or "arm")
+                return segLower;
+        }
+        return null;
     }
 
     public PackageInstallService(CacheService cache, XboxDeviceService xbox)
@@ -441,11 +459,12 @@ public class PackageInstallService
             "XBVault", "analysis", Guid.NewGuid().ToString("N"));
         var packages = ExtractPackage(filePath, extractDir);
 
-        // Scan sibling files in parent directory for additional deps
-        var parentDir = Path.GetDirectoryName(filePath);
-        if (parentDir is not null && Directory.Exists(parentDir))
+        var isZip = filePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
+        var scanDir = isZip ? extractDir : Path.GetDirectoryName(filePath);
+
+        if (scanDir is not null && Directory.Exists(scanDir))
         {
-            var siblings = GetInstallableFiles(parentDir)
+            var siblings = GetInstallableFiles(scanDir)
                 .Where(f => !f.Equals(filePath, StringComparison.OrdinalIgnoreCase))
                 .ToArray();
             if (siblings.Length > 0)

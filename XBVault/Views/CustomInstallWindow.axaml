@@ -136,8 +136,7 @@
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"
                   Margin="16,0,0,0">
               <TextBox Text="{Binding SourcePath}"
-                       IsReadOnly="True"
-                       PlaceholderText="No file selected..."
+                       PlaceholderText="Type path or click Browse..."
                        FontSize="12"/>
               <Button Grid.Column="1"
                       Padding="12,6"
@@ -253,11 +252,11 @@
                       <DataTemplate x:DataType="vm:SelectableDep">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6"
                               Margin="2,2,14,2">
-                          <TextBlock Text="{Binding FileName}"
+                          <TextBlock Text="{Binding DisplayName}"
                                      FontSize="12"
                                      VerticalAlignment="Center"
                                      TextWrapping="Wrap"
-                                     ToolTip.Tip="{Binding FilePath}"/>
+                                     ToolTip.Tip="{Binding RelativePath}"/>
                           <Button Grid.Column="1"
                                   Command="{Binding $parent[ItemsControl].DataContext.RemoveDepCommand}"
                                   CommandParameter="{Binding}"
@@ -349,11 +348,12 @@
                                  Width="16" Height="16" Stretch="Uniform"
                                  VerticalAlignment="Center" Opacity="0.7"/>
                           <TextBlock Grid.Column="1"
-                                     Text="{Binding FileName}"
+                                     Text="{Binding DisplayName}"
                                      FontSize="11"
                                      Foreground="{StaticResource TextMutedBrush}"
                                      VerticalAlignment="Center"
-                                     TextTrimming="CharacterEllipsis"/>
+                                     TextTrimming="CharacterEllipsis"
+                                     ToolTip.Tip="{Binding RelativePath}"/>
                         </Grid>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>

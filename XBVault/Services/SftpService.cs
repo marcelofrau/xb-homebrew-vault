@@ -14,6 +14,7 @@ public class SftpService : IDisposable
     private int _lastPort;
     private string? _lastUser;
     private string? _lastPass;
+    private readonly SemaphoreSlim _shellLock = new(1, 1);
 
     public bool IsConnected => _sftp?.IsConnected ?? false;
 
@@ -516,35 +517,43 @@ public class SftpService : IDisposable
         }
     }
 
-    public Task<SftpShellResult> RunShellCommandAsync(string command)
+    public async Task<SftpShellResult> RunShellCommandAsync(string command)
     {
-        return Task.Run(() =>
+        await _shellLock.WaitAsync();
+        try
         {
-            if (_ssh is null || !_ssh.IsConnected)
-                throw new InvalidOperationException("SSH not connected");
-
-            var result = new SftpShellResult();
-
-            try
+            return await Task.Run(() =>
             {
-                using var cmd = _ssh.RunCommand(command);
-                result.Output = cmd.Result ?? string.Empty;
-                result.Error = cmd.Error;
-                result.Success = cmd.ExitStatus == 0;
+                if (_ssh is null || !_ssh.IsConnected)
+                    throw new InvalidOperationException("SSH not connected");
 
-                Logger.Debug($"SFTP shell command exit: {cmd.ExitStatus}");
-                if (!string.IsNullOrEmpty(cmd.Error))
-                    Logger.Warn($"SFTP shell command stderr: {cmd.Error}");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"SFTP shell command failed: {command}");
-                result.Success = false;
-                result.Error = ex.Message;
-            }
+                var result = new SftpShellResult();
 
-            return result;
-        });
+                try
+                {
+                    using var cmd = _ssh.RunCommand(command);
+                    result.Output = cmd.Result ?? string.Empty;
+                    result.Error = cmd.Error;
+                    result.Success = cmd.ExitStatus == 0;
+
+                    Logger.Debug($"SFTP shell command exit: {cmd.ExitStatus}");
+                    if (!string.IsNullOrEmpty(cmd.Error))
+                        Logger.Warn($"SFTP shell command stderr: {cmd.Error}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"SFTP shell command failed: {command}");
+                    result.Success = false;
+                    result.Error = ex.Message;
+                }
+
+                return result;
+            });
+        }
+        finally
+        {
+            _shellLock.Release();
+        }
     }
 
     public void Dispose()

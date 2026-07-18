@@ -21,6 +21,7 @@ public partial class InstalledViewModel : ObservableObject
     private readonly List<InstalledPackage> _allPackages = [];
 
     public Func<string, Task>? OpenCustomInstallWithFileAction { get; set; }
+    public Action? ShowCustomInstallAction { get; set; }
 
     public InstalledViewModel(XboxDeviceService xboxService)
     {
@@ -168,7 +169,7 @@ public partial class InstalledViewModel : ObservableObject
     [ObservableProperty]
     private InstalledPackage? _selectedPackage;
 
-    public bool IsPackageSelected => SelectedPackage is not null && !IsUninstalling;
+    public bool IsPackageSelected => SelectedPackage is not null && !IsLoading && !IsUninstalling;
     public bool IsPackageRunning => !IsLoading && !IsUninstalling && (SelectedPackage?.IsRunning ?? false);
     public bool IsPackageNotRunning => !IsLoading && !IsUninstalling && (SelectedPackage is null || !SelectedPackage.IsRunning);
     public bool IsPackageSelectedNotRunning => !IsLoading && !IsUninstalling && SelectedPackage is not null && !SelectedPackage.IsRunning;
@@ -223,6 +224,9 @@ public partial class InstalledViewModel : ObservableObject
                 _xboxService.MarkConnected();
         }
     }
+
+    [RelayCommand]
+    private void OpenCustomInstall() => ShowCustomInstallAction?.Invoke();
 
     private async Task<bool> SuspendAnyRunningAsync(InstalledPackage? excludePkg = null)
     {
@@ -453,6 +457,7 @@ public partial class InstalledViewModel : ObservableObject
             foreach (var pkg in _allPackages)
                 Logger.Info($"  {pkg.Name,-30} v{pkg.Version,-14}  {pkg.DisplayPublisher ?? "-",-20}  {pkg.PackageFamilyName ?? ""}");
 
+            SelectedPackage = null;
             ApplyFilter();
 
             if (_genericBanner is null)

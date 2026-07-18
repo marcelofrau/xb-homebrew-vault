@@ -445,6 +445,7 @@ public partial class App : Application
                     return;
                 }
                 var vm = new CustomInstallViewModel(xboxService, installService);
+                vm.OnInstallComplete = () => installedViewModel.RefreshPackagesCommand.Execute(null);
                 vm.PickFileAsync = async () =>
                 {
                     try
@@ -502,6 +503,7 @@ public partial class App : Application
             };
             toolsViewModel.ShowCustomInstallAction = openCustomInstall;
             browseViewModel.ShowCustomInstallAction = openCustomInstall;
+            installedViewModel.ShowCustomInstallAction = openCustomInstall;
 
                 Func<string, Task> openCustomInstallWithFile = async (filePath) =>
             {

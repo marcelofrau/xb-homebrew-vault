@@ -18,8 +18,35 @@ namespace XBVault.ViewModels;
 public record SelectableDep
 {
     public string FilePath { get; init; } = "";
+    public string BaseDirectory { get; init; } = "";
     public string FileName => Path.GetFileName(FilePath);
+    public string DisplayName { get; set; }
+    public string RelativePath => MakeRelative(FilePath, BaseDirectory);
     public bool IsSelected { get; set; } = true;
+
+    public SelectableDep()
+    {
+        DisplayName = FileName;
+    }
+
+    private static string MakeRelative(string fullPath, string basePath)
+    {
+        if (string.IsNullOrEmpty(basePath))
+            return fullPath;
+        try
+        {
+            var baseUri = new Uri(basePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar);
+            var fileUri = new Uri(fullPath);
+            if (baseUri.Scheme != fileUri.Scheme)
+                return fullPath;
+            var relative = baseUri.MakeRelativeUri(fileUri).ToString();
+            return Uri.UnescapeDataString(relative).Replace('/', Path.DirectorySeparatorChar);
+        }
+        catch
+        {
+            return fullPath;
+        }
+    }
 }
 
 public partial class CustomInstallViewModel : ObservableObject
@@ -36,6 +63,7 @@ public partial class CustomInstallViewModel : ObservableObject
     public Func<Task<string?>>? PickFileAsync;
     public Func<Task<string[]?>>? PickDependencyFilesAsync;
     public Action? CloseAction;
+    public Action? OnInstallComplete;
 
     public CustomInstallViewModel(XboxDeviceService xboxService, PackageInstallService installService)
     {
@@ -219,6 +247,7 @@ public partial class CustomInstallViewModel : ObservableObject
         Logger.Info($"AnalyzeAsync: starting — source={UseFileSource}, path={SourcePath}, url={SourceUrl}");
         IsAnalyzing = true;
         StatusText = "Analyzing package...";
+        Logger.Debug($"AnalyzeAsync: step 0 → 1 (analysis)");
         CurrentStep = 1;
 
         try
@@ -229,10 +258,12 @@ public partial class CustomInstallViewModel : ObservableObject
                 {
                     Logger.Warn("AnalyzeAsync: no file path provided");
                     AnalysisResultText = "No file selected.";
+                    Logger.Debug($"AnalyzeAsync: step 1 → 2 (empty path, no analysis)");
                     CurrentStep = 2;
                     return;
                 }
                 Logger.Debug($"AnalyzeAsync: local file mode — {SourcePath}");
+                StatusText = "Analyzing local file...";
                 await Task.Run(() => AnalyzeLocalFile(SourcePath));
             }
             else
@@ -241,6 +272,7 @@ public partial class CustomInstallViewModel : ObservableObject
                 {
                     Logger.Warn("AnalyzeAsync: no URL provided");
                     AnalysisResultText = "No URL entered.";
+                    Logger.Debug($"AnalyzeAsync: step 1 → 2 (empty URL, no analysis)");
                     CurrentStep = 2;
                     return;
                 }
@@ -249,10 +281,12 @@ public partial class CustomInstallViewModel : ObservableObject
                 {
                     Logger.Warn($"AnalyzeAsync: invalid URL — {SourceUrl}");
                     AnalysisResultText = "Invalid URL. Must start with http:// or https://";
+                    Logger.Debug($"AnalyzeAsync: step 1 → 2 (invalid URL, no analysis)");
                     CurrentStep = 2;
                     return;
                 }
                 Logger.Debug($"AnalyzeAsync: download mode — {SourceUrl}");
+                StatusText = "Downloading and analyzing...";
                 await DownloadAndAnalyzeAsync(SourceUrl);
             }
 
@@ -266,7 +300,9 @@ public partial class CustomInstallViewModel : ObservableObject
 
                 DepItems.Clear();
                 foreach (var d in _analysis.Dependencies ?? [])
-                    DepItems.Add(new SelectableDep { FilePath = d, IsSelected = true });
+                    DepItems.Add(new SelectableDep { FilePath = d, BaseDirectory = _analysis.WorkingDirectory, IsSelected = true });
+
+                DisambiguateDepNames();
 
                 var main = _analysis.MainPackage is not null ? Path.GetFileName(_analysis.MainPackage) : "None";
                 var depCount = _analysis.Dependencies?.Length ?? 0;
@@ -276,13 +312,14 @@ public partial class CustomInstallViewModel : ObservableObject
                 OnPropertyChanged(nameof(DependencyText));
                 OnPropertyChanged(nameof(CanGoNext));
 
-                Logger.Debug($"AnalyzeAsync: transitioning to review step (2)");
+                Logger.Debug($"AnalyzeAsync: step 1 → 2 (review)");
                 CurrentStep = 2;
             }
             else
             {
                 Logger.Warn("AnalyzeAsync: no installable packages found after analysis");
                 AnalysisResultText = "Analysis failed — no installable packages found.";
+                Logger.Debug($"AnalyzeAsync: step 1 → 2 (analysis failed)");
                 CurrentStep = 2;
             }
         }
@@ -290,6 +327,7 @@ public partial class CustomInstallViewModel : ObservableObject
         {
             Logger.Error(ex, "AnalyzeAsync: analysis failed with exception");
             AnalysisResultText = $"Error: {ex.Message}";
+            Logger.Debug($"AnalyzeAsync: step 1 → 2 (exception)");
             CurrentStep = 2;
         }
         finally
@@ -320,6 +358,10 @@ public partial class CustomInstallViewModel : ObservableObject
                 foreach (var f in _analysis.AllFiles)
                     Logger.Debug($"  AnalyzeLocalFile: file: {f}");
             }
+            else
+            {
+                Logger.Warn($"AnalyzeLocalFile: analysis returned 0 files for {path}");
+            }
         }
         else
         {
@@ -327,7 +369,10 @@ public partial class CustomInstallViewModel : ObservableObject
         }
 
         if (_analysis?.AllFiles.Length == 0)
+        {
+            Logger.Warn($"AnalyzeLocalFile: clearing _analysis — AllFiles is empty for {path}");
             _analysis = null;
+        }
     }
 
     private async Task DownloadAndAnalyzeAsync(string url)
@@ -340,25 +385,47 @@ public partial class CustomInstallViewModel : ObservableObject
         var localPath = Path.Combine(tempDir, fileName);
         Logger.Debug($"DownloadAndAnalyzeAsync: fileName={fileName}, tempDir={tempDir}, localPath={localPath}");
 
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
         try
         {
             var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
             var totalBytes = response.Content.Headers.ContentLength ?? -1;
-            Logger.Info($"DownloadAndAnalyzeAsync: HTTP {(int)response.StatusCode}, contentLength={totalBytes}");
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "unknown";
+            Logger.Info($"DownloadAndAnalyzeAsync: HTTP {(int)response.StatusCode}, contentType={contentType}, contentLength={totalBytes}");
 
             using (var stream = await response.Content.ReadAsStreamAsync())
             using (var fs = File.Create(localPath))
             {
-                await stream.CopyToAsync(fs);
+                var buffer = new byte[81920];
+                long totalRead = 0;
+                int bytesRead;
+                while ((bytesRead = await stream.ReadAsync(buffer)) > 0)
+                {
+                    await fs.WriteAsync(buffer.AsMemory(0, bytesRead));
+                    totalRead += bytesRead;
+                }
+
+                sw.Stop();
+                Logger.Info($"DownloadAndAnalyzeAsync: download complete — {totalRead} bytes in {sw.ElapsedMilliseconds}ms ({(totalRead > 0 && sw.ElapsedMilliseconds > 0 ? $"{totalRead / 1024.0 / (sw.ElapsedMilliseconds / 1000.0):F1} KB/s" : "N/A")})");
             }
 
             var fileInfo = new FileInfo(localPath);
-            Logger.Info($"DownloadAndAnalyzeAsync: download complete — {fileInfo.Length} bytes written to {localPath}");
+            var ext = Path.GetExtension(localPath);
+            Logger.Info($"DownloadAndAnalyzeAsync: saved {fileInfo.Length} bytes to {localPath} (ext={ext})");
+
+            if (string.Equals(ext, ".html", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(ext, ".htm", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(ext, ".txt", StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.Warn($"DownloadAndAnalyzeAsync: downloaded file has suspicious extension '{ext}' — may not be a valid package");
+            }
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, $"DownloadAndAnalyzeAsync: download failed for {url}");
+            sw.Stop();
+            Logger.Error(ex, $"DownloadAndAnalyzeAsync: download failed for {url} after {sw.ElapsedMilliseconds}ms");
             StatusText = $"Download failed: {ex.Message}";
             throw;
         }
@@ -492,6 +559,7 @@ public partial class CustomInstallViewModel : ObservableObject
             Logger.Info($"InstallAsync: SUCCESS — {Path.GetFileName(analysis.MainPackage)} installed");
             InstallStatus = "Complete!";
             InstallResultMessage = null;
+            OnInstallComplete?.Invoke();
         }
         else
         {
@@ -516,8 +584,10 @@ public partial class CustomInstallViewModel : ObservableObject
             foreach (var path in paths)
             {
                 if (DepItems.Any(d => string.Equals(d.FilePath, path, StringComparison.OrdinalIgnoreCase))) continue;
-                DepItems.Add(new SelectableDep { FilePath = path, IsSelected = true });
+                var dir = Path.GetDirectoryName(path) ?? "";
+                DepItems.Add(new SelectableDep { FilePath = path, BaseDirectory = dir, IsSelected = true });
             }
+            DisambiguateDepNames();
             OnPropertyChanged(nameof(DependencyCount));
             OnPropertyChanged(nameof(DependencyText));
         }
@@ -531,8 +601,33 @@ public partial class CustomInstallViewModel : ObservableObject
     private void RemoveDep(SelectableDep dep)
     {
         DepItems.Remove(dep);
+        DisambiguateDepNames();
         OnPropertyChanged(nameof(DependencyCount));
         OnPropertyChanged(nameof(DependencyText));
+    }
+
+    private void DisambiguateDepNames()
+    {
+        var groups = DepItems
+            .GroupBy(d => d.FileName, StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .SelectMany(g => g)
+            .ToHashSet();
+
+        foreach (var dep in DepItems)
+        {
+            if (groups.Contains(dep))
+            {
+                var parent = Path.GetFileName(Path.GetDirectoryName(dep.FilePath)) ?? "";
+                dep.DisplayName = string.IsNullOrEmpty(parent)
+                    ? dep.FileName
+                    : $"{parent}/{dep.FileName}";
+            }
+            else
+            {
+                dep.DisplayName = dep.FileName;
+            }
+        }
     }
 
     [RelayCommand]

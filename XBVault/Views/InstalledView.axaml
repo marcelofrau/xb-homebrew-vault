@@ -53,7 +53,7 @@
 
     <!-- Toolbar -->
     <Grid Grid.Row="1"
-          ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto"
+          ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*,Auto"
           Margin="0,0,0,16">
 
       <Button x:Name="RefreshBtn"
@@ -173,7 +173,29 @@
                    VerticalAlignment="Center"/>
       </StackPanel>
 
-      <TextBox Grid.Column="6"
+      <!-- Custom Install -->
+      <Button x:Name="CustomInstallBtn"
+              Grid.Column="6"
+              Command="{Binding OpenCustomInstallCommand}"
+              IsEnabled="{Binding IsConnected}"
+              HorizontalAlignment="Right"
+              Padding="10,6"
+              Margin="8,0,12,0"
+              ToolTip.Tip="Install a package from a local file or URL">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+          <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-install-20.png"
+                 Width="20" Height="20"
+                 Stretch="Uniform"
+                 IsVisible="{Binding #CustomInstallBtn.IsEnabled}"/>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-custominstall-20-disabled.png"
+                 Width="20" Height="20"
+                 Stretch="Uniform"
+                 IsVisible="{Binding #CustomInstallBtn.IsEnabled, Converter={StaticResource BoolInverse}}"/>
+          <TextBlock Grid.Column="1" Text="Custom Install" FontSize="13" VerticalAlignment="Center"/>
+        </Grid>
+      </Button>
+
+      <TextBox Grid.Column="7"
                Text="{Binding SearchText}"
                PlaceholderText="Filter packages..."
                FontSize="13"
@@ -359,7 +381,8 @@
                           <TextBlock Text="{Binding Name}"
                                      FontSize="14"
                                      FontWeight="SemiBold"
-                                     TextWrapping="Wrap"/>
+                                     TextTrimming="CharacterEllipsis"
+                                     ToolTip.Tip="{Binding Name}"/>
                           <TextBlock Text="{Binding Version}"
                                      FontSize="12"
                                      Foreground="{Binding IsRunning, Converter={StaticResource BoolToRunningVersionFg}}"/>
