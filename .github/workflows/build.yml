@@ -93,7 +93,7 @@ jobs:
           win-*) expected="XBVault.exe" ;;
           *)     expected="XBVault" ;;
         esac
-        if unzip -l "$zip" 2>/dev/null | awk 'NR>3 && !/^---------/ {print $NF}' | grep -qxF "$expected"; then
+        if unzip -l "$zip" 2>/dev/null | awk 'NR>3 && !/^---------/ {print $NF}' | sed 's/[[:space:]]*$//' | grep -qxF "$expected"; then
           echo "✅ '$expected' present"
         else
           echo "::error::Missing '$expected' in $(basename "$zip")"
