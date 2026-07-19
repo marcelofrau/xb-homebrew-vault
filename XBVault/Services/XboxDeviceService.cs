@@ -726,6 +726,12 @@ public class XboxDeviceService
                         return false;
                     }
 
+                    if (IsHigherVersionError(body, out var higherVerMsg))
+                    {
+                        Logger.Warn($"Dependency skipped (higher version already installed): {higherVerMsg}");
+                        return true;
+                    }
+
                     if (IsFatalDeploymentError(body, out var deployError))
                     {
                         Logger.Error($"Package manager deployment failed: {deployError}");
@@ -775,6 +781,22 @@ public class XboxDeviceService
             if (!root.TryGetProperty("Code", out var el)) return false;
             if (el.GetInt32() != unchecked((int)0x80073D02)) return false;
             busyApps = root.TryGetProperty("Reason", out var r) ? r.GetString() ?? "" : "";
+            return true;
+        }
+        catch { }
+        return false;
+    }
+
+    private static bool IsHigherVersionError(string json, out string message)
+    {
+        message = "";
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("Code", out var el)) return false;
+            if (el.GetInt32() != unchecked((int)0x80070490)) return false;
+            message = root.TryGetProperty("Reason", out var r) ? r.GetString() ?? "" : "";
             return true;
         }
         catch { }
