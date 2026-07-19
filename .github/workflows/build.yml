@@ -52,6 +52,9 @@ jobs:
           - os: ubuntu-latest
             rid: linux-x64
             script: bash build/build-release.sh $VERSION x64
+          - os: ubuntu-latest
+            rid: linux-arm64
+            script: bash build/build-release.sh $VERSION arm64
           - os: macos-latest
             rid: osx-x64
             script: bash build/build-release.sh $VERSION x64
