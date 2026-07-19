@@ -84,7 +84,11 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(IsActive))]
     private bool _isFailed;
 
-    public bool IsActive => !IsRunning && !IsSuccess && !IsFailed;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsActive))]
+    private bool _isCancelled;
+
+    public bool IsActive => !IsRunning && !IsSuccess && !IsFailed && !IsCancelled;
 
     public Cursor? Cursor => IsRunning ? WaitCursor : null;
 
@@ -139,6 +143,7 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Cancel()
     {
+        IsCancelled = true;
         if (IsRunning)
         {
             _cts?.Cancel();

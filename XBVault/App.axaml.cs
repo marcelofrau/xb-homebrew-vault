@@ -204,7 +204,7 @@ public partial class App : Application
                 };
                 await connWindow.ShowDialog(main);
 
-                if (!connVm.IsSuccess)
+                if (!connVm.IsSuccess && !connVm.IsCancelled)
                 {
                     var errDlg = new ErrorDialog(
                         "Connection Failed",
