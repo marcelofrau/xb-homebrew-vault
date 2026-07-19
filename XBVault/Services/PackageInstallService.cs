@@ -4,7 +4,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using XBVault.Helpers;
@@ -44,15 +43,9 @@ public class PackageInstallService
 
     private static string[] FilterByArchitecture(string[] files)
     {
-        var targetArch = RuntimeInformation.ProcessArchitecture;
-        var targetSuffix = targetArch switch
-        {
-            Architecture.X64 => "x64",
-            Architecture.X86 => "x86",
-            Architecture.Arm64 => "arm64",
-            Architecture.Arm => "arm",
-            _ => null
-        };
+        // Xbox packages are always x64. Use host arch only as fallback,
+        // but prefer x64 since that's what the target device runs.
+        var targetSuffix = "x64";
 
         return files.Where(f =>
         {
