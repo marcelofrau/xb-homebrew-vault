@@ -112,6 +112,18 @@ Width="20" Height="20"
                 <TextBlock Grid.Column="1" Text="Copy Error" FontWeight="SemiBold" VerticalAlignment="Center"/>
               </Grid>
             </Button>
+            <Button x:Name="DownloadBtn"
+                    Padding="12,6"
+                    Click="OnDownloadClick"
+                    IsVisible="False"
+                    ToolTip.Tip="Open download page in browser">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-download-20.png"
+Width="20" Height="20"
+                        Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Download" FontWeight="SemiBold" VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
             <Button x:Name="RestartBtn"
                     Padding="12,6"
                     Click="OnRestartClick"

@@ -91,6 +91,8 @@ public partial class ItemDetailWindow : Window
 
     private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();
 
+    private void OnUpdateFinishClick(object? sender, RoutedEventArgs e) => Close();
+
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)

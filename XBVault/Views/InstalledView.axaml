@@ -53,7 +53,7 @@
 
     <!-- Toolbar -->
     <Grid Grid.Row="1"
-          ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*,Auto"
+          ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto"
           Margin="0,0,0,16">
 
       <Button x:Name="RefreshBtn"
@@ -104,9 +104,37 @@
         </Grid>
       </Button>
 
+      <!-- Update -->
+      <Button x:Name="UpdateBtn"
+              Grid.Column="2"
+              Classes="Accent"
+              Command="{Binding UpdateSelectedCommand}"
+              Padding="12,8"
+              IsEnabled="{Binding CanUpdateSelected}"
+              IsVisible="{Binding IsConnected}"
+              ToolTip.Tip="{Binding UpdateTooltipMessage}"
+              Margin="8,0,0,0">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+          <Grid>
+            <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
+                   IsVisible="{Binding #UpdateBtn.IsEnabled}"
+                   Width="20" Height="20"
+                   Stretch="Uniform"/>
+            <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20-disabled.png"
+                   IsVisible="{Binding #UpdateBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                   Width="20" Height="20"
+                   Stretch="Uniform"/>
+          </Grid>
+          <TextBlock Grid.Column="1"
+                     Text="Update"
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
+        </Grid>
+      </Button>
+
       <!-- Launch -->
       <Button x:Name="LaunchBtn"
-              Grid.Column="2"
+              Grid.Column="3"
               Command="{Binding LaunchSelectedCommand}"
               Padding="10,6"
               IsEnabled="{Binding IsPackageSelectedNotRunning}"
@@ -124,7 +152,7 @@
 
       <!-- Suspend -->
       <Button x:Name="SuspendBtn"
-              Grid.Column="3"
+              Grid.Column="4"
               Command="{Binding SuspendSelectedCommand}"
               Padding="10,6"
               IsEnabled="{Binding IsPackageRunning}"
@@ -142,7 +170,7 @@
 
       <!-- Terminate -->
       <Button x:Name="TerminateBtn"
-              Grid.Column="4"
+              Grid.Column="5"
               Command="{Binding TerminateSelectedCommand}"
               Padding="10,6"
               IsEnabled="{Binding IsPackageRunning}"
@@ -159,7 +187,7 @@
       </Button>
 
       <!-- Drop hint -->
-      <StackPanel Grid.Column="5"
+      <StackPanel Grid.Column="6"
                   Orientation="Horizontal"
                   Spacing="6"
                   VerticalAlignment="Center"
@@ -175,7 +203,7 @@
 
       <!-- Custom Install -->
       <Button x:Name="CustomInstallBtn"
-              Grid.Column="6"
+              Grid.Column="7"
               Command="{Binding OpenCustomInstallCommand}"
               IsEnabled="{Binding IsConnected}"
               HorizontalAlignment="Right"
@@ -195,7 +223,7 @@
         </Grid>
       </Button>
 
-      <TextBox Grid.Column="7"
+      <TextBox Grid.Column="8"
                Text="{Binding SearchText}"
                PlaceholderText="Filter packages..."
                FontSize="13"
@@ -354,15 +382,37 @@
                           CornerRadius="8"
                           IsVisible="{Binding IsRunning}"/>
 
+                  <!-- Outdated accent strip -->
+                  <Border Width="4"
+                          Background="#DDCC3333"
+                          CornerRadius="8,0,0,8"
+                          HorizontalAlignment="Left"
+                          IsVisible="{Binding IsOutdated}"/>
+
                   <Grid RowDefinitions="Auto,*">
                     <!-- Banner header -->
                     <Border CornerRadius="8,8,0,0"
                             Height="115"
                             Background="{StaticResource SurfaceAltBrush}"
                             HorizontalAlignment="Stretch">
-                      <Image Source="{Binding BannerImage}"
-                             Stretch="UniformToFill"
-                             RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                      <Panel>
+                        <Image Source="{Binding BannerImage}"
+                               Stretch="UniformToFill"
+                               RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                        <!-- Outdated badge -->
+                        <Border Background="#DDCC3333"
+                                CornerRadius="4"
+                                Padding="8,3"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Margin="0,8,8,0"
+                                IsVisible="{Binding IsOutdated}">
+                          <TextBlock Text="OUTDATED"
+                                     Foreground="White"
+                                     FontSize="11"
+                                     FontWeight="Bold"/>
+                        </Border>
+                      </Panel>
                     </Border>
 
                     <!-- Card content -->
@@ -385,7 +435,13 @@
                                      ToolTip.Tip="{Binding Name}"/>
                           <TextBlock Text="{Binding Version}"
                                      FontSize="12"
+                                     IsVisible="{Binding IsOutdated, Converter={StaticResource BoolInverse}}"
                                      Foreground="{Binding IsRunning, Converter={StaticResource BoolToRunningVersionFg}}"/>
+                          <TextBlock Text="{Binding Version}"
+                                     FontSize="12"
+                                     FontWeight="Bold"
+                                     IsVisible="{Binding IsOutdated}"
+                                     Foreground="#FF6B35"/>
                           <TextBlock Text="{Binding DisplayPublisher}"
                                      FontSize="10"
                                      Foreground="{Binding IsRunning, Converter={StaticResource BoolToRunningPublisherFg}}"
@@ -395,7 +451,7 @@
                       </Grid>
 
                       <!-- Bottom row: state label left, buttons right -->
-                      <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
+                      <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="4" Margin="0,2,0,0">
                         <!-- State label -->
                         <TextBlock Text="Running"
                                    Foreground="{StaticResource RunningStateFgBrush}"
@@ -408,44 +464,84 @@
                                    VerticalAlignment="Center"
                                    IsVisible="{Binding IsRunning, Converter={StaticResource BoolInverse}}"/>
 
-                        <!-- Launch (not running) -->
+                        <!-- Play button (visible when NOT running) -->
                         <Button Grid.Column="1"
-                                IsVisible="{Binding IsRunning, Converter={StaticResource BoolInverse}}"
-                                IsEnabled="{Binding #ThisRoot.DataContext.IsUninstalling, Converter={StaticResource BoolInverse}}"
-                                Command="{Binding #ThisRoot.DataContext.LaunchPackageCommand}"
-                                CommandParameter="{Binding}"
-                                ToolTip.Tip="Launch"
                                 Width="24" Height="24" Padding="2"
                                 Background="Transparent" BorderThickness="0"
-                                VerticalAlignment="Center">
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding IsRunning, Converter={StaticResource BoolInverse}}"
+                                Command="{Binding #ThisRoot.DataContext.LaunchPackageCommand}"
+                                CommandParameter="{Binding}"
+                                IsEnabled="{Binding #ThisRoot.DataContext.IsConnected}">
                           <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-16.png"
                                  Width="16" Height="16" Stretch="Uniform"/>
                         </Button>
 
-                        <!-- Suspend + Terminate (running) -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
-                                    IsVisible="{Binding IsRunning}">
-                          <Button Command="{Binding #ThisRoot.DataContext.SuspendPackageCommand}"
-                                  CommandParameter="{Binding}"
-                                  IsEnabled="{Binding #ThisRoot.DataContext.IsUninstalling, Converter={StaticResource BoolInverse}}"
-                                  ToolTip.Tip="Suspend"
-                                  Width="24" Height="24" Padding="2"
-                                  Background="Transparent" BorderThickness="0"
-                                  VerticalAlignment="Center">
-                            <Path Data="M7,4 L11,4 L11,20 L7,20 Z M13,4 L17,4 L17,20 L13,20 Z"
-                                  Fill="White" Width="12" Height="12" Stretch="Uniform"/>
-                          </Button>
-                          <Button Command="{Binding #ThisRoot.DataContext.TerminatePackageCommand}"
-                                  CommandParameter="{Binding}"
-                                  IsEnabled="{Binding #ThisRoot.DataContext.IsUninstalling, Converter={StaticResource BoolInverse}}"
-                                  ToolTip.Tip="Terminate"
-                                  Width="24" Height="24" Padding="2"
-                                  Background="Transparent" BorderThickness="0"
-                                  VerticalAlignment="Center">
-                            <Path Data="M4,4 L20,4 L20,20 L4,20 Z"
-                                  Fill="White" Width="12" Height="12" Stretch="Uniform"/>
-                          </Button>
-                        </StackPanel>
+                        <!-- Suspend button (visible when running) -->
+                        <Button Grid.Column="1"
+                                Width="24" Height="24" Padding="2"
+                                Background="Transparent" BorderThickness="0"
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding IsRunning}"
+                                Command="{Binding #ThisRoot.DataContext.SuspendPackageCommand}"
+                                CommandParameter="{Binding}"
+                                IsEnabled="{Binding #ThisRoot.DataContext.IsConnected}">
+                          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-suspend-20.png"
+                                 Width="16" Height="16" Stretch="Uniform"/>
+                        </Button>
+
+                        <!-- Terminate button (visible when running) -->
+                        <Button Grid.Column="2"
+                                Width="24" Height="24" Padding="2"
+                                Background="Transparent" BorderThickness="0"
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding IsRunning}"
+                                Command="{Binding #ThisRoot.DataContext.TerminatePackageCommand}"
+                                CommandParameter="{Binding}"
+                                IsEnabled="{Binding #ThisRoot.DataContext.IsConnected}">
+                          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-terminate-16.png"
+                                 Width="16" Height="16" Stretch="Uniform"/>
+                        </Button>
+
+                        <!-- Hamburger menu -->
+                        <Button Grid.Column="3"
+                                Width="24" Height="24" Padding="2"
+                                Background="Transparent" BorderThickness="0"
+                                VerticalAlignment="Center"
+                                IsEnabled="{Binding #ThisRoot.DataContext.IsConnected}">
+                          <Button.Flyout>
+                            <MenuFlyout>
+                              <MenuItem Header="Launch"
+                                        IsVisible="{Binding IsRunning, Converter={StaticResource BoolInverse}}"
+                                        Command="{Binding #ThisRoot.DataContext.LaunchPackageCommand}"
+                                        CommandParameter="{Binding}">
+                                <MenuItem.Icon>
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-16.png"
+                                         Width="16" Height="16" Stretch="Uniform"/>
+                                </MenuItem.Icon>
+                              </MenuItem>
+                              <MenuItem Header="Update"
+                                        IsVisible="{Binding IsOutdated}"
+                                        Command="{Binding #ThisRoot.DataContext.UpdateSelectedCommand}"
+                                        CommandParameter="{Binding}">
+                                <MenuItem.Icon>
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-flyout-update-16.png"
+                                         Width="16" Height="16" Stretch="Uniform"/>
+                                </MenuItem.Icon>
+                              </MenuItem>
+                              <MenuItem Header="Uninstall"
+                                        Command="{Binding #ThisRoot.DataContext.UninstallSelectedCommand}"
+                                        CommandParameter="{Binding}">
+                                <MenuItem.Icon>
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-flyout-uninstall-16.png"
+                                         Width="16" Height="16" Stretch="Uniform"/>
+                                </MenuItem.Icon>
+                              </MenuItem>
+                            </MenuFlyout>
+                          </Button.Flyout>
+                          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-menu-16.png"
+                                 Width="16" Height="16" Stretch="Uniform"/>
+                        </Button>
                       </Grid>
                     </StackPanel>
                   </Grid>

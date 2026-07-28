@@ -26,6 +26,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     private readonly PackageInstallService _installService;
     private readonly XboxDeviceService _xboxService;
     private readonly PackageOverrideService _overrideService;
+    private readonly UpdateVersionCache _updateCache = new();
     private List<CatalogItem> _allItems = [];
 
     public Action<CatalogItem>? ShowDetailAction;
@@ -103,6 +104,17 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     private CatalogItem? _selectedItem;
 
     [ObservableProperty]
+    private bool _isUpdateMode;
+
+    public bool ShowCheckButton => !IsUpdateMode && !CheckComplete;
+    public bool ShowRecheckButton => !IsUpdateMode && CheckComplete;
+    public bool IsUpdateComplete => IsUpdateMode && InstallComplete && InstallSuccess;
+    public bool ShowUpdateButton => IsUpdateMode && !IsUpdateComplete;
+
+    // tracks just-updated item to suppress outdated flag after refresh
+    private string? _justUpdatedItemName;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Cursor))]
     private bool _isCheckingInstalled;
 
@@ -155,6 +167,16 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(ShowDescriptionPanel));
         OnPropertyChanged(nameof(ShowInstallOverlay));
+        OnPropertyChanged(nameof(IsUpdateComplete));
+        OnPropertyChanged(nameof(ShowUpdateButton));
+    }
+
+    partial void OnInstallSuccessChanged(bool value)
+    {
+        if (value && SelectedItem is not null)
+            _justUpdatedItemName = SelectedItem.Name;
+        OnPropertyChanged(nameof(IsUpdateComplete));
+        OnPropertyChanged(nameof(ShowUpdateButton));
     }
 
     partial void OnCheckCompleteChanged(bool value)
@@ -167,6 +189,8 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowCheckNotDetectedHint));
         OnPropertyChanged(nameof(ShowCheckNotConnectedHint));
         OnPropertyChanged(nameof(CheckVersionHint));
+        OnPropertyChanged(nameof(ShowCheckButton));
+        OnPropertyChanged(nameof(ShowRecheckButton));
     }
 
     partial void OnCheckInstalledChanged(bool value)
@@ -185,6 +209,14 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowCheckNotInstalled));
         OnPropertyChanged(nameof(ShowCheckNotDetectedHint));
         OnPropertyChanged(nameof(ShowCheckNotConnectedHint));
+    }
+
+    partial void OnIsUpdateModeChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowCheckButton));
+        OnPropertyChanged(nameof(ShowRecheckButton));
+        OnPropertyChanged(nameof(IsUpdateComplete));
+        OnPropertyChanged(nameof(ShowUpdateButton));
     }
 
     [RelayCommand]
@@ -585,6 +617,15 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         if (!ShowExperimental)
             filtered = filtered.Where(i => !i.IsExperimental);
 
+        filtered = filtered.OrderByDescending(i =>
+        {
+            if (string.IsNullOrWhiteSpace(i.ReleaseDate))
+                return DateTime.MinValue;
+            if (DateTime.TryParse(i.ReleaseDate, out var dt))
+                return dt;
+            return DateTime.MinValue;
+        });
+
         var result = filtered.ToList();
         foreach (var item in result)
             Items.Add(item);
@@ -676,6 +717,38 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         if (url is null) return null;
 
         return await _overrideImageCache.GetOrAdd(url, FetchImageAsync);
+    }
+
+    public (CatalogItem? match, bool isOutdated) FindCatalogMatch(InstalledPackage pkg)
+    {
+        var match = _allItems.FirstOrDefault(i => IsPackageMatch(i, pkg));
+        if (match is null)
+            return (null, false);
+
+        var installedVer = pkg.Version ?? string.Empty;
+        var catalogVer = match.Version ?? string.Empty;
+
+        // suppress outdated for package just updated — persist to cache
+        if (_justUpdatedItemName is not null &&
+            match.Name.Equals(_justUpdatedItemName, StringComparison.OrdinalIgnoreCase))
+        {
+            _justUpdatedItemName = null;
+            _updateCache.RecordUpdate(match.Name, catalogVer, installedVer);
+            return (match, false);
+        }
+
+        // persistent cache: same pair of versions = already synced
+        if (_updateCache.TryGetSuppressed(match.Name, catalogVer, installedVer))
+            return (match, false);
+
+        var isOutdated = false;
+        if (Version.TryParse(installedVer, out var installedV) &&
+            Version.TryParse(catalogVer, out var catalogV))
+        {
+            isOutdated = catalogV > installedV;
+        }
+
+        return (match, isOutdated);
     }
 
     private static async Task<Bitmap?> FetchImageAsync(string url)

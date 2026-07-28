@@ -73,6 +73,8 @@ public partial class InstalledViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsPackageRunning))]
     [NotifyPropertyChangedFor(nameof(IsPackageNotRunning))]
     [NotifyPropertyChangedFor(nameof(IsPackageSelectedNotRunning))]
+    [NotifyPropertyChangedFor(nameof(CanUpdateSelected))]
+    [NotifyPropertyChangedFor(nameof(UpdateTooltipMessage))]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -86,6 +88,8 @@ public partial class InstalledViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsPackageNotRunning))]
     [NotifyPropertyChangedFor(nameof(IsPackageSelectedNotRunning))]
     [NotifyPropertyChangedFor(nameof(CanRefresh))]
+    [NotifyPropertyChangedFor(nameof(CanUpdateSelected))]
+    [NotifyPropertyChangedFor(nameof(UpdateTooltipMessage))]
     private bool _isUninstalling;
 
     public Cursor? Cursor => (IsLoading || IsPolling) ? AppStartingCursor : null;
@@ -148,6 +152,11 @@ public partial class InstalledViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowRefreshPrompt));
         OnPropertyChanged(nameof(ShowGrid));
         OnPropertyChanged(nameof(CanRefresh));
+        OnPropertyChanged(nameof(IsPackageSelected));
+        OnPropertyChanged(nameof(IsPackageRunning));
+        OnPropertyChanged(nameof(IsPackageNotRunning));
+        OnPropertyChanged(nameof(IsPackageSelectedNotRunning));
+        NotifyUpdateState();
     }
 
     partial void OnIsLoadingChanged(bool value)
@@ -155,6 +164,7 @@ public partial class InstalledViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowDisconnected));
         OnPropertyChanged(nameof(ShowRefreshPrompt));
         OnPropertyChanged(nameof(ShowGrid));
+        OnPropertyChanged(nameof(IsPackageSelected));
         OnPropertyChanged(nameof(IsPackageRunning));
         OnPropertyChanged(nameof(IsPackageNotRunning));
         OnPropertyChanged(nameof(IsPackageSelectedNotRunning));
@@ -169,31 +179,52 @@ public partial class InstalledViewModel : ObservableObject
     [ObservableProperty]
     private InstalledPackage? _selectedPackage;
 
-    public bool IsPackageSelected => SelectedPackage is not null && !IsLoading && !IsUninstalling;
-    public bool IsPackageRunning => !IsLoading && !IsUninstalling && (SelectedPackage?.IsRunning ?? false);
+    public bool IsPackageSelected => SelectedPackage is not null && !IsLoading && !IsUninstalling && IsConnected;
+    public bool IsPackageRunning => !IsLoading && !IsUninstalling && (SelectedPackage?.IsRunning ?? false) && IsConnected;
     public bool IsPackageNotRunning => !IsLoading && !IsUninstalling && (SelectedPackage is null || !SelectedPackage.IsRunning);
-    public bool IsPackageSelectedNotRunning => !IsLoading && !IsUninstalling && SelectedPackage is not null && !SelectedPackage.IsRunning;
+    public bool IsPackageSelectedNotRunning => !IsLoading && !IsUninstalling && SelectedPackage is not null && !SelectedPackage.IsRunning && IsConnected;
     public bool CanRefresh => !IsUninstalling && IsConnected;
+    public bool CanUpdateSelected => IsPackageSelected && (SelectedPackage?.IsOutdated ?? false);
+    public string UpdateTooltipMessage => SelectedPackage is null ? "Select a package" : SelectedPackage.IsOutdated ? "Update available" : "No update available";
 
     private InstalledPackage? _prevSelectedPackage;
 
     partial void OnSelectedPackageChanged(InstalledPackage? value)
     {
         if (_prevSelectedPackage is not null)
+        {
             _prevSelectedPackage.IsSelected = false;
+            _prevSelectedPackage.PropertyChanged -= OnSelectedPackagePropertyChanged;
+        }
         _prevSelectedPackage = value;
 
         if (value is not null)
+        {
             value.IsSelected = true;
+            value.PropertyChanged += OnSelectedPackagePropertyChanged;
+        }
 
         OnPropertyChanged(nameof(IsPackageSelected));
         OnPropertyChanged(nameof(IsPackageRunning));
         OnPropertyChanged(nameof(IsPackageNotRunning));
         OnPropertyChanged(nameof(IsPackageSelectedNotRunning));
+        NotifyUpdateState();
         if (value is not null)
         {
             Logger.Info($"Selected package raw:\n{value.RawJson}");
         }
+    }
+
+    private void OnSelectedPackagePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(InstalledPackage.IsOutdated))
+            NotifyUpdateState();
+    }
+
+    private void NotifyUpdateState()
+    {
+        OnPropertyChanged(nameof(CanUpdateSelected));
+        OnPropertyChanged(nameof(UpdateTooltipMessage));
     }
 
     private void UpdateRunningState()
@@ -207,6 +238,8 @@ public partial class InstalledViewModel : ObservableObject
     public Func<string, string, string, Task>? ShowErrorAction { get; set; }
     public Func<string, string, string, Func<Task>?, Task>? ShowErrorWithConnectAction { get; set; }
     public Func<InstalledPackage, Task<Bitmap?>>? ResolveBannerAsync { get; set; }
+    public Func<InstalledPackage, Task<(CatalogItem? match, bool isOutdated)>>? CheckOutdatedAsync { get; set; }
+    public Action<CatalogItem>? ShowCatalogDetailAction { get; set; }
     public Action? OnCatalogReady { get; set; }
 
     [ObservableProperty]
@@ -227,6 +260,24 @@ public partial class InstalledViewModel : ObservableObject
 
     [RelayCommand]
     private void OpenCustomInstall() => ShowCustomInstallAction?.Invoke();
+
+    [RelayCommand]
+    private async Task UpdateSelectedAsync()
+    {
+        if (SelectedPackage is null || CheckOutdatedAsync is null || ShowCatalogDetailAction is null)
+            return;
+
+        try
+        {
+            var (match, _) = await CheckOutdatedAsync(SelectedPackage);
+            if (match is not null)
+                ShowCatalogDetailAction(match);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"UpdateSelected failed for {SelectedPackage.Name}");
+        }
+    }
 
     private async Task<bool> SuspendAnyRunningAsync(InstalledPackage? excludePkg = null)
     {
@@ -479,6 +530,20 @@ public partial class InstalledViewModel : ObservableObject
             });
 
             await RefreshRunningStateAsync();
+
+            if (CheckOutdatedAsync is not null)
+            {
+                foreach (var pkg in _allPackages)
+                {
+                    try
+                    {
+                        var (_, outdated) = await CheckOutdatedAsync(pkg);
+                        pkg.IsOutdated = outdated;
+                    }
+                    catch { }
+                }
+            }
+
             LastUpdated = "Updated: " + DateTime.Now.ToString("HH:mm:ss");
             Logger.Info($"User-installed packages shown: {Packages.Count}, running: {_allPackages.Count(p => p.IsRunning)}");
 

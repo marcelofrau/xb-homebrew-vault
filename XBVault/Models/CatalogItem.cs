@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -14,6 +16,7 @@ public partial class CatalogItem : ObservableObject
     public string Description { get; set; } = string.Empty;
     public string Version { get; set; } = string.Empty;
     public string? ReleaseDate { get; set; }
+    public string? FirstReleaseDate { get; set; }
     public string? Developer { get; set; }
     public string? UwpPortBy { get; set; }
     public string? MaintainedBy { get; set; }
@@ -73,4 +76,55 @@ public partial class CatalogItem : ObservableObject
 
     [JsonIgnore]
     public bool IsThumbnailLoading => Thumbnail is null;
+
+    [JsonIgnore]
+    public bool IsNewRelease
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(ReleaseDate))
+                return false;
+            if (!DateTime.TryParse(ReleaseDate, out var dt))
+                return false;
+            if (dt <= DateTime.UtcNow.AddDays(-30))
+                return false;
+            // NEW if firstReleaseDate is within 30 days (item is new to catalog)
+            if (string.IsNullOrWhiteSpace(FirstReleaseDate))
+                return false;
+            if (!DateTime.TryParse(FirstReleaseDate, out var first))
+                return false;
+            return first > DateTime.UtcNow.AddDays(-30);
+        }
+    }
+
+    [JsonIgnore]
+    public bool IsUpdate
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(ReleaseDate))
+                return false;
+            if (!DateTime.TryParse(ReleaseDate, out var dt))
+                return false;
+            if (dt <= DateTime.UtcNow.AddDays(-30))
+                return false;
+            // UPDATE if firstReleaseDate is old (>30d) but releaseDate is recent
+            if (string.IsNullOrWhiteSpace(FirstReleaseDate))
+                return false;
+            if (!DateTime.TryParse(FirstReleaseDate, out var first))
+                return false;
+            return first <= DateTime.UtcNow.AddDays(-30);
+        }
+    }
+
+    [JsonIgnore]
+    public bool ShowBadge => IsNewRelease || IsUpdate;
+
+    [JsonIgnore]
+    public string BadgeText => IsNewRelease ? "NEW" : "UPDATE";
+
+    [JsonIgnore]
+    public IBrush BadgeBrush => IsNewRelease
+        ? new SolidColorBrush(Color.Parse("#2ECC71"))
+        : new SolidColorBrush(Color.Parse("#3498DB"));
 }

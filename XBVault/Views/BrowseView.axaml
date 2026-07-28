@@ -195,6 +195,19 @@
                               IsVisible="{Binding IsThumbnailLoading}">
                         <controls:CdSpinner/>
                       </Border>
+                      <!-- NEW / UPDATE badge -->
+                      <Border CornerRadius="3"
+                              Padding="6,2"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Top"
+                              Margin="0,8,8,0"
+                              Background="{Binding BadgeBrush}"
+                              IsVisible="{Binding ShowBadge}">
+                        <TextBlock Text="{Binding BadgeText}"
+                                   FontSize="10"
+                                   FontWeight="Bold"
+                                   Foreground="White"/>
+                      </Border>
                     </Grid>
                   </Border>
                   <StackPanel Grid.Row="1" Spacing="6" Margin="12">

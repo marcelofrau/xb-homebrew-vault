@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using System.Diagnostics;
 using XBVault.Helpers;
 using XBVault.Services;
 using XBVault.ViewModels;
@@ -176,6 +177,9 @@ public partial class App : Application
                     detail.Closed += (_, _) =>
                     {
                         Logger.Info("ItemDetailWindow closed — resetting SelectedItem");
+                        if (browseViewModel.IsUpdateComplete)
+                            _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
+                        browseViewModel.IsUpdateMode = false;
                         browseViewModel.SelectedItem = null;
                     };
                     browseViewModel.CloseDetailAction = () => detail.Close();
@@ -314,6 +318,16 @@ public partial class App : Application
             };
 
             installedViewModel.ResolveBannerAsync = pkg => browseViewModel.FindThumbnailByPackageAsync(pkg);
+            installedViewModel.CheckOutdatedAsync = async pkg =>
+            {
+                var result = browseViewModel.FindCatalogMatch(pkg);
+                return result;
+            };
+            installedViewModel.ShowCatalogDetailAction = catalogItem =>
+            {
+                browseViewModel.IsUpdateMode = true;
+                browseViewModel.SelectedItem = catalogItem;
+            };
             browseViewModel.OnCatalogLoaded = () =>
             {
                 if (installedViewModel is not null)
@@ -429,6 +443,12 @@ public partial class App : Application
                     await vm.LoadDrivesCommand.ExecuteAsync(null);
                 };
                 win.ShowDialog(main);
+            };
+
+            toolsViewModel.ShowInfoAsync = async (title, desc, details) =>
+            {
+                var dlg = new ErrorDialog(title, desc, details, ErrorDialogType.Info);
+                await dlg.ShowDialog(main);
             };
 
             Action openCustomInstall = () =>
@@ -658,7 +678,40 @@ public partial class App : Application
                     }
                 }
             }
+
+            // Auto-update check
+            _ = CheckForUpdatesAsync(main);
         });
+    }
+
+    private static async Task CheckForUpdatesAsync(Window main)
+    {
+        try
+        {
+            using var checker = new GitHubReleaseCheckerService();
+            var release = await checker.CheckLatestReleaseAsync();
+            if (release is null) return;
+            if (!GitHubReleaseCheckerService.IsNewerVersion(release.TagName, BuildInfo.Version))
+                return;
+
+            Logger.Info($"Update available: {release.TagName} (current: {BuildInfo.Version})");
+            var dlg = new Views.ErrorDialog(
+                "Update Available",
+                $"XB Homebrew Vault {release.TagName} is available. You are currently running {BuildInfo.DisplayVersion}.",
+                "Visit the releases page to download the latest version.",
+                Views.ErrorDialogType.Info);
+            dlg.DownloadAction = () =>
+            {
+                Process.Start(new ProcessStartInfo(release.HtmlUrl ?? "https://github.com/marcelofrau/xb-homebrew-vault/releases") { UseShellExecute = true });
+                dlg.Close();
+                return Task.CompletedTask;
+            };
+            await dlg.ShowDialog(main);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Auto-update check failed");
+        }
     }
 
     private static void LogGpuInfo()

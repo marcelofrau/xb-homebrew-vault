@@ -2,6 +2,12 @@
 
 **Impact:** High | **Effort:** Low | **Suggested priority:** Phase 1
 
+## Status — ✅ Done (v1.2.0)
+
+- Crash data viewer (`CrashDataWindow`) reads Xbox crash dumps
+- Pre-flight crash cache clearing
+- Prefilled GitHub Issues link (manual reporting)
+
 ## Problem
 
 When the app crashes, users don't report it — they just close it. Critical bugs go unfixed for months because the developer never finds out.

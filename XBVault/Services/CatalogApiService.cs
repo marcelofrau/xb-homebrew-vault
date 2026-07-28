@@ -188,6 +188,7 @@ public partial class CatalogApiService
             Description = api.Description,
             Version = api.Version,
             ReleaseDate = api.ReleaseDate,
+            FirstReleaseDate = api.FirstReleaseDate,
             Developer = developer,
             UwpPortBy = uwpPortBy,
             MaintainedBy = maintainedBy,
@@ -313,6 +314,13 @@ public partial class CatalogApiService
                 .Select(ConvertToCatalogItem)
                 .ToList();
 
+            // Check for stale cache missing firstReleaseDate
+            if (items.Any(i => !string.IsNullOrWhiteSpace(i.ReleaseDate) && string.IsNullOrWhiteSpace(i.FirstReleaseDate)))
+            {
+                Logger.Info("Cache missing firstReleaseDate — invalidating for re-fetch");
+                return null;
+            }
+
             // Re-classify downloads
             foreach (var item in items)
             {
@@ -343,6 +351,7 @@ public partial class CatalogApiService
                 Description = item.Description,
                 Version = item.Version,
                 ReleaseDate = item.ReleaseDate,
+                FirstReleaseDate = item.FirstReleaseDate,
                 Category = item.Category,
                 CategorySlug = item.Category.ToLowerInvariant().Replace(" ", "-"),
                 Compatibility = item.Compatibility,

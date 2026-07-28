@@ -41,6 +41,7 @@ public class InstalledPackage : INotifyPropertyChanged
 {
     private bool _isUninstalling;
     private bool _isRunning;
+    private bool _isOutdated;
 
     [JsonPropertyName("Name")]
     public string Name { get; set; } = string.Empty;
@@ -124,6 +125,18 @@ public class InstalledPackage : INotifyPropertyChanged
             _isRunning = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(StateLabel));
+        }
+    }
+
+    [JsonIgnore]
+    public bool IsOutdated
+    {
+        get => _isOutdated;
+        set
+        {
+            if (_isOutdated == value) return;
+            _isOutdated = value;
+            OnPropertyChanged();
         }
     }
 

@@ -49,6 +49,9 @@ public class CatalogApiItem
     [JsonPropertyName("releaseDate")]
     public string? ReleaseDate { get; set; }
 
+    [JsonPropertyName("firstReleaseDate")]
+    public string? FirstReleaseDate { get; set; }
+
     [JsonPropertyName("compatibility")]
     public string Compatibility { get; set; } = string.Empty;
 

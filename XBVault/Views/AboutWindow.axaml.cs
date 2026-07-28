@@ -31,4 +31,10 @@ public partial class AboutWindow : Window
         Logger.Info("Opening project GitHub from About window");
         Process.Start(new ProcessStartInfo("https://github.com/marcelofrau/xb-homebrew-vault") { UseShellExecute = true });
     }
+
+    private void OnChangelogClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Logger.Info("Opening releases page from About window");
+        Process.Start(new ProcessStartInfo("https://github.com/marcelofrau/xb-homebrew-vault/releases") { UseShellExecute = true });
+    }
 }

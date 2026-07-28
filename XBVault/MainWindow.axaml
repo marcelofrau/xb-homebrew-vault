@@ -266,7 +266,8 @@
                  Focusable="False"
                  SelectedIndex="{Binding SelectedTab}"
                  SelectionMode="Single">
-          <ListBoxItem Tag="Browse" Classes="nav-item" Padding="16,10" Focusable="False">
+          <ListBoxItem Tag="Browse" Classes="nav-item" Padding="16,10" Focusable="False"
+                       ToolTip.Tip="Browse homebrew catalog">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
@@ -283,7 +284,8 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Installed" Classes="nav-item" Padding="16,10" Focusable="False">
+          <ListBoxItem Tag="Installed" Classes="nav-item" Padding="16,10" Focusable="False"
+                       ToolTip.Tip="Manage installed packages">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
@@ -300,7 +302,8 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="FileExplorer" Classes="nav-item" Padding="16,10" Focusable="False">
+          <ListBoxItem Tag="FileExplorer" Classes="nav-item" Padding="16,10" Focusable="False"
+                       ToolTip.Tip="Browse Xbox filesystem">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
@@ -317,7 +320,8 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Tools" Classes="nav-item" Padding="16,10" Focusable="False">
+          <ListBoxItem Tag="Tools" Classes="nav-item" Padding="16,10" Focusable="False"
+                       ToolTip.Tip="Utilities and diagnostics">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
@@ -334,8 +338,9 @@
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-           <ListBoxItem Tag="Inspector" Classes="nav-item" Padding="16,10" Focusable="False">
-              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
+           <ListBoxItem Tag="Inspector" Classes="nav-item" Padding="16,10" Focusable="False"
+                        ToolTip.Tip="Xbox connection inspector">
+               <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
                <Border Background="Transparent" Opacity="0"
                        Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
                <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-inspector-32.png"

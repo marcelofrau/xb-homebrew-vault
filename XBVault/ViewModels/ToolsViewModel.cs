@@ -49,6 +49,7 @@ public partial class ToolsViewModel : ObservableObject
     public Action? ShowCustomInstallAction { get; set; }
     public Action? ShowCrashDataAction { get; set; }
     public Action? ShowUsbPermissionAction { get; set; }
+    public Func<string, string, string, Task>? ShowInfoAsync { get; set; }
     public Func<string, string, string, string, string?, string?, Task<bool>>? ShowConfirmAsync { get; set; }
 
     [RelayCommand]
@@ -112,8 +113,19 @@ public partial class ToolsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void OpenUsbPermission()
+    private async Task OpenUsbPermissionAsync()
     {
+        if (!IsWindows)
+        {
+            if (ShowInfoAsync is not null)
+            {
+                await ShowInfoAsync(
+                    "Windows Only",
+                    "USB Media Drive activation is currently only available on Windows.",
+                    "We're evaluating support for Linux and macOS. Stay tuned for future updates!");
+            }
+            return;
+        }
         ShowUsbPermissionAction?.Invoke();
     }
 

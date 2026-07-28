@@ -94,6 +94,23 @@
                    Foreground="#999"
                    HorizontalAlignment="Center"/>
       </Button>
+      <Button Cursor="Hand"
+              Background="Transparent"
+              BorderThickness="0"
+              HorizontalAlignment="Center"
+              Padding="0,2"
+              ToolTip.Tip="View release notes and changelog"
+              Click="OnChangelogClick">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="4" HorizontalAlignment="Center">
+          <Image Source="avares://XBVault/Assets/Views/AboutWindow/about-changelog-20.png"
+                 Width="14" Height="14"
+                 Stretch="Uniform"/>
+          <TextBlock Grid.Column="1" Text="Release Notes"
+                     FontSize="10"
+                     Foreground="#777"
+                     HorizontalAlignment="Center"/>
+        </Grid>
+      </Button>
     </StackPanel>
 
     <Button Grid.Row="1"

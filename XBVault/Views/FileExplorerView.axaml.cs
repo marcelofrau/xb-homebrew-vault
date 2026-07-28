@@ -642,7 +642,7 @@ public partial class FileExplorerView : UserControl
         DropZoneBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(51, 255, 255, 255));
     }
 
-    private static readonly string[] PackageExts = [".appx", ".msix", ".appxbundle", ".msixbundle", ".zip"];
+    private static readonly string[] PackageExts = [".appx", ".msix", ".appxbundle", ".msixbundle"];
 
     private async void OnDropZoneDrop(object? sender, DragEventArgs e)
     {

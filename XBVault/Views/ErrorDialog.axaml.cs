@@ -24,6 +24,17 @@ public partial class ErrorDialog : Window
         }
     }
 
+    private Func<Task>? _downloadAction;
+    public Func<Task>? DownloadAction
+    {
+        get => _downloadAction;
+        set
+        {
+            _downloadAction = value;
+            DownloadBtn.IsVisible = value is not null;
+        }
+    }
+
     public ErrorDialog()
     {
         InitializeComponent();
@@ -93,6 +104,20 @@ public partial class ErrorDialog : Window
         catch (Exception ex)
         {
             Logger.Error(ex, "ErrorDialog connect action failed");
+        }
+    }
+
+    private async void OnDownloadClick(object? sender, RoutedEventArgs e)
+    {
+        if (DownloadAction is null) return;
+        Logger.Info("ErrorDialog download button clicked");
+        try
+        {
+            await DownloadAction();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "ErrorDialog download action failed");
         }
     }
 

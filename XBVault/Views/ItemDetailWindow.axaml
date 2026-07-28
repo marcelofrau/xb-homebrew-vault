@@ -506,7 +506,7 @@
                 </Grid>
               </Button>
 
-              <!-- Right: Check + Install -->
+              <!-- Right: Check + Install (normal mode) / Update (update mode) -->
               <StackPanel Grid.Column="2"
                           Orientation="Horizontal"
                           Spacing="8">
@@ -514,7 +514,7 @@
                         Padding="16,10"
                         Command="{Binding CheckInstalledCommand}"
                         IsEnabled="{Binding CanCheckXboxItem}"
-                        IsVisible="{Binding CheckComplete, Converter={StaticResource BoolInverse}}">
+                        IsVisible="{Binding ShowCheckButton}">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                     <Grid>
                       <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
@@ -533,7 +533,7 @@
                         Padding="16,10"
                         Command="{Binding CheckInstalledCommand}"
                         IsEnabled="{Binding CanRecheckXboxItem}"
-                        IsVisible="{Binding CheckComplete}">
+                        IsVisible="{Binding ShowRecheckButton}">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                     <Grid>
                       <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
@@ -553,7 +553,7 @@
                         Padding="20,10"
                         Click="OnInstallClick"
                         IsEnabled="{Binding CanInstallXboxItem}"
-                        IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
+                        IsVisible="{Binding IsUpdateMode, Converter={StaticResource BoolInverse}}">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                     <Grid>
                       <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
@@ -564,6 +564,43 @@
                              Width="20" Height="20" Stretch="Uniform"/>
                     </Grid>
                     <TextBlock Grid.Column="1" Text="Install"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                  </Grid>
+                </Button>
+                <!-- Update button (update mode only) -->
+                <Button x:Name="UpdateDetailBtn"
+                        Classes="Accent"
+                        Padding="20,10"
+                        Click="OnInstallClick"
+                        IsEnabled="{Binding CanInstallXboxItem}"
+                        IsVisible="{Binding ShowUpdateButton}">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    <Grid>
+                      <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
+                             IsVisible="{Binding #UpdateDetailBtn.IsEnabled}"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                      <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20-disabled.png"
+                             IsVisible="{Binding #UpdateDetailBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                    </Grid>
+                    <TextBlock Grid.Column="1" Text="Update"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                  </Grid>
+                </Button>
+                <!-- Finish button (update complete) -->
+                <Button x:Name="UpdateFinishBtn"
+                        Classes="Accent"
+                        Padding="20,10"
+                        Click="OnUpdateFinishClick"
+                        IsVisible="{Binding IsUpdateComplete}">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-success-16.png"
+                           Width="20" Height="20" Stretch="Uniform"/>
+                    <TextBlock Grid.Column="1" Text="Finish"
                                FontSize="13"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center"/>

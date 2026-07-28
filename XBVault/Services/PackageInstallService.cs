@@ -313,8 +313,6 @@ public class PackageInstallService
     {
         var results = new List<string>();
 
-        var allFiles = Directory.GetFiles(directory, "*", SearchOption.AllDirectories);
-
         var depSubPaths = DepFolderNames
             .Select(n => Path.Combine(directory, n))
             .ToArray();
@@ -323,6 +321,23 @@ public class PackageInstallService
             new[] { Path.Combine(directory, "_extracted_bundles") }
                 .Concat(depSubPaths),
             StringComparer.OrdinalIgnoreCase);
+
+        string[] allFiles;
+        try
+        {
+            allFiles = Directory.GetFiles(directory, "*", SearchOption.AllDirectories);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Logger.Warn($"FindInstallablePackages: access denied scanning {directory}, skipping subdirs");
+            try { allFiles = Directory.GetFiles(directory, "*"); }
+            catch { return []; }
+        }
+        catch (PathTooLongException)
+        {
+            Logger.Warn($"FindInstallablePackages: path too long in {directory}");
+            return [];
+        }
 
         foreach (var f in allFiles)
         {
@@ -336,12 +351,17 @@ public class PackageInstallService
         // Look for dependency folders (deps/, dep/, Dependencies/)
         foreach (var sub in depSubPaths)
         {
-            if (Directory.Exists(sub))
+            if (!Directory.Exists(sub)) continue;
+            try
             {
                 var deps = Directory.GetFiles(sub, "*", SearchOption.AllDirectories)
                     .Where(f => IsInstallable(Path.GetFileName(f)))
                     .ToArray();
                 results.AddRange(deps);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Logger.Warn($"FindInstallablePackages: access denied scanning dep folder {sub}");
             }
         }
 
@@ -355,35 +375,16 @@ public class PackageInstallService
             .Concat(Directory.GetFiles(directory, "*.msixbundle", SearchOption.TopDirectoryOnly))
             .ToArray();
 
-        var extracted = new List<string>();
-        var outDir = Path.Combine(directory, "_extracted_bundles");
+        if (bundles.Length == 0)
+            return [];
 
-        foreach (var bundle in bundles)
-        {
-            try
-            {
-                var name = Path.GetFileNameWithoutExtension(bundle);
-                var bundleOut = Path.Combine(outDir, name);
-                if (!Directory.Exists(bundleOut))
-                {
-                    Directory.CreateDirectory(bundleOut);
-                    ZipFile.ExtractToDirectory(bundle, bundleOut);
-                    Logger.Debug($"Extracted bundle {Path.GetFileName(bundle)} → {bundleOut}");
-                }
-                var inner = Directory.GetFiles(bundleOut, "*.appx", SearchOption.AllDirectories)
-                    .Concat(Directory.GetFiles(bundleOut, "*.msix", SearchOption.AllDirectories))
-                    .ToArray();
-                extracted.AddRange(inner);
-                foreach (var f in inner)
-                    Logger.Debug($"  Bundle content: {Path.GetFileName(f)}");
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn($"Failed to extract bundle {bundle}: {ex.Message}");
-            }
-        }
+        // Bundles (msixbundle/appxbundle) are self-contained — they already include
+        // all dependencies inside. Return them directly instead of extracting inner
+        // appx/msix files, which would incorrectly split deps out of the bundle.
+        foreach (var b in bundles)
+            Logger.Debug($"Bundle (self-contained, no extraction needed): {Path.GetFileName(b)}");
 
-        return FilterByArchitecture(extracted.ToArray());
+        return FilterByArchitecture(bundles);
     }
 
     public static (string? main, string[] deps) ClassifyPackages(string[] files)

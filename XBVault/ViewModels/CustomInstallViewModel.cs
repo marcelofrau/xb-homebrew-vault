@@ -245,6 +245,18 @@ public partial class CustomInstallViewModel : ObservableObject
         if (CurrentStep != 0) return;
 
         Logger.Info($"AnalyzeAsync: starting — source={UseFileSource}, path={SourcePath}, url={SourceUrl}");
+
+        // Full state reset — treat as fresh start
+        Cleanup();
+        _analysis = null;
+        _downloadedFile = null;
+        FileList.Clear();
+        DepItems.Clear();
+        AnalysisResultText = null;
+        OnPropertyChanged(nameof(MainPackageName));
+        OnPropertyChanged(nameof(DependencyCount));
+        OnPropertyChanged(nameof(DependencyText));
+
         IsAnalyzing = true;
         StatusText = "Analyzing package...";
         Logger.Debug($"AnalyzeAsync: step 0 → 1 (analysis)");
@@ -445,11 +457,30 @@ public partial class CustomInstallViewModel : ObservableObject
                 IsInstalling = false;
                 InstallComplete = false;
             }
+            var prev = CurrentStep;
             CurrentStep = CurrentStep switch
             {
                 2 => 0,
                 _ => CurrentStep - 1
             };
+
+            // Reset all state when going back to source step
+            if (CurrentStep == 0 && prev != 0)
+            {
+                Cleanup();
+                _analysis = null;
+                _downloadedFile = null;
+                SourcePath = null;
+                SourceUrl = null;
+                StatusText = null;
+                AnalysisResultText = null;
+                FileList.Clear();
+                DepItems.Clear();
+                OnPropertyChanged(nameof(MainPackageName));
+                OnPropertyChanged(nameof(DependencyCount));
+                OnPropertyChanged(nameof(DependencyText));
+                OnPropertyChanged(nameof(CanGoNext));
+            }
         }
     }
 

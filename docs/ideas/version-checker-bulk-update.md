@@ -2,6 +2,25 @@
 
 **Impact:** High | **Effort:** Medium | **Suggested priority:** Phase 3
 
+## Status — ✅ Partial (v1.2.0)
+
+**Done:**
+- `InstalledPackage.IsOutdated` property
+- OUTDATED badge on cards (red rounded)
+- Orange accent strip + orange bold version on outdated cards
+- Update button in InstalledView toolbar (enabled only when outdated, Accent class)
+- "Update" button in InstalledView opens `ItemDetailWindow` in update mode
+- Version comparison via `System.Version`
+- Hamburger flyout "Update" item (visible when outdated)
+- Finish button after successful update in ItemDetailWindow
+- Refresh InstalledView on dialog close after update
+
+**Remaining:**
+- Sidebar badge "Updates (N)"
+- Dedicated Updates tab / window
+- Bulk Update / Update All queue
+- `VersionCheckerService`
+
 ## Problem
 
 Users install packages from the catalog and never know if a newer version exists. They need to manually visit the catalog, compare versions, and reinstall.
