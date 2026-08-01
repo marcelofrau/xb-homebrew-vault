@@ -1,14 +1,15 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Runtime.InteropServices;
 using Avalonia.Threading;
 using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using XBVault.Helpers;
 using XBVault.Models;
 using XBVault.Services;
+using static XBVault.Helpers.FileSystemPathParser;
 
 namespace XBVault.ViewModels;
 
@@ -18,24 +19,24 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 {
     private readonly IXboxAuthService _authService;
     private readonly SftpService _sftpService;
+    private readonly SftpTransferService _transfer;
     internal SftpService SftpService => _sftpService;
     private string? _sftpPassword;
-    private DateTime _transferStartTime;
-    private long _transferBytesTotal;
-    private CancellationTokenSource? _currentTransferCts;
+    private CancellationTokenSource? _deleteCts;
     private string? _uploadTargetPath;
 
     public void Dispose()
     {
-        _currentTransferCts?.Cancel();
-        _currentTransferCts?.Dispose();
+        _deleteCts?.Cancel();
+        _deleteCts?.Dispose();
         GC.SuppressFinalize(this);
     }
 
-    public FileExplorerViewModel(IXboxAuthService authService, SftpService sftpService)
+    public FileExplorerViewModel(IXboxAuthService authService, SftpService sftpService, SftpTransferService transfer)
     {
         _authService = authService;
         _sftpService = sftpService;
+        _transfer = transfer;
         _authService.ConnectionChanged += OnBoxConnectionChanged;
         _sftpService.ConnectionChanged += OnSftpConnectionChanged;
         IsConnected = _authService.IsConnected;
@@ -119,31 +120,16 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanRenameSingle));
     }
 
-    private string FormatSpeed(double fraction)
-    {
-        if (_transferBytesTotal <= 0) return string.Empty;
-        var elapsed = (DateTime.UtcNow - _transferStartTime).TotalSeconds;
-        if (elapsed < 0.5) return string.Empty;
-        return FormatBps(fraction * _transferBytesTotal / elapsed);
-    }
-
-    internal static string FormatBps(double bps)
-    {
-        if (bps >= 1024 * 1024)
-            return $" {(bps / (1024 * 1024)).ToString("F1", CultureInfo.InvariantCulture)} MB/s";
-        if (bps >= 1024)
-            return $" {(bps / 1024).ToString("F1", CultureInfo.InvariantCulture)} KB/s";
-        return $" {bps.ToString("F0", CultureInfo.InvariantCulture)} B/s";
-    }
-
     public bool CanCancelTransfer => IsUploading || IsDownloading || IsDeleting;
 
     [RelayCommand]
     private void CancelTransfer()
     {
         Logger.Debug("CancelTransfer: requesting cancellation");
-        _currentTransferCts?.Cancel();
-        _currentTransferCts = null;
+        _transfer.CancelTransfer();
+        _deleteCts?.Cancel();
+        _deleteCts?.Dispose();
+        _deleteCts = null;
     }
 
     [ObservableProperty]
@@ -335,23 +321,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     public bool CanRefresh => _sftpService.IsConnected && TreeRoots.Count > 0 && CanModifyFiles;
     public bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
-    public string[] BreadcrumbSegments
-    {
-        get
-        {
-            var parts = CurrentPath.Split('\\', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length == 0) return [];
-            var segments = new string[parts.Length];
-            for (int i = 0; i < parts.Length; i++)
-            {
-                var joined = string.Join("\\", parts, 0, i + 1);
-                if (joined.EndsWith(":"))
-                    joined += "\\";
-                segments[i] = joined;
-            }
-            return segments;
-        }
-    }
+    public string[] BreadcrumbSegments => BuildBreadcrumbSegments(CurrentPath);
 
     public ObservableCollection<SftpEntry> TreeRoots { get; } = [];
     public ObservableCollection<SftpEntry> CurrentEntries { get; } = [];
@@ -373,38 +343,6 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             StatusText = "Connected";
         else
             StatusText = "Ready to browse";
-    }
-
-    internal static void InsertSorted(ObservableCollection<SftpEntry> list, SftpEntry entry)
-    {
-        var i = 0;
-        for (; i < list.Count; i++)
-        {
-            var e = list[i];
-            if (e.IsPlaceholder) continue;
-            if (entry.IsDirectory && !e.IsDirectory) break;
-            if (!entry.IsDirectory && e.IsDirectory) continue;
-            if (string.Compare(entry.Name, e.Name, StringComparison.OrdinalIgnoreCase) < 0) break;
-        }
-        list.Insert(i, entry);
-        UpdateLastChildFlag(list);
-    }
-
-    internal static void UpdateLastChildFlag(ObservableCollection<SftpEntry> entries)
-    {
-        for (int i = 0; i < entries.Count; i++)
-            entries[i].IsLastChild = i >= entries.Count - 1;
-    }
-
-    internal static void UpdateChildrenPathsRecursive(SftpEntry entry, string oldPath, string newPath)
-    {
-        foreach (var child in entry.Children)
-        {
-            if (child.IsPlaceholder) continue;
-            child.FullPath = child.FullPath.Replace(oldPath, newPath);
-            if (child.IsDirectory)
-                UpdateChildrenPathsRecursive(child, oldPath, newPath);
-        }
     }
 
     [RelayCommand]
@@ -696,29 +634,6 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         }
     }
 
-    internal static List<string> CollectExpandedPaths(ObservableCollection<SftpEntry> entries)
-    {
-        var paths = new List<string>();
-        foreach (var e in entries)
-        {
-            if (e.IsExpanded)
-                paths.Add(e.FullPath);
-            if (e.IsExpanded && e.Children.Count > 0)
-                paths.AddRange(CollectExpandedPaths(e.Children));
-        }
-        return paths;
-    }
-
-    internal static void ClearTreeCache(ObservableCollection<SftpEntry> entries)
-    {
-        foreach (var e in entries)
-        {
-            e.HasLoaded = false;
-            if (e.Children.Count > 0)
-                ClearTreeCache(e.Children);
-        }
-    }
-
     [RelayCommand]
     private async Task UploadFilesAsync(string[]? filePaths)
     {
@@ -728,101 +643,21 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         for (int i = 0; i < filePaths.Length; i++)
             Logger.Trace($"UploadFilesAsync: file[{i}] = '{filePaths[i]}'");
 
-        _currentTransferCts = new CancellationTokenSource();
-        var ct = _currentTransferCts.Token;
+        IsUploading = true;
+        UploadProgress = 0;
         _uploadTargetPath = CurrentPath;
-
         try
         {
-            foreach (var filePath in filePaths)
-            {
-                if (ct.IsCancellationRequested) break;
-
-                string? remotePath = null;
-                try
-                {
-                    var fileName = Path.GetFileName(filePath);
-                    Logger.Info($"UploadFilesAsync: uploading '{filePath}' → '{CurrentPath}{fileName}'");
-                    IsUploading = true;
-                    UploadProgress = 0;
-                    _transferStartTime = DateTime.UtcNow;
-                    _transferBytesTotal = 0;
-                    UploadStatusText = $"Uploading {fileName}... (0%)";
-
-                    remotePath = CurrentPath.TrimEnd('\\') + "\\" + fileName;
-
-                    await using var stream = File.OpenRead(filePath);
-                    _transferBytesTotal = stream.Length;
-                    var progress = new Progress<double>(p =>
-                    {
-                        Dispatcher.UIThread.Post(() =>
-                        {
-                            UploadProgress = p;
-                            UploadStatusText = $"Uploading {fileName}... ({p * 100:F0}%){FormatSpeed(p)}";
-                        });
-                    });
-
-                    await _sftpService.UploadFileAsync(stream, remotePath, progress, ct);
-
-                    var fi = new FileInfo(filePath);
-                    var newEntry = new SftpEntry
-                    {
-                        Name = fileName,
-                        FullPath = remotePath,
-                        IsDirectory = false,
-                        Size = fi.Length,
-                        LastModified = fi.LastWriteTimeUtc
-                    };
-
-                    if (CurrentPath == _uploadTargetPath)
-                    {
-                    var existing = CurrentEntries.FirstOrDefault(e => !e.IsDirectory && e.Name == fileName);
-                    if (existing is not null) CurrentEntries.Remove(existing);
-                    var ph = CurrentEntries.FirstOrDefault(e => e.IsPlaceholder);
-                    if (ph is not null) CurrentEntries.Remove(ph);
-                    InsertSorted(CurrentEntries, newEntry);
-
-                    var parentNode = FindEntry(TreeRoots, CurrentPath);
-                    if (parentNode is not null && parentNode.HasLoaded && newEntry.IsDirectory)
-                    {
-                    var existing2 = parentNode.Children.FirstOrDefault(e => !e.IsDirectory && e.Name == fileName);
-                    if (existing2 is not null) parentNode.Children.Remove(existing2);
-                    var ph2 = parentNode.Children.FirstOrDefault(e => e.IsPlaceholder);
-                    if (ph2 is not null) parentNode.Children.Remove(ph2);
-                    InsertSorted(parentNode.Children, newEntry);
-                }
-                    }
-
-                StatusSeverity = ToolbarStatusSeverity.Success;
-                StatusMessage = $"{fileName} uploaded";
-            }
-            catch (OperationCanceledException)
-            {
-                Logger.Warn($"Upload cancelled: {Path.GetFileName(filePath)}");
-                if (remotePath is not null)
-                {
-                    try { await _sftpService.DeleteFileAsync(remotePath); }
-                    catch { /* best-effort cleanup */ }
-                }
-                StatusSeverity = ToolbarStatusSeverity.None;
-                StatusMessage = $"{Path.GetFileName(filePath)} cancelled";
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Upload failed: {filePath}");
-                StatusSeverity = ToolbarStatusSeverity.Error;
-                StatusMessage = ex is Renci.SshNet.Common.SshConnectionException ? "Upload failed — connection lost" : $"Upload failed: {ex.Message}";
-            }
-        }
-
-        IsUploading = false;
-        UploadStatusText = string.Empty;
+            var result = await _transfer.UploadFilesAsync(filePaths, CurrentPath,
+                TransferProgress(u => { UploadProgress = u.Progress; UploadStatusText = u.StatusText; }));
+            ApplyUploadResult(result);
         }
         finally
         {
             _uploadTargetPath = null;
-            _currentTransferCts?.Dispose();
-            _currentTransferCts = null;
+            IsUploading = false;
+            UploadProgress = 0;
+            UploadStatusText = string.Empty;
         }
     }
 
@@ -834,88 +669,14 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
         Logger.Info($"UploadFolderAsync: uploading folder '{localFolder}' to '{CurrentPath}'");
 
-        _currentTransferCts = new CancellationTokenSource();
-        var ct = _currentTransferCts.Token;
+        IsUploading = true;
+        UploadProgress = 0;
         _uploadTargetPath = CurrentPath;
-
         try
         {
-            IsUploading = true;
-            UploadProgress = 0;
-            _transferStartTime = DateTime.UtcNow;
-            UploadStatusText = "Scanning folder...";
-
-            var allFiles = Directory.GetFiles(localFolder, "*", SearchOption.AllDirectories);
-            if (allFiles.Length == 0)
-            {
-                Logger.Info($"UploadFolderAsync: '{localFolder}' is empty — nothing to upload");
-                StatusSeverity = ToolbarStatusSeverity.Info;
-                StatusMessage = "Empty folder — nothing to upload";
-                return;
-            }
-
-            var totalFiles = allFiles.Length;
-            var folderRoot = localFolder.TrimEnd('\\');
-            Logger.Info($"UploadFolderAsync: '{localFolder}' — {totalFiles} file(s) to upload");
-
-            for (int i = 0; i < totalFiles; i++)
-            {
-                ct.ThrowIfCancellationRequested();
-
-                var filePath = allFiles[i];
-                var relative = filePath.Substring(folderRoot.Length).TrimStart('\\');
-                var remotePath = CurrentPath.TrimEnd('\\') + "\\" + Path.GetFileName(localFolder).TrimEnd('\\') + "\\" + relative;
-                var remoteDir = Path.GetDirectoryName(remotePath)!.Replace('\\', '/');
-
-                Logger.Trace($"UploadFolderAsync: [{i + 1}/{totalFiles}] '{filePath}' → '{remotePath}'");
-                _transferStartTime = DateTime.UtcNow;
-                UploadStatusText = $"Uploading {relative}...";
-                UploadProgress = (double)i / totalFiles;
-
-                await _sftpService.CreateDirectoryAsync(remoteDir);
-
-                await using var stream = File.OpenRead(filePath);
-                _transferBytesTotal = stream.Length;
-                var pFile = new Progress<double>(p =>
-                {
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        UploadProgress = (double)i / totalFiles + p / totalFiles;
-                        UploadStatusText = $"Uploading {relative}... ({p * 100:F0}%){FormatSpeed(p)}";
-                    });
-                });
-                await _sftpService.UploadFileAsync(stream, remotePath, pFile, ct);
-            }
-
-            var addPath = _uploadTargetPath;
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (CurrentPath != addPath) return;
-                AddToCurrentAndTree(new SftpEntry
-                {
-                    Name = Path.GetFileName(localFolder.TrimEnd('\\')),
-                    FullPath = CurrentPath.TrimEnd('\\') + "\\" + Path.GetFileName(localFolder.TrimEnd('\\')),
-                    IsDirectory = true,
-                    Children = { new SftpEntry { Name = "" } }
-                });
-            });
-
-            UploadProgress = 1;
-            Logger.Info($"UploadFolderAsync: '{localFolder}' — {totalFiles} file(s) uploaded");
-            StatusSeverity = ToolbarStatusSeverity.Success;
-            StatusMessage = $"{totalFiles} files uploaded";
-        }
-        catch (OperationCanceledException)
-        {
-            Logger.Warn($"UploadFolderAsync cancelled: '{localFolder}'");
-            StatusSeverity = ToolbarStatusSeverity.None;
-            StatusMessage = "Upload cancelled";
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, $"UploadFolderAsync failed: '{localFolder}'");
-            StatusSeverity = ToolbarStatusSeverity.Error;
-            StatusMessage = ex is Renci.SshNet.Common.SshConnectionException ? "Upload failed — connection lost" : $"Upload failed: {ex.Message}";
+            var result = await _transfer.UploadFolderAsync(localFolder, CurrentPath,
+                TransferProgress(u => { UploadProgress = u.Progress; UploadStatusText = u.StatusText; }));
+            ApplyUploadResult(result);
         }
         finally
         {
@@ -923,8 +684,6 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             IsUploading = false;
             UploadProgress = 0;
             UploadStatusText = string.Empty;
-            _currentTransferCts?.Dispose();
-            _currentTransferCts = null;
         }
     }
 
@@ -937,132 +696,14 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         var dCount = folderPaths?.Length ?? 0;
         Logger.Info($"UploadMixedAsync: {fCount} file(s), {dCount} folder(s) to '{CurrentPath}'");
 
-        _currentTransferCts = new CancellationTokenSource();
-        var ct = _currentTransferCts.Token;
-        var totalItems = fCount + dCount;
+        IsUploading = true;
+        UploadProgress = 0;
         _uploadTargetPath = CurrentPath;
-
         try
         {
-            IsUploading = true;
-            UploadProgress = 0;
-            _transferStartTime = DateTime.UtcNow;
-            _transferBytesTotal = 0;
-
-            long cumulativeBytes = 0;
-
-            // Upload individual files
-            if (filePaths is not null)
-            {
-                for (int fi = 0; fi < filePaths.Length; fi++)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    var filePath = filePaths[fi];
-                    var fileName = Path.GetFileName(filePath);
-
-                    Logger.Trace($"UploadMixedAsync: file[{fi + 1}/{fCount}] '{filePath}' → '{CurrentPath}{fileName}'");
-                    _transferStartTime = DateTime.UtcNow;
-                    UploadProgress = (double)fi / totalItems;
-
-                    var remotePath = CurrentPath.TrimEnd('\\') + "\\" + fileName;
-                    await using var stream = File.OpenRead(filePath);
-                    _transferBytesTotal = stream.Length;
-                    var progress = new Progress<double>(p =>
-                    {
-                        Dispatcher.UIThread.Post(() =>
-                        {
-                            UploadProgress = (double)fi / totalItems + p / totalItems;
-                            UploadStatusText = $"Uploading {fileName}... ({p * 100:F0}%){FormatSpeed(p)}";
-                        });
-                    });
-                    await _sftpService.UploadFileAsync(stream, remotePath, progress, ct);
-                    cumulativeBytes += stream.Length;
-
-                    var fiInfo = new FileInfo(filePath);
-                    var newEntry = new SftpEntry
-                    {
-                        Name = fileName, FullPath = remotePath,
-                        IsDirectory = false, Size = fiInfo.Length, LastModified = fiInfo.LastWriteTimeUtc
-                    };
-                    AddToCurrentAndTree(newEntry);
-                    Logger.Trace($"UploadMixedAsync: file '{fileName}' added to tree");
-                }
-            }
-
-            // Upload folders
-            if (folderPaths is not null)
-            {
-                var fileCount = filePaths?.Length ?? 0;
-                for (int fi = 0; fi < folderPaths.Length; fi++)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    var folderPath = folderPaths[fi];
-                    var folderName = Path.GetFileName(folderPath.TrimEnd('\\'));
-                    var index = fileCount + fi;
-
-                    Logger.Trace($"UploadMixedAsync: folder[{fi + 1}/{dCount}] '{folderPath}' → '{CurrentPath}{folderName}'");
-                    UploadStatusText = $"Scanning {folderName}...";
-                    UploadProgress = (double)index / totalItems;
-
-                    var allFiles = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories);
-                    var folderRoot = folderPath.TrimEnd('\\');
-                    var folderDone = 0;
-                    Logger.Trace($"UploadMixedAsync: folder '{folderName}' has {allFiles.Length} file(s)");
-
-                    foreach (var filePath in allFiles)
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        var relative = filePath.Substring(folderRoot.Length).TrimStart('\\');
-                        var remotePath = CurrentPath.TrimEnd('\\') + "\\" + folderName + "\\" + relative;
-                        var remoteDir = Path.GetDirectoryName(remotePath)!.Replace('\\', '/');
-
-                        Logger.Trace($"UploadMixedAsync: [{index + 1}/{totalItems}] '{filePath}' → '{remotePath}'");
-                        _transferStartTime = DateTime.UtcNow;
-                        UploadStatusText = $"Uploading {relative}...";
-                        await _sftpService.CreateDirectoryAsync(remoteDir);
-
-                        await using var stream = File.OpenRead(filePath);
-                        _transferBytesTotal = stream.Length;
-                        var pFile = new Progress<double>(p =>
-                        {
-                            Dispatcher.UIThread.Post(() =>
-                            {
-                                UploadStatusText = $"Uploading {relative}... ({p * 100:F0}%){FormatSpeed(p)}";
-                            });
-                        });
-                        await _sftpService.UploadFileAsync(stream, remotePath, pFile, ct);
-                        cumulativeBytes += stream.Length;
-                        folderDone++;
-                    }
-
-                    UploadProgress = (double)(index + 1) / totalItems;
-
-                    var newFolder = new SftpEntry
-                    {
-                        Name = folderName, FullPath = CurrentPath.TrimEnd('\\') + "\\" + folderName,
-                        IsDirectory = true, Children = { new SftpEntry { Name = "" } }
-                    };
-                    AddToCurrentAndTree(newFolder);
-                    Logger.Trace($"UploadMixedAsync: folder '{folderName}' ({folderDone} file(s)) added to tree");
-                }
-            }
-
-            UploadProgress = 1;
-            Logger.Info($"UploadMixedAsync: {totalItems} item(s) uploaded to '{CurrentPath}'");
-            StatusSeverity = ToolbarStatusSeverity.Success;
-            StatusMessage = $"{totalItems} item(s) uploaded";
-        }
-        catch (OperationCanceledException)
-        {
-            Logger.Warn("UploadMixedAsync cancelled");
-            StatusSeverity = ToolbarStatusSeverity.None;
-            StatusMessage = "Upload cancelled";
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "UploadMixedAsync failed");
-            StatusSeverity = ToolbarStatusSeverity.Error;
-            StatusMessage = ex is Renci.SshNet.Common.SshConnectionException ? "Upload failed — connection lost" : $"Upload failed: {ex.Message}";
+            var result = await _transfer.UploadMixedAsync(filePaths, folderPaths, CurrentPath,
+                TransferProgress(u => { UploadProgress = u.Progress; UploadStatusText = u.StatusText; }));
+            ApplyUploadResult(result);
         }
         finally
         {
@@ -1070,8 +711,6 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             IsUploading = false;
             UploadProgress = 0;
             UploadStatusText = string.Empty;
-            _currentTransferCts?.Dispose();
-            _currentTransferCts = null;
         }
     }
 
@@ -1104,125 +743,71 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         Logger.Trace($"AddToCurrentAndTree: '{newEntry.FullPath}' inserted");
     }
 
+    private Progress<TransferUpdate> TransferProgress(Action<TransferUpdate> apply) =>
+        new(apply);
+
+    private void ApplyUploadResult(TransferResult result)
+    {
+        if (result.Cancelled)
+        {
+            StatusSeverity = ToolbarStatusSeverity.None;
+            StatusMessage = result.StatusMessage ?? "Upload cancelled";
+            return;
+        }
+        if (result.IsEmptyResult)
+        {
+            StatusSeverity = ToolbarStatusSeverity.Info;
+            StatusMessage = result.StatusMessage ?? string.Empty;
+            return;
+        }
+        if (result.Success)
+        {
+            StatusSeverity = ToolbarStatusSeverity.Success;
+            StatusMessage = result.StatusMessage ?? string.Empty;
+            foreach (var e in result.NewEntries)
+                AddToCurrentAndTree(e);
+            return;
+        }
+        StatusSeverity = ToolbarStatusSeverity.Error;
+        StatusMessage = result.StatusMessage ?? "Upload failed";
+    }
+
+    private void ApplyDownloadResult(TransferResult result)
+    {
+        if (result.Cancelled)
+        {
+            StatusSeverity = ToolbarStatusSeverity.None;
+            StatusMessage = result.StatusMessage ?? "Download cancelled";
+            return;
+        }
+        if (result.IsEmptyResult)
+        {
+            StatusSeverity = ToolbarStatusSeverity.Info;
+            StatusMessage = result.StatusMessage ?? string.Empty;
+            return;
+        }
+        if (result.Success)
+        {
+            StatusSeverity = ToolbarStatusSeverity.Success;
+            StatusMessage = result.StatusMessage ?? string.Empty;
+            return;
+        }
+        StatusSeverity = ToolbarStatusSeverity.Error;
+        StatusMessage = result.StatusMessage ?? "Download failed";
+    }
+
     public async Task UploadZipExtractAsync(string zipPath)
     {
         Logger.Info($"UploadZipExtractAsync: extracting '{zipPath}' to '{CurrentPath}'");
-        var tempDir = Path.Combine(Path.GetTempPath(), "XBVault", Path.GetFileNameWithoutExtension(zipPath));
-        Directory.CreateDirectory(tempDir);
-        Logger.Trace($"UploadZipExtractAsync: temp dir = '{tempDir}'");
 
+        IsUploading = true;
+        UploadProgress = 0;
+        _uploadTargetPath = CurrentPath;
         try
         {
-            Logger.Trace("UploadZipExtractAsync: extracting ZIP...");
-            System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, tempDir);
-
-            var allFiles = Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories);
-            Logger.Trace($"UploadZipExtractAsync: extracted {allFiles.Length} file(s)");
-
-            if (allFiles.Length == 0)
-            {
-                Logger.Info($"UploadZipExtractAsync: '{zipPath}' is empty — nothing to upload");
-                StatusSeverity = ToolbarStatusSeverity.Info;
-                StatusMessage = "Empty ZIP — nothing to upload";
-                return;
-            }
-
-            _currentTransferCts = new CancellationTokenSource();
-            var ct = _currentTransferCts.Token;
-
-            _uploadTargetPath = CurrentPath;
-            IsUploading = true;
-            UploadProgress = 0;
-            _transferStartTime = DateTime.UtcNow;
-            _transferBytesTotal = 0;
-
-            var totalFiles = allFiles.Length;
-            var folderRoot = tempDir.TrimEnd('\\');
-
-            for (int i = 0; i < totalFiles; i++)
-            {
-                ct.ThrowIfCancellationRequested();
-
-                var filePath = allFiles[i];
-                var relative = filePath.Substring(folderRoot.Length).TrimStart('\\');
-                var remotePath = CurrentPath.TrimEnd('\\') + "\\" + relative;
-                var remoteDir = Path.GetDirectoryName(remotePath)!.Replace('\\', '/');
-
-                Logger.Trace($"UploadZipExtractAsync: [{i + 1}/{totalFiles}] '{filePath}' → '{remotePath}'");
-                _transferStartTime = DateTime.UtcNow;
-                UploadStatusText = $"Extracting & uploading {relative}...";
-                UploadProgress = (double)i / totalFiles;
-
-                await _sftpService.CreateDirectoryAsync(remoteDir);
-
-                await using var stream = File.OpenRead(filePath);
-                _transferBytesTotal = stream.Length;
-                var pFile = new Progress<double>(p =>
-                {
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        UploadProgress = (double)i / totalFiles + p / totalFiles;
-                        UploadStatusText = $"Extracting & uploading {relative}... ({p * 100:F0}%){FormatSpeed(p)}";
-                    });
-                });
-                await _sftpService.UploadFileAsync(stream, remotePath, pFile, ct);
-            }
-
-            // Add entries to list view
-            var addPath = _uploadTargetPath;
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (CurrentPath != addPath) return;
-                var addedDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                for (int i = 0; i < totalFiles; i++)
-                {
-                    var rel = allFiles[i].Substring(folderRoot.Length).TrimStart('\\');
-                    var remotePath = CurrentPath.TrimEnd('\\') + "\\" + rel;
-                    var dirPart = Path.GetDirectoryName(rel);
-
-                    if (!string.IsNullOrEmpty(dirPart))
-                    {
-                        var acc = CurrentPath.TrimEnd('\\');
-                        foreach (var part in dirPart.Split('\\'))
-                        {
-                            acc += "\\" + part;
-                            if (addedDirs.Add(acc))
-                                AddToCurrentAndTree(new SftpEntry
-                                {
-                                    Name = part, FullPath = acc,
-                                    IsDirectory = true, Children = { new SftpEntry { Name = "" } }
-                                });
-                        }
-                    }
-                    else
-                    {
-                        var fiEntry = new FileInfo(allFiles[i]);
-                        AddToCurrentAndTree(new SftpEntry
-                        {
-                            Name = rel, FullPath = remotePath,
-                            IsDirectory = false, Size = fiEntry.Length,
-                            LastModified = fiEntry.LastWriteTimeUtc
-                        });
-                    }
-                }
-            });
-
-            UploadProgress = 1;
-            Logger.Info($"UploadZipExtractAsync: {totalFiles} file(s) extracted and uploaded to '{CurrentPath}'");
-            StatusSeverity = ToolbarStatusSeverity.Success;
-            StatusMessage = $"{totalFiles} files extracted and uploaded";
-        }
-        catch (OperationCanceledException)
-        {
-            Logger.Warn($"UploadZipExtractAsync cancelled: '{zipPath}'");
-            StatusSeverity = ToolbarStatusSeverity.None;
-            StatusMessage = "ZIP upload cancelled";
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, $"UploadZipExtractAsync failed: '{zipPath}'");
-            StatusSeverity = ToolbarStatusSeverity.Error;
-            StatusMessage = $"ZIP upload failed: {ex.Message}";
+            var result = await _transfer.UploadZipExtractAsync(zipPath, CurrentPath,
+                TransferProgress(u => { UploadProgress = u.Progress; UploadStatusText = u.StatusText; }));
+            ApplyUploadResult(result);
         }
         finally
         {
@@ -1230,12 +815,6 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             IsUploading = false;
             UploadProgress = 0;
             UploadStatusText = string.Empty;
-            _currentTransferCts?.Dispose();
-            _currentTransferCts = null;
-
-            Logger.Trace($"UploadZipExtractAsync: cleaning temp dir '{tempDir}'");
-            try { Directory.Delete(tempDir, true); }
-            catch (Exception ex) { Logger.Warn($"Failed to clean temp folder: {tempDir} — {ex.Message}"); }
         }
     }
 
@@ -1285,159 +864,41 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         Directory.CreateDirectory(localDir);
         Logger.Info($"DownloadSelectedAsync: multi-file download to '{localDir}'");
 
-        // Build unified file list: direct files + recursive from folders
-        var fileList = new List<(SftpEntry Entry, string RelativePath)>();
-        _currentTransferCts = new CancellationTokenSource();
-        var ct = _currentTransferCts.Token;
         IsDownloading = true;
         DownloadProgress = 0;
-        DownloadStatusText = "Scanning folders...";
-
-        foreach (var entry in entries)
-        {
-            ct.ThrowIfCancellationRequested();
-            if (!entry.IsDirectory)
-            {
-                fileList.Add((entry, entry.Name));
-            }
-            else
-            {
-                try
-                {
-                    DownloadStatusText = $"Scanning {entry.Name}...";
-                    var all = await _sftpService.RecursiveListAsync(entry.FullPath);
-                    var folderRoot = entry.FullPath.TrimEnd('\\');
-                    foreach (var file in all.Where(e => !e.IsDirectory))
-                    {
-                        var relative = Path.Combine(entry.Name.TrimEnd('\\'), file.FullPath.Substring(folderRoot.Length).TrimStart('\\'));
-                        fileList.Add((file, relative));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, $"Failed to scan folder: {entry.Name}");
-                    StatusSeverity = ToolbarStatusSeverity.Error;
-                    StatusMessage = $"Failed to scan {entry.Name}: {ex.Message}";
-                }
-            }
-        }
-
-        var totalFiles = fileList.Count;
-        if (totalFiles == 0)
-        {
-            IsDownloading = false;
-            _currentTransferCts?.Dispose();
-            _currentTransferCts = null;
-            StatusSeverity = ToolbarStatusSeverity.Info;
-            StatusMessage = "Nothing to download";
-            return;
-        }
-
-        string? partialPath = null;
-        _transferStartTime = DateTime.UtcNow;
         try
         {
-            for (int i = 0; i < totalFiles; i++)
-            {
-                ct.ThrowIfCancellationRequested();
-                var (file, relative) = fileList[i];
-                Logger.Trace($"DownloadSelectedAsync: [{i + 1}/{totalFiles}] '{file.FullPath}' → '{Path.Combine(localDir, relative)}'");
-                _transferStartTime = DateTime.UtcNow;
-                _transferBytesTotal = await _sftpService.GetFileSizeAsync(file.FullPath);
-                DownloadProgress = (double)i / totalFiles;
-
-                partialPath = Path.Combine(localDir, relative);
-                var parentDir = Path.GetDirectoryName(partialPath);
-                if (!string.IsNullOrEmpty(parentDir))
-                    Directory.CreateDirectory(parentDir);
-
-                await using var stream = File.Create(partialPath);
-                var dProgress = new Progress<double>(p =>
-                {
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        DownloadStatusText = $"Downloading {file.Name}... ({p * 100:F0}%){FormatSpeed(p)}";
-                    });
-                });
-                await _sftpService.DownloadFileAsync(file.FullPath, stream, dProgress, ct);
-
-                DownloadProgress = (double)(i + 1) / totalFiles;
-                StatusSeverity = ToolbarStatusSeverity.Success;
-                StatusMessage = $"{file.Name} downloaded ({i + 1}/{totalFiles})";
-                partialPath = null;
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            Logger.Warn("Multi-file download cancelled");
-            if (partialPath is not null && File.Exists(partialPath))
-                File.Delete(partialPath);
-            StatusSeverity = ToolbarStatusSeverity.None;
-            StatusMessage = "Download cancelled";
+            var result = await _transfer.DownloadFilesAsync(entries, localDir,
+                TransferProgress(u => { DownloadProgress = u.Progress; DownloadStatusText = u.StatusText; }));
+            ApplyDownloadResult(result);
         }
         finally
         {
             IsDownloading = false;
             DownloadProgress = 0;
             DownloadStatusText = string.Empty;
-            _currentTransferCts?.Dispose();
-            _currentTransferCts = null;
         }
     }
 
     private async Task DownloadSingleFileAsync(SftpEntry entry)
     {
         Logger.Info($"DownloadSingleFileAsync: '{entry.FullPath}'");
-        string? savePath = null;
+        var savePath = ShowSaveFileDialogAsync is not null ? await ShowSaveFileDialogAsync(entry) : null;
+        if (string.IsNullOrEmpty(savePath)) return;
+
+        IsDownloading = true;
+        DownloadProgress = 0;
         try
         {
-            savePath = ShowSaveFileDialogAsync is not null ? await ShowSaveFileDialogAsync(entry) : null;
-            if (string.IsNullOrEmpty(savePath)) return;
-
-            _currentTransferCts = new CancellationTokenSource();
-            var ct = _currentTransferCts.Token;
-
-            IsDownloading = true;
-            DownloadProgress = 0;
-            _transferStartTime = DateTime.UtcNow;
-            _transferBytesTotal = await _sftpService.GetFileSizeAsync(entry.FullPath);
-            DownloadStatusText = $"Downloading {entry.Name}... (0%)";
-
-            await using var stream = File.Create(savePath);
-            var progress = new Progress<double>(p =>
-            {
-                Dispatcher.UIThread.Post(() =>
-                {
-                    DownloadProgress = p;
-                    DownloadStatusText = $"Downloading {entry.Name}... ({p * 100:F0}%){FormatSpeed(p)}";
-                });
-            });
-
-            _transferBytesTotal = await _sftpService.DownloadFileAsync(entry.FullPath, stream, progress, ct);
-            StatusSeverity = ToolbarStatusSeverity.Success;
-            StatusMessage = $"{entry.Name} downloaded";
-        }
-        catch (OperationCanceledException)
-        {
-            Logger.Warn($"Download cancelled: {entry.Name}");
-            if (savePath is not null && File.Exists(savePath))
-                File.Delete(savePath);
-            StatusSeverity = ToolbarStatusSeverity.None;
-            StatusMessage = $"{entry.Name} cancelled";
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, $"Download failed: {entry.Name}");
-            StatusSeverity = ToolbarStatusSeverity.Error;
-            StatusMessage = $"Download failed: {entry.Name}: {ex.Message}";
+            var result = await _transfer.DownloadSingleFileAsync(entry, savePath,
+                TransferProgress(u => { DownloadProgress = u.Progress; DownloadStatusText = u.StatusText; }));
+            ApplyDownloadResult(result);
         }
         finally
         {
             IsDownloading = false;
             DownloadProgress = 0;
             DownloadStatusText = string.Empty;
-            _currentTransferCts?.Dispose();
-            _currentTransferCts = null;
         }
     }
 
@@ -1446,98 +907,19 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         var localRoot = ShowFolderPickerAsync is not null ? await ShowFolderPickerAsync() : null;
         if (string.IsNullOrEmpty(localRoot)) return;
 
+        IsDownloading = true;
+        DownloadProgress = 0;
         try
         {
-            IsDownloading = true;
-            DownloadProgress = 0;
-            DownloadStatusText = "Listing files...";
-
-            Logger.Info($"DownloadFolderAsync: starting download of '{entry.FullPath}'");
-
-            var allEntries = await _sftpService.RecursiveListAsync(entry.FullPath);
-            var files = allEntries.Where(e => !e.IsDirectory).ToList();
-            var totalFiles = files.Count;
-
-            if (totalFiles == 0)
-            {
-                Logger.Info($"DownloadFolderAsync: '{entry.FullPath}' is empty — nothing to download");
-                StatusSeverity = ToolbarStatusSeverity.Info;
-                StatusMessage = "Empty folder — nothing to download";
-                return;
-            }
-
-            Logger.Info($"DownloadFolderAsync: '{entry.FullPath}' — {totalFiles} files to download");
-
-            _transferStartTime = DateTime.UtcNow;
-            _currentTransferCts = new CancellationTokenSource();
-            var ct = _currentTransferCts.Token;
-
-            localRoot = Path.Combine(localRoot, entry.Name.TrimEnd('\\'));
-            Directory.CreateDirectory(localRoot);
-            var rootPath = entry.FullPath.TrimEnd('\\');
-            string? partialPath = null;
-
-            try
-            {
-                for (int i = 0; i < files.Count; i++)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    var file = files[i];
-                    var relative = file.FullPath.Substring(rootPath.Length).TrimStart('\\');
-                    partialPath = Path.Combine(localRoot, relative);
-                    var localDir = Path.GetDirectoryName(partialPath);
-                    if (!string.IsNullOrEmpty(localDir))
-                        Directory.CreateDirectory(localDir);
-
-                    var idx = i;
-                    Logger.Trace($"DownloadFolderAsync: [{idx + 1}/{totalFiles}] '{file.FullPath}' → '{partialPath}'");
-                    _transferStartTime = DateTime.UtcNow;
-                    _transferBytesTotal = await _sftpService.GetFileSizeAsync(file.FullPath);
-
-                    await using var stream = File.Create(partialPath);
-                    var dProgress = new Progress<double>(p =>
-                    {
-                        Dispatcher.UIThread.Post(() =>
-                        {
-                            DownloadProgress = (double)idx / totalFiles + p / totalFiles;
-                            DownloadStatusText = $"Downloading {file.Name}... ({p * 100:F0}%){FormatSpeed(p)}";
-                        });
-                    });
-                    await _sftpService.DownloadFileAsync(file.FullPath, stream, dProgress, ct);
-
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        DownloadProgress = (double)(idx + 1) / totalFiles;
-                    });
-                    partialPath = null;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                Logger.Warn($"Folder download cancelled: {entry.Name}");
-                if (partialPath is not null && File.Exists(partialPath))
-                    File.Delete(partialPath);
-                StatusSeverity = ToolbarStatusSeverity.None;
-                StatusMessage = $"{entry.Name} cancelled";
-                return;
-            }
-
-            StatusSeverity = ToolbarStatusSeverity.Success;
-            StatusMessage = $"{totalFiles} files downloaded";
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, $"Folder download failed: {entry.Name}");
-            StatusSeverity = ToolbarStatusSeverity.Error;
-            StatusMessage = $"Folder download failed: {entry.Name}: {ex.Message}";
+            var result = await _transfer.DownloadFolderAsync(entry, localRoot,
+                TransferProgress(u => { DownloadProgress = u.Progress; DownloadStatusText = u.StatusText; }));
+            ApplyDownloadResult(result);
         }
         finally
         {
             IsDownloading = false;
             DownloadProgress = 0;
             DownloadStatusText = string.Empty;
-            _currentTransferCts?.Dispose();
-            _currentTransferCts = null;
         }
     }
 
@@ -1590,8 +972,8 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
         Logger.Info($"DeleteSelectedAsync: deleting {entries.Count} item(s)");
 
-        _currentTransferCts = new CancellationTokenSource();
-        var ct = _currentTransferCts.Token;
+        _deleteCts = new CancellationTokenSource();
+        var ct = _deleteCts.Token;
 
         try
         {
@@ -1640,8 +1022,8 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             IsDeleting = false;
             DeleteProgress = 0;
             DeleteStatusText = string.Empty;
-            _currentTransferCts?.Dispose();
-            _currentTransferCts = null;
+            _deleteCts?.Dispose();
+            _deleteCts = null;
         }
     }
 
@@ -1835,46 +1217,6 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         }
         catch { }
 
-        return null;
-    }
-
-    internal static SftpEntry? FindEntry(ObservableCollection<SftpEntry> entries, string path)
-    {
-        foreach (var e in entries)
-        {
-            if (e.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase))
-                return e;
-            if (e.Children.Count > 0)
-            {
-                var found = FindEntry(e.Children, path);
-                if (found is not null)
-                    return found;
-            }
-        }
-        return null;
-    }
-
-    internal static string? GetParentPath(string path)
-    {
-        var trimmed = path.TrimEnd('\\');
-        var idx = trimmed.LastIndexOf('\\');
-        if (idx <= 0) return null;
-        return trimmed[..idx] + "\\";
-    }
-
-    internal static SftpEntry? FindParent(ObservableCollection<SftpEntry> entries, SftpEntry target)
-    {
-        foreach (var e in entries)
-        {
-            if (e.Children.Contains(target))
-                return e;
-            if (e.Children.Count > 0)
-            {
-                var found = FindParent(e.Children, target);
-                if (found is not null)
-                    return found;
-            }
-        }
         return null;
     }
 }

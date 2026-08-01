@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace XBVault.Services;
 
-public class SftpService : IDisposable
+public class SftpService : ISftpService
 {
     private SshClient? _ssh;
     private SftpClient? _sftp;

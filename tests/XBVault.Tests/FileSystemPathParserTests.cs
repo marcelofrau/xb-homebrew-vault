@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
+using XBVault.Helpers;
 using XBVault.Models;
-using XBVault.ViewModels;
 
 namespace XBVault.Tests;
 
-public class FileExplorerHelperTests
+public class FileSystemPathParserTests
 {
     private static SftpEntry Dir(string name, string path = "")
     {
@@ -27,7 +27,7 @@ public class FileExplorerHelperTests
     [InlineData(3 * 1024 * 1024, " 3.0 MB/s")]
     public void FormatBps_FormatsUnits(double bps, string expected)
     {
-        Assert.Equal(expected, FileExplorerViewModel.FormatBps(bps));
+        Assert.Equal(expected, FileSystemPathParser.FormatBps(bps));
     }
 
     // ---- InsertSorted ----
@@ -37,8 +37,8 @@ public class FileExplorerHelperTests
     {
         var list = new ObservableCollection<SftpEntry>();
 
-        FileExplorerViewModel.InsertSorted(list, File("b.txt"));
-        FileExplorerViewModel.InsertSorted(list, Dir("a-folder"));
+        FileSystemPathParser.InsertSorted(list, File("b.txt"));
+        FileSystemPathParser.InsertSorted(list, Dir("a-folder"));
 
         Assert.Equal(2, list.Count);
         Assert.True(list[0].IsDirectory);
@@ -50,9 +50,9 @@ public class FileExplorerHelperTests
     {
         var list = new ObservableCollection<SftpEntry>();
 
-        FileExplorerViewModel.InsertSorted(list, File("zeta.txt"));
-        FileExplorerViewModel.InsertSorted(list, File("alpha.txt"));
-        FileExplorerViewModel.InsertSorted(list, File("mid.txt"));
+        FileSystemPathParser.InsertSorted(list, File("zeta.txt"));
+        FileSystemPathParser.InsertSorted(list, File("alpha.txt"));
+        FileSystemPathParser.InsertSorted(list, File("mid.txt"));
 
         Assert.Equal(new[] { "alpha.txt", "mid.txt", "zeta.txt" }, list.Select(e => e.Name).ToArray());
     }
@@ -62,8 +62,8 @@ public class FileExplorerHelperTests
     {
         var list = new ObservableCollection<SftpEntry>();
 
-        FileExplorerViewModel.InsertSorted(list, File("Beta.txt"));
-        FileExplorerViewModel.InsertSorted(list, File("alpha.txt"));
+        FileSystemPathParser.InsertSorted(list, File("Beta.txt"));
+        FileSystemPathParser.InsertSorted(list, File("alpha.txt"));
 
         Assert.Equal(new[] { "alpha.txt", "Beta.txt" }, list.Select(e => e.Name).ToArray());
     }
@@ -73,7 +73,7 @@ public class FileExplorerHelperTests
     {
         var list = new ObservableCollection<SftpEntry> { new() { Name = "", IsPlaceholder = true } };
 
-        FileExplorerViewModel.InsertSorted(list, File("a.txt"));
+        FileSystemPathParser.InsertSorted(list, File("a.txt"));
 
         Assert.True(list[0].IsPlaceholder);
         Assert.Equal("a.txt", list[1].Name);
@@ -83,8 +83,8 @@ public class FileExplorerHelperTests
     public void InsertSorted_MarksLastChild()
     {
         var list = new ObservableCollection<SftpEntry>();
-        FileExplorerViewModel.InsertSorted(list, File("a.txt"));
-        FileExplorerViewModel.InsertSorted(list, File("b.txt"));
+        FileSystemPathParser.InsertSorted(list, File("a.txt"));
+        FileSystemPathParser.InsertSorted(list, File("b.txt"));
 
         Assert.False(list[0].IsLastChild);
         Assert.True(list[1].IsLastChild);
@@ -97,7 +97,7 @@ public class FileExplorerHelperTests
     {
         var list = new ObservableCollection<SftpEntry> { File("a"), File("b"), File("c") };
 
-        FileExplorerViewModel.UpdateLastChildFlag(list);
+        FileSystemPathParser.UpdateLastChildFlag(list);
 
         Assert.Equal(new[] { false, false, true }, list.Select(e => e.IsLastChild).ToArray());
     }
@@ -105,7 +105,7 @@ public class FileExplorerHelperTests
     [Fact]
     public void UpdateLastChildFlag_EmptyList_NoThrow()
     {
-        FileExplorerViewModel.UpdateLastChildFlag(new ObservableCollection<SftpEntry>());
+        FileSystemPathParser.UpdateLastChildFlag(new ObservableCollection<SftpEntry>());
     }
 
     // ---- UpdateChildrenPathsRecursive ----
@@ -120,7 +120,7 @@ public class FileExplorerHelperTests
         child.Children.Add(File("file.txt", oldPath + @"\sub\file.txt"));
         root.Children.Add(child);
 
-        FileExplorerViewModel.UpdateChildrenPathsRecursive(root, oldPath, newPath);
+        FileSystemPathParser.UpdateChildrenPathsRecursive(root, oldPath, newPath);
 
         Assert.Equal(newPath + @"\sub", child.FullPath);
         Assert.Equal(newPath + @"\sub\file.txt", child.Children[0].FullPath);
@@ -137,7 +137,7 @@ public class FileExplorerHelperTests
         root.Children.Add(sub);
         var list = new ObservableCollection<SftpEntry> { root };
 
-        var found = FileExplorerViewModel.FindEntry(list, @"\games\sub\target.txt");
+        var found = FileSystemPathParser.FindEntry(list, @"\games\sub\target.txt");
 
         Assert.NotNull(found);
         Assert.Equal("target.txt", found!.Name);
@@ -150,7 +150,7 @@ public class FileExplorerHelperTests
         root.Children.Add(File("a.txt", @"\games\a.txt"));
         var list = new ObservableCollection<SftpEntry> { root };
 
-        Assert.NotNull(FileExplorerViewModel.FindEntry(list, @"\GAMES\A.TXT"));
+        Assert.NotNull(FileSystemPathParser.FindEntry(list, @"\GAMES\A.TXT"));
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public class FileExplorerHelperTests
     {
         var list = new ObservableCollection<SftpEntry> { Dir("games", @"\games") };
 
-        Assert.Null(FileExplorerViewModel.FindEntry(list, @"\games\nope.txt"));
+        Assert.Null(FileSystemPathParser.FindEntry(list, @"\games\nope.txt"));
     }
 
     // ---- CollectExpandedPaths ----
@@ -174,7 +174,7 @@ public class FileExplorerHelperTests
         root.IsExpanded = true;
         sub.IsExpanded = true;
 
-        var paths = FileExplorerViewModel.CollectExpandedPaths(list);
+        var paths = FileSystemPathParser.CollectExpandedPaths(list);
 
         Assert.Equal(new[] { @"\games", @"\games\sub" }, paths.ToArray());
     }
@@ -189,7 +189,7 @@ public class FileExplorerHelperTests
         var list = new ObservableCollection<SftpEntry> { root };
         root.IsExpanded = false;
 
-        var paths = FileExplorerViewModel.CollectExpandedPaths(list);
+        var paths = FileSystemPathParser.CollectExpandedPaths(list);
 
         Assert.Empty(paths);
     }
@@ -206,7 +206,7 @@ public class FileExplorerHelperTests
         root.Children.Add(sub);
         var list = new ObservableCollection<SftpEntry> { root };
 
-        FileExplorerViewModel.ClearTreeCache(list);
+        FileSystemPathParser.ClearTreeCache(list);
 
         Assert.False(root.HasLoaded);
         Assert.False(sub.HasLoaded);
@@ -222,7 +222,7 @@ public class FileExplorerHelperTests
         games.Children.Add(target);
         var list = new ObservableCollection<SftpEntry> { games };
 
-        var parent = FileExplorerViewModel.FindParent(list, target);
+        var parent = FileSystemPathParser.FindParent(list, target);
 
         Assert.Same(games, parent);
     }
@@ -233,7 +233,7 @@ public class FileExplorerHelperTests
         var root = Dir("games", @"\games");
         var list = new ObservableCollection<SftpEntry> { root };
 
-        Assert.Null(FileExplorerViewModel.FindParent(list, root));
+        Assert.Null(FileSystemPathParser.FindParent(list, root));
     }
 
     [Fact]
@@ -246,7 +246,7 @@ public class FileExplorerHelperTests
         a.Children.Add(b);
         var list = new ObservableCollection<SftpEntry> { a };
 
-        var parent = FileExplorerViewModel.FindParent(list, target);
+        var parent = FileSystemPathParser.FindParent(list, target);
 
         Assert.Same(b, parent);
     }
@@ -259,7 +259,7 @@ public class FileExplorerHelperTests
     [InlineData(@"C:\a\b\file.txt", @"C:\a\b\")]
     public void GetParentPath_ReturnsParent(string path, string expected)
     {
-        Assert.Equal(expected, FileExplorerViewModel.GetParentPath(path));
+        Assert.Equal(expected, FileSystemPathParser.GetParentPath(path));
     }
 
     [Theory]
@@ -268,6 +268,6 @@ public class FileExplorerHelperTests
     [InlineData(@"\")]
     public void GetParentPath_Root_ReturnsNull(string path)
     {
-        Assert.Null(FileExplorerViewModel.GetParentPath(path));
+        Assert.Null(FileSystemPathParser.GetParentPath(path));
     }
 }

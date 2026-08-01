@@ -70,6 +70,7 @@ public partial class App : Application
             var cacheService = new CacheService();
             var installService = new PackageInstallService(cacheService, packageService);
             var sftpService = new SftpService();
+            var sftpTransferService = new SftpTransferService(sftpService);
             var catalogService = new CatalogApiService();
             var overrideService = new PackageOverrideService();
             overrideService.Initialize();
@@ -77,7 +78,7 @@ public partial class App : Application
             var mainViewModel = new MainViewModel(authService);
             var browseViewModel = new BrowseViewModel(installService, authService, packageService, catalogService, overrideService);
             var installedViewModel = new InstalledViewModel(authService, packageService);
-            var fileExplorerViewModel = new FileExplorerViewModel(authService, sftpService);
+            var fileExplorerViewModel = new FileExplorerViewModel(authService, sftpService, sftpTransferService);
             var toolsViewModel = new ToolsViewModel(authService, systemService);
             var settingsViewModel = new SettingsViewModel(authService, cacheService);
 

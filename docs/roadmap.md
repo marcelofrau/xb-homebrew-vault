@@ -213,9 +213,9 @@ The road to **v1.3.0** is dedicated to **tech debt reduction and automated test 
 
 | Item | Status | Description |
 |------|--------|-------------|
-| **Test infrastructure** | 🔴 Planned | xUnit test project under `tests/`, wired into CI. Proposal in [Testing Infrastructure](ideas/testing-infrastructure) |
-| **Split FileExplorerViewModel** | 🔴 Planned | 1,880-line / 254-complexity god class — largest file in the repo. Extract `SftpUploadService` + path parser |
-| **Split XboxDeviceService** | 🔴 Planned | 1,433-line god class (was 1,207 in June). Split into `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService` |
+| **Test infrastructure** | ✅ Shipped | xUnit test project under `tests/`, wired into CI. Proposal in [Testing Infrastructure](ideas/testing-infrastructure) |
+| **Split FileExplorerViewModel** | ✅ Shipped | 1,880 → 1,223 lines / complexity 254 → 177. Extracted `FileSystemPathParser` + `ISftpService` + `SftpTransferService`; VM keeps tree/list state + command wiring |
+| **Split XboxDeviceService** | ✅ Shipped | 1,433-line god class split into `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService` (split #1 + #2, facade removed) |
 | **Remove `async void`** | 🟡 Planned | 22 fire-and-forget handlers (was 11) that can crash the process on unhandled exceptions |
 | **ConfigureAwait(false) sweep** | 🟡 Planned | ~404 awaits in services, 0 use `ConfigureAwait(false)` |
 | **IDisposable on XboxDeviceService** | 🟡 Planned | Last service without disposal (SftpService, XrayAgentService, PerformanceViewModel already dispose) |
