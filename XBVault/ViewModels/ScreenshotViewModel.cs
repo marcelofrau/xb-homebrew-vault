@@ -14,7 +14,7 @@ namespace XBVault.ViewModels;
 
 public partial class ScreenshotViewModel : ObservableObject, IDisposable
 {
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxSystemService _systemService;
     private CancellationTokenSource? _liveCts;
 
     public void Dispose()
@@ -24,9 +24,9 @@ public partial class ScreenshotViewModel : ObservableObject, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public ScreenshotViewModel(XboxDeviceService xboxService)
+    public ScreenshotViewModel(IXboxSystemService systemService)
     {
-        _xboxService = xboxService;
+        _systemService = systemService;
     }
 
     [ObservableProperty]
@@ -122,7 +122,7 @@ public partial class ScreenshotViewModel : ObservableObject, IDisposable
 
     private async Task<byte[]?> CaptureAsync(CancellationToken ct)
     {
-        return await _xboxService.CaptureScreenshotAsync(ct);
+        return await _systemService.CaptureScreenshotAsync(ct);
     }
 
     [RelayCommand]
@@ -134,7 +134,7 @@ public partial class ScreenshotViewModel : ObservableObject, IDisposable
         StatusMessage = null;
         StatusType = StatusSeverity.None;
 
-        var data = await _xboxService.CaptureScreenshotAsync();
+        var data = await _systemService.CaptureScreenshotAsync();
         if (data is null)
         {
             StatusMessage = "Screenshot not available — Xbox Dev Mode does not support this API";

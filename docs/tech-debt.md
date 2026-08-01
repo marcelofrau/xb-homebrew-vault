@@ -13,31 +13,30 @@ Known issues in the codebase, ordered by severity. This page is updated as items
 
 ## 🔴 High
 
-### 1. XboxDeviceService — God class split (in progress — split #1 done)
+### 1. XboxDeviceService — God class split (resolved — split #2 done)
 
-**File:** `XBVault/Services/XboxDeviceService.cs` · **170 lines** (was 1,433) · now a thin facade delegating to 6 extracted services
+**Facade `XBVault/Services/XboxDeviceService.cs` deleted (Aug 2026, split #2).** God class fully split into 6 domain services behind interfaces; ViewModels inject `IXbox*` interfaces; composition root wires concrete services.
 
-**Progress (Aug 2026, split #1):** The god class was split via the facade strategy:
+**Split #1 (Aug 2026):** facade strategy with 147 tests green, 0 warnings/0 errors.
 
-| New service | File | Lines | Responsibilities |
-|-------------|------|-------|------------------|
-| `XboxAuthService` | `Services/XboxAuthService.cs` | 334 | HTTP client, CSRF, cookies, Configure/Test/Disconnect |
-| `XboxPackageService` | `Services/XboxPackageService.cs` | 504 | list, install, uninstall, launch, suspend, terminate, running packages |
-| `XboxProcessService` | `Services/XboxProcessService.cs` | 90 | list processes, kill, running title |
-| `XboxSystemService` | `Services/XboxSystemService.cs` | 237 | system info, crash dumps, crash control, screenshot, restart, shutdown |
-| `XboxNetworkService` | `Services/XboxNetworkService.cs` | 99 | network config, wifi interfaces/networks |
-| `XboxPerformanceService` | `Services/XboxPerformanceService.cs` | 87 | WebSocket performance, snapshot |
-| `XboxResponseParser` | `Services/XboxResponseParser.cs` | 156 | pure static JSON/error helpers |
+**Split #2 (Aug 2026):**
 
-`XboxDeviceService` now implements `IDisposable` (see #8) and keeps `ConnectionChanged` + the static helper delegates so existing callers/tests stay green. **147 tests still pass, build 0 warnings/0 errors.**
+| Interface | Implementation | Responsibilities |
+|-----------|---------------|------------------|
+| `IXboxAuthService` | `XboxAuthService` | HTTP client, CSRF, cookies, Configure/Test/Disconnect, ConnectionChanged, IsConnected |
+| `IXboxPackageService` | `XboxPackageService` | list, install, uninstall, launch, suspend, terminate, running packages |
+| `IXboxProcessService` | `XboxProcessService` | list processes, kill, running title |
+| `IXboxSystemService` | `XboxSystemService` | system info, crash dumps, crash control, screenshot, restart, shutdown |
+| `IXboxNetworkService` | `XboxNetworkService` | network config, wifi interfaces/networks |
+| `IXboxPerformanceService` | `XboxPerformanceService` | WebSocket performance, snapshot |
+| — | `XboxResponseParser` | pure static JSON/error helpers (tests retargeted here) |
 
-**Still open:**
-- ViewModels still inject the facade, not the domain services (migration phase).
-- No interfaces (`IXboxPackageService`, etc.) yet — mocking blocked.
-- `App.axaml.cs` composition root still does `new XboxDeviceService()`; domain services not registered.
-- Shared types centralized in `XBVault/Models/XboxSharedTypes.cs` (`PackagesResponse`, `SshConnectionInfo`, `ConnectionTestResult`).
+- All 16 ViewModels inject the specific `IXbox*` services they need (auth + domain).
+- `PackageInstallService` takes `IXboxPackageService`.
+- `App.axaml.cs` composition root: `new XboxAuthService()` + 5 domain services with `auth` ctor arg; `InitAfterSplashAsync` takes concrete services.
+- Tests: `XboxDeviceServiceHelperTests` → `XboxResponseParserTests` (`XboxDeviceService.` → `XboxResponseParser.`). **147 tests green, build 0 warnings/0 errors.**
 
-**Remaining plan:** inject domain services into ViewModels, add interfaces, then delete the facade. See [Split XboxDeviceService](ideas/refactor-xboxdeviceservice).
+**Remaining plan:** none — see [Split XboxDeviceService](ideas/refactor-xboxdeviceservice) for the historical record.
 
 ### 2. `FileExplorerViewModel` — new god class (undocumented)
 

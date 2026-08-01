@@ -10,7 +10,7 @@ using XBVault.Models;
 
 namespace XBVault.Services;
 
-public class XboxPackageService
+public class XboxPackageService : IXboxPackageService
 {
     private const int PollDelayMs = 2000;
     private const int RetryDelayMs = 3000;

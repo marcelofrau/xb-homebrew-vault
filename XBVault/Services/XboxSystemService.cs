@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace XBVault.Services;
 
-public class XboxSystemService
+public class XboxSystemService : IXboxSystemService
 {
     private readonly XboxAuthService _auth;
 

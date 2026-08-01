@@ -53,7 +53,7 @@ public partial class CustomInstallViewModel : ObservableObject
 {
     private const int MinProgressMs = 1000;
 
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxPackageService _packageService;
     private readonly PackageInstallService _installService;
     private static readonly HttpClient _http = new();
 
@@ -65,9 +65,9 @@ public partial class CustomInstallViewModel : ObservableObject
     public Action? CloseAction;
     public Action? OnInstallComplete;
 
-    public CustomInstallViewModel(XboxDeviceService xboxService, PackageInstallService installService)
+    public CustomInstallViewModel(IXboxPackageService packageService, PackageInstallService installService)
     {
-        _xboxService = xboxService;
+        _packageService = packageService;
         _installService = installService;
     }
 
@@ -534,7 +534,7 @@ public partial class CustomInstallViewModel : ObservableObject
                 try
                 {
                     InstallStatus = "Checking for existing version...";
-                    var packages = await _xboxService.GetInstalledPackagesAsync();
+                    var packages = await _packageService.GetInstalledPackagesAsync();
                     var existing = packages.FirstOrDefault(p =>
                         string.Equals(p.Name, identityName, StringComparison.OrdinalIgnoreCase));
 
@@ -542,7 +542,7 @@ public partial class CustomInstallViewModel : ObservableObject
                     {
                         Logger.Info($"InstallAsync: found existing version — {existing.Name} v{existing.Version}, uninstalling...");
                         InstallStatus = $"Uninstalling {existing.DisplayName ?? existing.Name}...";
-                        var uninstalled = await _xboxService.UninstallPackageAsync(existing.FullName);
+                        var uninstalled = await _packageService.UninstallPackageAsync(existing.FullName);
                         if (!uninstalled)
                         {
                             Logger.Warn("InstallAsync: uninstall returned false, continuing anyway");
@@ -573,7 +573,7 @@ public partial class CustomInstallViewModel : ObservableObject
             .ToArray();
         Logger.Debug($"InstallAsync: sending {selectedDeps.Length} selected deps to Xbox");
 
-        var result = await _xboxService.InstallPackageAsync(
+        var result = await _packageService.InstallPackageAsync(
             analysis.MainPackage,
             selectedDeps,
             progress);

@@ -2,7 +2,7 @@
 
 **Impact:** High | **Effort:** Medium | **Suggested priority:** Phase 1
 
-## Status: split #1 done (Aug 2026) — facade in place, 147 tests green
+## Status: **split #2 done (Aug 2026)** — facade deleted, interfaces + VM migration complete, 147 tests green
 
 ## Problem
 
@@ -43,16 +43,20 @@ One class, many reasons to change.
 5. **`XboxDeviceService` → facade** (170 lines) — delegates to the domain services; keeps `ConnectionChanged` + static helper delegates so ViewModels and the 28 helper-test call sites compile unchanged.
 6. **Verified:** `dotnet build` 0 warnings/0 errors; **147 tests green**.
 
-### Remaining (split #2)
+### Completed (split #2, Aug 2026)
 
-1. **Interfaces** — `IXboxPackageService`, `IXboxProcessService`, etc. (not yet created).
-2. **ViewModels migrate** — inject domain services instead of the facade (182 refs / 51 files; 5 ViewModels subscribe `ConnectionChanged`).
-3. **`App.axaml.cs`** — composition root registers the new services; delete the facade.
+1. **Interfaces created** — `IXboxAuthService` (extends `IDisposable`; `ConnectionChanged`, `IsConfigured`, `IsConnected`, `SmbPassword`, `Host`, `Configure`, `GetSshCredentials`, `FetchSmbPasswordAsync`, `GetDevPortalUrl`, `MarkConnected`, `Disconnect`, `TestConnectionAsync`), `IXboxPackageService` (8), `IXboxProcessService` (3), `IXboxSystemService` (8), `IXboxNetworkService` (3), `IXboxPerformanceService` (1). All 6 concrete services implement their interface.
+2. **16 ViewModels migrated** — each injects the specific `IXbox*` services it needs (auth + domain; `CustomInstall`/`NetworkInfo`/`Processes`/`Screenshot` are single-service).
+3. **`PackageInstallService`** — takes `IXboxPackageService` instead of the facade.
+4. **`App.axaml.cs` composition root** — `new XboxAuthService()` + 5 domain services (`new Xbox...Service(authService)`); `InitAfterSplashAsync` takes concrete services; all 20 VM creation points rewired; direct `xboxService.` uses → `authService.`.
+5. **Facade deleted** — `Services/XboxDeviceService.cs` removed.
+6. **Tests retargeted** — `XboxDeviceServiceHelperTests` → `XboxResponseParserTests` (`XboxDeviceService.` → `XboxResponseParser.`).
+7. **Verified:** `dotnet build` 0 warnings/0 errors; **147 tests green**.
 
 ### Strategy
 
 1. **Extract `XboxAuthService`** — manages `_handler`, `_http`, `_csrfToken`, `_baseUrl`, `_username`, `_password`, `_configured`, `_connected`. Other services receive `XboxAuthService` via DI and use authenticated `HttpClient`. ✅ done
-2. **Create interfaces** — `IXboxPackageService`, `IXboxProcessService`, etc. Allows mocking in tests. ⏳ split #2
+2. **Create interfaces** — `IXboxPackageService`, `IXboxProcessService`, etc. Allows mocking in tests. ✅ done (split #2)
 3. **Keep `XboxDeviceService` as facade** (optional) — backward compatibility, delegates calls, then remove. ✅ done
 4. **Centralize shared types** — `PackagesResponse`, `SshConnectionInfo`, `ConnectionTestResult` go to `Models/`. ✅ done
 
@@ -69,14 +73,14 @@ One class, many reasons to change.
 - `Services/XboxPerformanceService.cs` ✅
 - `Services/XboxResponseParser.cs` ✅ (static helpers)
 - `Models/XboxSharedTypes.cs` ✅
-- `Services/IXboxAuthService.cs` ⏳
-- `Services/IXboxPackageService.cs` ⏳
-- `Services/IXboxProcessService.cs` ⏳
-- `Services/IXboxSystemService.cs` ⏳
-- `Services/IXboxNetworkService.cs` ⏳
-- `Services/IXboxPerformanceService.cs` ⏳
+- `Services/IXboxAuthService.cs` ✅
+- `Services/IXboxPackageService.cs` ✅
+- `Services/IXboxProcessService.cs` ✅
+- `Services/IXboxSystemService.cs` ✅
+- `Services/IXboxNetworkService.cs` ✅
+- `Services/IXboxPerformanceService.cs` ✅
 
 ### Files to modify
-- `Services/XboxDeviceService.cs` → reduce to facade, then remove. ✅ facade (170 lines); removal in split #2
-- All ViewModels using `XboxDeviceService` directly → inject specific services. ⏳ split #2
-- `App.axaml.cs` (composition root) → register new services. ⏳ split #2
+- `Services/XboxDeviceService.cs` → reduce to facade, then remove. ✅ facade (170 lines); ✅ removed in split #2
+- All ViewModels using `XboxDeviceService` directly → inject specific services. ✅ split #2
+- `App.axaml.cs` (composition root) → register new services. ✅ split #2

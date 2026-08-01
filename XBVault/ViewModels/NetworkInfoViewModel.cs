@@ -12,11 +12,11 @@ namespace XBVault.ViewModels;
 
 public partial class NetworkInfoViewModel : ObservableObject
 {
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxNetworkService _networkService;
 
-    public NetworkInfoViewModel(XboxDeviceService xboxService)
+    public NetworkInfoViewModel(IXboxNetworkService networkService)
     {
-        _xboxService = xboxService;
+        _networkService = networkService;
     }
 
     [ObservableProperty]
@@ -44,7 +44,7 @@ public partial class NetworkInfoViewModel : ObservableObject
         try
         {
             // Network adapters (ipconfig)
-            var cfgJson = await _xboxService.GetNetworkConfigAsync();
+            var cfgJson = await _networkService.GetNetworkConfigAsync();
             if (cfgJson is not null)
             {
                 try
@@ -60,7 +60,7 @@ public partial class NetworkInfoViewModel : ObservableObject
             }
 
             // WiFi scan
-            var wifiJson = await _xboxService.GetWifiInterfacesAsync();
+            var wifiJson = await _networkService.GetWifiInterfacesAsync();
             Logger.Debug($"WifiInterfaces response: {wifiJson}");
             if (wifiJson is not null)
             {
@@ -83,7 +83,7 @@ public partial class NetworkInfoViewModel : ObservableObject
                                 : null;
                             if (guid is null) continue;
 
-                            var netsJson = await _xboxService.GetWifiNetworksAsync(guid);
+                            var netsJson = await _networkService.GetWifiNetworksAsync(guid);
                             Logger.Debug($"WifiNetworks response (guid={guid}): {netsJson}");
                             if (netsJson is null) continue;
 

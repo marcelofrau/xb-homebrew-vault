@@ -9,7 +9,7 @@ using XBVault.Models;
 
 namespace XBVault.Services;
 
-public class XboxPerformanceService
+public class XboxPerformanceService : IXboxPerformanceService
 {
     private readonly XboxAuthService _auth;
 

@@ -26,16 +26,16 @@ public partial class InspectorViewModel : ObservableObject
     private static readonly IBrush _warnBrush = new SolidColorBrush(0xFFF39C12);
     private static readonly IBrush _accentBrush = new SolidColorBrush(0xFF9ACA3C);
 
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxAuthService _authService;
     private readonly XrayAgentService _agentService;
 
-    public InspectorViewModel(XboxDeviceService xboxService, XrayAgentService? agentService = null)
+    public InspectorViewModel(IXboxAuthService authService, XrayAgentService? agentService = null)
     {
-        _xboxService = xboxService;
+        _authService = authService;
         _agentService = agentService ?? new XrayAgentService();
-        _xboxService.ConnectionChanged += OnConnectionChanged;
+        _authService.ConnectionChanged += OnConnectionChanged;
         ConsoleFontSize = ClampConsoleFontSize(SettingsService.Current.ConsoleFontSize);
-        IsConnected = _xboxService.IsConnected;
+        IsConnected = _authService.IsConnected;
         SubscribeAgentEvents();
     }
 
@@ -300,7 +300,7 @@ public partial class InspectorViewModel : ObservableObject
         {
             var ok = await ShowConnectAction();
             if (ok)
-                _xboxService.MarkConnected();
+                _authService.MarkConnected();
         }
     }
 
@@ -321,7 +321,7 @@ public partial class InspectorViewModel : ObservableObject
     [RelayCommand]
     private async Task ScanAsync()
     {
-        if (!_xboxService.IsConnected && !HasOverride)
+        if (!_authService.IsConnected && !HasOverride)
         {
             StatusMessage = "Not connected. Connect via sidebar first.";
             return;

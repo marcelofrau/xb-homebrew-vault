@@ -14,7 +14,7 @@ public partial class SettingsViewModel : ObservableObject
 {
     private const int AutoHideNotificationDelayMs = 3000;
 
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxAuthService _authService;
     private readonly CacheService _cacheService;
 
     // Called to show the full ConnectionWindow dialog for testing
@@ -22,9 +22,9 @@ public partial class SettingsViewModel : ObservableObject
 
     public Func<string, string, string, string, string?, string?, Task<bool>>? ShowConfirmAsync { get; set; }
 
-    public SettingsViewModel(XboxDeviceService xboxService, CacheService cacheService)
+    public SettingsViewModel(IXboxAuthService authService, CacheService cacheService)
     {
-        _xboxService = xboxService;
+        _authService = authService;
         _cacheService = cacheService;
         LoadSettings();
         UpdateCacheInfo();
@@ -133,7 +133,7 @@ public partial class SettingsViewModel : ObservableObject
         if (conn.IsConfigured)
         {
             Logger.Debug("Connection already configured, applying");
-            _xboxService.Configure(conn.BaseUrl, conn.Username,
+            _authService.Configure(conn.BaseUrl, conn.Username,
                 CryptoService.Deobfuscate(conn.EncryptedPassword));
             ConnectionStatus = "Configured";
         }
@@ -235,7 +235,7 @@ public partial class SettingsViewModel : ObservableObject
         Logger.Info($"Settings saved: {Address}:{Port} (HTTPS={UseHttps})");
 
         var baseUrl = $"{(UseHttps ? "https" : "http")}://{Address}:{Port}";
-        _xboxService.Configure(baseUrl, Username, Password);
+        _authService.Configure(baseUrl, Username, Password);
         Logger.Debug("XboxDeviceService reconfigured with new settings");
 
         SavedNotificationText = "Settings saved successfully!";
@@ -275,8 +275,8 @@ public partial class SettingsViewModel : ObservableObject
             IsTestingConnection = true;
             ConnectionStatus = "Testing...";
             var baseUrl = $"{(UseHttps ? "https" : "http")}://{Address}:{Port}";
-            _xboxService.Configure(baseUrl, Username, Password);
-            var result = await _xboxService.TestConnectionAsync();
+            _authService.Configure(baseUrl, Username, Password);
+            var result = await _authService.TestConnectionAsync();
             IsConnected = result.Success;
             ConnectionStatus = result.Success ? "Connected" : "Connection failed";
             IsTestingConnection = false;

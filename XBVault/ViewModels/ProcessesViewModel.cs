@@ -13,12 +13,12 @@ namespace XBVault.ViewModels;
 
 public partial class ProcessesViewModel : ObservableObject
 {
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxProcessService _processService;
     private ProcessInfo[]? _allProcesses;
 
-    public ProcessesViewModel(XboxDeviceService xboxService)
+    public ProcessesViewModel(IXboxProcessService processService)
     {
-        _xboxService = xboxService;
+        _processService = processService;
     }
 
     [ObservableProperty]
@@ -138,7 +138,7 @@ public partial class ProcessesViewModel : ObservableObject
 
         try
         {
-            var json = await _xboxService.GetProcessesAsync();
+            var json = await _processService.GetProcessesAsync();
             if (json is null)
             {
                 StatusMessage = "Failed to get process list";
@@ -177,7 +177,7 @@ public partial class ProcessesViewModel : ObservableObject
 
         try
         {
-            var ok = await _xboxService.KillProcessAsync(pid);
+            var ok = await _processService.KillProcessAsync(pid);
             StatusMessage = ok ? $"Killed: {name}" : $"Failed to kill: {name}";
             if (ok)
             {

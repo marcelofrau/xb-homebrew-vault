@@ -10,16 +10,18 @@ namespace XBVault.ViewModels;
 
 public partial class SystemInfoViewModel : ObservableObject
 {
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxAuthService _authService;
+    private readonly IXboxSystemService _systemService;
 
-    public SystemInfoViewModel(XboxDeviceService xboxService)
+    public SystemInfoViewModel(IXboxAuthService authService, IXboxSystemService systemService)
     {
-        _xboxService = xboxService;
+        _authService = authService;
+        _systemService = systemService;
     }
 
     public void Initialize()
     {
-        if (!_xboxService.IsConnected) return;
+        if (!_authService.IsConnected) return;
         _ = RefreshAsync();
     }
 
@@ -45,7 +47,7 @@ public partial class SystemInfoViewModel : ObservableObject
 
         try
         {
-            var json = await _xboxService.GetSystemInfoAsync();
+            var json = await _systemService.GetSystemInfoAsync();
             if (json is null)
             {
                 StatusMessage = "Failed to get system info";

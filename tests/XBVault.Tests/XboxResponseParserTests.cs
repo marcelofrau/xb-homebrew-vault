@@ -3,11 +3,11 @@ using System.Net;
 
 namespace XBVault.Tests;
 
-public class XboxDeviceServiceHelperTests : IDisposable
+public class XboxResponseParserTests : IDisposable
 {
     private readonly string _dir;
 
-    public XboxDeviceServiceHelperTests()
+    public XboxResponseParserTests()
     {
         _dir = Path.Combine(Path.GetTempPath(), "xbvault-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_dir);
@@ -37,13 +37,13 @@ public class XboxDeviceServiceHelperTests : IDisposable
     [Fact]
     public void TryParseError_ExtractsErrorMessage()
     {
-        Assert.Equal("boom", XboxDeviceService.TryParseError("""{"ErrorMessage":"boom"}"""));
+        Assert.Equal("boom", XboxResponseParser.TryParseError("""{"ErrorMessage":"boom"}"""));
     }
 
     [Fact]
     public void TryParseError_NoErrorMessage_ReturnsNull()
     {
-        Assert.Null(XboxDeviceService.TryParseError("""{"Code":5}"""));
+        Assert.Null(XboxResponseParser.TryParseError("""{"Code":5}"""));
     }
 
     [Theory]
@@ -53,7 +53,7 @@ public class XboxDeviceServiceHelperTests : IDisposable
     [InlineData("plain text")]
     public void TryParseError_InvalidInput_ReturnsNull(string? body)
     {
-        Assert.Null(XboxDeviceService.TryParseError(body));
+        Assert.Null(XboxResponseParser.TryParseError(body));
     }
 
     // ---- ParseMsixPackageName ----
@@ -64,7 +64,7 @@ public class XboxDeviceServiceHelperTests : IDisposable
         var path = WriteZip(
             """<Package><Identity Name="MyGame.Package" Publisher="CN=X" Version="1.0.0.0"/></Package>""");
 
-        Assert.Equal("MyGame.Package", XboxDeviceService.ParseMsixPackageName(path));
+        Assert.Equal("MyGame.Package", XboxResponseParser.ParseMsixPackageName(path));
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class XboxDeviceServiceHelperTests : IDisposable
             sw.Write("x");
         }
 
-        Assert.Null(XboxDeviceService.ParseMsixPackageName(path));
+        Assert.Null(XboxResponseParser.ParseMsixPackageName(path));
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class XboxDeviceServiceHelperTests : IDisposable
     {
         var path = WriteZip("""<Package><Properties><DisplayName>X</DisplayName></Properties></Package>""");
 
-        Assert.Null(XboxDeviceService.ParseMsixPackageName(path));
+        Assert.Null(XboxResponseParser.ParseMsixPackageName(path));
     }
 
     [Fact]
@@ -96,13 +96,13 @@ public class XboxDeviceServiceHelperTests : IDisposable
         var path = Path.Combine(_dir, "garbage.msix");
         File.WriteAllText(path, "this is not a zip");
 
-        Assert.Null(XboxDeviceService.ParseMsixPackageName(path));
+        Assert.Null(XboxResponseParser.ParseMsixPackageName(path));
     }
 
     [Fact]
     public void ParseMsixPackageName_MissingFile_ReturnsNull()
     {
-        Assert.Null(XboxDeviceService.ParseMsixPackageName(Path.Combine(_dir, "nope.msix")));
+        Assert.Null(XboxResponseParser.ParseMsixPackageName(Path.Combine(_dir, "nope.msix")));
     }
 
     // ---- IsIdleCode ----
@@ -114,7 +114,7 @@ public class XboxDeviceServiceHelperTests : IDisposable
     [InlineData(HttpStatusCode.InternalServerError, false)]
     public void IsIdleCode_DetectsIdleStatuses(HttpStatusCode code, bool expected)
     {
-        Assert.Equal(expected, XboxDeviceService.IsIdleCode(code));
+        Assert.Equal(expected, XboxResponseParser.IsIdleCode(code));
     }
 
     // ---- Error classification helpers ----
@@ -123,48 +123,48 @@ public class XboxDeviceServiceHelperTests : IDisposable
     public void IsSignatureError_DetectsSignatureCode()
     {
         var code = unchecked((int)0x800B0100);
-        Assert.True(XboxDeviceService.IsSignatureError($$"""{"Code":{{code}}}"""));
-        Assert.False(XboxDeviceService.IsSignatureError("""{"Code":123}"""));
-        Assert.False(XboxDeviceService.IsSignatureError("not json"));
+        Assert.True(XboxResponseParser.IsSignatureError($$"""{"Code":{{code}}}"""));
+        Assert.False(XboxResponseParser.IsSignatureError("""{"Code":123}"""));
+        Assert.False(XboxResponseParser.IsSignatureError("not json"));
     }
 
     [Fact]
     public void IsResourceInUseError_DetectsAndExtractsReason()
     {
         var code = unchecked((int)0x80073D02);
-        Assert.True(XboxDeviceService.IsResourceInUseError(
+        Assert.True(XboxResponseParser.IsResourceInUseError(
             $$"""{"Code":{{code}},"Reason":"Game running"}""", out var apps));
         Assert.Equal("Game running", apps);
 
-        Assert.False(XboxDeviceService.IsResourceInUseError("""{"Code":99}""", out _));
-        Assert.False(XboxDeviceService.IsResourceInUseError("garbage", out _));
+        Assert.False(XboxResponseParser.IsResourceInUseError("""{"Code":99}""", out _));
+        Assert.False(XboxResponseParser.IsResourceInUseError("garbage", out _));
     }
 
     [Fact]
     public void IsHigherVersionError_DetectsAndExtractsReason()
     {
         var code = unchecked((int)0x80070490);
-        Assert.True(XboxDeviceService.IsHigherVersionError(
+        Assert.True(XboxResponseParser.IsHigherVersionError(
             $$"""{"Code":{{code}},"Reason":"Newer version installed"}""", out var msg));
         Assert.Equal("Newer version installed", msg);
 
-        Assert.False(XboxDeviceService.IsHigherVersionError("""{"Code":7}""", out _));
+        Assert.False(XboxResponseParser.IsHigherVersionError("""{"Code":7}""", out _));
     }
 
     [Fact]
     public void IsFatalDeploymentError_DetectsAndBuildsMessage()
     {
         var code = unchecked((int)0x80073D0D);
-        Assert.True(XboxDeviceService.IsFatalDeploymentError(
+        Assert.True(XboxResponseParser.IsFatalDeploymentError(
             $$"""{"Success":false,"Code":{{code}},"Reason":"Deploy failed"}""", out var err));
         Assert.Equal($"Code={code} Deploy failed", err);
 
-        Assert.True(XboxDeviceService.IsFatalDeploymentError(
+        Assert.True(XboxResponseParser.IsFatalDeploymentError(
             """{"Success":false}""", out var errNoReason));
         Assert.Equal("Code=0 ", errNoReason);
 
-        Assert.False(XboxDeviceService.IsFatalDeploymentError("""{"Success":true}""", out _));
-        Assert.False(XboxDeviceService.IsFatalDeploymentError("garbage", out _));
+        Assert.False(XboxResponseParser.IsFatalDeploymentError("""{"Success":true}""", out _));
+        Assert.False(XboxResponseParser.IsFatalDeploymentError("garbage", out _));
     }
 
     // ---- IsJsonSuccess ----
@@ -172,7 +172,7 @@ public class XboxDeviceServiceHelperTests : IDisposable
     [Fact]
     public void IsJsonSuccess_TrueWithCodeTextAndReason()
     {
-        var ok = XboxDeviceService.IsJsonSuccess(
+        var ok = XboxResponseParser.IsJsonSuccess(
             """{"Success":true,"CodeText":"OK","Reason":"Installed"}""", out var msg);
 
         Assert.True(ok);
@@ -182,7 +182,7 @@ public class XboxDeviceServiceHelperTests : IDisposable
     [Fact]
     public void IsJsonSuccess_TrueNoCodeText_UsesReasonOnly()
     {
-        var ok = XboxDeviceService.IsJsonSuccess(
+        var ok = XboxResponseParser.IsJsonSuccess(
             """{"Success":true,"Reason":"Done"}""", out var msg);
 
         Assert.True(ok);
@@ -193,7 +193,7 @@ public class XboxDeviceServiceHelperTests : IDisposable
     public void IsJsonSuccess_False_BuildsErrorSummary()
     {
         var code = unchecked((int)0x80073D02);
-        var ok = XboxDeviceService.IsJsonSuccess(
+        var ok = XboxResponseParser.IsJsonSuccess(
             $$"""{"Success":false,"Code":{{code}},"CodeText":"IN_USE","Reason":"Busy"}""", out var msg);
 
         Assert.False(ok);
@@ -203,14 +203,14 @@ public class XboxDeviceServiceHelperTests : IDisposable
     [Fact]
     public void IsJsonSuccess_MissingSuccessField_IsFalse()
     {
-        Assert.False(XboxDeviceService.IsJsonSuccess("""{"Status":"running"}""", out var msg));
+        Assert.False(XboxResponseParser.IsJsonSuccess("""{"Status":"running"}""", out var msg));
         Assert.StartsWith("Code=-1", msg);
     }
 
     [Fact]
     public void IsJsonSuccess_InvalidJson_IsFalse()
     {
-        Assert.False(XboxDeviceService.IsJsonSuccess("not json", out var msg));
+        Assert.False(XboxResponseParser.IsJsonSuccess("not json", out var msg));
         Assert.StartsWith("Parse error:", msg);
     }
 
@@ -223,7 +223,7 @@ public class XboxDeviceServiceHelperTests : IDisposable
     [InlineData("", 5, "")]
     public void Truncate_ShortensWhenNeeded(string input, int max, string expected)
     {
-        Assert.Equal(expected, XboxDeviceService.Truncate(input, max));
+        Assert.Equal(expected, XboxResponseParser.Truncate(input, max));
     }
 
     // ---- SizeFormat ----
@@ -239,6 +239,6 @@ public class XboxDeviceServiceHelperTests : IDisposable
     [InlineData(2048L * 1024 * 1024 * 1024, "2.0TB")]
     public void SizeFormat_FormatsUnits(long bytes, string expected)
     {
-        Assert.Equal(expected, XboxDeviceService.SizeFormat(bytes));
+        Assert.Equal(expected, XboxResponseParser.SizeFormat(bytes));
     }
 }

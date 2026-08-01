@@ -10,13 +10,15 @@ namespace XBVault.ViewModels;
 
 public partial class ToolsViewModel : ObservableObject
 {
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxAuthService _authService;
+    private readonly IXboxSystemService _systemService;
 
-    public ToolsViewModel(XboxDeviceService xboxService)
+    public ToolsViewModel(IXboxAuthService authService, IXboxSystemService systemService)
     {
-        _xboxService = xboxService;
-        _xboxService.ConnectionChanged += OnConnectionChanged;
-        IsConnected = _xboxService.IsConnected;
+        _authService = authService;
+        _systemService = systemService;
+        _authService.ConnectionChanged += OnConnectionChanged;
+        IsConnected = _authService.IsConnected;
     }
 
     private void OnConnectionChanged(bool connected)
@@ -59,56 +61,56 @@ public partial class ToolsViewModel : ObservableObject
         {
             var ok = await ShowConnectAction();
             if (ok)
-                _xboxService.MarkConnected();
+                _authService.MarkConnected();
         }
     }
 
     [RelayCommand]
     private void OpenScreenshot()
     {
-        if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         ShowScreenshotAction?.Invoke();
     }
 
     [RelayCommand]
     private void OpenSystemInfo()
     {
-        if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         ShowSystemInfoAction?.Invoke();
     }
 
     [RelayCommand]
     private void OpenProcesses()
     {
-        if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         ShowProcessesAction?.Invoke();
     }
 
     [RelayCommand]
     private void OpenNetworkInfo()
     {
-        if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         ShowNetworkInfoAction?.Invoke();
     }
 
     [RelayCommand]
     private void OpenPerformance()
     {
-        if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         ShowPerformanceAction?.Invoke();
     }
 
     [RelayCommand]
     private void OpenCustomInstall()
     {
-        if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         ShowCustomInstallAction?.Invoke();
     }
 
     [RelayCommand]
     private void OpenCrashData()
     {
-        if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         ShowCrashDataAction?.Invoke();
     }
 
@@ -132,8 +134,8 @@ public partial class ToolsViewModel : ObservableObject
     [RelayCommand]
     private void OpenDevPortal()
     {
-        if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
-        var url = _xboxService.GetDevPortalUrl();
+        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        var url = _authService.GetDevPortalUrl();
         if (string.IsNullOrEmpty(url))
         {
             StatusMessage = "No Xbox URL configured";
@@ -153,7 +155,7 @@ public partial class ToolsViewModel : ObservableObject
     [RelayCommand]
     private async Task RestartXboxAsync()
     {
-        if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         if (ShowConfirmAsync is not null)
         {
             var ok = await ShowConfirmAsync("Restart Xbox", "Are you sure you want to restart the Xbox? This will disconnect you.", "Restart", "Cancel", null, "avares://XBVault/Assets/Views/ErrorDialog/errordialog-restart-48.png");
@@ -162,7 +164,7 @@ public partial class ToolsViewModel : ObservableObject
         StatusMessage = "Restarting Xbox...";
         try
         {
-            var ok = await _xboxService.RestartXboxAsync();
+            var ok = await _systemService.RestartXboxAsync();
             StatusMessage = ok ? "Restart command sent" : "Restart failed";
         }
         catch (Exception ex)
@@ -175,7 +177,7 @@ public partial class ToolsViewModel : ObservableObject
     [RelayCommand]
     private async Task ShutdownXboxAsync()
     {
-        if (!_xboxService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
         if (ShowConfirmAsync is not null)
         {
             var ok = await ShowConfirmAsync("Shutdown Xbox", "Are you sure you want to shutdown the Xbox? This will disconnect you.", "Shutdown", "Cancel", null, "avares://XBVault/Assets/Views/ErrorDialog/errordialog-shutdown-48.png");
@@ -184,7 +186,7 @@ public partial class ToolsViewModel : ObservableObject
         StatusMessage = "Shutting down Xbox...";
         try
         {
-            var ok = await _xboxService.ShutdownXboxAsync();
+            var ok = await _systemService.ShutdownXboxAsync();
             StatusMessage = ok ? "Shutdown command sent" : "Shutdown failed";
         }
         catch (Exception ex)

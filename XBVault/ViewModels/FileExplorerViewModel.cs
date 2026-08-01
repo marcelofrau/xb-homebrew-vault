@@ -16,7 +16,7 @@ public enum ToolbarStatusSeverity { None, Info, Success, Warning, Error }
 
 public partial class FileExplorerViewModel : ObservableObject, IDisposable
 {
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxAuthService _authService;
     private readonly SftpService _sftpService;
     internal SftpService SftpService => _sftpService;
     private string? _sftpPassword;
@@ -32,13 +32,13 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public FileExplorerViewModel(XboxDeviceService xboxService, SftpService sftpService)
+    public FileExplorerViewModel(IXboxAuthService authService, SftpService sftpService)
     {
-        _xboxService = xboxService;
+        _authService = authService;
         _sftpService = sftpService;
-        _xboxService.ConnectionChanged += OnBoxConnectionChanged;
+        _authService.ConnectionChanged += OnBoxConnectionChanged;
         _sftpService.ConnectionChanged += OnSftpConnectionChanged;
-        IsConnected = _xboxService.IsConnected;
+        IsConnected = _authService.IsConnected;
         UpdateStatusText();
         Logger.Debug("FileExplorerViewModel initialized");
     }
@@ -414,16 +414,16 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         {
             var ok = await ShowConnectAction();
             if (ok)
-                _xboxService.MarkConnected();
+                _authService.MarkConnected();
         }
     }
 
     [RelayCommand]
     private async Task InitializeAsync()
     {
-        if (!_xboxService.IsConnected || IsLoading || _sftpService.IsConnected)
+        if (!_authService.IsConnected || IsLoading || _sftpService.IsConnected)
         {
-            Logger.Debug($"InitializeAsync: skipped (connected={_xboxService.IsConnected}, loading={IsLoading}, sftp={_sftpService.IsConnected})");
+            Logger.Debug($"InitializeAsync: skipped (connected={_authService.IsConnected}, loading={IsLoading}, sftp={_sftpService.IsConnected})");
             return;
         }
 
@@ -434,11 +434,11 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
             InitStepText = "Discovering credentials...";
             Logger.Debug("Fetching SMB password...");
-            await _xboxService.FetchSmbPasswordAsync();
+            await _authService.FetchSmbPasswordAsync();
 
             InitStepText = "Connecting to Xbox via SFTP...";
             Logger.Debug("InitializeAsync: getting SSH credentials...");
-            var creds = _xboxService.GetSshCredentials();
+            var creds = _authService.GetSshCredentials();
             _sftpPassword = creds.Password;
             Logger.Debug($"InitializeAsync: connecting to {creds.Host}:{creds.Port} as {creds.Username}");
 
@@ -1752,12 +1752,12 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task OpenConnectionInfoAsync()
     {
-        if (_xboxService.IsConnected)
+        if (_authService.IsConnected)
         {
-            var creds = _xboxService.GetSshCredentials();
-            var pw = _xboxService.SmbPassword;
+            var creds = _authService.GetSshCredentials();
+            var pw = _authService.SmbPassword;
             if (string.IsNullOrEmpty(pw))
-                pw = await _xboxService.FetchSmbPasswordAsync();
+                pw = await _authService.FetchSmbPasswordAsync();
             pw ??= creds.Password;
             if (ShowConnectionInfoAsync is not null)
                 await ShowConnectionInfoAsync(creds.Host, creds.Username, pw, creds.Port);
@@ -1767,8 +1767,8 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private Task OpenWinScpAsync()
     {
-        if (!_xboxService.IsConnected || !IsWindows) return Task.CompletedTask;
-        var creds = _xboxService.GetSshCredentials();
+        if (!_authService.IsConnected || !IsWindows) return Task.CompletedTask;
+        var creds = _authService.GetSshCredentials();
         var pw = _sftpPassword ?? creds.Password;
         var url = $"sftp://{creds.Username}:{pw}@{creds.Host}:{creds.Port}/";
 

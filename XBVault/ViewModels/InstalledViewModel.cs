@@ -17,17 +17,19 @@ namespace XBVault.ViewModels;
 
 public partial class InstalledViewModel : ObservableObject
 {
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxAuthService _authService;
+    private readonly IXboxPackageService _packageService;
     private readonly List<InstalledPackage> _allPackages = [];
 
     public Func<string, Task>? OpenCustomInstallWithFileAction { get; set; }
     public Action? ShowCustomInstallAction { get; set; }
 
-    public InstalledViewModel(XboxDeviceService xboxService)
+    public InstalledViewModel(IXboxAuthService authService, IXboxPackageService packageService)
     {
-        _xboxService = xboxService;
-        _xboxService.ConnectionChanged += OnConnectionChanged;
-        IsConnected = _xboxService.IsConnected;
+        _authService = authService;
+        _packageService = packageService;
+        _authService.ConnectionChanged += OnConnectionChanged;
+        IsConnected = _authService.IsConnected;
         Logger.Debug("InstalledViewModel initialized");
     }
 
@@ -254,7 +256,7 @@ public partial class InstalledViewModel : ObservableObject
         {
             var ok = await ShowConnectAction();
             if (ok)
-                _xboxService.MarkConnected();
+                _authService.MarkConnected();
         }
     }
 
@@ -284,7 +286,7 @@ public partial class InstalledViewModel : ObservableObject
         var running = _allPackages.FirstOrDefault(p => p.IsRunning && p != excludePkg);
         if (running is null) return true;
 
-        var ok = await _xboxService.SuspendPackageAsync(running.FullName);
+        var ok = await _packageService.SuspendPackageAsync(running.FullName);
         if (ok)
         {
             running.IsRunning = false;
@@ -317,7 +319,7 @@ public partial class InstalledViewModel : ObservableObject
 
         try
         {
-            var (ok, err) = await _xboxService.LaunchPackageAsync(SelectedPackage.FullName, rid);
+            var (ok, err) = await _packageService.LaunchPackageAsync(SelectedPackage.FullName, rid);
             if (ok)
             {
                 SelectedPackage.IsRunning = true;
@@ -341,7 +343,7 @@ public partial class InstalledViewModel : ObservableObject
     private async Task SuspendSelectedAsync()
     {
         if (SelectedPackage is null || !SelectedPackage.IsRunning) return;
-        var ok = await _xboxService.SuspendPackageAsync(SelectedPackage.FullName);
+        var ok = await _packageService.SuspendPackageAsync(SelectedPackage.FullName);
         if (ok)
         {
             SelectedPackage.IsRunning = false;
@@ -358,7 +360,7 @@ public partial class InstalledViewModel : ObservableObject
     private async Task TerminateSelectedAsync()
     {
         if (SelectedPackage is null || !SelectedPackage.IsRunning) return;
-        var ok = await _xboxService.TerminatePackageAsync(SelectedPackage.FullName);
+        var ok = await _packageService.TerminatePackageAsync(SelectedPackage.FullName);
         if (ok)
         {
             SelectedPackage.IsRunning = false;
@@ -391,7 +393,7 @@ public partial class InstalledViewModel : ObservableObject
 
         try
         {
-            var (ok, err) = await _xboxService.LaunchPackageAsync(pkg.FullName, rid);
+            var (ok, err) = await _packageService.LaunchPackageAsync(pkg.FullName, rid);
             if (ok)
             {
                 pkg.IsRunning = true;
@@ -415,7 +417,7 @@ public partial class InstalledViewModel : ObservableObject
     {
         if (pkg is null || !pkg.IsRunning) return;
 
-        var ok = await _xboxService.SuspendPackageAsync(pkg.FullName);
+        var ok = await _packageService.SuspendPackageAsync(pkg.FullName);
         if (ok)
         {
             pkg.IsRunning = false;
@@ -432,7 +434,7 @@ public partial class InstalledViewModel : ObservableObject
     {
         if (pkg is null || !pkg.IsRunning) return;
 
-        var ok = await _xboxService.TerminatePackageAsync(pkg.FullName);
+        var ok = await _packageService.TerminatePackageAsync(pkg.FullName);
         if (ok)
         {
             pkg.IsRunning = false;
@@ -446,7 +448,7 @@ public partial class InstalledViewModel : ObservableObject
 
     private async Task RefreshRunningStateAsync()
     {
-        var running = await _xboxService.GetRunningPackageNamesAsync();
+        var running = await _packageService.GetRunningPackageNamesAsync();
 
         if (running.Count > 0)
         {
@@ -460,7 +462,7 @@ public partial class InstalledViewModel : ObservableObject
     [RelayCommand]
     private async Task RefreshPackagesAsync()
     {
-        if (!_xboxService.IsConnected)
+        if (!_authService.IsConnected)
         {
             Logger.Info("Xbox not connected — showing error dialog");
             if (ShowErrorWithConnectAction is not null)
@@ -495,7 +497,7 @@ public partial class InstalledViewModel : ObservableObject
 
         try
         {
-            var packages = await _xboxService.GetInstalledPackagesAsync();
+            var packages = await _packageService.GetInstalledPackagesAsync();
 
             _allPackages.Clear();
             _allPackages.AddRange(packages
@@ -581,7 +583,7 @@ public partial class InstalledViewModel : ObservableObject
 
         try
         {
-            var result = await _xboxService.UninstallPackageAsync(pkg.FullName);
+            var result = await _packageService.UninstallPackageAsync(pkg.FullName);
             Logger.Info(result ? $"Uninstall complete: {pkg.Name}" : $"Uninstall failed: {pkg.Name}");
             await RefreshPackagesAsync();
         }
@@ -608,7 +610,7 @@ public partial class InstalledViewModel : ObservableObject
 
         try
         {
-            var result = await _xboxService.InstallPackageAsync(filePath);
+            var result = await _packageService.InstallPackageAsync(filePath);
             StatusMessage = result ? "Install complete" : "Install failed";
 
             if (result)

@@ -61,20 +61,25 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var xboxService = new XboxDeviceService();
+            var authService = new XboxAuthService();
+            var packageService = new XboxPackageService(authService);
+            var systemService = new XboxSystemService(authService);
+            var networkService = new XboxNetworkService(authService);
+            var processService = new XboxProcessService(authService);
+            var performanceService = new XboxPerformanceService(authService);
             var cacheService = new CacheService();
-            var installService = new PackageInstallService(cacheService, xboxService);
+            var installService = new PackageInstallService(cacheService, packageService);
             var sftpService = new SftpService();
             var catalogService = new CatalogApiService();
             var overrideService = new PackageOverrideService();
             overrideService.Initialize();
 
-            var mainViewModel = new MainViewModel(xboxService);
-            var browseViewModel = new BrowseViewModel(installService, xboxService, catalogService, overrideService);
-            var installedViewModel = new InstalledViewModel(xboxService);
-            var fileExplorerViewModel = new FileExplorerViewModel(xboxService, sftpService);
-            var toolsViewModel = new ToolsViewModel(xboxService);
-            var settingsViewModel = new SettingsViewModel(xboxService, cacheService);
+            var mainViewModel = new MainViewModel(authService);
+            var browseViewModel = new BrowseViewModel(installService, authService, packageService, catalogService, overrideService);
+            var installedViewModel = new InstalledViewModel(authService, packageService);
+            var fileExplorerViewModel = new FileExplorerViewModel(authService, sftpService);
+            var toolsViewModel = new ToolsViewModel(authService, systemService);
+            var settingsViewModel = new SettingsViewModel(authService, cacheService);
 
             // splash first, main after delay
             var splash = new SplashWindow();
@@ -82,7 +87,8 @@ public partial class App : Application
 
             _ = InitAfterSplashAsync(desktop, splash, mainViewModel, browseViewModel,
                 installedViewModel, fileExplorerViewModel, toolsViewModel,
-                settingsViewModel, xboxService, installService);
+                settingsViewModel, authService, packageService, systemService,
+                networkService, processService, performanceService, installService);
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -150,7 +156,12 @@ public partial class App : Application
         FileExplorerViewModel fileExplorerViewModel,
         ToolsViewModel toolsViewModel,
         SettingsViewModel settingsViewModel,
-        XboxDeviceService xboxService,
+        XboxAuthService authService,
+        XboxPackageService packageService,
+        XboxSystemService systemService,
+        XboxNetworkService networkService,
+        XboxProcessService processService,
+        XboxPerformanceService performanceService,
         PackageInstallService installService)
     {
         Logger.Debug("Splash delay starting (2s)");
@@ -201,7 +212,7 @@ public partial class App : Application
 
             mainViewModel.ShowConnectAction = async () =>
             {
-                var connVm = new ConnectionViewModel(xboxService);
+                var connVm = new ConnectionViewModel(authService, networkService);
                 var connWindow = new Views.ConnectionWindow
                 {
                     DataContext = connVm
@@ -280,7 +291,7 @@ public partial class App : Application
 
             toolsViewModel.ShowConnectAction = async () =>
             {
-                var connVm = new ConnectionViewModel(xboxService);
+                var connVm = new ConnectionViewModel(authService, networkService);
                 var connWindow = new Views.ConnectionWindow { DataContext = connVm };
                 await connWindow.ShowDialog(main);
                 return connVm.IsSuccess;
@@ -288,7 +299,7 @@ public partial class App : Application
 
             fileExplorerViewModel.ShowConnectAction = async () =>
             {
-                var connVm = new ConnectionViewModel(xboxService);
+                var connVm = new ConnectionViewModel(authService, networkService);
                 var connWindow = new Views.ConnectionWindow { DataContext = connVm };
                 await connWindow.ShowDialog(main);
                 return connVm.IsSuccess;
@@ -296,7 +307,7 @@ public partial class App : Application
 
             installedViewModel.ShowConnectAction = async () =>
             {
-                var connVm = new ConnectionViewModel(xboxService);
+                var connVm = new ConnectionViewModel(authService, networkService);
                 var connWindow = new Views.ConnectionWindow { DataContext = connVm };
                 await connWindow.ShowDialog(main);
                 return connVm.IsSuccess;
@@ -339,7 +350,7 @@ public partial class App : Application
                 if (tab == 1)
                 {
                     installedViewModel.StartPolling();
-                    if (xboxService.IsConnected)
+                    if (authService.IsConnected)
                         _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
                 }
                 else
@@ -353,7 +364,7 @@ public partial class App : Application
             Logger.Info("InstalledView created");
             settingsViewModel.ShowConnectDialogAsync = async () =>
             {
-                var connVm = new ConnectionViewModel(xboxService);
+                var connVm = new ConnectionViewModel(authService, networkService);
                 var connWindow = new Views.ConnectionWindow { DataContext = connVm };
                 await connWindow.ShowDialog(main);
                 return connVm.IsSuccess;
@@ -370,7 +381,7 @@ public partial class App : Application
 
             toolsViewModel.ShowScreenshotAction = () =>
             {
-                var vm = new ScreenshotViewModel(xboxService);
+                var vm = new ScreenshotViewModel(systemService);
                 vm.SaveScreenshotDialog = async stream =>
                 {
                     try
@@ -400,35 +411,35 @@ public partial class App : Application
 
             toolsViewModel.ShowSystemInfoAction = () =>
             {
-                var vm = new SystemInfoViewModel(xboxService);
+                var vm = new SystemInfoViewModel(authService, systemService);
                 var win = new Views.SystemInfoWindow { DataContext = vm };
                 win.ShowDialog(main);
             };
 
             toolsViewModel.ShowProcessesAction = () =>
             {
-                var vm = new ProcessesViewModel(xboxService);
+                var vm = new ProcessesViewModel(processService);
                 var win = new Views.ProcessesWindow { DataContext = vm };
                 win.ShowDialog(main);
             };
 
             toolsViewModel.ShowNetworkInfoAction = () =>
             {
-                var vm = new NetworkInfoViewModel(xboxService);
+                var vm = new NetworkInfoViewModel(networkService);
                 var win = new Views.NetworkInfoWindow { DataContext = vm };
                 win.ShowDialog(main);
             };
 
             toolsViewModel.ShowPerformanceAction = () =>
             {
-                var vm = new PerformanceViewModel(xboxService);
+                var vm = new PerformanceViewModel(authService, performanceService);
                 var win = new Views.PerformanceWindow { DataContext = vm };
                 win.ShowDialog(main);
             };
 
             toolsViewModel.ShowCrashDataAction = () =>
             {
-                var vm = new CrashDataViewModel(xboxService);
+                var vm = new CrashDataViewModel(authService, systemService);
                 var win = new Views.CrashDataWindow { DataContext = vm };
                 win.ShowDialog(main);
             };
@@ -453,7 +464,7 @@ public partial class App : Application
 
             Action openCustomInstall = () =>
             {
-                if (!xboxService.IsConnected)
+                if (!authService.IsConnected)
                 {
                     var errDlg = new ErrorDialog(
                         "Not Connected",
@@ -464,7 +475,7 @@ public partial class App : Application
                     errDlg.ShowDialog(main);
                     return;
                 }
-                var vm = new CustomInstallViewModel(xboxService, installService);
+                var vm = new CustomInstallViewModel(packageService, installService);
                 vm.OnInstallComplete = () => installedViewModel.RefreshPackagesCommand.Execute(null);
                 vm.PickFileAsync = async () =>
                 {
@@ -527,7 +538,7 @@ public partial class App : Application
 
                 Func<string, Task> openCustomInstallWithFile = async (filePath) =>
             {
-                if (!xboxService.IsConnected)
+                if (!authService.IsConnected)
                 {
                     var errDlg = new ErrorDialog(
                         "Not Connected",
@@ -538,7 +549,7 @@ public partial class App : Application
                     await errDlg.ShowDialog(main);
                     return;
                 }
-                var vm = new CustomInstallViewModel(xboxService, installService);
+                var vm = new CustomInstallViewModel(packageService, installService);
                 vm.PickFileAsync = () => Task.FromResult<string?>(null);
                 vm.PickDependencyFilesAsync = async () =>
                 {
@@ -607,7 +618,7 @@ public partial class App : Application
 
             Logger.Info("Creating InspectorView");
             var agentService = new XrayAgentService();
-            var inspectorViewModel = new InspectorViewModel(xboxService, agentService);
+            var inspectorViewModel = new InspectorViewModel(authService, agentService);
             inspectorViewModel.ShowConnectAction = mainViewModel.ShowConnectAction;
             inspectorViewModel.ShowGuideAction = () =>
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://xbvault.pages.dev/inspector") { UseShellExecute = true });
@@ -662,7 +673,7 @@ public partial class App : Application
             // First-run wizard (after splash to avoid z-order overlap)
             if (!SettingsService.Current.XboxConnection.IsConfigured)
             {
-                var wizardVm = new SetupWizardViewModel(xboxService);
+                var wizardVm = new SetupWizardViewModel(authService);
                 var wizardWin = new Views.SetupWizardWindow { DataContext = wizardVm };
                 wizardVm.CloseAction = () => wizardWin.Close();
                 await wizardWin.ShowDialog(main);
@@ -671,9 +682,9 @@ public partial class App : Application
                     var connected = await mainViewModel.ShowConnectAction();
                     if (connected)
                     {
-                        await xboxService.FetchSmbPasswordAsync();
+                        await authService.FetchSmbPasswordAsync();
                         mainViewModel.IsXboxConnected = true;
-                        xboxService.MarkConnected();
+                        authService.MarkConnected();
                         mainViewModel.ConnectionStatusText = "Connected";
                     }
                 }

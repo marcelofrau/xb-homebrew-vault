@@ -13,11 +13,13 @@ namespace XBVault.ViewModels;
 
 public partial class CrashDataViewModel : ObservableObject
 {
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxAuthService _authService;
+    private readonly IXboxSystemService _systemService;
 
-    public CrashDataViewModel(XboxDeviceService xboxService)
+    public CrashDataViewModel(IXboxAuthService authService, IXboxSystemService systemService)
     {
-        _xboxService = xboxService;
+        _authService = authService;
+        _systemService = systemService;
         CrashDumps.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(HasCrashDumps));
@@ -53,7 +55,7 @@ public partial class CrashDataViewModel : ObservableObject
 
     public void Initialize()
     {
-        if (!_xboxService.IsConnected) return;
+        if (!_authService.IsConnected) return;
         _ = LoadAllAsync();
     }
 
@@ -72,7 +74,7 @@ public partial class CrashDataViewModel : ObservableObject
 
         try
         {
-            var controlJson = await _xboxService.GetCrashControlAsync();
+            var controlJson = await _systemService.GetCrashControlAsync();
             if (controlJson is not null)
             {
                 try
@@ -87,7 +89,7 @@ public partial class CrashDataViewModel : ObservableObject
                 }
             }
 
-            var json = await _xboxService.GetCrashDumpsAsync();
+            var json = await _systemService.GetCrashDumpsAsync();
             if (json is null)
             {
                 StatusMessage = "Failed to get crash dumps (API may not be available on this console)";
@@ -119,7 +121,7 @@ public partial class CrashDataViewModel : ObservableObject
     {
         try
         {
-            var ok = await _xboxService.SetCrashControlAsync(!CrashDumpEnabled);
+            var ok = await _systemService.SetCrashControlAsync(!CrashDumpEnabled);
             if (ok)
             {
                 CrashDumpEnabled = !CrashDumpEnabled;
@@ -148,7 +150,7 @@ public partial class CrashDataViewModel : ObservableObject
 
         try
         {
-            var ok = await _xboxService.DeleteCrashDumpAsync(name);
+            var ok = await _systemService.DeleteCrashDumpAsync(name);
             if (ok)
             {
                 CrashDumps.Remove(SelectedCrashDump);
@@ -182,7 +184,7 @@ public partial class CrashDataViewModel : ObservableObject
             var name = d.FileName ?? "unknown";
             try
             {
-                var ok = await _xboxService.DeleteCrashDumpAsync(name);
+                var ok = await _systemService.DeleteCrashDumpAsync(name);
                 if (ok)
                 {
                     CrashDumps.Remove(d);

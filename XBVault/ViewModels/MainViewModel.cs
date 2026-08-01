@@ -7,14 +7,14 @@ namespace XBVault.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxAuthService _authService;
 
     private static readonly string[] TabNames = ["Browse", "Installed", "FileExplorer", "Tools", "Inspector", "Settings", "Logs"];
 
-    public MainViewModel(XboxDeviceService xboxService)
+    public MainViewModel(IXboxAuthService authService)
     {
-        _xboxService = xboxService;
-        _xboxService.ConnectionChanged += OnConnectionChanged;
+        _authService = authService;
+        _authService.ConnectionChanged += OnConnectionChanged;
         Logger.Debug("MainViewModel initialized");
         UpdateConnectionStatus();
     }
@@ -97,7 +97,7 @@ public partial class MainViewModel : ObservableObject
 
     public void UpdateConnectionStatus()
     {
-        if (_xboxService.IsConfigured)
+        if (_authService.IsConfigured)
         {
             IsXboxConnected = true;
             ConnectionStatusText = "Connected";
@@ -146,7 +146,7 @@ public partial class MainViewModel : ObservableObject
         if (result)
         {
             IsXboxConnected = true;
-            _xboxService.MarkConnected();
+            _authService.MarkConnected();
             ConnectionStatusText = "Connected";
             Logger.Info("Xbox connection established from MainViewModel");
         }
@@ -160,7 +160,7 @@ public partial class MainViewModel : ObservableObject
     private void Disconnect()
     {
         Logger.Info("Disconnect button clicked");
-        _xboxService.Disconnect();
+        _authService.Disconnect();
         UpdateConnectionStatus();
         Logger.Info("Xbox disconnected");
     }

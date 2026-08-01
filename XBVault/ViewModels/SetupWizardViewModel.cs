@@ -7,13 +7,13 @@ namespace XBVault.ViewModels;
 
 public partial class SetupWizardViewModel : ObservableObject
 {
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxAuthService _authService;
 
     public Action? CloseAction;
 
-    public SetupWizardViewModel(XboxDeviceService xboxService)
+    public SetupWizardViewModel(IXboxAuthService authService)
     {
-        _xboxService = xboxService;
+        _authService = authService;
     }
 
     [ObservableProperty]
@@ -123,6 +123,6 @@ public partial class SetupWizardViewModel : ObservableObject
         SettingsService.Save();
 
         var baseUrl = settings.BaseUrl;
-        _xboxService.Configure(baseUrl, settings.Username, Password ?? "");
+        _authService.Configure(baseUrl, settings.Username, Password ?? "");
     }
 }

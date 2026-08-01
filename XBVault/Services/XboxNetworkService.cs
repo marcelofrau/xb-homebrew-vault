@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace XBVault.Services;
 
-public class XboxNetworkService
+public class XboxNetworkService : IXboxNetworkService
 {
     private readonly XboxAuthService _auth;
 

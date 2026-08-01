@@ -24,7 +24,8 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
 
     private readonly CatalogApiService _catalogService;
     private readonly PackageInstallService _installService;
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxAuthService _authService;
+    private readonly IXboxPackageService _packageService;
     private readonly PackageOverrideService _overrideService;
     private readonly UpdateVersionCache _updateCache = new();
     private List<CatalogItem> _allItems = [];
@@ -47,11 +48,12 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     private readonly ConcurrentDictionary<string, Task<Bitmap?>> _overrideImageCache = new();
     private CancellationTokenSource? _thumbnailCts;
 
-    public BrowseViewModel(PackageInstallService installService, XboxDeviceService xboxService, CatalogApiService catalogService, PackageOverrideService overrideService)
+    public BrowseViewModel(PackageInstallService installService, IXboxAuthService authService, IXboxPackageService packageService, CatalogApiService catalogService, PackageOverrideService overrideService)
     {
         _catalogService = catalogService;
         _installService = installService;
-        _xboxService = xboxService;
+        _authService = authService;
+        _packageService = packageService;
         _overrideService = overrideService;
         Logger.Debug("BrowseViewModel created");
     }
@@ -246,7 +248,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (!_xboxService.IsConfigured)
+        if (!_authService.IsConfigured)
         {
             CheckComplete = true;
             CheckError = true;
@@ -255,7 +257,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             IsCheckingInstalled = false;
             return;
         }
-        if (!_xboxService.IsConnected)
+        if (!_authService.IsConnected)
         {
             CheckComplete = true;
             CheckError = true;
@@ -268,7 +270,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         try
         {
             Logger.Debug("Fetching installed packages from Xbox...");
-            var packages = await _xboxService.GetInstalledPackagesAsync();
+            var packages = await _packageService.GetInstalledPackagesAsync();
             Logger.Debug($"Got {packages.Count} installed packages from Xbox");
 
             var match = packages.FirstOrDefault(p => IsPackageMatch(item, p));
@@ -499,7 +501,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             InstallResultMessage = "This is a Windows tool — not installable on Xbox.";
             return;
         }
-        if (!_xboxService.IsConnected)
+        if (!_authService.IsConnected)
         {
             Logger.Info("Xbox not connected — cannot install");
             CheckComplete = false;

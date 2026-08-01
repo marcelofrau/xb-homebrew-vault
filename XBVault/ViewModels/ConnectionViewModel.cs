@@ -14,7 +14,8 @@ namespace XBVault.ViewModels;
 
 public partial class ConnectionViewModel : ObservableObject, IDisposable
 {
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxAuthService _authService;
+    private readonly IXboxNetworkService _networkService;
     private CancellationTokenSource? _cts;
 
     public void Dispose()
@@ -40,9 +41,10 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
     private string[] _cortanaLines = [];
     private string[] _allLines = [];
 
-    public ConnectionViewModel(XboxDeviceService xboxService)
+    public ConnectionViewModel(IXboxAuthService authService, IXboxNetworkService networkService)
     {
-        _xboxService = xboxService;
+        _authService = authService;
+        _networkService = networkService;
         LoadMemeLines();
         Logger.Debug("ConnectionViewModel initialized");
     }
@@ -107,7 +109,7 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
     {
         try
         {
-            var json = await _xboxService.GetNetworkConfigAsync();
+            var json = await _networkService.GetNetworkConfigAsync();
             if (json is null) return null;
 
             using var doc = JsonDocument.Parse(json);
@@ -203,9 +205,9 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
                 return;
             }
 
-            _xboxService.Configure(baseUrl, settings.Username, pw);
+            _authService.Configure(baseUrl, settings.Username, pw);
 
-            var result = await _xboxService.TestConnectionAsync(ct);
+            var result = await _authService.TestConnectionAsync(ct);
 
             if (result.IsCancelled || ct.IsCancellationRequested)
             {

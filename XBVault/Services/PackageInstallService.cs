@@ -17,7 +17,7 @@ public class PackageInstallService
 {
     private readonly HttpClient _http;
     private readonly CacheService _cache;
-    private readonly XboxDeviceService _xbox;
+    private readonly IXboxPackageService _packageService;
 
     private static readonly HashSet<string> DepFolderNames = new(
         StringComparer.OrdinalIgnoreCase) { "Dependencies", "deps", "dep" };
@@ -77,10 +77,10 @@ public class PackageInstallService
         return null;
     }
 
-    public PackageInstallService(CacheService cache, XboxDeviceService xbox)
+    public PackageInstallService(CacheService cache, IXboxPackageService packageService)
     {
         _cache = cache;
-        _xbox = xbox;
+        _packageService = packageService;
         _http = new HttpClient() { Timeout = TimeSpan.FromSeconds(30) };
         _http.DefaultRequestHeaders.Add("User-Agent", $"XB Homebrew Vault/{BuildInfo.Version}");
     }
@@ -221,7 +221,7 @@ public class PackageInstallService
                 });
             });
 
-        var result = await _xbox.InstallPackageAsync(mainPackage, dependencies, installProgress);
+        var result = await _packageService.InstallPackageAsync(mainPackage, dependencies, installProgress);
 
         if (result)
         {

@@ -12,7 +12,8 @@ namespace XBVault.ViewModels;
 
 public partial class PerformanceViewModel : ObservableObject, IDisposable
 {
-    private readonly XboxDeviceService _xboxService;
+    private readonly IXboxAuthService _authService;
+    private readonly IXboxPerformanceService _performanceService;
     private CancellationTokenSource? _cts;
 
     public void Dispose()
@@ -22,9 +23,10 @@ public partial class PerformanceViewModel : ObservableObject, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public PerformanceViewModel(XboxDeviceService xboxService)
+    public PerformanceViewModel(IXboxAuthService authService, IXboxPerformanceService performanceService)
     {
-        _xboxService = xboxService;
+        _authService = authService;
+        _performanceService = performanceService;
     }
 
     [ObservableProperty]
@@ -45,7 +47,7 @@ public partial class PerformanceViewModel : ObservableObject, IDisposable
     private void StartMonitoring()
     {
         if (IsMonitoring) return;
-        if (!_xboxService.IsConnected) return;
+        if (!_authService.IsConnected) return;
 
         IsMonitoring = true;
         _cts = new CancellationTokenSource();
@@ -55,7 +57,7 @@ public partial class PerformanceViewModel : ObservableObject, IDisposable
         MemoryChart.Clear();
         IoChart.Clear();
 
-        _ = Task.Run(() => _xboxService.ConnectPerformanceWsAsync(OnSnapshot, _cts.Token));
+        _ = Task.Run(() => _performanceService.ConnectPerformanceWsAsync(OnSnapshot, _cts.Token));
     }
 
     [RelayCommand]

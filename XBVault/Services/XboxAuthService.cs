@@ -11,7 +11,7 @@ using XBVault.Models;
 
 namespace XBVault.Services;
 
-public class XboxAuthService : IDisposable
+public class XboxAuthService : IXboxAuthService
 {
     private HttpClient _http;
     private HttpClientHandler? _handler;
