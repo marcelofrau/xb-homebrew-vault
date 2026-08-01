@@ -286,22 +286,24 @@ internal sealed class FakeSftpService : ISftpService
         lock (_dirs)
         {
             var key = Normalize(path);
-            _dirs.Add(key);
-            var parent = Path.GetDirectoryName(key);
-            while (!string.IsNullOrEmpty(parent))
+            var acc = string.Empty;
+            foreach (var part in key.Split('\\'))
             {
-                _dirs.Add(parent);
-                parent = Path.GetDirectoryName(parent);
+                if (part.Length == 0) continue;
+                acc = acc.Length == 0 ? part : acc + "\\" + part;
+                _dirs.Add(acc);
             }
         }
     }
 
     public void SeedFile(string path, byte[] content)
     {
-        SeedDir(Path.GetDirectoryName(path)!);
         lock (_dirs)
         {
-            _files[Normalize(path)] = content;
+            var key = Normalize(path);
+            var lastSep = key.LastIndexOf('\\');
+            if (lastSep > 0) SeedDir(key[..lastSep]);
+            _files[key] = content;
         }
     }
 
@@ -393,7 +395,8 @@ internal sealed class FakeSftpService : ISftpService
         lock (_dirs)
         {
             _files[key] = ms.ToArray();
-            SeedDir(Path.GetDirectoryName(key)!);
+            var lastSep = key.LastIndexOf('\\');
+            if (lastSep > 0) SeedDir(key[..lastSep]);
         }
     }
 

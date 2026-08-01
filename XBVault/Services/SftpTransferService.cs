@@ -181,16 +181,17 @@ public class SftpTransferService : IDisposable
                 return TransferResult.EmptyResult("Empty folder — nothing to upload");
 
             var totalFiles = allFiles.Length;
-            var folderRoot = localFolder.TrimEnd('\\');
+            var folderRoot = localFolder.TrimEnd('\\', '/');
 
             for (int i = 0; i < totalFiles; i++)
             {
                 ct.ThrowIfCancellationRequested();
 
                 var filePath = allFiles[i];
-                var relative = filePath.Substring(folderRoot.Length).TrimStart('\\');
+                var relative = filePath.Substring(folderRoot.Length).TrimStart('\\', '/').Replace('/', '\\');
                 var remotePath = targetPath.TrimEnd('\\') + "\\" + Path.GetFileName(localFolder).TrimEnd('\\') + "\\" + relative;
-                var remoteDir = Path.GetDirectoryName(remotePath)!.Replace('\\', '/');
+                var lastSep = remotePath.LastIndexOf('\\');
+                var remoteDir = lastSep > 0 ? remotePath[..lastSep].Replace('\\', '/') : string.Empty;
 
                 _transferStartTime = DateTime.UtcNow;
                 Report(progress, (double)i / totalFiles, $"Uploading {relative}...");
@@ -271,20 +272,21 @@ public class SftpTransferService : IDisposable
                 {
                     ct.ThrowIfCancellationRequested();
                     var folderPath = folderPaths[fi];
-                    var folderName = Path.GetFileName(folderPath.TrimEnd('\\'));
+                    var folderName = Path.GetFileName(folderPath.TrimEnd('\\', '/'));
                     var index = fCount + fi;
 
                     Report(progress, (double)index / totalItems, $"Scanning {folderName}...");
 
                     var allFiles = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories);
-                    var folderRoot = folderPath.TrimEnd('\\');
+                    var folderRoot = folderPath.TrimEnd('\\', '/');
 
                     foreach (var filePath in allFiles)
                     {
                         ct.ThrowIfCancellationRequested();
-                        var relative = filePath.Substring(folderRoot.Length).TrimStart('\\');
+                        var relative = filePath.Substring(folderRoot.Length).TrimStart('\\', '/').Replace('/', '\\');
                         var remotePath = targetPath.TrimEnd('\\') + "\\" + folderName + "\\" + relative;
-                        var remoteDir = Path.GetDirectoryName(remotePath)!.Replace('\\', '/');
+                        var lastSep = remotePath.LastIndexOf('\\');
+                        var remoteDir = lastSep > 0 ? remotePath[..lastSep].Replace('\\', '/') : string.Empty;
 
                         _transferStartTime = DateTime.UtcNow;
                         Report(progress, (double)index / totalItems, $"Uploading {relative}...");
@@ -339,16 +341,17 @@ public class SftpTransferService : IDisposable
             BeginTransfer();
             var ct = Token;
             var totalFiles = allFiles.Length;
-            var folderRoot = tempDir.TrimEnd('\\');
+            var folderRoot = tempDir.TrimEnd('\\', '/');
 
             for (int i = 0; i < totalFiles; i++)
             {
                 ct.ThrowIfCancellationRequested();
 
                 var filePath = allFiles[i];
-                var relative = filePath.Substring(folderRoot.Length).TrimStart('\\');
+                var relative = filePath.Substring(folderRoot.Length).TrimStart('\\', '/').Replace('/', '\\');
                 var remotePath = targetPath.TrimEnd('\\') + "\\" + relative;
-                var remoteDir = Path.GetDirectoryName(remotePath)!.Replace('\\', '/');
+                var lastSep = remotePath.LastIndexOf('\\');
+                var remoteDir = lastSep > 0 ? remotePath[..lastSep].Replace('\\', '/') : string.Empty;
 
                 _transferStartTime = DateTime.UtcNow;
                 Report(progress, (double)i / totalFiles, $"Extracting & uploading {relative}...");
@@ -365,9 +368,10 @@ public class SftpTransferService : IDisposable
             var addedDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < totalFiles; i++)
             {
-                var rel = allFiles[i].Substring(folderRoot.Length).TrimStart('\\');
+                var rel = allFiles[i].Substring(folderRoot.Length).TrimStart('\\', '/').Replace('/', '\\');
                 var remotePath = targetPath.TrimEnd('\\') + "\\" + rel;
-                var dirPart = Path.GetDirectoryName(rel);
+                var lastSep = rel.LastIndexOf('\\');
+                var dirPart = lastSep > 0 ? rel[..lastSep] : string.Empty;
 
                 if (!string.IsNullOrEmpty(dirPart))
                 {
@@ -439,7 +443,8 @@ public class SftpTransferService : IDisposable
                         var folderRoot = entry.FullPath.TrimEnd('\\');
                         foreach (var file in all.Where(e => !e.IsDirectory))
                         {
-                            var relative = Path.Combine(entry.Name.TrimEnd('\\'), file.FullPath.Substring(folderRoot.Length).TrimStart('\\'));
+                            var relRemote = file.FullPath.Substring(folderRoot.Length).TrimStart('\\');
+                            var relative = Path.Combine(entry.Name.TrimEnd('\\'), relRemote.Replace('\\', Path.DirectorySeparatorChar));
                             fileList.Add((file, relative));
                         }
                     }
@@ -556,7 +561,7 @@ public class SftpTransferService : IDisposable
                 {
                     ct.ThrowIfCancellationRequested();
                     var file = files[i];
-                    var relative = file.FullPath.Substring(rootPath.Length).TrimStart('\\');
+                    var relative = file.FullPath.Substring(rootPath.Length).TrimStart('\\').Replace('\\', Path.DirectorySeparatorChar);
                     partialPath = Path.Combine(localRoot, relative);
                     var localDir = Path.GetDirectoryName(partialPath);
                     if (!string.IsNullOrEmpty(localDir))
