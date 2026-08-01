@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Serialization;
 
 namespace XBVault.Models;
@@ -44,15 +45,17 @@ public class ProcessInfo
             double n = MemoryUsage.Value;
             foreach (var u in units)
             {
-                if (n < 1024) return $"{n:F1}{u}";
+                // InvariantCulture: "1.5 GB" regardless of pt-BR comma vs en-US dot
+                if (n < 1024) return $"{n.ToString("F1", CultureInfo.InvariantCulture)}{u}";
                 n /= 1024;
             }
-            return $"{n:F1}TB";
+            return $"{n.ToString("F1", CultureInfo.InvariantCulture)}TB";
         }
     }
 
     [JsonIgnore]
-    public string CpuDisplay => CpuUsage is null or 0 ? "-" : $"{CpuUsage:F1}%";
+    // InvariantCulture: "12.3%" regardless of pt-BR comma vs en-US dot
+    public string CpuDisplay => CpuUsage is null or 0 ? "-" : $"{CpuUsage.Value.ToString("F1", CultureInfo.InvariantCulture)}%";
 }
 
 public enum ProcessSortColumn

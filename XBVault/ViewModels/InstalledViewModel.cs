@@ -520,7 +520,11 @@ public partial class InstalledViewModel : ObservableObject
                     var uri = new Uri("avares://XBVault/Assets/Views/InstalledView/installed-banner-generic.jpg");
                     _genericBanner = new Bitmap(AssetLoader.Open(uri));
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    // Banner asset missing/broken — leave null, views fall back to placeholder styling
+                    Logger.Trace($"InstalledViewModel: failed to load generic banner — {ex.Message}");
+                }
             }
 
             var bannerOpts = new ParallelOptions { MaxDegreeOfParallelism = 4 };
@@ -542,7 +546,11 @@ public partial class InstalledViewModel : ObservableObject
                         var (_, outdated) = await CheckOutdatedAsync(pkg);
                         pkg.IsOutdated = outdated;
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        // Version-check failure (offline, console busy) — keep IsOutdated=false rather than failing the whole refresh
+                        Logger.Trace($"InstalledViewModel: outdated check failed for {pkg.Name} — {ex.Message}");
+                    }
                 }
             }
 

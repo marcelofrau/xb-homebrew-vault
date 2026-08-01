@@ -2,6 +2,7 @@
 using System.Management;
 #pragma warning disable CA1416
 #endif
+using System.Globalization;
 using System.Runtime.InteropServices;
 using XBVault.Models;
 
@@ -89,9 +90,10 @@ public static class UsbDriveDetector
 
     private static string FormatSize(long bytes)
     {
+        // InvariantCulture: "1.5 GB" regardless of pt-BR comma vs en-US dot
         if (bytes < 1024) return $"{bytes} B";
-        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
-        if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
-        return $"{bytes / (1024.0 * 1024 * 1024):F1} GB";
+        if (bytes < 1024 * 1024) return $"{(bytes / 1024.0).ToString("F1", CultureInfo.InvariantCulture)} KB";
+        if (bytes < 1024L * 1024 * 1024) return $"{(bytes / (1024.0 * 1024)).ToString("F1", CultureInfo.InvariantCulture)} MB";
+        return $"{(bytes / (1024.0 * 1024 * 1024)).ToString("F1", CultureInfo.InvariantCulture)} GB";
     }
 }

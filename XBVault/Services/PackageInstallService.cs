@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -478,14 +479,15 @@ public class PackageInstallService
 
     private static string FormatBytes(long bytes)
     {
+        // InvariantCulture: "1.5 GB" regardless of pt-BR comma vs en-US dot
         string[] units = ["B", "KB", "MB", "GB"];
         double n = bytes;
         foreach (var u in units)
         {
-            if (n < 1024) return $"{n:F1}{u}";
+            if (n < 1024) return $"{n.ToString("F1", CultureInfo.InvariantCulture)}{u}";
             n /= 1024;
         }
-        return $"{n:F1}TB";
+        return $"{n.ToString("F1", CultureInfo.InvariantCulture)}TB";
     }
 
     public static string GetFileNameFromUrl(string url)

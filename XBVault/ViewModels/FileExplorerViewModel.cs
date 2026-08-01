@@ -1215,7 +1215,11 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
                     return line;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            // `where` probe can fail if WinSCP not on PATH or the shell is unavailable — fall back to null
+            Logger.Trace($"FindWinScp: where probe failed — {ex.Message}");
+        }
 
         return null;
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
+using XBVault.Services;
 
 namespace XBVault.Converters;
 
@@ -15,7 +16,11 @@ public class BoolToValueConverter : IValueConverter
         if (result is not null && targetType.IsInstanceOfType(result) == false)
         {
             try { return System.Convert.ChangeType(result, targetType, culture); }
-            catch { }
+            catch (Exception ex)
+            {
+                // Value type not convertible to targetType — fall back to raw value, don't break the binding
+                Logger.Trace($"BoolToValueConverter: ChangeType failed for {result.GetType().Name} → {targetType.Name} — {ex.Message}");
+            }
         }
         return result;
     }

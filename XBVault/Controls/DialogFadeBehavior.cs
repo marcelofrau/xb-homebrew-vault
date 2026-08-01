@@ -9,6 +9,9 @@ namespace XBVault.Controls;
 
 public static class DialogFadeBehavior
 {
+    // Fade-out pause so the opacity drop is visible before the window closes
+    private static readonly TimeSpan FadeOutDelay = TimeSpan.FromMilliseconds(200);
+
     public static readonly AttachedProperty<bool> EnableDialogFadeProperty =
         AvaloniaProperty.RegisterAttached<Window, bool>("EnableDialogFade", typeof(DialogFadeBehavior));
 
@@ -50,7 +53,7 @@ public static class DialogFadeBehavior
         e.Cancel = true;
         window.Closing -= OnClosing;
         window.Opacity = 0;
-        await Task.Delay(200);
+        await Task.Delay(FadeOutDelay);
 
         ClearDim(window);
         window.Close();

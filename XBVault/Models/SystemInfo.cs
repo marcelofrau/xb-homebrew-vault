@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Serialization;
 
 namespace XBVault.Models;
@@ -74,10 +75,11 @@ public class SystemInfo
                 double n = bytes;
                 foreach (var u in units)
                 {
-                    if (n < 1024) return $"{n:F1}{u}";
+                    // InvariantCulture: "1.5 GB" regardless of pt-BR comma vs en-US dot
+                    if (n < 1024) return $"{n.ToString("F1", CultureInfo.InvariantCulture)}{u}";
                     n /= 1024;
                 }
-                return $"{n:F1}TB";
+                return $"{n.ToString("F1", CultureInfo.InvariantCulture)}TB";
             }
             return TotalMemory;
         }

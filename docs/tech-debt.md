@@ -81,23 +81,20 @@ Service-layer continuations unnecessarily capture the UI synchronization context
 
 **Fix:** Add `.ConfigureAwait(false)` to all `await` calls in Services (HTTP, file I/O, WebSocket). Skip in ViewModels that update `ObservableProperty` on the UI thread.
 
-### 6. Silent exception swallowing — mostly resolved, but regressions appeared
+### ~~6. Silent exception swallowing~~ ✅ Resolved (Aug 2026)
 
-The 10 originally-documented silent catches were all fixed (logged) in v0.9.2. However a **fresh scan (Aug 2026) finds 26 bare `catch { }` sites**, most of which are intentional but several need attention:
+The 10 originally-documented silent catches were fixed (logged) in v0.9.2. A fresh scan (Aug 2026) found 26 bare `catch { }` sites; the ⚠️ regressions are now **all logged** (`Logger.Trace`):
 
-| File | Line | Pattern | Verdict |
-|------|------|---------|---------|
-| `Services/Logger.cs` | 126, 152, 220–241, 304 | self-protection | ✅ intentional (logger can't log itself) |
-| `Services/SftpService.cs` | 109, 113 | disconnect + `Logger.Trace` | ✅ intentional |
-| `Services/XboxDeviceService.cs` | 770–819 | JSON parse guards returning `false` | ⚠️ intentional but silently swallows malformed responses — add `Logger.Trace` |
-| `Program.cs` | 88 | last-resort stderr | ✅ intentional |
-| `ViewModels/FileExplorerViewModel.cs` | 1218 | unknown | ⚠️ check + log |
-| `ViewModels/InstalledViewModel.cs` | 521, 543 | refresh error handling | ⚠️ check + log |
-| `Views/ErrorDialog.axaml.cs` | 145, 157 | clipboard | ⚠️ low risk, add trace |
-| `Views/FileExplorerView.axaml.cs` | 601 | drop handler | ⚠️ check + log |
-| `Converters/BoolToValueConverter.cs` | 18 | converter fallback | ⚠️ add trace |
+| File | Line(s) | Now logs |
+|------|---------|----------|
+| `Services/XboxResponseParser.cs` | 60, 76, 92, 109 | `IsSignatureError`/`IsResourceInUseError`/`IsHigherVersionError`/`IsFatalDeploymentError` — malformed JSON |
+| `Converters/BoolToValueConverter.cs` | 18 | `ChangeType` fallback failure |
+| `ViewModels/FileExplorerViewModel.cs` | 1218 | WinSCP `where` probe |
+| `ViewModels/InstalledViewModel.cs` | 523, 545 | banner asset load, outdated check |
+| `Views/ErrorDialog.axaml.cs` | 145, 157 | clipboard write, restart launch |
+| `Views/FileExplorerView.axaml.cs` | 601 | WinSCP `winscp://` shell launch |
 
-**Fix:** Audit the ⚠️ sites; add `Logger.Warn/Trace` where the exception is not deliberately ignored.
+**Kept intentional** (self-protection / last-resort): `Logger.cs` (9), `Program.cs` (88), `SftpService.cs` disconnect (109, 113), `PlatformDialog.cs` (64, 117), `PreFlightChecker.cs` (69). Each touched site gained a `// why` comment explaining why the exception is swallowed.
 
 ### 7. `async void` in code-behind — grew 11 → 22 instances
 
@@ -173,16 +170,14 @@ Unified `WindowCloseButton` style in `BladesTheme.axaml`.
 
 ## 🟢 Low
 
-### ~~13. Hardcoded magic delays~~ ✅ Mostly resolved (v0.9.1)
+### ~~13. Hardcoded magic delays~~ ✅ Resolved (v0.9.1 + Aug 2026)
 
-Named constants now cover the bulk (`SplashMinDelayMs`, `PollDelayMs`, `RetryDelayMs`, `DialToneDelayMs`, etc.). Two stragglers remain as raw literals:
+Named constants cover the bulk (`SplashMinDelayMs`, `PollDelayMs`, `RetryDelayMs`, `DialToneDelayMs`, etc.). The last two raw-literal stragglers were promoted (Aug 2026):
 
-| File | Line | Value |
-|------|------|-------|
-| `Controls/DialogFadeBehavior.cs` | 53 | `200` |
-| `ViewModels/CustomInstallViewModel.cs` | 550, 566 | `1500` × 2 |
-
-**Fix:** Promote to `const`/`static readonly TimeSpan`.
+| File | Before | After |
+|------|--------|-------|
+| `Controls/DialogFadeBehavior.cs` | `Task.Delay(200)` | `FadeOutDelay` (`static readonly TimeSpan`) |
+| `ViewModels/CustomInstallViewModel.cs` | `Task.Delay(1500)` × 2 | `UninstallRetryDelayMs = 1500` (const) |
 
 ### ~~14. `CatalogApiService` not injected~~ ✅ Resolved (v0.9.2)
 
@@ -224,23 +219,32 @@ The File Explorer surfaces a **static** set of drives — `{ "C", "D", "E", "G",
 
 ### 21. Zero test coverage — highest-impact gap
 
-**Status:** Mostly resolved (Aug 2026) — 147 tests green: Phase 1a/1b (pure services) + Phase 1c (19 god-class helpers characterized, 2 real bugs found/fixed). See [Testing Infrastructure](ideas/testing-infrastructure).
+**Status:** Mostly resolved (Aug 2026) — **160 tests green**: Phase 1a/1b (pure services) + Phase 1c (19 god-class helpers characterized, 2 real bugs found/fixed) + `SftpTransferServiceTests` (13 tests over an in-memory `FakeSftpService` — upload files/folder/mixed/zip-extract, download single/folder/multi, cancel with partial cleanup, empty results, connection-lost path). See [Testing Infrastructure](ideas/testing-infrastructure).
 
-**Still open:** instance logic of `XboxDeviceService` (HTTP/WebSocket) + `FileExplorerViewModel` (SFTP pipelines) — blocked on splits #1/#2. Split #1 done (facade); instance tests can now target the domain services (`XboxAuthService`, `XboxPackageService`, …) directly.
+**Still open:** instance logic of the Xbox domain services (HTTP/WebSocket) — `XboxAuthService`, `XboxPackageService`, … need in-memory fakes/stubs.
 
 ### 22. Comment ratio 0–2% across Services/ViewModels
 
 `Services/` at 2% comments, `ViewModels/` at 0%. Business logic in `XboxDeviceService` (error-code interpretation, retry loops) and `PackageInstallService` (dependency classification) is undocumented inline.
 
-**Fix:** Add `// why` comments to non-obvious logic during the #1/#2 refactors rather than as a standalone pass.
+**Progress (Aug 2026):** `// why` comments added at every site touched by the #2 split and the #6/#13/#23 passes — bare-catch rationales, culture-invariance rationale on all 8 formatters, and the delay constants in `DialogFadeBehavior`/`CustomInstallViewModel`. Still open for untouched business logic.
 
-### 23. Culture-dependent size/speed formatting — latent in 8 formatters
+### ~~23. Culture-dependent size/speed formatting — latent in 8 formatters~~ ✅ Resolved (Aug 2026)
 
-**Fixed (Aug 2026):** `XboxDeviceService.SizeFormat` and `FileExplorerViewModel.FormatBps` now use `CultureInfo.InvariantCulture` — found by Phase 1c tests (pt-BR machine output `1,5KB`, CI en-US `1.5KB` → flaky).
+**All 8 formatters** now use `CultureInfo.InvariantCulture` (with `using System.Globalization;` where missing), so size/percent strings render identically on pt-BR (comma) and en-US (dot):
 
-**Still latent** — same `:F1` current-culture pattern in: `SftpEntry.FormatSize`, `SystemInfo` (line 77/80), `PackageInstallService` (485/488), `ProcessInfo` (47/50), `CrashDumpInfo` (25/28), `PreFlightChecker` (263/266), `UsbDriveDetector` (93–95), `SettingsViewModel` (185–187).
+| File | Formatter(s) |
+|------|--------------|
+| `Models/SftpEntry.cs` | `FormatSize` |
+| `Models/SystemInfo.cs` | memory `FormatSize` |
+| `Models/ProcessInfo.cs` | `MemoryDisplay`, `CpuDisplay` |
+| `Models/CrashDumpInfo.cs` | `FileSizeDisplay` |
+| `Services/PackageInstallService.cs` | `FormatBytes` |
+| `Services/PreFlightChecker.cs` | `FormatBytes` |
+| `Services/UsbDriveDetector.cs` | `FormatSize` |
+| `ViewModels/SettingsViewModel.cs` | `FormatBytes` |
 
-**Fix:** Switch each to `CultureInfo.InvariantCulture` when next touched (or batch pass — ~30 min).
+`XboxDeviceService.SizeFormat` and `FileExplorerViewModel.FormatBps` were already fixed in Phase 1c (tests). Each formatter carries a `// why` comment explaining the invariant.
 
 ---
 
@@ -248,8 +252,8 @@ The File Explorer surfaces a **static** set of drives — `{ "C", "D", "E", "G",
 
 ```mermaid
 graph LR
-    H["🔴 High<br/>2 open · 1 resolved"]
-    M["🟡 Medium<br/>5 open · 3 resolved"]
+    H["🔴 High<br/>0 open · 3 resolved"]
+    M["🟡 Medium<br/>5 open · 4 resolved"]
     L["🟢 Low<br/>4 open · 7 resolved"]
     
     style H fill:#CC3333,stroke:#9ACA3C,color:#fff
@@ -260,22 +264,22 @@ graph LR
 | Severity | Open | Resolved | Estimated effort |
 |----------|------|----------|-----------------|
 | 🔴 High | 0 | 3 ✅ | – |
-| 🟡 Medium | 5 | 3 ✅ | 8–18 hours |
+| 🟡 Medium | 5 | 4 ✅ | 6–14 hours |
 | 🟢 Low | 4 | 7 ✅ | 2–4 hours |
-| **Total** | **9 open** | **13 resolved** | **10–22 hours** |
+| **Total** | **9 open** | **14 resolved** | **8–18 hours** |
 
 ### Notable changes since June 2026 verification
 
 - **`XboxDeviceService` 1,433 → 170 lines** (split #1): extracted `XboxAuthService`, `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService`, `XboxResponseParser`. Facade keeps `ConnectionChanged` + static helper delegates; **147 tests green, 0 build warnings**. See [Split XboxDeviceService](ideas/refactor-xboxdeviceservice).
 - **Testing (Aug 2026):** 147 tests green. 17 god-class helpers characterized (#1 ×10, #2 ×9 → now `FileSystemPathParser`). Two real bugs found+fixed: `UpdateChildrenPathsRecursive` duplicated path segments on nested rename (grandchild got `\sub\sub\`); `SizeFormat`/`FormatBps` were culture-dependent (pt-BR comma vs CI dot).
 - **`FileExplorerViewModel` (1,880 → 1,223 lines, complexity 254 → 177)** — split done (Aug 2026): `FileSystemPathParser` helpers, `ISftpService`, `SftpTransferService`; VM keeps tree/list state + command wiring. `TransferResult.NewEntries` re-splices into tree on upload. Build 0 warnings/0 errors, 147 tests green.
+- **Cleanup pass (Aug 2026):** **160 tests green.** Resolved **#6** (all ⚠️ bare catches logged via `Logger.Trace` with `// why`), **#13** (last magic delays → `FadeOutDelay`/`UninstallRetryDelayMs`), **#23** (all 8 size formatters → `CultureInfo.InvariantCulture`). **#21** extended: `SftpTransferServiceTests` + in-memory `FakeSftpService` (13 tests, incl. cancel-with-partial-cleanup determinism via `await Task.Yield()` before the sync wait — the naive version deadlocked the test thread). **#22** progress: `// why` comments on every touched site.
 - **`App.axaml.cs` 497 → 724 lines**; bare `catch { }` at 107/110 **fixed** (now logged).
 - **`BrowseViewModel` 580 → 899 lines** — past the god-class threshold.
 - **`async void` 11 → 22** instances across 11 files.
 - **`await` count ~82–100 → ~404**; still **0** `.ConfigureAwait(false)`.
 - **Bare `catch { }`**: 26 sites found; most intentional, several regressions flagged in #6.
 - **Resolved since last revision:** #14 (CatalogApiService DI), #15 (CTS dispose), #16 (WINDOWS_BUILD guard) — all were marked open in the June verification but are confirmed fixed in v1.2.0.
-- **Testing (Aug 2026):** 144 tests green. 17 god-class helpers characterized (#1 ×10, #2 ×7). Two real bugs found+fixed: `UpdateChildrenPathsRecursive` duplicated path segments on nested rename (grandchild got `\sub\sub\`); `SizeFormat`/`FormatBps` were culture-dependent (pt-BR comma vs CI dot).
 - **New services** added since June docs (untracked): `XrayAgentService`, `GitHubReleaseCheckerService`, `UpdateVersionCache`, `PackageOverrideService`, `PreFlightChecker`, `WindowSettingsService`.
 
 ---

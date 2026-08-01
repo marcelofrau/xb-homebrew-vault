@@ -598,7 +598,11 @@ public partial class FileExplorerView : UserControl
                     System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url)
                     { UseShellExecute = true });
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    // Shell launch refused (no default handler for winscp://) — silent, dialog already closed
+                    Logger.Trace($"FileExplorerView: WinSCP launch failed — {ex.Message}");
+                }
             }
             win.Close();
         };

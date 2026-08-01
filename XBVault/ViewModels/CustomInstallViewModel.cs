@@ -52,6 +52,8 @@ public record SelectableDep
 public partial class CustomInstallViewModel : ObservableObject
 {
     private const int MinProgressMs = 1000;
+    // Give the console a beat after uninstall/conflict before resuming install
+    private const int UninstallRetryDelayMs = 1500;
 
     private readonly IXboxPackageService _packageService;
     private readonly PackageInstallService _installService;
@@ -547,7 +549,7 @@ public partial class CustomInstallViewModel : ObservableObject
                         {
                             Logger.Warn("InstallAsync: uninstall returned false, continuing anyway");
                             InstallStatus = "Warning: uninstall failed, continuing anyway...";
-                            await Task.Delay(1500);
+                            await Task.Delay(UninstallRetryDelayMs);
                         }
                         else
                         {
@@ -563,7 +565,7 @@ public partial class CustomInstallViewModel : ObservableObject
                 {
                     Logger.Error(ex, "Clean install: failed to check/uninstall existing package");
                     InstallStatus = "Warning: could not check for existing version...";
-                    await Task.Delay(1500);
+                    await Task.Delay(UninstallRetryDelayMs);
                 }
             }
         }

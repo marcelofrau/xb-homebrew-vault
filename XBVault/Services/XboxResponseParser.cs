@@ -57,7 +57,11 @@ public static class XboxResponseParser
             if (root.TryGetProperty("Code", out var el) && el.GetInt32() == unchecked((int)0x800B0100))
                 return true;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            // Malformed JSON means "not a signature error" — but log it so bad responses surface
+            Logger.Trace($"IsSignatureError: malformed JSON — {ex.Message}");
+        }
         return false;
     }
 
@@ -73,7 +77,10 @@ public static class XboxResponseParser
             busyApps = root.TryGetProperty("Reason", out var r) ? r.GetString() ?? "" : "";
             return true;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Logger.Trace($"IsResourceInUseError: malformed JSON — {ex.Message}");
+        }
         return false;
     }
 
@@ -89,7 +96,10 @@ public static class XboxResponseParser
             message = root.TryGetProperty("Reason", out var r) ? r.GetString() ?? "" : "";
             return true;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Logger.Trace($"IsHigherVersionError: malformed JSON — {ex.Message}");
+        }
         return false;
     }
 
@@ -106,7 +116,10 @@ public static class XboxResponseParser
             error = $"Code={code} {reason}";
             return true;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Logger.Trace($"IsFatalDeploymentError: malformed JSON — {ex.Message}");
+        }
         return false;
     }
 

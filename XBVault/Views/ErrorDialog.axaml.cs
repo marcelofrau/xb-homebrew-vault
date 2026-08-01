@@ -142,7 +142,11 @@ public partial class ErrorDialog : Window
                 await cb.SetDataAsync(transfer);
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            // Clipboard write refused (platform policy) — copy is best-effort, never crash the error dialog
+            Logger.Trace($"ErrorDialog: clipboard write failed — {ex.Message}");
+        }
     }
 
     private void OnRestartClick(object? sender, RoutedEventArgs e)
@@ -154,7 +158,11 @@ public partial class ErrorDialog : Window
             if (exe is not null)
                 Process.Start(exe);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            // Process.Start can fail (blocked exe, sandbox) — log and fall through to the hard exit
+            Logger.Trace($"ErrorDialog: restart launch failed — {ex.Message}");
+        }
 
         Environment.Exit(1);
     }
