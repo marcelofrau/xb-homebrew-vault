@@ -27,9 +27,9 @@ public sealed class PackageOverrideService : IDisposable
     private Dictionary<string, string> _imageByName = new(StringComparer.OrdinalIgnoreCase);
     private bool _initialized;
 
-    public PackageOverrideService()
+    public PackageOverrideService(HttpClient? http = null)
     {
-        _http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        _http = http ?? new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
         _http.DefaultRequestHeaders.Add("User-Agent", "XB Homebrew Vault");
     }
 
@@ -60,7 +60,7 @@ public sealed class PackageOverrideService : IDisposable
         ParseAndMerge(json);
     }
 
-    private async Task FetchRemoteAsync()
+    internal async Task FetchRemoteAsync()
     {
         try
         {
@@ -97,9 +97,18 @@ public sealed class PackageOverrideService : IDisposable
         }
     }
 
-    private void ParseAndMerge(string json)
+    internal void ParseAndMerge(string json)
     {
-        var data = JsonSerializer.Deserialize<PackageOverrideData>(json, JsonOptions);
+        PackageOverrideData? data;
+        try
+        {
+            data = JsonSerializer.Deserialize<PackageOverrideData>(json, JsonOptions);
+        }
+        catch (JsonException)
+        {
+            Logger.Debug("PackageOverrideService: invalid overrides JSON, ignoring");
+            return;
+        }
         if (data is null) return;
 
         if (data.PackageFamilyNameOverrides is not null)

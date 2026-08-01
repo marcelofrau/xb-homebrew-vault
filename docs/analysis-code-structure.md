@@ -8,6 +8,8 @@ title: Code Structure Analysis (Internal)
 
 > **Note:** This is an internal analysis document for comprehensive documentation. Not published on the site.
 
+> **⚠️ Superseded (June 2026 → Aug 2026):** Metrics below reflect the codebase as of the Phase 1 analysis. **Current v1.2.0 measurements differ substantially** — `XboxDeviceService` is now **1,433 lines / ~41 public members / complexity 205**, `async void` grew to **22**, awaits to **~404**, and `FileExplorerViewModel` (1,880 lines / complexity 254) is a second god class. See the current [Tech Debt](tech-debt) and [Tech Debt Verification v3.0](analysis-tech-debt-verification).
+
 ---
 
 ## Executive Summary

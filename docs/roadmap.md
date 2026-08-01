@@ -7,9 +7,11 @@ title: Roadmap
 
 ## Current Status
 
-**Latest release: v1.1.0** · [Download](https://github.com/marcelofrau/xb-homebrew-vault/releases/latest)
+**Latest release: v1.2.0** · [Download](https://github.com/marcelofrau/xb-homebrew-vault/releases/latest)
 
-The app is feature-complete for daily Xbox Dev Mode homebrew management. Core flows — first-run setup, browse, install, uninstall, dev tools, USB permissions, Inspector — are all shipping and stable. **v1.0.0** marked the stabilization milestone with catalog overlay, multi-strategy package matching, and download flyout. **v1.0.1** added pre-flight checks, CLI parameters, and package manager fixes. **v1.1.0** shipped XRay/Inspector integration (TCP agent discovery, Lua REPL, live log streaming), keyboard shortcuts, performance tuning (Skia GPU cache, dirty-rect clipping), and comprehensive custom install wizard fixes (file lock, WaitForPackageManagerReady infinite loop, input validation).
+The app is feature-complete for daily Xbox Dev Mode homebrew management. Core flows — first-run setup, browse, install, uninstall, dev tools, USB permissions, Inspector — are all shipping and stable. **v1.0.0** marked the stabilization milestone with catalog overlay, multi-strategy package matching, and download flyout. **v1.0.1** added pre-flight checks, CLI parameters, and package manager fixes. **v1.1.0** shipped XRay/Inspector integration (TCP agent discovery, Lua REPL, live log streaming), keyboard shortcuts, performance tuning (Skia GPU cache, dirty-rect clipping), and comprehensive custom install wizard fixes. **v1.1.1** added custom install UX polish, single-instance mutex, and shortcut/view tweaks. **v1.2.0** shipped the auto-update checker (GitHub release comparison, NEW/UPDATE catalog badges, outdated-cache detection, update-flow fixes) plus a `linux-arm64` build-matrix entry.
+
+**Next: hardening + test coverage.** The roadmap past v1.2 is dedicated to tech-debt reduction and adding unit tests — see [Tech Debt](tech-debt) and [Testing Infrastructure](ideas/testing-infrastructure).
 
 ---
 
@@ -35,6 +37,8 @@ timeline
     v1.0.0 : Installed card overhaul, catalog overlay, multi-strategy matching, download flyout
     v1.0.1 : Pre-flight checks, CLI params, helper scripts, package manager fix
     v1.1.0 : XRay Inspector (TCP agent, Lua REPL, log streaming), keyboard shortcuts, performance tuning, custom install fixes
+    v1.1.1 : Custom install UX, single-instance mutex, shortcut/view tweaks
+    v1.2.0 : Auto-update checker, NEW/UPDATE badges, outdated cache, update-flow fixes, linux-arm64 RID
 ```
 
 ## What's Shipped
@@ -59,6 +63,8 @@ timeline
 | v1.0 stabilization | v1.0.0 | Installed card overhaul, catalog overlay, multi-strategy matching, download flyout, disabled icon set, file drop dialog |
 | Pre-flight & CLI | v1.0.1 | Pre-flight checks, CLI parameters, helper scripts, package manager state fix |
 | XRay Inspector | v1.1.0 | TCP agent discovery (ports 9000–9009), Lua REPL with AvaloniaEdit, live log streaming, keyboard shortcuts, performance tuning, custom install fixes |
+| Custom install UX | v1.1.1 | Custom install polish, single-instance mutex, shortcut/view tweaks |
+| Auto-update | v1.2.0 | GitHub release auto-update checker, NEW/UPDATE catalog badges, outdated-cache detection, update-flow fixes, linux-arm64 RID |
 
 ### Feature Delivery Timeline
 
@@ -184,49 +190,36 @@ gantt
 
 ```mermaid
 gantt
-    title Road to v1.2
+    title Road to v1.3 — Hardening
     dateFormat  YYYY-MM-DD
-    section v1.1.x → v1.2.0 — Stabilization
-    Split XboxDeviceService     : 2026-07, 14d
-    async void fix              : 2026-07, 2d
-    Remaining tech debt sweep   : 2026-08, 14d
-    section Beyond v1.2
-    Community catalog           : 2026-09, 21d
-    Enhanced version checker    : 2026-09, 5d
-    Storage analyzer            : 2026-10, 10d
+    section Test infrastructure
+    xUnit test project + CI step     : 2026-08, 5d
+    Service layer tests (cache, crypto, catalog, override, install classify) : 2026-08, 10d
+    section Tech debt sweep
+    Split FileExplorerViewModel     : 2026-08, 14d
+    Split XboxDeviceService         : 2026-08, 14d
+    async void fix                  : 2026-08, 3d
+    ConfigureAwait(false) sweep     : 2026-08, 2d
+    IDisposable on XboxDeviceService : 2026-08, 1d
+    section Beyond v1.3
+    Community catalog               : 2026-09, 21d
+    Enhanced version checker        : 2026-09, 5d
+    Storage analyzer                : 2026-10, 10d
 ```
 
-### v1.1.x → v1.2.0 — Stabilization
+### v1.2.x → v1.3.0 — Hardening & Test Coverage
 
-The remaining road to **v1.2.0** is dedicated to **bugfixing, refactoring, and tech debt reduction** — no major new features, just hardening.
+The road to **v1.3.0** is dedicated to **tech debt reduction and automated test coverage** — no major new features, just hardening so the god classes can be split safely.
 
 | Item | Status | Description |
 |------|--------|-------------|
-| **Split XboxDeviceService** | 🔴 Remaining | Break the 1200-line god class into `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService` |
-| **Remove `async void`** | 🟡 Remaining | Fix fire-and-forget event handlers that can crash the process on unhandled exceptions |
-| **Remaining tech debt** | 🟡 5 items | TD #3 (composition root), #7 (IDisposable), #8 (Border corner clip), #13 (CTS dispose), #16 (BrowseViewModel size) |
-| TitleGradient resource | ✅ v0.9.1 | Extracted duplicated gradient into shared resource |
-| WindowClose button | ✅ v0.9.1 | Unified across all windows |
-| Magic delays → constants | ✅ v0.9.1 | Named constants for all magic delay values |
-| SFTP performance | ✅ v0.9.1 | 32 KB loop → native UploadFile/DownloadFile, 60+ MB/s |
-| CatalogApiService DI | ✅ v0.9.2 | Constructor injection instead of self-instantiation |
-| WINDOWS_BUILD guard | ✅ v0.9.2 | Conditional compilation for System.Management |
-| Silent catches → log | ✅ v0.9.2 | All `catch { }` now log diagnostics |
-| Deleted _Backup | ✅ v0.9.1 | Removed stale backup directory |
-| TreeView chevron offset | ✅ v0.9.4 | Fixed drive vs folder chevron alignment, eliminated expansion shake |
-| Duplicate handler cleanup | ✅ v0.9.4 | Consolidated tunnel/bubble double-click handlers in File Explorer |
-| NavigateToPath dispatcher | ✅ v0.9.4 | Removed unnecessary Dispatcher.UIThread.Post bottleneck |
-| VirusTotal CI integration | ✅ v0.9.4 | Automatic artifact scanning on release |
-| Installed card overhaul | ✅ v1.0.0 | Redesigned package cards with status indicators |
-| Catalog overlay | ✅ v1.0.0 | Detailed overlay view for catalog items |
-| Multi-strategy matching | ✅ v1.0.0 | Improved installed-to-catalog package matching |
-| Download flyout | ✅ v1.0.0 | Progress flyout during package download |
-| Pre-flight checks | ✅ v1.0.1 | Validates Xbox connection before operations |
-| CLI parameters | ✅ v1.0.1 | Command-line flags for headless usage |
-| XRay Inspector | ✅ v1.1.0 | TCP agent discovery, Lua REPL, live log streaming |
-| Keyboard shortcuts | ✅ v1.1.0 | Escape, Ctrl+Enter for common workflows |
-| Performance tuning | ✅ v1.1.0 | Skia GPU cache, dirty-rect clipping |
-| Custom install fixes | ✅ v1.1.0 | File lock, WaitForPackageManagerReady, input validation |
+| **Test infrastructure** | 🔴 Planned | xUnit test project under `tests/`, wired into CI. Proposal in [Testing Infrastructure](ideas/testing-infrastructure) |
+| **Split FileExplorerViewModel** | 🔴 Planned | 1,880-line / 254-complexity god class — largest file in the repo. Extract `SftpUploadService` + path parser |
+| **Split XboxDeviceService** | 🔴 Planned | 1,433-line god class (was 1,207 in June). Split into `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService` |
+| **Remove `async void`** | 🟡 Planned | 22 fire-and-forget handlers (was 11) that can crash the process on unhandled exceptions |
+| **ConfigureAwait(false) sweep** | 🟡 Planned | ~404 awaits in services, 0 use `ConfigureAwait(false)` |
+| **IDisposable on XboxDeviceService** | 🟡 Planned | Last service without disposal (SftpService, XrayAgentService, PerformanceViewModel already dispose) |
+| **Remaining tech debt** | 🟡 12 items | Full list in [Tech Debt](tech-debt) |
 
 ### v1.0.0 — First Stable Release ✅
 

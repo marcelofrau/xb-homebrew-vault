@@ -74,4 +74,30 @@ public static class SettingsService
         File.WriteAllText(SettingsPath, json);
         Logger.Info($"Settings saved to {SettingsPath} ({json.Length} bytes)");
     }
+
+    internal static void SaveTo(string path, AppSettings settings)
+    {
+        var dir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
+
+        var json = JsonSerializer.Serialize(settings, _jsonOptions);
+        File.WriteAllText(path, json);
+    }
+
+    internal static AppSettings LoadFrom(string path)
+    {
+        try
+        {
+            if (!File.Exists(path))
+                return new AppSettings();
+
+            var json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+        }
+        catch
+        {
+            return new AppSettings();
+        }
+    }
 }

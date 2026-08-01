@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
@@ -126,13 +127,13 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         return FormatBps(fraction * _transferBytesTotal / elapsed);
     }
 
-    private static string FormatBps(double bps)
+    internal static string FormatBps(double bps)
     {
         if (bps >= 1024 * 1024)
-            return $" {(bps / (1024 * 1024)):F1} MB/s";
+            return $" {(bps / (1024 * 1024)).ToString("F1", CultureInfo.InvariantCulture)} MB/s";
         if (bps >= 1024)
-            return $" {(bps / 1024):F1} KB/s";
-        return $" {bps:F0} B/s";
+            return $" {(bps / 1024).ToString("F1", CultureInfo.InvariantCulture)} KB/s";
+        return $" {bps.ToString("F0", CultureInfo.InvariantCulture)} B/s";
     }
 
     public bool CanCancelTransfer => IsUploading || IsDownloading || IsDeleting;
@@ -374,7 +375,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             StatusText = "Ready to browse";
     }
 
-    private static void InsertSorted(ObservableCollection<SftpEntry> list, SftpEntry entry)
+    internal static void InsertSorted(ObservableCollection<SftpEntry> list, SftpEntry entry)
     {
         var i = 0;
         for (; i < list.Count; i++)
@@ -389,20 +390,20 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         UpdateLastChildFlag(list);
     }
 
-    private static void UpdateLastChildFlag(ObservableCollection<SftpEntry> entries)
+    internal static void UpdateLastChildFlag(ObservableCollection<SftpEntry> entries)
     {
         for (int i = 0; i < entries.Count; i++)
             entries[i].IsLastChild = i >= entries.Count - 1;
     }
 
-    private static void UpdateChildrenPathsRecursive(SftpEntry entry, string oldPath)
+    internal static void UpdateChildrenPathsRecursive(SftpEntry entry, string oldPath, string newPath)
     {
         foreach (var child in entry.Children)
         {
             if (child.IsPlaceholder) continue;
-            child.FullPath = child.FullPath.Replace(oldPath, entry.FullPath);
+            child.FullPath = child.FullPath.Replace(oldPath, newPath);
             if (child.IsDirectory)
-                UpdateChildrenPathsRecursive(child, oldPath);
+                UpdateChildrenPathsRecursive(child, oldPath, newPath);
         }
     }
 
@@ -695,7 +696,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         }
     }
 
-    private static List<string> CollectExpandedPaths(ObservableCollection<SftpEntry> entries)
+    internal static List<string> CollectExpandedPaths(ObservableCollection<SftpEntry> entries)
     {
         var paths = new List<string>();
         foreach (var e in entries)
@@ -708,7 +709,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         return paths;
     }
 
-    private static void ClearTreeCache(ObservableCollection<SftpEntry> entries)
+    internal static void ClearTreeCache(ObservableCollection<SftpEntry> entries)
     {
         foreach (var e in entries)
         {
@@ -1722,7 +1723,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             entry.FullPath = newPath;
 
             if (entry.IsDirectory)
-                UpdateChildrenPathsRecursive(entry, oldPath);
+                UpdateChildrenPathsRecursive(entry, oldPath, newPath);
 
             var parentNode = FindParent(TreeRoots, entry);
             if (parentNode is not null)
@@ -1837,7 +1838,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         return null;
     }
 
-    private static SftpEntry? FindEntry(ObservableCollection<SftpEntry> entries, string path)
+    internal static SftpEntry? FindEntry(ObservableCollection<SftpEntry> entries, string path)
     {
         foreach (var e in entries)
         {
@@ -1853,7 +1854,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         return null;
     }
 
-    private static string? GetParentPath(string path)
+    internal static string? GetParentPath(string path)
     {
         var trimmed = path.TrimEnd('\\');
         var idx = trimmed.LastIndexOf('\\');
@@ -1861,7 +1862,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         return trimmed[..idx] + "\\";
     }
 
-    private static SftpEntry? FindParent(ObservableCollection<SftpEntry> entries, SftpEntry target)
+    internal static SftpEntry? FindParent(ObservableCollection<SftpEntry> entries, SftpEntry target)
     {
         foreach (var e in entries)
         {

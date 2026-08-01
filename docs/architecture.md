@@ -58,7 +58,10 @@ graph TD
         CS[CryptoService]
         CSvc[CacheService]
         UDD[UsbDriveDetector]
-        AH[AdminHelper]
+        Sftp[SftpService]
+        XRay[XrayAgentService]
+        UpdChk[GitHubReleaseCheckerService]
+        PO[PackageOverrideService]
         L[Logger]
     end
 
@@ -123,7 +126,10 @@ graph TD
     style CS fill:#2A2D33,stroke:#9ACA3C,color:#fff
     style CSvc fill:#2A2D33,stroke:#9ACA3C,color:#fff
     style UDD fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style AH fill:#2A2D33,stroke:#9ACA3C,color:#fff
+    style Sftp fill:#2A2D33,stroke:#9ACA3C,color:#fff
+    style XRay fill:#2A2D33,stroke:#9ACA3C,color:#fff
+    style UpdChk fill:#2A2D33,stroke:#9ACA3C,color:#fff
+    style PO fill:#2A2D33,stroke:#9ACA3C,color:#fff
     style L fill:#2A2D33,stroke:#9ACA3C,color:#fff
     style CI fill:#2A2D33,stroke:#9ACA3C,color:#000
     style IP fill:#2A2D33,stroke:#9ACA3C,color:#000
@@ -172,48 +178,59 @@ flowchart LR
 sequenceDiagram
     autonumber
     participant User
+    participant Main as Program.Main
+    participant PF as PreFlightChecker
     participant App as App.axaml.cs
     participant Splash as SplashWindow
     participant SSvc as SettingsService
     participant Setup as SetupWizardWindow
-    participant Main as MainWindow
+    participant MainW as MainWindow
 
-    User->>App: Launch
+    User->>Main: Launch
+    Main->>Main: Single-instance mutex check
+    alt Another instance running
+        Main->>Main: Activate existing window, exit
+    end
+    Main->>PF: Pre-flight: validate/corrupt-repair settings + cache
+    Main->>App: BuildAvaloniaApp()
     App->>Splash: Show()
-    Splash->>App: 2s delay
+    Splash->>App: 2s min delay
     App->>SSvc: Load settings
     alt First run (no settings)
         App->>Setup: ShowDialog() — 3-step wizard
         Setup->>App: credentials captured
     end
-    App->>Main: new MainWindow
+    App->>MainW: new MainWindow
     App->>Splash: Close()
-    App->>Main: Show()
-    Main->>Main: Register dialog actions
-    User->>Main: Interact
+    App->>MainW: Show()
+    MainW->>MainW: Register dialog actions
+    User->>MainW: Interact
 ```
 
 ## Services
 
 | Service | Responsibility |
 |---------|---------------|
-| `XboxDeviceService` | All Xbox Device Portal API calls (REST + WebSocket). God class — split planned. **1,207 lines, 35 methods** across 8 domains (see detailed breakdown below). |
+| `XboxDeviceService` | All Xbox Device Portal API calls (REST + WebSocket). God class — split planned. **1,433 lines, ~41 public members, complexity 205** across 8 domains (see detailed breakdown below). |
 | `CatalogApiService` | Fetches and parses the Emulation Revival `catalog.json` API. Replaced the former HTML scraper. |
 | `PackageInstallService` | Package analysis, dependency resolution, install pipeline |
+| `PackageOverrideService` | Catalog ID lookup by PFN/name, embedded + remote override merging |
+| `SftpService` | SSH.NET SFTP operations for the File Explorer; wraps sync SSH.NET in `Task.Run`; implements `IDisposable` |
+| `XrayAgentService` | XRay TCP agent discovery + log streaming for the Inspector; implements `IDisposable` |
+| `GitHubReleaseCheckerService` | Auto-update checker — compares installed version against latest GitHub release |
 | `SettingsService` | Persists `AppSettings` to `%APPDATA%/XBVault/settings.json` |
 | `CryptoService` | XOR + Base64 credential obfuscation |
 | `CacheService` | In-memory catalog cache with expiry |
-| `UsbDriveDetector` | Lists USB drives via WMI (`System.Management`) — Windows-only |
-| `AdminHelper` | Elevation helpers for operations requiring admin rights |
+| `UsbDriveDetector` | Lists USB drives via WMI (`System.Management`) — Windows-only (`#if WINDOWS_BUILD`) |
 | `Logger` | File + console logging (`AttachConsole` via `DllImport` — Windows-only) |
 
-> **Verified from Phase 1 code analysis.** Metrics and rationale below reflect the actual source.
+> **Verified from v1.2.0 code analysis (Aug 2026).** Metrics and rationale below reflect the actual source.
 
 ### Service Responsibilities (Detailed)
 
 #### XboxDeviceService — domains
 
-The god class spans **8 unrelated domains** (1,207 lines, 35 public methods):
+The god class spans **8 unrelated domains** (1,433 lines, ~41 public members):
 
 | Domain | Methods | Examples |
 |--------|--------:|----------|
@@ -250,11 +267,13 @@ XboxPerformanceService → WebSocket connection
 | `CatalogApiService` | Fetches `catalog.json`, 6-hour TTL, persistent disk cache, stale-fallback on API failure. See [Data Sources](data-sources). |
 | `PackageInstallService` | Multi-phase pipeline: download → analyze → upload → install → poll. Regex-based dependency/junk classification. See [Package Installation Flow](integration-package-installation-flow). |
 | `SftpService` | Implements `IDisposable`. Wraps synchronous SSH.NET in `Task.Run` to keep the UI responsive; operation timeout + keep-alive. Powers the File Explorer. See [SSH/SFTP & Path Handling](integration-ssh-sftp-challenges). |
+| `XrayAgentService` | XRay TCP agent discovery + log streaming; implements `IDisposable`. See [Inspector](inspector). |
+| `GitHubReleaseCheckerService` | Auto-update checker; implements `IDisposable`. Compares `BuildInfo.DisplayVersion` against latest GitHub release. |
+| `PackageOverrideService` | Catalog-ID overrides: looks up a package by PFN or name, merges embedded + remote override JSON; implements `IDisposable`. |
 | `SettingsService` | Persists to `%APPDATA%\XBVault\settings.json`; credentials obfuscated (XOR + Base64), not encrypted. |
 | `CryptoService` | XOR each byte with a key, then Base64 — obfuscation only, not security. |
 | `CacheService` | In-memory TTL cache for catalog items; used by browse/refresh flows. |
-| `UsbDriveDetector` | WMI enumeration + `icacls` permissioning; Windows-only. See [USB Device Discovery](integration-usb-device-discovery). |
-| `AdminHelper` | UAC elevation helpers for admin-only operations. |
+| `UsbDriveDetector` | WMI enumeration + `icacls` permissioning; Windows-only (`#if WINDOWS_BUILD`). See [USB Device Discovery](integration-usb-device-discovery). |
 | `Logger` | File + console logging; `AttachConsole` via `DllImport("kernel32.dll")` — Windows-specific. |
 
 ## ViewModel → Service Dependency Map
@@ -265,7 +284,12 @@ graph LR
     MVM --> SSvc
     BVM[BrowseViewModel] --> CAS
     BVM --> CSvc
+    BVM --> XS
+    BVM --> PS
+    BVM --> PO
     IVM[InstalledViewModel] --> XS
+    FVM[FileExplorerViewModel] --> XS
+    FVM --> Sftp
     SVM[SettingsViewModel] --> SSvc
     SVM --> CS
     TVM[ToolsViewModel] --> XS
@@ -279,6 +303,10 @@ graph LR
     RVM --> CSvc
     CIWM[CustomInstallViewModel] --> XS
     CIWM --> PS
+    InVM[InspectorViewModel] --> XS
+    InVM --> XRay
+    ShVM[ScreenshotViewModel] --> XS
+    LVM[LogsViewModel]
     ConfVM[ConfirmViewModel] --> XS
     USBVM[UsbPermissionViewModel] --> UDD
     SWVM[SetupWizardViewModel] --> SSvc
@@ -291,10 +319,15 @@ graph LR
     CSvc[CacheService]
     UDD[UsbDriveDetector]
     PS[PackageInstallService]
+    Sftp[SftpService]
+    XRay[XrayAgentService]
+    PO[PackageOverrideService]
+    L[Logger]
     
     style MVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style BVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style IVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style FVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style SVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style TVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style CVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
@@ -305,6 +338,9 @@ graph LR
     style PerfVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style RVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style CIWM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style InVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style ShVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style LVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style ConfVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style USBVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style SWVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
@@ -315,15 +351,22 @@ graph LR
     style CSvc fill:#447F3E,stroke:#9ACA3C,color:#fff
     style UDD fill:#447F3E,stroke:#9ACA3C,color:#fff
     style PS fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style Sftp fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style XRay fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style PO fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style L fill:#447F3E,stroke:#9ACA3C,color:#fff
 ```
 
 | ViewModel | Window/View | Key services |
 |-----------|-------------|-------------|
-| `BrowseViewModel` | BrowseView | CatalogApiService, CacheService |
+| `BrowseViewModel` | BrowseView | CatalogApiService, CacheService, XboxDeviceService, PackageInstallService, PackageOverrideService |
 | `InstalledViewModel` | InstalledView | XboxDeviceService |
+| `FileExplorerViewModel` | FileExplorerView | XboxDeviceService, SftpService |
 | `ToolsViewModel` | ToolsView | XboxDeviceService |
 | `CustomInstallViewModel` | CustomInstallWindow | XboxDeviceService, PackageInstallService |
+| `InspectorViewModel` | InspectorView | XboxDeviceService, XrayAgentService |
 | `PerformanceViewModel` | PerformanceWindow | XboxDeviceService (WebSocket) |
+| `ScreenshotViewModel` | ScreenshotWindow | XboxDeviceService |
 | `SettingsViewModel` | SettingsView | SettingsService, CryptoService |
 | `UsbPermissionViewModel` | UsbPermissionWindow | UsbDriveDetector |
 | `SetupWizardViewModel` | SetupWizardWindow | SettingsService, CryptoService |
@@ -394,6 +437,9 @@ flowchart TD
         SS[ScreenshotWindow]
         ID[ItemDetailWindow]
         UsbW[UsbPermissionWindow]
+        SftpW[SftpInfoWindow]
+        InD[InputDialog]
+        DiscD[DiscordPopup]
     end
     
     style MW fill:#447F3E,stroke:#9ACA3C,color:#fff
@@ -420,6 +466,9 @@ flowchart TD
     style SS fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style ID fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style UsbW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style SftpW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style InD fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style DiscD fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
 ```
 
 Dialogs are opened via registered delegate actions in `App.axaml.cs`.

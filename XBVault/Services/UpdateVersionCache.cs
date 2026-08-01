@@ -19,10 +19,12 @@ public class UpdateVersionCache
     private static readonly string CacheFilePath = Path.Combine(CacheRoot, "update-versions.json");
     private static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = false };
 
+    private readonly string _cacheFilePath;
     private Dictionary<string, CachedUpdate> _cache = [];
 
-    public UpdateVersionCache()
+    public UpdateVersionCache(string? cacheFilePath = null)
     {
+        _cacheFilePath = cacheFilePath ?? CacheFilePath;
         Load();
     }
 
@@ -30,12 +32,12 @@ public class UpdateVersionCache
     {
         try
         {
-            if (!File.Exists(CacheFilePath))
+            if (!File.Exists(_cacheFilePath))
             {
                 _cache = [];
                 return;
             }
-            var json = File.ReadAllText(CacheFilePath);
+            var json = File.ReadAllText(_cacheFilePath);
             _cache = JsonSerializer.Deserialize<Dictionary<string, CachedUpdate>>(json) ?? [];
         }
         catch
@@ -48,12 +50,12 @@ public class UpdateVersionCache
     {
         try
         {
-            var dir = Path.GetDirectoryName(CacheFilePath);
+            var dir = Path.GetDirectoryName(_cacheFilePath);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
 
             var json = JsonSerializer.Serialize(_cache, JsonOpts);
-            File.WriteAllText(CacheFilePath, json);
+            File.WriteAllText(_cacheFilePath, json);
         }
         catch
         {

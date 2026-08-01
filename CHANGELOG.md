@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] — 2026-07-28
+
+### Added
+
+- **Auto-update checker** — compares installed version against latest GitHub release, surfaces update availability
+- **NEW / UPDATE catalog badges** — catalog items marked as new or as updates to installed packages
+- **Outdated-cache detection** — flags and refreshes stale catalog caches
+- **linux-arm64 build-matrix entry** — new release RID (`linux-arm64`)
+
+### Fixed
+
+- **Update flow fixes** — corrected version comparison and update-request handling
+- **Cancel connection dialog no longer shows error popup** (#4) — cancelling the connection flow now exits cleanly
+
+---
+
+## [1.1.1] — 2026-07-19
+
+### Added
+
+- **Custom install UX polish** — improved custom install wizard interaction and shortcuts
+- **Single-instance mutex** — launching a second XBVault instance activates the existing window instead of starting a duplicate
+
+### Fixed
+
+- **x64 target-arch package filter** — package filter uses x64 as the target architecture (fixes #2)
+- **"Higher version" install errors** — skip install attempts when the installed version is already newer; added issue templates
+
+### Changed
+
+- **CI release verification** — robust filename extraction (`unzip -Z1`), trailing-space trim in verify step
+
+---
+
 ## [1.1.0] — 2026-07-12
 
 ### Added

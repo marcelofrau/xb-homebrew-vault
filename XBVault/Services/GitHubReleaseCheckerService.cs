@@ -7,8 +7,17 @@ namespace XBVault.Services;
 public sealed class GitHubReleaseCheckerService : IDisposable
 {
     private const string ApiUrl = "https://api.github.com/repos/marcelofrau/xb-homebrew-vault/releases/latest";
-    private static readonly HttpClient _http = new();
+    private static readonly HttpClient _defaultHttp = new();
     private static readonly Version ZeroVersion = new(0, 0, 0);
+
+    private readonly HttpClient _http;
+    private readonly bool _ownsHttp;
+
+    public GitHubReleaseCheckerService(HttpClient? http = null)
+    {
+        _http = http ?? _defaultHttp;
+        _ownsHttp = http is null;
+    }
 
     public sealed class GitHubRelease
     {
@@ -56,5 +65,8 @@ public sealed class GitHubReleaseCheckerService : IDisposable
         return Version.TryParse(version, out var v) ? v : null;
     }
 
-    public void Dispose() => _http.Dispose();
+    public void Dispose()
+    {
+        if (_ownsHttp) _http.Dispose();
+    }
 }

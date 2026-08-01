@@ -39,4 +39,8 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets/**" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="XBVault.Tests" />
+  </ItemGroup>
 </Project>

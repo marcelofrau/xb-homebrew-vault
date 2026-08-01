@@ -49,7 +49,7 @@ Deep-dives into the trickier integration challenges — how the app actually tal
 
 | Document | Description |
 |----------|-------------|
-| [Tech Debt](tech-debt) | Known issues ordered by severity — 16 open items with file:line references and fix recommendations |
+| [Tech Debt](tech-debt) | Known issues ordered by severity — 12 open items with file:line references and fix recommendations |
 | [Branching & Versioning](branching-and-versioning) | Git branch strategy, SemVer rules, commit message conventions, release workflow |
 | [Assets Guide](assets-guide) | Icon naming conventions, size selection, directory structure, format rules |
 | [Cross-Platform Porting](cross-platform-porting) | Plan to support Linux and macOS builds — blockers, steps, CI matrix |

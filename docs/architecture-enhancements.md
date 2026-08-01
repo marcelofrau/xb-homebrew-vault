@@ -1,9 +1,9 @@
 ## Services — Detailed Breakdown
 
-> **Updated from Phase 1 code analysis:** Verified and expanded with decision rationale and integration patterns.
+> **⚠️ Metrics superseded (Aug 2026):** `XboxDeviceService` is now **1,433 lines / ~41 public members / complexity 205** in v1.2.0 (was 1,207/35). Domain breakdown below remains valid qualitatively. See current [Tech Debt](tech-debt).
 
 ### XboxDeviceService (God Class)
-**Metrics:** 1,207 lines, 35 public methods  
+**Metrics:** 1,433 lines, ~41 public members (v1.2.0) · 1,207 lines, 35 methods (Phase 1)
 **Status:** ⚠️ **Split planned** — consolidating 8 unrelated domains
 
 **Responsibilities (by domain):**

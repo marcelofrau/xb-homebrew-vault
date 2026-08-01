@@ -8,13 +8,20 @@ namespace XBVault.Services;
 
 public class CacheService
 {
-    private static readonly string CacheRoot = Path.Combine(
+    private static readonly string DefaultCacheRoot = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "XBVault", "cache");
 
+    private readonly string _cacheRoot;
+
+    public CacheService(string? cacheRoot = null)
+    {
+        _cacheRoot = cacheRoot ?? DefaultCacheRoot;
+    }
+
     public string GetAppCacheDir(string appId)
     {
-        var dir = Path.Combine(CacheRoot, appId);
+        var dir = Path.Combine(_cacheRoot, appId);
         if (!Directory.Exists(dir))
         {
             Directory.CreateDirectory(dir);
@@ -38,13 +45,13 @@ public class CacheService
 
     public long GetCacheSizeBytes()
     {
-        if (!Directory.Exists(CacheRoot))
+        if (!Directory.Exists(_cacheRoot))
         {
             Logger.Trace("Cache root does not exist, size=0");
             return 0;
         }
 
-        var size = Directory.GetFiles(CacheRoot, "*", SearchOption.AllDirectories)
+        var size = Directory.GetFiles(_cacheRoot, "*", SearchOption.AllDirectories)
             .Sum(f => new FileInfo(f).Length);
         Logger.Debug($"Cache total size: {size} bytes");
         return size;
@@ -52,14 +59,14 @@ public class CacheService
 
     public void ClearCache()
     {
-        if (!Directory.Exists(CacheRoot))
+        if (!Directory.Exists(_cacheRoot))
         {
             Logger.Debug("Cache root does not exist, nothing to clear");
             return;
         }
         var before = GetCacheSizeBytes();
-        Directory.Delete(CacheRoot, true);
-        Directory.CreateDirectory(CacheRoot);
+        Directory.Delete(_cacheRoot, true);
+        Directory.CreateDirectory(_cacheRoot);
         Logger.Info($"Cache cleared (was {before} bytes)");
     }
 
@@ -79,7 +86,7 @@ public class CacheService
 
     public string GetThumbnailCacheDir()
     {
-        var dir = Path.Combine(CacheRoot, "thumbnails");
+        var dir = Path.Combine(_cacheRoot, "thumbnails");
         if (!Directory.Exists(dir))
             Directory.CreateDirectory(dir);
         return dir;
