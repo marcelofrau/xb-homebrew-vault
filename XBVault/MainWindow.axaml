@@ -446,7 +446,7 @@
                   FontWeight="SemiBold"
                   Command="{Binding ConnectCommand}"
                   IsVisible="{Binding CanConnect}">
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-connect-32.png"
                      Width="32" Height="32"
                      Stretch="Uniform"
@@ -454,12 +454,6 @@
               <TextBlock Grid.Column="1"
                            Text="CONNECT"
                            VerticalAlignment="Center"/>
-              <TextBlock Grid.Column="2"
-                         Text="F5"
-                         FontSize="9"
-                         Foreground="#284325"
-                         VerticalAlignment="Center"
-                         Margin="0,0,4,0"/>
             </Grid>
           </Button>
 
@@ -503,7 +497,7 @@
                   HorizontalAlignment="Stretch"
                   FontWeight="SemiBold"
                   Command="{Binding OpenAboutCommand}">
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-about-32.png"
                      Width="32" Height="32"
                      Stretch="Uniform"
@@ -511,12 +505,6 @@
               <TextBlock Grid.Column="1"
                            Text="ABOUT"
                            VerticalAlignment="Center"/>
-              <TextBlock Grid.Column="2"
-                         Text="F1"
-                         FontSize="9"
-                         Foreground="#284325"
-                         VerticalAlignment="Center"
-                         Margin="0,0,4,0"/>
             </Grid>
           </Button>
 

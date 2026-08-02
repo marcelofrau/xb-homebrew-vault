@@ -112,23 +112,6 @@ public partial class MainWindow : Window
     {
         if (DataContext is not MainViewModel vm) return;
 
-        // F5 — Connect
-        if (e.Key == Key.F5 && e.KeyModifiers == KeyModifiers.None)
-        {
-            if (vm.ConnectCommand.CanExecute(null))
-                vm.ConnectCommand.Execute(null);
-            e.Handled = true;
-            return;
-        }
-
-        // F1 — About
-        if (e.Key == Key.F1 && e.KeyModifiers == KeyModifiers.None)
-        {
-            OnBrandClick(sender, e);
-            e.Handled = true;
-            return;
-        }
-
         // Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+PageDown / Ctrl+PageUp — tab switching
         var ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
         if (ctrl)

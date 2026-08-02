@@ -44,11 +44,24 @@
                  Margin="0,4"
                  HorizontalAlignment="Center"/>
       <StackPanel Spacing="2" Margin="0,4,0,0">
-        <TextBlock x:Name="VersionText"
-                   FontSize="15"
-                   FontWeight="Bold"
-                   Foreground="{StaticResource AccentBrush}"
-                   HorizontalAlignment="Center"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+          <TextBlock x:Name="VersionText"
+                     FontSize="15"
+                     FontWeight="Bold"
+                     Foreground="{StaticResource AccentBrush}"
+                     VerticalAlignment="Center"/>
+          <Button Cursor="Hand"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Padding="3"
+                  VerticalAlignment="Center"
+                  ToolTip.Tip="Release notes and changelog"
+                  Click="OnChangelogClick">
+            <Image Source="avares://XBVault/Assets/Views/AboutWindow/about-changelog-20.png"
+                   Width="14" Height="14"
+                   Stretch="Uniform"/>
+          </Button>
+        </StackPanel>
         <TextBlock Text="Marcelo Frau"
                    FontSize="11"
                    Foreground="#888"
@@ -94,29 +107,12 @@
                    Foreground="#999"
                    HorizontalAlignment="Center"/>
       </Button>
-      <Button Cursor="Hand"
-              Background="Transparent"
-              BorderThickness="0"
-              HorizontalAlignment="Center"
-              Padding="0,2"
-              ToolTip.Tip="View release notes and changelog"
-              Click="OnChangelogClick">
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="4" HorizontalAlignment="Center">
-          <Image Source="avares://XBVault/Assets/Views/AboutWindow/about-changelog-20.png"
-                 Width="14" Height="14"
-                 Stretch="Uniform"/>
-          <TextBlock Grid.Column="1" Text="Release Notes"
-                     FontSize="10"
-                     Foreground="#777"
-                     HorizontalAlignment="Center"/>
-        </Grid>
-      </Button>
     </StackPanel>
 
     <Button Grid.Row="1"
-            HorizontalAlignment="Left"
+            HorizontalAlignment="Center"
             Width="120"
-            Margin="16,0,0,20"
+            Margin="0,0,0,20"
             Padding="0,8"
             Click="OnCloseClick">
       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" HorizontalAlignment="Center">
