@@ -21,6 +21,8 @@ public partial class FileExplorerView : UserControl
     private double _cdAngle;
     private DispatcherTimer? _loadingTimer;
     private double _loadingAngle;
+    private DispatcherTimer? _listingTimer;
+    private double _listingAngle;
     private bool _isKeyboardNav;
     private bool _suppressListBoxFocus;
 
@@ -122,6 +124,13 @@ public partial class FileExplorerView : UserControl
             else
                 StopLoadingSpinner();
         }
+        else if (e.PropertyName == nameof(FileExplorerViewModel.IsListing))
+        {
+            if (_vm?.IsListing == true)
+                StartListingSpinner();
+            else
+                StopListingSpinner();
+        }
     }
 
     private void StartCdSpinner()
@@ -168,6 +177,29 @@ public partial class FileExplorerView : UserControl
     {
         _loadingAngle = (_loadingAngle - 6 + 360) % 360;
         LoadingSpinnerImage.RenderTransform = new RotateTransform(_loadingAngle);
+    }
+
+    private void StartListingSpinner()
+    {
+        if (_listingTimer is not null) return;
+        _listingAngle = 0;
+        _listingTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _listingTimer.Tick += OnListingTick;
+        _listingTimer.Start();
+    }
+
+    private void StopListingSpinner()
+    {
+        if (_listingTimer is null) return;
+        _listingTimer.Stop();
+        _listingTimer.Tick -= OnListingTick;
+        _listingTimer = null;
+    }
+
+    private void OnListingTick(object? sender, EventArgs e)
+    {
+        _listingAngle = (_listingAngle - 6 + 360) % 360;
+        ListingSpinnerImage.RenderTransform = new RotateTransform(_listingAngle);
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -266,7 +298,7 @@ public partial class FileExplorerView : UserControl
             if (removed is SftpEntry entry)
                 entry.IsSelected = false;
 
-        if (_vm?.SelectedEntry is { } entry2 && entry2.IsDirectory)
+        if (_vm?.SelectedEntry is { } entry2 && entry2.IsDirectory && !_vm.SuppressTreeNavigation)
         {
             Logger.Debug($"OnTreeSelectionChanged: navigating to '{entry2.FullPath}' isKeyboardNav={_isKeyboardNav}");
             if (_isKeyboardNav)
@@ -396,7 +428,7 @@ public partial class FileExplorerView : UserControl
                 paths.Add($"{e.FullPath}\\(folder)");
                 try
                 {
-                    var sub = await _vm.SftpService.RecursiveListAsync(e.FullPath);
+                    var sub = await _vm.RecursiveListForAsync(e.FullPath);
                     foreach (var f in sub.Where(x => !x.IsDirectory))
                         paths.Add($"  {f.FullPath}");
                 }
@@ -614,7 +646,21 @@ public partial class FileExplorerView : UserControl
     {
         Logger.Debug($"ScrollToEntry: '{entry.FullPath}'");
         var treeView = this.FindControl<TreeView>("FolderTree");
-        treeView?.ScrollIntoView(entry);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (treeView is null || _vm is null) return;
+
+            var prevSuppress = _vm.SuppressTreeNavigation;
+            _vm.SuppressTreeNavigation = true;
+            try
+            {
+                treeView.SelectedItem = entry;
+            }
+            finally
+            {
+                _vm.SuppressTreeNavigation = prevSuppress;
+            }
+        }, DispatcherPriority.Loaded);
     }
 
     private async Task<string?> ShowInputDialogAsync(string title, string message, string defaultValue, string? iconUri)

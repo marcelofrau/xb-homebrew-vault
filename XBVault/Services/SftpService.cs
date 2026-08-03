@@ -15,6 +15,7 @@ public class SftpService : ISftpService
     private string? _lastUser;
     private string? _lastPass;
     private readonly SemaphoreSlim _shellLock = new(1, 1);
+    private static readonly TimeSpan ShellCommandTimeout = TimeSpan.FromSeconds(30);
 
     public bool IsConnected => _sftp?.IsConnected ?? false;
 
@@ -522,33 +523,48 @@ public class SftpService : ISftpService
         await _shellLock.WaitAsync();
         try
         {
-            return await Task.Run(() =>
+            if (_ssh is null || !_ssh.IsConnected)
+                return new SftpShellResult { Success = false, Error = "SSH not connected" };
+
+            var result = new SftpShellResult();
+
+            try
             {
-                if (_ssh is null || !_ssh.IsConnected)
-                    throw new InvalidOperationException("SSH not connected");
+                using var cts = new CancellationTokenSource(ShellCommandTimeout);
+                using var cmd = _ssh.CreateCommand(command);
+                var execTask = cmd.ExecuteAsync(cts.Token);
+                var timeoutTask = Task.Delay(ShellCommandTimeout);
 
-                var result = new SftpShellResult();
-
-                try
+                if (await Task.WhenAny(execTask, timeoutTask) != execTask)
                 {
-                    using var cmd = _ssh.RunCommand(command);
-                    result.Output = cmd.Result ?? string.Empty;
-                    result.Error = cmd.Error;
-                    result.Success = cmd.ExitStatus == 0;
-
-                    Logger.Debug($"SFTP shell command exit: {cmd.ExitStatus}");
-                    if (!string.IsNullOrEmpty(cmd.Error))
-                        Logger.Warn($"SFTP shell command stderr: {cmd.Error}");
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, $"SFTP shell command failed: {command}");
-                    result.Success = false;
-                    result.Error = ex.Message;
+                    Logger.Warn($"SFTP shell command timed out after {ShellCommandTimeout.TotalSeconds}s: {command}");
+                    return new SftpShellResult { Success = false, Error = $"Command timed out after {ShellCommandTimeout.TotalSeconds}s" };
                 }
 
-                return result;
-            });
+                await execTask;
+
+                result.Output = cmd.Result ?? string.Empty;
+                result.Error = cmd.Error;
+                result.Success = cmd.ExitStatus == 0;
+
+                Logger.Debug($"SFTP shell command exit: {cmd.ExitStatus}");
+                if (!string.IsNullOrEmpty(cmd.Error))
+                    Logger.Warn($"SFTP shell command stderr: {cmd.Error}");
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Warn($"SFTP shell command cancelled/timed out: {command}");
+                result.Success = false;
+                result.Error = $"Command timed out after {ShellCommandTimeout.TotalSeconds}s";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"SFTP shell command failed: {command}");
+                result.Success = false;
+                result.Error = ex.Message;
+            }
+
+            return result;
         }
         finally
         {

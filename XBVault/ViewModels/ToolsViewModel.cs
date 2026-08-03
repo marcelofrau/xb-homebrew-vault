@@ -51,6 +51,8 @@ public partial class ToolsViewModel : ObservableObject
     public Action? ShowCustomInstallAction { get; set; }
     public Action? ShowCrashDataAction { get; set; }
     public Action? ShowUsbPermissionAction { get; set; }
+    public Action? OpenLoopbackExemptAction { get; set; }
+    public Action? OpenLoopbackExemptQuickAction { get; set; }
     public Func<string, string, string, Task>? ShowInfoAsync { get; set; }
     public Func<string, string, string, string, string?, string?, Task<bool>>? ShowConfirmAsync { get; set; }
 
@@ -129,6 +131,20 @@ public partial class ToolsViewModel : ObservableObject
             return;
         }
         ShowUsbPermissionAction?.Invoke();
+    }
+
+    [RelayCommand]
+    private void OpenLoopbackExempt()
+    {
+        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        OpenLoopbackExemptAction?.Invoke();
+    }
+
+    [RelayCommand]
+    private void OpenLoopbackExemptQuick()
+    {
+        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        OpenLoopbackExemptQuickAction?.Invoke();
     }
 
     [RelayCommand]

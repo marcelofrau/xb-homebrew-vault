@@ -36,7 +36,7 @@
 
     <!-- Row 1: Toolbar -->
     <Grid Grid.Row="1"
-          ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto"
+          ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*,Auto"
           Margin="0,0,0,16">
 
       <Button x:Name="BrowseBtn"
@@ -125,8 +125,27 @@
         </StackPanel>
       </Button>
 
+      <!-- Open SSH terminal -->
+      <Button x:Name="TerminalBtn"
+              Grid.Column="4"
+              Command="{ReflectionBinding OpenTerminalCommand}"
+              Padding="10,6"
+              Margin="6,0,0,0"
+              IsVisible="{ReflectionBinding IsWindows}"
+              IsEnabled="{ReflectionBinding IsConnected}"
+              ToolTip.Tip="Open an SSH terminal on the console (uses PuTTY plink if installed, otherwise the OpenSSH ssh client)">
+        <StackPanel Orientation="Horizontal" Spacing="5">
+          <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-terminal-24.png"
+                 Width="20" Height="20" Stretch="Uniform"
+                 Opacity="{Binding #TerminalBtn.IsEnabled, Converter={StaticResource BoolToOpacity}}"/>
+          <TextBlock Text="Terminal"
+                     FontSize="13"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
+
       <!-- Toggle all drives -->
-      <ToggleButton Grid.Column="4"
+      <ToggleButton Grid.Column="5"
                     IsChecked="{ReflectionBinding ShowAllDrives}"
                     Padding="10,6"
                     Margin="6,0,0,0"
@@ -149,7 +168,7 @@
       </ToggleButton>
 
       <!-- Status block: error/warning/success/info -->
-      <Border Grid.Column="5"
+      <Border Grid.Column="6"
               IsVisible="{ReflectionBinding HasStatus}"
               CornerRadius="6"
               Padding="8,4"
@@ -355,40 +374,67 @@
               BorderThickness="1"
               CornerRadius="4"
               Margin="0,4,4,4">
-        <ListBox x:Name="FileListBox"
-                 ItemsSource="{ReflectionBinding CurrentEntries}"
-                 SelectionMode="Multiple"
-                 Focusable="False"
-                 BorderThickness="0"
-                 Background="Transparent"
-                 Foreground="White">
-          <ListBox.Styles>
-            <Style Selector="ListBoxItem">
-              <Setter Property="Padding" Value="2,0"/>
-            </Style>
-          </ListBox.Styles>
-          <ListBox.DataTemplates>
-            <DataTemplate DataType="models:SftpEntry">
-              <Grid ColumnDefinitions="20,*,Auto" Margin="0,0,6,0"
-                    ToolTip.Tip="{ReflectionBinding Name}">
-                <Image Width="20" Height="20" Stretch="Uniform"
-                       Source="{ReflectionBinding IconPath}"/>
-                <TextBlock Grid.Column="1"
-                            Text="{ReflectionBinding Name}"
-                            FontSize="13"
-                            VerticalAlignment="Center"
-                            Margin="4,0,8,0"
-                            TextTrimming="CharacterEllipsis"/>
-                <TextBlock Grid.Column="2"
-                           Text="{ReflectionBinding FormattedSize}"
-                           FontSize="12"
-                           VerticalAlignment="Center"
-                           Foreground="{StaticResource TextDimBrush}"
-                           TextAlignment="Right"/>
-              </Grid>
-            </DataTemplate>
-          </ListBox.DataTemplates>
-        </ListBox>
+        <Grid RowDefinitions="*,Auto">
+          <ListBox x:Name="FileListBox"
+                   ItemsSource="{ReflectionBinding CurrentEntries}"
+                   SelectionMode="Multiple"
+                   Focusable="False"
+                   BorderThickness="0"
+                   Background="Transparent"
+                   Foreground="White">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="Padding" Value="2,0"/>
+              </Style>
+            </ListBox.Styles>
+            <ListBox.DataTemplates>
+              <DataTemplate DataType="models:SftpEntry">
+                <Grid ColumnDefinitions="20,*,Auto" Margin="0,0,6,0"
+                      ToolTip.Tip="{ReflectionBinding Name}">
+                  <Image Width="20" Height="20" Stretch="Uniform"
+                         Source="{ReflectionBinding IconPath}"/>
+                  <TextBlock Grid.Column="1"
+                             Text="{ReflectionBinding Name}"
+                             FontSize="13"
+                             VerticalAlignment="Center"
+                             Margin="4,0,8,0"
+                             TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Grid.Column="2"
+                             Text="{ReflectionBinding FormattedSize}"
+                             FontSize="12"
+                             VerticalAlignment="Center"
+                             Foreground="{StaticResource TextDimBrush}"
+                             TextAlignment="Right"/>
+                </Grid>
+              </DataTemplate>
+            </ListBox.DataTemplates>
+          </ListBox>
+          <!-- Portal mode notice -->
+          <Border Grid.Row="1"
+                  Padding="12,10"
+                  CornerRadius="6"
+                  Margin="0,4,0,0"
+                  BorderBrush="#55F39C12"
+                  BorderThickness="1"
+                  Background="#1AF39C12"
+                  IsVisible="{ReflectionBinding ShowPortalBanner}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Image Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-warning-20.png"
+                     Width="18" Height="18" Stretch="Uniform"
+                     VerticalAlignment="Top" Margin="0,2,0,0"/>
+              <StackPanel Spacing="2">
+                <TextBlock Text="Web Portal mode"
+                           FontSize="12" FontWeight="SemiBold"
+                           Foreground="#F39C12"/>
+                <TextBlock Text="File navigation uses the Xbox Web Portal (REST) — may be more limited than traditional drive access."
+                           FontSize="11"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           TextWrapping="Wrap"
+                           LineHeight="16"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </Grid>
       </Border>
 
       <!-- Row 1, Col 3: Action buttons -->
@@ -398,7 +444,7 @@
                   VerticalAlignment="Bottom">
         <Button x:Name="NewFolderBtn"
                 Command="{ReflectionBinding CreateFolderCommand}"
-                IsEnabled="{ReflectionBinding CanRefresh}"
+                IsEnabled="{ReflectionBinding CanCreateFolder}"
                 Padding="6,4"
                 Width="105"
                 HorizontalContentAlignment="Stretch">
@@ -621,6 +667,36 @@
             </Button>
           </StackPanel>
         </Grid>
+      </Border>
+
+      <!-- Listing overlay (portal REST listing in progress) -->
+      <Border Grid.Row="1" Grid.ColumnSpan="4"
+              IsVisible="{ReflectionBinding IsListing}"
+              Background="#B00A0A1A"
+              CornerRadius="4"
+              Margin="0,4,4,4"
+              ZIndex="50">
+        <StackPanel HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="12">
+          <Image x:Name="ListingSpinnerImage"
+                 Source="avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-cd-48.png"
+                 Width="48" Height="48"
+                 Stretch="Uniform"
+                 HorizontalAlignment="Center"
+                 RenderTransformOrigin="50% 50%">
+            <Image.RenderTransform>
+              <RotateTransform Angle="0"/>
+            </Image.RenderTransform>
+          </Image>
+          <ProgressBar IsIndeterminate="True"
+                       Width="180" Height="4"
+                       Foreground="{StaticResource AccentBrush}"/>
+          <TextBlock Text="Loading..."
+                     Foreground="{StaticResource TextMutedBrush}"
+                     FontSize="13"
+                     HorizontalAlignment="Center"/>
+        </StackPanel>
       </Border>
     </Grid>
 

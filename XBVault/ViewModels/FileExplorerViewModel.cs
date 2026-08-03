@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
 using Avalonia.Threading;
 using Avalonia.Input;
@@ -20,6 +21,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     private readonly IXboxAuthService _authService;
     private readonly SftpService _sftpService;
     private readonly SftpTransferService _transfer;
+    private readonly PortalAppFilesService _portal;
     internal SftpService SftpService => _sftpService;
     private string? _sftpPassword;
     private CancellationTokenSource? _deleteCts;
@@ -29,14 +31,17 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     {
         _deleteCts?.Cancel();
         _deleteCts?.Dispose();
+        _deleteCts = null;
+        _portal.Cancel();
         GC.SuppressFinalize(this);
     }
 
-    public FileExplorerViewModel(IXboxAuthService authService, SftpService sftpService, SftpTransferService transfer)
+    public FileExplorerViewModel(IXboxAuthService authService, SftpService sftpService, SftpTransferService transfer, PortalAppFilesService portal)
     {
         _authService = authService;
         _sftpService = sftpService;
         _transfer = transfer;
+        _portal = portal;
         _authService.ConnectionChanged += OnBoxConnectionChanged;
         _sftpService.ConnectionChanged += OnSftpConnectionChanged;
         IsConnected = _authService.IsConnected;
@@ -100,13 +105,22 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private SftpEntry? _selectedEntry;
 
+    public bool SuppressTreeNavigation { get; set; }
+
     public ObservableCollection<SftpEntry> SelectedEntries { get; } = [];
 
-    public bool CanModifyFiles => !ShowActivity;
+    public bool CanModifyFiles => !ShowActivity
+        && (!PortalAppFilesService.IsPortalPath(CurrentPath)
+            || PortalAppFilesService.HasPackageContext(CurrentPath));
     public bool CanDeleteMultiple => SelectedEntries.Count > 0 && CanModifyFiles;
-    public bool CanDownloadMultiple => SelectedEntries.Any(e => !e.IsDrive) && CanModifyFiles;
+    public bool CanDownloadMultiple => SelectedEntries.Any(e => !e.IsDrive) && !ShowActivity;
     public bool CanRenameSingle => SelectedEntries.Count == 1 && CanModifyFiles;
-    public string OperationLockedTooltip => ShowActivity ? "Waiting for current operation to finish..." : string.Empty;
+    public string OperationLockedTooltip => ShowActivity
+        ? "Waiting for current operation to finish..."
+        : PortalAppFilesService.IsPortalPath(CurrentPath) && !PortalAppFilesService.HasPackageContext(CurrentPath)
+            ? "User Files is read-only"
+            : string.Empty;
+    public bool ShowPortalBanner => PortalAppFilesService.IsPortalPath(CurrentPath);
 
     [ObservableProperty]
     private string _currentPath = @"D:\";
@@ -127,6 +141,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     {
         Logger.Debug("CancelTransfer: requesting cancellation");
         _transfer.CancelTransfer();
+        _portal.Cancel();
         _deleteCts?.Cancel();
         _deleteCts?.Dispose();
         _deleteCts = null;
@@ -173,6 +188,10 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
     public bool ShowActivity => IsUploading || IsDownloading || IsDeleting;
     public bool ShowIdle => !ShowActivity;
+
+    private int _portalListDepth;
+
+    public bool IsListing => _portalListDepth > 0;
     public double ActivityProgress => IsDeleting ? DeleteProgress : IsUploading ? UploadProgress : DownloadProgress;
     public string ActivityText => IsDeleting ? DeleteStatusText : IsUploading ? UploadStatusText : DownloadStatusText;
 
@@ -189,6 +208,8 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(OperationLockedTooltip));
         OnPropertyChanged(nameof(CanBrowse));
         OnPropertyChanged(nameof(CanRefresh));
+        OnPropertyChanged(nameof(CanCreateFolder));
+        OnPropertyChanged(nameof(CanRefreshLocation));
     }
 
     partial void OnIsUploadingChanged(bool value) { OnPropertyChanged(nameof(ShowActivity)); OnPropertyChanged(nameof(ShowIdle)); OnPropertyChanged(nameof(CanCancelTransfer)); NotifyFileLockProperties(); }
@@ -264,6 +285,12 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         Logger.Trace($"OnCurrentPathChanged: '{value}'");
         OnPropertyChanged(nameof(BreadcrumbSegments));
         OnPropertyChanged(nameof(CanGoUp));
+        OnPropertyChanged(nameof(CanModifyFiles));
+        OnPropertyChanged(nameof(CanRefresh));
+        OnPropertyChanged(nameof(CanCreateFolder));
+        OnPropertyChanged(nameof(CanRefreshLocation));
+        OnPropertyChanged(nameof(OperationLockedTooltip));
+        OnPropertyChanged(nameof(ShowPortalBanner));
         StatusSeverity = ToolbarStatusSeverity.None;
         StatusMessage = string.Empty;
     }
@@ -317,8 +344,11 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         ToolbarStatusSeverity.Info => "#3399FF",
         _ => "Transparent"
     };
-    public bool CanBrowse => IsConnected && !IsLoading && CanModifyFiles;
-    public bool CanRefresh => _sftpService.IsConnected && TreeRoots.Count > 0 && CanModifyFiles;
+    public bool CanBrowse => IsConnected && !IsLoading && !ShowActivity;
+    public bool CanRefresh => _sftpService.IsConnected && TreeRoots.Count > 0 && !ShowActivity && !PortalAppFilesService.IsPortalPath(CurrentPath);
+    public bool CanCreateFolder => _sftpService.IsConnected && TreeRoots.Count > 0 && !ShowActivity
+        && (!PortalAppFilesService.IsPortalPath(CurrentPath) || PortalAppFilesService.HasPackageContext(CurrentPath));
+    public bool CanRefreshLocation => _sftpService.IsConnected && TreeRoots.Count > 0 && !ShowActivity;
     public bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
     public string[] BreadcrumbSegments => BuildBreadcrumbSegments(CurrentPath);
@@ -343,6 +373,13 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             StatusText = "Connected";
         else
             StatusText = "Ready to browse";
+    }
+
+    private void SetReadOnlyStatus()
+    {
+        Logger.Warn($"FileExplorer: '{CurrentPath}' is read-only (portal User Files)");
+        StatusSeverity = ToolbarStatusSeverity.Warning;
+        StatusMessage = "Not available on User Files (read-only)";
     }
 
     [RelayCommand]
@@ -406,13 +443,27 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     {
         Logger.Debug("LoadTreeRootsAsync: detecting drives...");
         var drives = await DetectDrivesAsync();
+        drives.Add(new SftpEntry
+        {
+            Name = PortalAppFilesService.RootName,
+            FullPath = PortalAppFilesService.RootPath,
+            IsDirectory = true,
+            IsDrive = true,
+            IsPortal = true,
+            IconName = "userfiles",
+            ToolTip = "App LocalAppData / DevelopmentFiles (read-only, via portal)",
+            LastModified = DateTime.MinValue,
+            Children = { new SftpEntry { Name = "" } }
+        });
+        SetIsLastChild(drives);
         Dispatcher.UIThread.Post(() =>
         {
             TreeRoots.Clear();
             foreach (var d in drives)
                 TreeRoots.Add(d);
-            Logger.Debug($"LoadTreeRootsAsync: added {drives.Count} drive roots");
+            Logger.Debug($"LoadTreeRootsAsync: added {drives.Count} tree roots (incl. User Files)");
             OnPropertyChanged(nameof(CanRefresh));
+            OnPropertyChanged(nameof(CanRefreshLocation));
         });
     }
 
@@ -463,9 +514,8 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             target.HasLoaded = true;
             target.Children.Clear();
 
-            var children = await _sftpService.ListDirectoryAsync(path);
+            var children = await ListDirectoryForAsync(path);
             var folders = children.Where(c => c.IsDirectory).ToList();
-
             Logger.Debug($"ExpandFolderAsync: '{path}' got {children.Count} children, {folders.Count} folders");
             if (folders.Count == 0)
             {
@@ -493,6 +543,37 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         }
     }
 
+    private async Task<List<SftpEntry>> ListDirectoryForAsync(string path)
+    {
+        if (!PortalAppFilesService.IsPortalPath(path))
+            return await _sftpService.ListDirectoryAsync(path);
+
+        return await WithPortalListingAsync(() => _portal.ListDirectoryAsync(path));
+    }
+
+    public async Task<List<SftpEntry>> RecursiveListForAsync(string path)
+    {
+        if (!PortalAppFilesService.IsPortalPath(path))
+            return await _sftpService.RecursiveListAsync(path);
+
+        return await WithPortalListingAsync(() => _portal.RecursiveListAsync(path));
+    }
+
+    private async Task<T> WithPortalListingAsync<T>(Func<Task<T>> action)
+    {
+        _portalListDepth++;
+        OnPropertyChanged(nameof(IsListing));
+        try
+        {
+            return await action();
+        }
+        finally
+        {
+            _portalListDepth--;
+            OnPropertyChanged(nameof(IsListing));
+        }
+    }
+
     [RelayCommand]
     private async Task NavigateToPathAsync(string? path)
     {
@@ -509,7 +590,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             StatusSeverity = ToolbarStatusSeverity.None;
             StatusMessage = string.Empty;
             CurrentPath = path;
-            var entries = await _sftpService.ListDirectoryAsync(path);
+            var entries = await ListDirectoryForAsync(path);
 
             CurrentEntries.Clear();
             var parentDir = GetParentPath(path);
@@ -606,15 +687,28 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             Logger.Debug($"RefreshAsync: {expandedPaths.Count} expanded paths saved, cache cleared");
 
             // Reload current file list
-            var entries = await _sftpService.ListDirectoryAsync(CurrentPath);
+            var entries = await ListDirectoryForAsync(CurrentPath);
 
             Dispatcher.UIThread.Post(() =>
             {
                 CurrentEntries.Clear();
+                var parentDir = GetParentPath(CurrentPath);
+                if (parentDir is not null)
+                {
+                    CurrentEntries.Add(new SftpEntry
+                    {
+                        Name = "..",
+                        FullPath = parentDir,
+                        IsDirectory = true,
+                        IsPlaceholder = true,
+                        IsLastChild = true
+                    });
+                }
                 foreach (var e in entries)
                     CurrentEntries.Add(e);
                 Logger.Debug($"RefreshAsync: reloaded {entries.Count} entries");
                 OnPropertyChanged(nameof(CanRefresh));
+                OnPropertyChanged(nameof(CanRefreshLocation));
             });
 
             // Re-expand previously expanded paths (parents before children)
@@ -623,6 +717,11 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             {
                 await ExpandTreeToPathAsync(path);
             }
+
+            // Scroll tree so current folder is visible
+            var currentEntry = FindEntry(TreeRoots, CurrentPath);
+            if (currentEntry is not null)
+                ScrollToEntry?.Invoke(currentEntry);
 
             Logger.Debug("RefreshAsync: tree refreshed");
         }
@@ -638,6 +737,11 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     private async Task UploadFilesAsync(string[]? filePaths)
     {
         if (filePaths is null || filePaths.Length == 0) return;
+        if (PortalAppFilesService.IsPortalPath(CurrentPath))
+        {
+            await UploadPortalAsync(filePaths, null, null);
+            return;
+        }
 
         Logger.Info($"UploadFilesAsync: uploading {filePaths.Length} file(s) to '{CurrentPath}'");
         for (int i = 0; i < filePaths.Length; i++)
@@ -666,6 +770,11 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     {
         var localFolder = folderPath ?? (ShowFolderPickerAsync is not null ? await ShowFolderPickerAsync() : null);
         if (string.IsNullOrEmpty(localFolder)) return;
+        if (PortalAppFilesService.IsPortalPath(CurrentPath))
+        {
+            await UploadPortalAsync(null, [localFolder], null);
+            return;
+        }
 
         Logger.Info($"UploadFolderAsync: uploading folder '{localFolder}' to '{CurrentPath}'");
 
@@ -695,6 +804,11 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         var fCount = filePaths?.Length ?? 0;
         var dCount = folderPaths?.Length ?? 0;
         Logger.Info($"UploadMixedAsync: {fCount} file(s), {dCount} folder(s) to '{CurrentPath}'");
+        if (PortalAppFilesService.IsPortalPath(CurrentPath))
+        {
+            await UploadPortalAsync(filePaths, folderPaths, null);
+            return;
+        }
 
         IsUploading = true;
         UploadProgress = 0;
@@ -704,6 +818,78 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             var result = await _transfer.UploadMixedAsync(filePaths, folderPaths, CurrentPath,
                 TransferProgress(u => { UploadProgress = u.Progress; UploadStatusText = u.StatusText; }));
             ApplyUploadResult(result);
+        }
+        finally
+        {
+            _uploadTargetPath = null;
+            IsUploading = false;
+            UploadProgress = 0;
+            UploadStatusText = string.Empty;
+        }
+    }
+
+    private async Task UploadPortalAsync(string[]? files, string[]? folders, string? zipExtractPath)
+    {
+        Logger.Info($"UploadPortalAsync: to '{CurrentPath}'");
+        IsUploading = true;
+        UploadProgress = 0;
+        _uploadTargetPath = CurrentPath;
+        try
+        {
+            var total = (files?.Length ?? 0) + (folders?.Length ?? 0);
+            var done = 0;
+
+            if (files is not null)
+            {
+                foreach (var f in files)
+                {
+                    UploadStatusText = $"Uploading {Path.GetFileName(f)}...";
+                    await _portal.UploadFileAsync(CurrentPath, f);
+                    done++;
+                    if (total > 0) UploadProgress = (double)done / total;
+                }
+            }
+
+            if (folders is not null)
+            {
+                foreach (var folder in folders)
+                {
+                    var folderName = Path.GetFileName(folder.TrimEnd('\\', '/'));
+                    UploadStatusText = $"Uploading {folderName}...";
+                    await _portal.CreateFolderAsync(CurrentPath, folderName);
+                    await _portal.UploadTreeAsync(CurrentPath.TrimEnd('\\') + "\\" + folderName, folder);
+                    done++;
+                    if (total > 0) UploadProgress = (double)done / total;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(zipExtractPath))
+            {
+                UploadStatusText = "Extracting & uploading archive...";
+                var tempDir = Path.Combine(Path.GetTempPath(), "XBVault", Path.GetFileNameWithoutExtension(zipExtractPath));
+                Directory.CreateDirectory(tempDir);
+                try
+                {
+                    ZipFile.ExtractToDirectory(zipExtractPath, tempDir);
+                    await _portal.UploadTreeAsync(CurrentPath, tempDir);
+                }
+                finally
+                {
+                    try { Directory.Delete(tempDir, true); }
+                    catch (Exception ex) { Logger.Trace($"UploadPortalAsync: temp cleanup failed — {ex.Message}"); }
+                }
+                UploadProgress = 1;
+            }
+
+            await RefreshAsync();
+            StatusSeverity = ToolbarStatusSeverity.Success;
+            StatusMessage = "Upload complete";
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Portal upload failed");
+            StatusSeverity = ToolbarStatusSeverity.Error;
+            StatusMessage = $"Upload failed: {ex.Message}";
         }
         finally
         {
@@ -724,8 +910,6 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         Logger.Trace($"AddToCurrentAndTree: '{newEntry.FullPath}' (IsDir={newEntry.IsDirectory})");
         var existing = CurrentEntries.FirstOrDefault(e => !e.IsPlaceholder && e.Name == newEntry.Name && e.IsDirectory == newEntry.IsDirectory);
         if (existing is not null) { CurrentEntries.Remove(existing); Logger.Trace($"AddToCurrentAndTree: removed existing '{existing.FullPath}' from CurrentEntries"); }
-        var ph = CurrentEntries.FirstOrDefault(e => e.IsPlaceholder);
-        if (ph is not null) { CurrentEntries.Remove(ph); Logger.Trace("AddToCurrentAndTree: removed placeholder from CurrentEntries"); }
         InsertSorted(CurrentEntries, newEntry);
 
         if (newEntry.IsDirectory)
@@ -799,6 +983,11 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     public async Task UploadZipExtractAsync(string zipPath)
     {
         Logger.Info($"UploadZipExtractAsync: extracting '{zipPath}' to '{CurrentPath}'");
+        if (PortalAppFilesService.IsPortalPath(CurrentPath))
+        {
+            await UploadPortalAsync(null, null, zipPath);
+            return;
+        }
 
         IsUploading = true;
         UploadProgress = 0;
@@ -861,6 +1050,12 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         var localDir = ShowFolderPickerAsync is not null ? await ShowFolderPickerAsync() : null;
         if (string.IsNullOrEmpty(localDir)) return;
 
+        if (entries.Any(e => e.IsPortal))
+        {
+            await DownloadPortalBatchAsync(entries, localDir);
+            return;
+        }
+
         Directory.CreateDirectory(localDir);
         Logger.Info($"DownloadSelectedAsync: multi-file download to '{localDir}'");
 
@@ -890,9 +1085,21 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         DownloadProgress = 0;
         try
         {
+            if (entry.IsPortal)
+            {
+                ApplyDownloadResult(await DownloadPortalAsync(entry, savePath));
+                return;
+            }
             var result = await _transfer.DownloadSingleFileAsync(entry, savePath,
                 TransferProgress(u => { DownloadProgress = u.Progress; DownloadStatusText = u.StatusText; }));
             ApplyDownloadResult(result);
+        }
+        catch (Exception ex)
+        {
+            ShowErrorDialog?.Invoke(
+                "Download failed",
+                $"Could not download '{entry.Name}'.",
+                $"Source: {entry.FullPath}\n\nTarget: {savePath}\n\nError: {ex.Message}");
         }
         finally
         {
@@ -911,9 +1118,93 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         DownloadProgress = 0;
         try
         {
+            if (entry.IsPortal)
+            {
+                ApplyDownloadResult(await DownloadPortalAsync(entry, localRoot));
+                return;
+            }
             var result = await _transfer.DownloadFolderAsync(entry, localRoot,
                 TransferProgress(u => { DownloadProgress = u.Progress; DownloadStatusText = u.StatusText; }));
             ApplyDownloadResult(result);
+        }
+        catch (Exception ex)
+        {
+            ShowErrorDialog?.Invoke(
+                "Download failed",
+                $"Could not download folder '{entry.Name}'.",
+                $"Source: {entry.FullPath}\n\nTarget: {localRoot}\n\nError: {ex.Message}");
+        }
+        finally
+        {
+            IsDownloading = false;
+            DownloadProgress = 0;
+            DownloadStatusText = string.Empty;
+        }
+    }
+
+    private async Task<TransferResult> DownloadPortalAsync(SftpEntry entry, string destination)
+    {
+        Logger.Info($"DownloadPortalAsync: '{entry.FullPath}' → '{destination}'");
+        if (!entry.IsDirectory)
+        {
+            await _portal.DownloadFileAsync(entry, destination, new Progress<double>(p => DownloadProgress = p));
+            return TransferResult.OkDownload(entry.Name, 1);
+        }
+
+        var files = await _portal.RecursiveListAsync(entry.FullPath);
+        var fileEntries = files.Where(f => !f.IsDirectory).ToList();
+        if (fileEntries.Count == 0)
+            return TransferResult.EmptyResult("Empty folder — nothing to download");
+
+        var root = entry.FullPath.TrimEnd('\\');
+        int done = 0;
+        foreach (var f in fileEntries)
+        {
+            var rel = f.FullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase)
+                ? f.FullPath.Substring(root.Length).TrimStart('\\')
+                : f.Name;
+            var localPath = Path.Combine(destination, rel);
+            Directory.CreateDirectory(Path.GetDirectoryName(localPath)!);
+            DownloadStatusText = $"Downloading {f.Name}...";
+            await _portal.DownloadFileAsync(f, localPath, new Progress<double>(p => DownloadProgress = p));
+            done++;
+            DownloadProgress = (double)done / fileEntries.Count;
+        }
+        return TransferResult.OkDownload(entry.Name, done);
+    }
+
+    private async Task DownloadPortalBatchAsync(List<SftpEntry> entries, string localDir)
+    {
+        Directory.CreateDirectory(localDir);
+        Logger.Info($"DownloadPortalBatchAsync: {entries.Count} portal item(s) to '{localDir}'");
+
+        IsDownloading = true;
+        DownloadProgress = 0;
+        try
+        {
+            int ok = 0, fail = 0;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                DownloadStatusText = $"Downloading ({i + 1}/{entries.Count})...";
+                try
+                {
+                    var result = await DownloadPortalAsync(entries[i], Path.Combine(localDir, entries[i].Name));
+                    if (result.Success) ok++; else fail++;
+                }
+                catch (OperationCanceledException)
+                {
+                    StatusSeverity = ToolbarStatusSeverity.None;
+                    StatusMessage = "Download cancelled";
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn($"DownloadPortalBatchAsync: '{entries[i].FullPath}' — {ex.Message}");
+                    fail++;
+                }
+            }
+            StatusSeverity = fail == 0 ? ToolbarStatusSeverity.Success : ToolbarStatusSeverity.Error;
+            StatusMessage = fail == 0 ? $"Downloaded {ok} item(s)" : $"Downloaded {ok}, failed {fail}";
         }
         finally
         {
@@ -964,6 +1255,11 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             Logger.Trace("DeleteSelectedAsync: no valid entries to delete");
             return;
         }
+        if (PortalAppFilesService.IsPortalPath(CurrentPath) && !PortalAppFilesService.HasPackageContext(CurrentPath))
+        {
+            SetReadOnlyStatus();
+            return;
+        }
 
         var confirmed = ShowDeleteConfirmAsync is not null
             ? await ShowDeleteConfirmAsync(entries)
@@ -992,7 +1288,9 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
                 try
                 {
-                    if (entry.IsDirectory)
+                    if (entry.IsPortal)
+                        await _portal.DeleteEntryAsync(entry.FullPath);
+                    else if (entry.IsDirectory)
                         await _sftpService.DeleteDirectoryAsync(entry.FullPath);
                     else
                         await _sftpService.DeleteFileAsync(entry.FullPath);
@@ -1032,6 +1330,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     {
         var parentPath = CurrentPath;
         Logger.Debug($"CreateFolderAsync: parentPath='{parentPath}'");
+        var isPortal = PortalAppFilesService.IsPortalPath(parentPath);
 
         var name = ShowInputDialogAsync is not null
             ? await ShowInputDialogAsync("New Folder", $"Enter folder name:\nLocation: {parentPath}", "New Folder",
@@ -1043,19 +1342,21 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         try
         {
             var dir = parentPath.TrimEnd('\\') + "\\" + name;
-            await _sftpService.CreateDirectoryAsync(dir);
+            if (isPortal)
+                await _portal.CreateFolderAsync(parentPath, name);
+            else
+                await _sftpService.CreateDirectoryAsync(dir);
 
             var newFolder = new SftpEntry
             {
                 Name = name, FullPath = dir,
                 IsDirectory = true,
+                IsPortal = isPortal,
                 Children = { new SftpEntry { Name = "" } }
             };
 
             if (parentPath == CurrentPath)
             {
-                var ph = CurrentEntries.FirstOrDefault(e => e.IsPlaceholder);
-                if (ph is not null) CurrentEntries.Remove(ph);
                 InsertSorted(CurrentEntries, newFolder);
             }
 
@@ -1065,6 +1366,9 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
                 var ph = parentNode.Children.FirstOrDefault(e => e.IsPlaceholder);
                 if (ph is not null) parentNode.Children.Remove(ph);
                 InsertSorted(parentNode.Children, newFolder);
+                var treeNode = FindEntry(TreeRoots, dir);
+                if (treeNode is not null)
+                    ScrollToEntry?.Invoke(treeNode);
             }
 
             Logger.Trace($"CreateFolderAsync: folder '{dir}' created");
@@ -1096,16 +1400,26 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
         try
         {
-            var parentDir = Path.GetDirectoryName(entry.FullPath)?.Replace('/', '\\') ?? "";
-            var newPath = parentDir.TrimEnd('\\') + "\\" + newName;
             var oldPath = entry.FullPath;
-            await _sftpService.RenameAsync(entry.FullPath, newPath);
+            if (entry.IsPortal)
+            {
+                await _portal.RenameEntryAsync(oldPath, newName);
+                entry.Name = newName;
+                var portalParent = Path.GetDirectoryName(oldPath)?.Replace('/', '\\') ?? "";
+                entry.FullPath = portalParent.TrimEnd('\\') + "\\" + newName;
+            }
+            else
+            {
+                var parentDir = Path.GetDirectoryName(entry.FullPath)?.Replace('/', '\\') ?? "";
+                var newPath = parentDir.TrimEnd('\\') + "\\" + newName;
+                await _sftpService.RenameAsync(entry.FullPath, newPath);
 
-            entry.Name = newName;
-            entry.FullPath = newPath;
+                entry.Name = newName;
+                entry.FullPath = newPath;
 
-            if (entry.IsDirectory)
-                UpdateChildrenPathsRecursive(entry, oldPath, newPath);
+                if (entry.IsDirectory)
+                    UpdateChildrenPathsRecursive(entry, oldPath, newPath);
+            }
 
             var parentNode = FindParent(TreeRoots, entry);
             if (parentNode is not null)
@@ -1222,5 +1536,107 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         }
 
         return null;
+    }
+
+    [RelayCommand]
+    private void OpenTerminal()
+    {
+        if (!_authService.IsConnected || !IsWindows) return;
+        var creds = _authService.GetSshCredentials();
+        var pw = _sftpPassword ?? creds.Password;
+
+        try
+        {
+            var plink = FindPlink();
+            string command;
+            string args;
+            if (plink is not null)
+            {
+                command = plink;
+                args = $"-ssh -P {creds.Port} -pw \"{pw.Replace("\"", "\\\"")}\" -no-antispoof {creds.Username}@{creds.Host}";
+            }
+            else
+            {
+                command = "ssh";
+                args = $"-o StrictHostKeyChecking=no -p {creds.Port} {creds.Username}@{creds.Host}";
+            }
+
+            LaunchTerminal(command, args);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to launch terminal");
+            ShowErrorDialog?.Invoke(
+                "Failed to launch terminal",
+                $"Could not open the SSH terminal.",
+                $"Host: {creds.Host}:{creds.Port}\n\nError: {ex.Message}");
+        }
+    }
+
+    private static string? FindPlink()
+    {
+        var candidates = new[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "PuTTY", "plink.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "PuTTY", "plink.exe"),
+        };
+
+        foreach (var p in candidates)
+        {
+            if (File.Exists(p))
+                return p;
+        }
+
+        try
+        {
+            using var proc = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "where",
+                Arguments = "plink.exe",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            });
+            if (proc is not null)
+            {
+                var line = proc.StandardOutput.ReadLine();
+                proc.WaitForExit(2000);
+                if (!string.IsNullOrEmpty(line) && File.Exists(line))
+                    return line;
+            }
+        }
+        catch (Exception ex)
+        {
+            // `where` probe can fail if plink not on PATH — fall back to null
+            Logger.Trace($"FindPlink: where probe failed — {ex.Message}");
+        }
+
+        return null;
+    }
+
+    private static void LaunchTerminal(string command, string args)
+    {
+        var cmdLine = $"\"{command}\" {args}";
+
+        var wt = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Microsoft", "WindowsApps", "wt.exe");
+        if (File.Exists(wt))
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = wt,
+                Arguments = $"new-tab --title \"Xbox SSH\" {cmdLine}",
+                UseShellExecute = true
+            });
+            return;
+        }
+
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments = $"/k {cmdLine}",
+            UseShellExecute = true
+        });
     }
 }

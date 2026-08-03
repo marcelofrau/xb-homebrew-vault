@@ -155,7 +155,7 @@
         <Border Classes="Card" Padding="24">
           <StackPanel Spacing="16">
             <TextBlock Text="XBOX ACTIONS" Classes="SectionHeader"/>
-            <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="8">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8">
               <Button Grid.Column="0" Command="{Binding RestartXboxCommand}"
                       Classes="Danger" Padding="14,8">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
@@ -170,6 +170,28 @@
                   <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-shutdown-20.png"
                          Width="20" Height="20" Stretch="Uniform"/>
                   <TextBlock Grid.Column="1" Text="Shutdown Xbox" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+              <Button Grid.Column="2" Command="{Binding OpenLoopbackExemptQuickCommand}" Padding="14,8">
+                <ToolTip.Tip>
+                  <TextBlock Text="One-click wizard: detects X-Files and applies the loopback exemption so it can reach the Xbox portal REST API on itself (browse LocalAppData / DevelopmentFiles)."
+                             TextWrapping="Wrap" MaxWidth="300"/>
+                </ToolTip.Tip>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-xfiles-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="X-Files Enablement" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+              <Button Grid.Column="3" Command="{Binding OpenLoopbackExemptCommand}" Padding="14,8">
+                <ToolTip.Tip>
+                  <TextBlock Text="Wizard to apply or remove the loopback exemption for any installed app, and check its current status."
+                             TextWrapping="Wrap" MaxWidth="300"/>
+                </ToolTip.Tip>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-loopback-20.png"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Loopback Exempt" VerticalAlignment="Center"/>
                 </Grid>
               </Button>
             </Grid>

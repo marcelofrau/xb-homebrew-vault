@@ -1,0 +1,538 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XBVault.ViewModels"
+        x:Class="XBVault.Views.LoopbackExemptWindow"
+        Classes="dialogWindow"
+        x:DataType="vm:LoopbackExemptViewModel"
+        Title="Loopback Exempt"
+        Width="680" Height="520"
+        MinWidth="680" MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowDecorations="None"
+        Background="{StaticResource SurfaceBrush}">
+
+  <Window.Styles>
+    <Style Selector="Window">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </Window.Styles>
+
+  <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
+    <Grid RowDefinitions="32,*" ColumnDefinitions="160,*">
+
+      <!-- Title Bar -->
+      <Grid Grid.ColumnSpan="2" Height="32"
+            PointerPressed="OnTitleBarPointerPressed"
+            Background="{StaticResource TitleGradient}">
+        <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
+        <TextBlock Text="{Binding WindowTitle}"
+                   Foreground="#1A1A1A"
+                   FontSize="14"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"
+                   Margin="12,0"/>
+        <Button Grid.Column="1" Classes="WindowClose"
+                Click="OnCloseClick" ToolTip.Tip="Close"/>
+      </Grid>
+
+      <!-- Left Panel: InstallShield-style wizard sidebar -->
+      <Border Grid.Row="1" Grid.Column="0">
+        <Border.Background>
+          <ImageBrush Source="avares://XBVault/Assets/Views/CustomInstallWindow/custominstall-sidebarbg.png"
+                      Stretch="UniformToFill"/>
+        </Border.Background>
+        <Grid RowDefinitions="Auto,*,Auto" Margin="0,20,0,16">
+
+          <!-- Wizard icon -->
+          <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-shield-100.png"
+                 Width="72" Height="72"
+                 Stretch="Uniform"
+                 HorizontalAlignment="Center"
+                 Opacity="0.85"/>
+
+          <!-- Step indicators -->
+          <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="16" Margin="20,0">
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-step1-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsOverviewStep}"/>
+              <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-step1-disabled-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsOverviewStep, Converter={StaticResource BoolInverse}}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Step1Label}"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsOverviewStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-step2-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsStep2}"/>
+              <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-step2-disabled-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsStep2, Converter={StaticResource BoolInverse}}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Step2Label}"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsStep2, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-step3-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsStep3}"/>
+              <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-step3-disabled-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsStep3, Converter={StaticResource BoolInverse}}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Step3Label}"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsStep3, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+              <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-step4-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsRunStep}"/>
+              <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-step4-disabled-20.png"
+                     Width="20" Height="20" Stretch="None"
+                     IsVisible="{Binding IsRunStep, Converter={StaticResource BoolInverse}}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Step4Label}"
+                         FontSize="12" FontWeight="Bold"
+                         VerticalAlignment="Center"
+                         Foreground="{Binding IsRunStep, Converter={StaticResource StepLabelFg}}"/>
+            </Grid>
+          </StackPanel>
+
+          <!-- Bottom branding -->
+          <TextBlock Grid.Row="2"
+                     Text="XB Homebrew Vault"
+                     FontSize="10"
+                     Foreground="#447F3E"
+                     HorizontalAlignment="Center"
+                     Opacity="0.5"/>
+        </Grid>
+      </Border>
+
+      <!-- Right Panel: Wizard Content -->
+      <Border Grid.Row="1" Grid.Column="1" BorderThickness="0" Background="{StaticResource SurfaceBrush}">
+        <Grid RowDefinitions="*,Auto" Margin="20,16,20,16">
+
+          <!-- Step 1: Overview -->
+          <StackPanel IsVisible="{Binding IsOverviewStep}" Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-shield-48.png"
+                     Width="44" Height="44" Stretch="Uniform"
+                     VerticalAlignment="Center"/>
+              <StackPanel VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="Loopback Exemption" FontSize="17" FontWeight="SemiBold"/>
+                <TextBlock Text="Let a UWP app reach the console's own portal"
+                           FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+            </StackPanel>
+
+            <Separator Height="1" Background="{StaticResource BorderBrush}"/>
+
+            <TextBlock Text="Xbox apps normally can't reach the console's own Dev Portal. This grants one app permission to do it — useful for browsing LocalAppData and DevelopmentFiles on the console."
+                       FontSize="13" TextWrapping="Wrap" LineHeight="19"/>
+
+            <Border Padding="12,10" CornerRadius="6"
+                    BorderBrush="#5555E7C3" BorderThickness="1" Background="#1A55E7C3">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Keep in mind" FontSize="13" FontWeight="SemiBold" Foreground="#55E7C3"/>
+                <TextBlock Text="The exemption is safe, takes seconds, and is lost on re-install or console reboot — just re-run this wizard."
+                           FontSize="12" Foreground="#55E7C3" TextWrapping="Wrap" LineHeight="18"/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- Step 2 (quick): X-Files -->
+          <StackPanel IsVisible="{Binding ShowStep2Quick}" Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-xfiles-64.png"
+                     Width="44" Height="44" Stretch="Uniform"
+                     VerticalAlignment="Center"/>
+              <StackPanel VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="What is X-Files?" FontSize="17" FontWeight="SemiBold"/>
+                <TextBlock Text="Xbox homebrew file manager (UWP)"
+                           FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+            </StackPanel>
+
+            <Separator Height="1" Background="{StaticResource BorderBrush}"/>
+
+            <TextBlock Text="X-Files is an open-source Xbox app that manages files on your console. With loopback enabled, it can browse and download apps' LocalAppData and DevelopmentFiles right from the console."
+                       FontSize="13" TextWrapping="Wrap" LineHeight="19"/>
+
+            <Button Padding="12,7" HorizontalAlignment="Left"
+                    Command="{Binding OpenProjectLinkCommand}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-link-20.png"
+                       Width="18" Height="18" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Open project  github.com/marcelofrau/x-files-uwp"
+                           FontSize="12" VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+
+            <!-- Detecting (load in progress) -->
+            <Border IsVisible="{Binding IsDetectingXFiles}"
+                    Padding="12,10" CornerRadius="6" Background="{StaticResource SurfaceAltBrush}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-spinner-48.png"
+                       Width="18" Height="18" Stretch="Uniform"/>
+                <TextBlock Text="Detecting X-Files on the console..."
+                           FontSize="13" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Border>
+
+            <!-- Detected -->
+            <Border IsVisible="{Binding ShowXFilesDetected}"
+                    Padding="12,10" CornerRadius="6"
+                    BorderBrush="#5555FF55" BorderThickness="1" Background="#1A55FF55">
+              <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-check-20.png"
+                         Width="18" Height="18" Stretch="Uniform"/>
+                  <TextBlock Text="X-Files detected on the console"
+                             FontSize="13" FontWeight="SemiBold" Foreground="#55FF55"
+                             VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="{Binding XFilesDisplayName}" FontSize="13" FontWeight="Bold"/>
+                <TextBlock FontFamily="Consolas" FontSize="12" Foreground="{StaticResource TextMutedBrush}">
+                  <Run Text="Package Family Name:  "/>
+                  <Run Text="{Binding XFilesPfn}"/>
+                </TextBlock>
+              </StackPanel>
+            </Border>
+
+            <!-- Not detected -->
+            <Border IsVisible="{Binding ShowXFilesMissing}"
+                    Padding="12,10" CornerRadius="6"
+                    BorderBrush="#55E74C3C" BorderThickness="1" Background="#1AE74C3C">
+              <StackPanel Spacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-warning-20.png"
+                         Width="18" Height="18" Stretch="Uniform"/>
+                  <TextBlock Text="X-Files not found installed"
+                             FontSize="13" FontWeight="SemiBold" Foreground="#FF5555"
+                             VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="Install X-Files on the console first (see the project link above), then retry."
+                           FontSize="12" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" LineHeight="18"/>
+                <Button Padding="12,7" HorizontalAlignment="Left"
+                        Command="{Binding LoadCommand}">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-shield-20.png"
+                           Width="16" Height="16" Stretch="Uniform"/>
+                    <TextBlock Text="Retry detection" FontSize="12" VerticalAlignment="Center"/>
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Text="With this enabled, X-Files can explore LocalAppData and DevelopmentFiles on the console. The exemption is lost on re-install and console reboot."
+                       FontSize="12" Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap" LineHeight="18"/>
+          </StackPanel>
+
+          <!-- Step 2 (full): App selection -->
+          <StackPanel IsVisible="{Binding ShowStep2Full}" Spacing="12">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Select the app" FontSize="17" FontWeight="SemiBold"/>
+              <TextBlock Text="Choose which installed app gets (or loses) loopback access."
+                         FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+            </StackPanel>
+
+            <Separator Height="1" Background="{StaticResource BorderBrush}"/>
+
+            <StackPanel Spacing="6">
+              <TextBlock Text="App" Classes="Muted" FontSize="12" FontWeight="SemiBold"/>
+              <ComboBox ItemsSource="{Binding Packages}"
+                        SelectedItem="{Binding SelectedPackage}"
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource BoolInverse}}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding DisplayName}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <TextBlock FontFamily="Consolas" FontSize="12" Foreground="{StaticResource TextMutedBrush}">
+                <Run Text="Package Family Name:  "/>
+                <Run Text="{Binding SelectedFamilyName}"/>
+              </TextBlock>
+            </StackPanel>
+
+            <Border Padding="12,10" CornerRadius="6"
+                    BorderBrush="#5555E7C3" BorderThickness="1" Background="#1A55E7C3">
+              <TextBlock Text="Lets this app reach the console's own Dev Portal — useful for browsing LocalAppData and DevelopmentFiles."
+                         FontSize="12" Foreground="#55E7C3" TextWrapping="Wrap" LineHeight="18"/>
+            </Border>
+          </StackPanel>
+
+          <!-- Step 3 (quick): Confirm -->
+          <StackPanel IsVisible="{Binding ShowStep3Quick}" Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-shield-48.png"
+                     Width="44" Height="44" Stretch="Uniform"
+                     VerticalAlignment="Center"/>
+              <StackPanel VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="Confirm enablement" FontSize="17" FontWeight="SemiBold"/>
+                <TextBlock Text="Review before applying"
+                           FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+            </StackPanel>
+
+            <Separator Height="1" Background="{StaticResource BorderBrush}"/>
+
+            <Border Padding="12,10" CornerRadius="6" Background="{StaticResource SurfaceAltBrush}">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                  <TextBlock Text="App:" FontSize="13" Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding XFilesDisplayName}"
+                             FontSize="13" FontWeight="Bold"/>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                  <TextBlock Text="PFN:" FontSize="13" Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding XFilesPfn}"
+                             FontFamily="Consolas" FontSize="12"/>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border Padding="12,10" CornerRadius="6"
+                    BorderBrush="#5555E7C3" BorderThickness="1" Background="#1A55E7C3">
+              <TextBlock Text="Safe and quick. If X-Files already has it, nothing changes."
+                         FontSize="12" Foreground="#55E7C3" TextWrapping="Wrap" LineHeight="18"/>
+            </Border>
+          </StackPanel>
+
+          <!-- Step 3 (full): Action -->
+          <StackPanel IsVisible="{Binding ShowStep3Full}" Spacing="12">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Choose the action" FontSize="17" FontWeight="SemiBold"/>
+              <TextBlock Text="Enable or remove loopback access for the selected app."
+                         FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+            </StackPanel>
+
+            <Separator Height="1" Background="{StaticResource BorderBrush}"/>
+
+            <Border Padding="12,10" CornerRadius="6" Background="{StaticResource SurfaceAltBrush}">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                  <TextBlock Text="App:" FontSize="13" Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding SelectedPackage.DisplayName}"
+                             FontSize="13" FontWeight="Bold"/>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                  <TextBlock Text="PFN:" FontSize="13" Foreground="{StaticResource TextDimBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding SelectedFamilyName}"
+                             FontFamily="Consolas" FontSize="12"/>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <RadioButton IsChecked="{Binding ApplyExemption}" FontSize="13">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Enable loopback" FontSize="13" FontWeight="SemiBold"/>
+                <TextBlock Text="Grant access so the app can reach the Dev Portal REST API on itself."
+                           FontSize="11" Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap"/>
+              </StackPanel>
+            </RadioButton>
+            <RadioButton IsChecked="{Binding ApplyExemption, Converter={StaticResource BoolInverse}}" FontSize="13">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Remove loopback" FontSize="13" FontWeight="SemiBold"/>
+                <TextBlock Text="Revoke access; the app can no longer reach the portal on itself."
+                           FontSize="11" Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap"/>
+              </StackPanel>
+            </RadioButton>
+
+            <Border Padding="10,8" CornerRadius="4" Background="{StaticResource SurfaceAltBrush}">
+              <TextBlock FontFamily="Consolas" FontSize="12" Text="{Binding CommandPreview}"
+                         TextWrapping="Wrap"/>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Padding="12,7" Command="{Binding CheckStatusCommand}"
+                      IsEnabled="{Binding IsBusy, Converter={StaticResource BoolInverse}}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-shield-20.png"
+                         Width="16" Height="16" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Check current status" FontSize="12" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </StackPanel>
+
+            <!-- Status banner -->
+            <Border IsVisible="{Binding HasStatus}"
+                    Background="{Binding StatusBackground}"
+                    BorderBrush="{Binding StatusBorderBrush}"
+                    BorderThickness="1" CornerRadius="6" Padding="12,9">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <Image Source="{Binding StatusIconPath}"
+                       Width="18" Height="18" Stretch="Uniform"
+                       VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding StatusMessage}"
+                           Foreground="{Binding StatusForeground}"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center" TextWrapping="Wrap"/>
+              </Grid>
+            </Border>
+          </StackPanel>
+
+          <!-- Step 4: Run / Result -->
+          <StackPanel IsVisible="{Binding IsRunStep}"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Center"
+                      Spacing="12"
+                      MaxWidth="400">
+
+            <!-- Running -->
+            <StackPanel Spacing="12"
+                        IsVisible="{Binding IsRunning}">
+              <Image x:Name="RunSpinner"
+                     Source="avares://XBVault/Assets/Views/InstalledView/installed-spinner-48.png"
+                     Width="48" Height="48" Stretch="Uniform"
+                     HorizontalAlignment="Center"
+                     RenderTransformOrigin="50% 50%">
+                <Image.RenderTransform>
+                  <RotateTransform Angle="0"/>
+                </Image.RenderTransform>
+              </Image>
+              <TextBlock Text="Running checknetisolation..."
+                         FontSize="16" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"/>
+              <ProgressBar IsIndeterminate="True"
+                           Width="220" Height="4"
+                           Foreground="{StaticResource AccentBrush}"/>
+              <TextBlock Text="{Binding CommandPreview}"
+                         FontFamily="Consolas" FontSize="11"
+                         Foreground="{StaticResource TextDimBrush}"
+                         HorizontalAlignment="Center" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <!-- Result: success -->
+            <StackPanel Spacing="10"
+                        IsVisible="{Binding RunComplete}">
+              <StackPanel Spacing="10"
+                          IsVisible="{Binding RunSuccess}">
+                <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-check-100.png"
+                       Width="100" Height="100" Stretch="Uniform"
+                       HorizontalAlignment="Center"/>
+                <TextBlock Text="Loopback exemption applied!"
+                           FontSize="20" FontWeight="Bold"
+                           Foreground="{StaticResource SuccessBrush}"
+                           TextAlignment="Center"/>
+              </StackPanel>
+
+              <!-- Result: failure -->
+              <StackPanel Spacing="10"
+                          IsVisible="{Binding RunSuccess, Converter={StaticResource BoolInverse}}">
+                <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-warning-100.png"
+                       Width="100" Height="100" Stretch="Uniform"
+                       HorizontalAlignment="Center"/>
+                <TextBlock Text="Something went wrong"
+                           FontSize="20" FontWeight="Bold"
+                           Foreground="{StaticResource DangerBrush}"
+                           TextAlignment="Center"/>
+              </StackPanel>
+
+              <TextBlock Text="{Binding RunResultMessage}"
+                         FontSize="13"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         TextAlignment="Center" TextWrapping="Wrap" LineHeight="19"/>
+
+              <Border IsVisible="{Binding RunVerificationText, Converter={StaticResource StringNotEmpty}}"
+                      Padding="12,9" CornerRadius="6" Background="{StaticResource SurfaceAltBrush}">
+                <TextBlock Text="{Binding RunVerificationText}"
+                           FontFamily="Consolas" FontSize="11"
+                           Foreground="{StaticResource TextDimBrush}"
+                           TextWrapping="Wrap"/>
+              </Border>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Footer Buttons -->
+          <Grid Grid.Row="1" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Cancel (dismiss) -->
+            <Button Classes="Danger"
+                    Padding="16,8"
+                    HorizontalAlignment="Left"
+                    Command="{Binding CloseCommand}"
+                    IsVisible="{Binding ShowCancel}">
+              <TextBlock Text="Cancel"
+                         FontSize="12" VerticalAlignment="Center"/>
+            </Button>
+
+            <!-- Right: Back + Next + Run + Done -->
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        HorizontalAlignment="Right">
+              <Button Padding="16,8"
+                      Command="{Binding GoBackCommand}"
+                      IsEnabled="{Binding CanGoBack}"
+                      IsVisible="{Binding ShowBack}">
+                <TextBlock Text="Back"
+                           FontSize="13" VerticalAlignment="Center"/>
+              </Button>
+
+              <Button Padding="20,8"
+                      Command="{Binding GoNextCommand}"
+                      IsEnabled="{Binding CanGoNext}"
+                      IsVisible="{Binding ShowNext}">
+                <TextBlock Text="Next"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Button>
+
+              <Button x:Name="RunBtn"
+                      Classes="Accent"
+                      Padding="20,8"
+                      Command="{Binding RunCommand}"
+                      IsEnabled="{Binding CanRun}"
+                      IsVisible="{Binding ShowRun}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Grid>
+                    <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-shield-20.png"
+                           IsVisible="{Binding #RunBtn.IsEnabled}"
+                           Width="18" Height="18" Stretch="Uniform"/>
+                    <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-shield-20.png"
+                           IsVisible="{Binding #RunBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                           Width="18" Height="18" Stretch="Uniform" Opacity="0.35"/>
+                  </Grid>
+                  <TextBlock Grid.Column="1" Text="{Binding RunLabel}"
+                             FontSize="13" FontWeight="SemiBold"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+
+              <Button Classes="Accent"
+                      Padding="20,8"
+                      Command="{Binding CloseCommand}"
+                      IsVisible="{Binding RunComplete}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/LoopbackExemptWindow/loopback-check-20.png"
+                         Width="18" Height="18" Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Done"
+                             FontSize="13" FontWeight="SemiBold"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </StackPanel>
+          </Grid>
+
+        </Grid>
+      </Border>
+
+    </Grid>
+  </Border>
+
+</Window>

@@ -145,6 +145,8 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     public bool CanInstallXboxItem => IsNotInstalling && !ShowWindowsToolBanner;
     public bool CanCheckXboxItem => CanCheckInstalled && !ShowWindowsToolBanner;
     public bool CanRecheckXboxItem => CanRecheck && !ShowWindowsToolBanner;
+    public bool ShowInstallFinishButton => !IsUpdateMode && InstallComplete && InstallSuccess;
+    public bool ShowInstallActionButton => !IsUpdateMode && !ShowInstallFinishButton;
     public bool ShowDescriptionPanel => !IsInstalling && !InstallComplete && !IsCheckingInstalled && !CheckComplete;
     public bool ShowInstallOverlay => IsInstalling || InstallComplete;
     public bool ShowCheckOverlay => IsCheckingInstalled || CheckComplete;
@@ -171,6 +173,8 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowInstallOverlay));
         OnPropertyChanged(nameof(IsUpdateComplete));
         OnPropertyChanged(nameof(ShowUpdateButton));
+        OnPropertyChanged(nameof(ShowInstallFinishButton));
+        OnPropertyChanged(nameof(ShowInstallActionButton));
     }
 
     partial void OnInstallSuccessChanged(bool value)
@@ -179,6 +183,8 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             _justUpdatedItemName = SelectedItem.Name;
         OnPropertyChanged(nameof(IsUpdateComplete));
         OnPropertyChanged(nameof(ShowUpdateButton));
+        OnPropertyChanged(nameof(ShowInstallFinishButton));
+        OnPropertyChanged(nameof(ShowInstallActionButton));
     }
 
     partial void OnCheckCompleteChanged(bool value)
@@ -219,6 +225,8 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowRecheckButton));
         OnPropertyChanged(nameof(IsUpdateComplete));
         OnPropertyChanged(nameof(ShowUpdateButton));
+        OnPropertyChanged(nameof(ShowInstallFinishButton));
+        OnPropertyChanged(nameof(ShowInstallActionButton));
     }
 
     [RelayCommand]

@@ -57,6 +57,7 @@ public class SftpEntry : INotifyPropertyChanged
     public string? Extension { get; set; }
     public bool IsJunction { get; set; }
     public bool IsDrive { get; set; }
+    public bool IsPortal { get; set; }
     public string? IconName { get; set; }
     public string? ToolTip { get; set; }
 
@@ -133,12 +134,10 @@ public class SftpEntry : INotifyPropertyChanged
     {
         if (_iconCache.TryGetValue(name, out var cached))
         {
-            Logger.Trace($"LoadIcon: cache hit '{name}'");
             return cached;
         }
 
         var uri = $"avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-{name}-24.png";
-        Logger.Trace($"LoadIcon: cache miss '{name}', loading from {uri}");
         var bitmap = new Bitmap(AssetLoader.Open(new Uri(uri)));
         _iconCache[name] = bitmap;
         return bitmap;

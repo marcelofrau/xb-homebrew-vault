@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] — 2026-08-03
+
+### Added
+
+- **User Files portal browser** — File Explorer browses app `LocalAppData` / `DevelopmentFiles` via the Dev Portal REST API (read-only `User Files:\` tree root), with recursive listing and per-file / multi-file download
+- **Portal folder creation** — "New Folder" works inside an app's `LocalAppData` through the portal API
+- **Portal rename / delete** — rename and delete entries inside an app's `LocalAppData` / `DevelopmentFiles` through the portal API (folders created through the portal are now fully manageable)
+- **X-Files Enablement wizard** — one-click tool that auto-detects the X-Files UWP app and applies its loopback exemption (via `checknetisolation` over SSH), so the app can reach the console's own Dev Portal REST API
+- **Loopback Exempt Manager wizard** — apply or remove the loopback exemption for any installed app and check its current status, with post-command verification
+- **Portal loading overlay** — dim + spinner overlay over the file tree and list while portal REST listings are in progress (replaces the stale "Loading..." tree placeholder)
+
+### Changed
+
+- **Tools page layout** — X-Files Enablement and Loopback Exempt Manager live under XBOX ACTIONS (moved below EXTERNAL MEDIA TOOLS); the four XBOX ACTIONS buttons now fit on a single row
+- **X-Files detection** — matches `X-Files` / `XFiles.Xbox` package family name (normalizes hyphens/spaces/dots) instead of exact-name substring
+- **Quick wizard opens on step 2** — X-Files Enablement skips the Overview step; detection result shows only after the package list loads (no red "not found" flash)
+- **Wizard icon** — the X-Files step header now uses a folder icon instead of a game-pad icon
+- **Wizard run verification** — a successful `checknetisolation` exit code is treated as success; the `-s` post-check is best-effort because the console SSH shell may not echo its output
+
+### Fixed
+
+- **Wizard step overlap** — quick (X-Files) and full (app selection) panels shared the same visibility binding and rendered stacked; each mode now shows only its own panel
+- **Wizard nav buttons delayed** — Back / Next / Cancel are now always visible and only disabled while busy, instead of appearing after the package load finishes
+
+---
+
 ## [1.2.0] — 2026-07-28
 
 ### Added

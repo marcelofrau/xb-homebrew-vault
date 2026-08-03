@@ -553,7 +553,7 @@
                         Padding="20,10"
                         Click="OnInstallClick"
                         IsEnabled="{Binding CanInstallXboxItem}"
-                        IsVisible="{Binding IsUpdateMode, Converter={StaticResource BoolInverse}}">
+                        IsVisible="{Binding ShowInstallActionButton}">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                     <Grid>
                       <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
@@ -564,6 +564,21 @@
                              Width="20" Height="20" Stretch="Uniform"/>
                     </Grid>
                     <TextBlock Grid.Column="1" Text="Install"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                  </Grid>
+                </Button>
+                <!-- Finish button (install complete, normal mode) -->
+                <Button x:Name="InstallFinishBtn"
+                        Classes="Accent"
+                        Padding="20,10"
+                        Click="OnUpdateFinishClick"
+                        IsVisible="{Binding ShowInstallFinishButton}">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-success-16.png"
+                           Width="20" Height="20" Stretch="Uniform"/>
+                    <TextBlock Grid.Column="1" Text="Finish"
                                FontSize="13"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center"/>

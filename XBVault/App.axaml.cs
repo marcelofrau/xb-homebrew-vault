@@ -71,6 +71,7 @@ public partial class App : Application
             var installService = new PackageInstallService(cacheService, packageService);
             var sftpService = new SftpService();
             var sftpTransferService = new SftpTransferService(sftpService);
+            var portalService = new PortalAppFilesService(authService, packageService);
             var catalogService = new CatalogApiService();
             var overrideService = new PackageOverrideService();
             overrideService.Initialize();
@@ -78,7 +79,7 @@ public partial class App : Application
             var mainViewModel = new MainViewModel(authService);
             var browseViewModel = new BrowseViewModel(installService, authService, packageService, catalogService, overrideService);
             var installedViewModel = new InstalledViewModel(authService, packageService);
-            var fileExplorerViewModel = new FileExplorerViewModel(authService, sftpService, sftpTransferService);
+            var fileExplorerViewModel = new FileExplorerViewModel(authService, sftpService, sftpTransferService, portalService);
             var toolsViewModel = new ToolsViewModel(authService, systemService);
             var settingsViewModel = new SettingsViewModel(authService, cacheService);
 
@@ -89,10 +90,30 @@ public partial class App : Application
             _ = InitAfterSplashAsync(desktop, splash, mainViewModel, browseViewModel,
                 installedViewModel, fileExplorerViewModel, toolsViewModel,
                 settingsViewModel, authService, packageService, systemService,
-                networkService, processService, performanceService, installService);
+                networkService, processService, performanceService, installService, sftpService, portalService);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static void OpenLoopbackExemptWizard(Window owner, XboxAuthService authService, SftpService sftpService, XboxPackageService packageService, bool quickMode)
+    {
+        var vm = new LoopbackExemptViewModel(authService, sftpService, packageService, quickMode);
+        var win = new LoopbackExemptWindow { DataContext = vm };
+        vm.OpenProjectLinkAction = () =>
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(LoopbackExemptViewModel.XFilesProjectUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "OpenLoopbackExemptWizard: failed to open X-Files project link");
+            }
+        };
+        vm.CloseAction = win.Close;
+        win.Opened += async (_, _) => await vm.LoadCommand.ExecuteAsync(null);
+        win.ShowDialog(owner);
     }
 
     private static void SetupGlobalExceptionHandling()
@@ -163,7 +184,9 @@ public partial class App : Application
         XboxNetworkService networkService,
         XboxProcessService processService,
         XboxPerformanceService performanceService,
-        PackageInstallService installService)
+        PackageInstallService installService,
+        SftpService sftpService,
+        PortalAppFilesService portalService)
     {
         Logger.Debug("Splash delay starting (2s)");
         await Task.Delay(SplashMinDelayMs);
@@ -416,6 +439,9 @@ public partial class App : Application
                 var win = new Views.SystemInfoWindow { DataContext = vm };
                 win.ShowDialog(main);
             };
+
+            toolsViewModel.OpenLoopbackExemptAction = () => OpenLoopbackExemptWizard(main, authService, sftpService, packageService, quickMode: false);
+            toolsViewModel.OpenLoopbackExemptQuickAction = () => OpenLoopbackExemptWizard(main, authService, sftpService, packageService, quickMode: true);
 
             toolsViewModel.ShowProcessesAction = () =>
             {
