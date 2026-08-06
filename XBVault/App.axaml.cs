@@ -202,6 +202,8 @@ public partial class App : Application
             desktop.MainWindow = main;
             main.Show();
 
+            settingsViewModel.UiScaleChanged = () => main.ApplyUiScale();
+
             browseViewModel.ShowDetailAction = item =>
             {
                 Logger.Info($"ShowDetailAction invoked for: {item.Name}");

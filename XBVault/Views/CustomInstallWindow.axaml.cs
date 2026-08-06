@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
+using XBVault.Helpers;
 using XBVault.Services;
 using XBVault.ViewModels;
 
@@ -25,6 +26,7 @@ public partial class CustomInstallWindow : Window
             Logger.Error(ex, "CustomInstallWindow InitializeComponent FAILED");
             throw;
         }
+        Opened += (_, _) => WindowFitHelper.ApplyScale(this, SettingsService.Current.UiScale);
         Loaded += (_, _) => StartSpin();
         Unloaded += (_, _) => StopSpin();
         KeyDown += OnKeyDown;

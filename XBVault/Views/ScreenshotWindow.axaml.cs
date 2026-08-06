@@ -1,5 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using XBVault.Helpers;
+using XBVault.Services;
 
 namespace XBVault.Views;
 
@@ -8,6 +10,7 @@ public partial class ScreenshotWindow : Window
     public ScreenshotWindow()
     {
         InitializeComponent();
+        Opened += (_, _) => WindowFitHelper.ApplyScale(this, SettingsService.Current.UiScale);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)

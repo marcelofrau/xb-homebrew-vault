@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
+using XBVault.Helpers;
 using XBVault.Services;
 using XBVault.ViewModels;
 
@@ -28,6 +29,7 @@ public partial class LoopbackExemptWindow : Window
         Loaded += (_, _) => StartSpin();
         Unloaded += (_, _) => StopSpin();
         KeyDown += OnKeyDown;
+        Opened += (_, _) => WindowFitHelper.ApplyScale(this, SettingsService.Current.UiScale);
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)

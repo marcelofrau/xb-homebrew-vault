@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using XBVault.Models;
 using XBVault.Services;
@@ -92,6 +93,22 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _selectedLogLevel = "Info";
 
+    [ObservableProperty]
+    private int _uiScalePercent = 100;
+
+    // Invoked whenever the UI scale changes so live windows can re-apply it
+    public Action? UiScaleChanged { get; set; }
+
+    public List<int> UiScaleOptions { get; } = [80, 90, 100, 110, 120];
+
+    partial void OnUiScalePercentChanged(int value)
+    {
+        SettingsService.Current.UiScale = value / 100.0;
+        SettingsService.Save();
+        UiScaleChanged?.Invoke();
+        Logger.Info($"UI scale set to {value}%");
+    }
+
     public Cursor? Cursor => IsTestingConnection ? AppStartingCursor : null;
 
     private static readonly Cursor AppStartingCursor = new(StandardCursorType.AppStarting);
@@ -127,6 +144,10 @@ public partial class SettingsViewModel : ObservableObject
         Username = conn.Username;
         UseHttps = conn.UseHttps;
         SelectedLogLevel = settings.MinLogLevel;
+        var savedScale = (int)Math.Round(settings.UiScale * 100);
+#pragma warning disable MVVMTK0034
+        _uiScalePercent = UiScaleOptions.OrderBy(o => Math.Abs(o - savedScale)).First();
+#pragma warning restore MVVMTK0034
 
         if (!string.IsNullOrEmpty(conn.EncryptedPassword))
             Password = CryptoService.Deobfuscate(conn.EncryptedPassword);

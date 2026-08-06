@@ -1,5 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using XBVault.Helpers;
+using XBVault.Services;
 using XBVault.ViewModels;
 
 namespace XBVault.Views;
@@ -16,6 +18,7 @@ public partial class SystemInfoWindow : Window
     {
         if (DataContext is SystemInfoViewModel vm)
             vm.Initialize();
+        WindowFitHelper.ApplyScale(this, SettingsService.Current.UiScale);
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)

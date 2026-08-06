@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using XBVault.Helpers;
 using XBVault.Services;
 
 namespace XBVault.Views;
@@ -20,6 +21,7 @@ public partial class SetupWizardWindow : Window
             Logger.Error(ex, "SetupWizardWindow InitializeComponent FAILED");
             throw;
         }
+        Opened += (_, _) => WindowFitHelper.ApplyScale(this, SettingsService.Current.UiScale);
     }
 
     private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();

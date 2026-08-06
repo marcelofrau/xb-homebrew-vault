@@ -1,5 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using XBVault.Helpers;
+using XBVault.Services;
 using XBVault.ViewModels;
 
 namespace XBVault.Views;
@@ -10,6 +12,7 @@ public partial class NetworkInfoWindow : Window
     {
         InitializeComponent();
         Loaded += OnLoaded;
+        Opened += (_, _) => WindowFitHelper.ApplyScale(this, SettingsService.Current.UiScale);
     }
 
     private async void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

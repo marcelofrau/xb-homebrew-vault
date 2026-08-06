@@ -11,6 +11,7 @@ public class AppSettings
     public string MinLogLevel { get; set; } = "Info";
     public double LogFontSize { get; set; } = 15;
     public double ConsoleFontSize { get; set; } = 13;
+    public double UiScale { get; set; } = 1.0;
     public double MainWindowWidth { get; set; }
     public double MainWindowHeight { get; set; }
 }

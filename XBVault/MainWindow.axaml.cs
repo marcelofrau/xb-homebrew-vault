@@ -26,7 +26,10 @@ public partial class MainWindow : Window
         VersionText.Text = BuildInfo.DisplayVersion;
         UpdateWindowStateIcons();
         AddHandler(InputElement.KeyDownEvent, OnMainWindowKeyDown, RoutingStrategies.Tunnel);
+        Opened += (_, _) => ApplyUiScale();
     }
+
+    public void ApplyUiScale() => WindowFitHelper.ApplyScale(this, SettingsService.Current.UiScale);
 
     public bool IsModalDimmed
     {
@@ -41,7 +44,10 @@ public partial class MainWindow : Window
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         if (WindowState == WindowState.Normal)
-            WindowSettingsService.SaveMainWindowSize(Width, Height);
+        {
+            var (designWidth, designHeight) = WindowFitHelper.GetDesignSize(this);
+            WindowSettingsService.SaveMainWindowSize(designWidth, designHeight);
+        }
 
         base.OnClosing(e);
     }

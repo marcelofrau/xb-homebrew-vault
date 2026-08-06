@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
+using XBVault.Helpers;
 using XBVault.Models;
 using XBVault.Services;
 using XBVault.ViewModels;
@@ -32,6 +33,7 @@ public partial class ItemDetailWindow : Window
             StartSpin();
         };
         Unloaded += (_, _) => StopSpin();
+        Opened += (_, _) => WindowFitHelper.ApplyScale(this, SettingsService.Current.UiScale);
     }
 
     private void StartSpin()

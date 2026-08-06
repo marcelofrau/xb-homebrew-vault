@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
+using XBVault.Helpers;
 using XBVault.Services;
 using XBVault.ViewModels;
 
@@ -20,6 +21,7 @@ public partial class UsbPermissionWindow : Window
             InitializeComponent();
             Loaded += (_, _) => StartSpin();
             Unloaded += (_, _) => StopSpin();
+            Opened += (_, _) => WindowFitHelper.ApplyScale(this, SettingsService.Current.UiScale);
         }
         catch (Exception ex)
         {

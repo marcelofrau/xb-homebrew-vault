@@ -12,6 +12,7 @@ public partial class AboutWindow : Window
         InitializeComponent();
         VersionText.Text = BuildInfo.DisplayVersion;
         Opened += (_, _) => Logger.Debug("AboutWindow opened");
+        Opened += (_, _) => WindowFitHelper.ApplyScale(this, SettingsService.Current.UiScale);
     }
 
     private void OnCloseClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
