@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.3.0] — 2026-08-03
+## [1.3.0] — 2026-08-07
 
 ### Added
 
@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **X-Files Enablement wizard** — one-click tool that auto-detects the X-Files UWP app and applies its loopback exemption (via `checknetisolation` over SSH), so the app can reach the console's own Dev Portal REST API
 - **Loopback Exempt Manager wizard** — apply or remove the loopback exemption for any installed app and check its current status, with post-command verification
 - **Portal loading overlay** — dim + spinner overlay over the file tree and list while portal REST listings are in progress (replaces the stale "Loading..." tree placeholder)
+- **UI scale to fit screen** — main window content auto-shrinks to fit the display work area (fixes clipping on HiDPI / high display-scaling setups), plus a UI scale setting (80–120%) to tune interface size
 
 ### Changed
 
@@ -25,11 +26,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Quick wizard opens on step 2** — X-Files Enablement skips the Overview step; detection result shows only after the package list loads (no red "not found" flash)
 - **Wizard icon** — the X-Files step header now uses a folder icon instead of a game-pad icon
 - **Wizard run verification** — a successful `checknetisolation` exit code is treated as success; the `-s` post-check is best-effort because the console SSH shell may not echo its output
+- **Logs moved into Settings** — removed the Logs sidebar tab; the live log console is now opened from a "Logs screen" button in Settings (Ctrl+Tab cycling still reaches it)
+- **Compact sidebar** — reduced nav item padding/font size so all tabs fit on shorter displays
+- **Larger default window** — default main window height raised from 860 to 1000 for more content room on large screens
 
 ### Fixed
 
 - **Wizard step overlap** — quick (X-Files) and full (app selection) panels shared the same visibility binding and rendered stacked; each mode now shows only its own panel
 - **Wizard nav buttons delayed** — Back / Next / Cancel are now always visible and only disabled while busy, instead of appearing after the package load finishes
+- **Tab switching from Settings** — GoToLogs no longer bounces back to Browse; sidebar selection is now one-way with explicit per-item switching
 
 ---
 
