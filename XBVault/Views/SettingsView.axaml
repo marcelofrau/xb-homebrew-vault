@@ -17,10 +17,11 @@
     </StackPanel>
 
     <ScrollViewer Grid.Row="1">
-      <Grid RowDefinitions="*,Auto" ColumnDefinitions="1*,1*" ColumnSpacing="16">
+      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="1*,1*" ColumnSpacing="16">
+      <StackPanel Grid.Column="0" Spacing="5">
 
         <!-- Connection Section -->
-        <Border Classes="Card" Padding="24" Grid.Column="0">
+        <Border Classes="Card" Padding="24">
           <StackPanel Spacing="12">
 
             <TextBlock Text="XBOX CONNECTION"
@@ -137,8 +138,64 @@
           </StackPanel>
         </Border>
 
+        <!-- Logs Section -->
+        <Border Classes="Card" Padding="16">
+          <StackPanel Spacing="10">
+            <TextBlock Text="LOGS"
+                       Classes="SectionHeader"/>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Logs folder"
+                           FontSize="13"/>
+                <TextBlock Text="Open the app's log directory"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding OpenLogsFolderCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-folder-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Open"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Logs screen"
+                           FontSize="13"/>
+                <TextBlock Text="Jump to the live log console"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding GoToLogsCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-logs-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Open"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+
         <!-- Application Section (cache, logging, app management) -->
-        <Border Classes="Card" Padding="24" Grid.Column="1">
+        <Border Classes="Card" Padding="24" Grid.Column="1" VerticalAlignment="Top">
           <StackPanel Spacing="12">
             <TextBlock Text="APPLICATION"
                        Classes="SectionHeader"/>

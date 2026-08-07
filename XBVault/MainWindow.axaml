@@ -6,7 +6,7 @@
          x:DataType="vm:MainViewModel"
          x:Name="Root"
         Title="XB Homebrew Vault"
-        Width="1140" Height="860"
+        Width="1140" Height="1000"
         MinWidth="960" MinHeight="720"
         CanResize="True"
         WindowStartupLocation="CenterScreen"
@@ -27,7 +27,7 @@
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="BorderThickness" Value="0"/>
       <Setter Property="CornerRadius" Value="0"/>
-      <Setter Property="Padding" Value="0,10"/>
+      <Setter Property="Padding" Value="0,7"/>
       <Setter Property="Foreground" Value="#CCC"/>
       <Setter Property="FontSize" Value="11"/>
       <Setter Property="Cursor" Value="Hand"/>
@@ -38,7 +38,7 @@
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="BorderThickness" Value="0"/>
       <Setter Property="CornerRadius" Value="0"/>
-      <Setter Property="Padding" Value="0,10"/>
+      <Setter Property="Padding" Value="0,7"/>
       <Setter Property="FontSize" Value="11"/>
       <Setter Property="Cursor" Value="Arrow"/>
       <Setter Property="Foreground" Value="#CCC"/>
@@ -230,7 +230,7 @@
       <Grid RowDefinitions="Auto,*,Auto,Auto">
 
         <!-- Brand -->
-        <Border Padding="16,20,16,16"
+        <Border Padding="16,16,16,12"
                 Grid.Row="0" Cursor="Hand"
                 ToolTip.Tip="Visit marcelofrau.github.io/xb-homebrew-vault"
                 PointerPressed="OnBrandClick">
@@ -264,9 +264,10 @@
                  BorderThickness="0"
                  Background="Transparent"
                  Focusable="False"
-                 SelectedIndex="{Binding SelectedTab}"
+                 SelectedIndex="{Binding SelectedTab, Mode=OneWay}"
+                 SelectionChanged="OnNavSelectionChanged"
                  SelectionMode="Single">
-          <ListBoxItem Tag="Browse" Classes="nav-item" Padding="16,10" Focusable="False"
+          <ListBoxItem Tag="Browse" Classes="nav-item" Padding="16,7" Focusable="False"
                        ToolTip.Tip="Browse homebrew catalog">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
@@ -278,13 +279,13 @@
               <TextBlock Text="BROWSE"
                          Grid.Column="2"
                          VerticalAlignment="Center"
-                         FontSize="13"
+                         FontSize="12"
                          FontWeight="SemiBold"
                          Foreground="{StaticResource TextMutedBrush}"
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Installed" Classes="nav-item" Padding="16,10" Focusable="False"
+          <ListBoxItem Tag="Installed" Classes="nav-item" Padding="16,7" Focusable="False"
                        ToolTip.Tip="Manage installed packages">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
@@ -296,13 +297,13 @@
               <TextBlock Text="INSTALLED"
                          Grid.Column="2"
                          VerticalAlignment="Center"
-                         FontSize="13"
+                         FontSize="12"
                          FontWeight="SemiBold"
                          Foreground="{StaticResource TextMutedBrush}"
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="FileExplorer" Classes="nav-item" Padding="16,10" Focusable="False"
+          <ListBoxItem Tag="FileExplorer" Classes="nav-item" Padding="16,7" Focusable="False"
                        ToolTip.Tip="Browse Xbox filesystem">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
@@ -314,13 +315,13 @@
               <TextBlock Text="FILE EXPLORER"
                          Grid.Column="2"
                          VerticalAlignment="Center"
-                         FontSize="13"
+                         FontSize="12"
                          FontWeight="SemiBold"
                          Foreground="{StaticResource TextMutedBrush}"
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-          <ListBoxItem Tag="Tools" Classes="nav-item" Padding="16,10" Focusable="False"
+          <ListBoxItem Tag="Tools" Classes="nav-item" Padding="16,7" Focusable="False"
                        ToolTip.Tip="Utilities and diagnostics">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
@@ -332,13 +333,13 @@
               <TextBlock Text="TOOLS"
                          Grid.Column="2"
                          VerticalAlignment="Center"
-                         FontSize="13"
+                         FontSize="12"
                          FontWeight="SemiBold"
                          Foreground="{StaticResource TextMutedBrush}"
                          LetterSpacing="1"/>
             </Grid>
           </ListBoxItem>
-           <ListBoxItem Tag="Inspector" Classes="nav-item" Padding="16,10" Focusable="False"
+           <ListBoxItem Tag="Inspector" Classes="nav-item" Padding="16,7" Focusable="False"
                         ToolTip.Tip="Xbox connection inspector">
                <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
                <Border Background="Transparent" Opacity="0"
@@ -350,13 +351,13 @@
                <TextBlock Text="INSPECTOR"
                           Grid.Column="2"
                           VerticalAlignment="Center"
-                          FontSize="13"
+                          FontSize="12"
                           FontWeight="SemiBold"
                           Foreground="{StaticResource TextMutedBrush}"
                           LetterSpacing="1"/>
              </Grid>
            </ListBoxItem>
-          <ListBoxItem Tag="Settings" Classes="nav-item" Padding="16,10" Focusable="False">
+          <ListBoxItem Tag="Settings" Classes="nav-item" Padding="16,7" Focusable="False">
              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
               <Border Background="Transparent" Opacity="0"
                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
@@ -367,33 +368,16 @@
               <TextBlock Text="SETTINGS"
                          Grid.Column="2"
                          VerticalAlignment="Center"
-                         FontSize="13"
+                         FontSize="12"
                          FontWeight="SemiBold"
                          Foreground="{StaticResource TextMutedBrush}"
                          LetterSpacing="1"/>
-            </Grid>
-          </ListBoxItem>
-           <ListBoxItem Tag="Logs" Classes="nav-item" Padding="16,10" Focusable="False">
-              <Grid ColumnDefinitions="3,Auto,*" ColumnSpacing="10">
-               <Border Background="Transparent" Opacity="0"
-                       Width="3" CornerRadius="2" VerticalAlignment="Stretch"/>
-               <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-logs-32.png"
-                      Width="32" Height="32"
-                      Grid.Column="1"
-                      Stretch="Uniform"/>
-               <TextBlock Text="LOGS"
-                          Grid.Column="2"
-                          VerticalAlignment="Center"
-                          FontSize="13"
-                          FontWeight="SemiBold"
-                          Foreground="{StaticResource TextMutedBrush}"
-                          LetterSpacing="1"/>
              </Grid>
            </ListBoxItem>
-         </ListBox>
+          </ListBox>
 
         <!-- ER Logo + Discord -->
-        <StackPanel Grid.Row="2" Spacing="4" Margin="0,0,0,8">
+        <StackPanel Grid.Row="2" Spacing="4" Margin="0,0,0,4">
 
           <!-- ER Logo -->
           <Button Cursor="Hand"
@@ -438,7 +422,7 @@
         </StackPanel>
 
         <!-- Connection status + Connect + About -->
-        <StackPanel Grid.Row="3" Spacing="4" Margin="16,0,16,16">
+        <StackPanel Grid.Row="3" Spacing="4" Margin="16,0,16,12">
 
           <!-- Connect button (normal) -->
           <Button Classes="SidebarBtn"

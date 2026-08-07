@@ -203,6 +203,7 @@ public partial class App : Application
             main.Show();
 
             settingsViewModel.UiScaleChanged = () => main.ApplyUiScale();
+            settingsViewModel.ShowLogsAction = () => mainViewModel.SelectedTab = 6;
 
             browseViewModel.ShowDetailAction = item =>
             {

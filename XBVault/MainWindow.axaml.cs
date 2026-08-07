@@ -108,6 +108,26 @@ public partial class MainWindow : Window
     private void OnResizeSouthEastPointerPressed(object? sender, PointerPressedEventArgs e) => BeginResize(WindowEdge.SouthEast, e);
     private void OnResizeSouthWestPointerPressed(object? sender, PointerPressedEventArgs e) => BeginResize(WindowEdge.SouthWest, e);
 
+    private void OnNavSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not ListBox listBox || listBox.SelectedItem is not ListBoxItem item) return;
+        if (DataContext is not MainViewModel vm) return;
+
+        var index = item.Tag switch
+        {
+            "Browse" => 0,
+            "Installed" => 1,
+            "FileExplorer" => 2,
+            "Tools" => 3,
+            "Inspector" => 4,
+            "Settings" => 5,
+            _ => -1
+        };
+
+        if (index >= 0 && index != vm.SelectedTab)
+            vm.SelectedTab = index;
+    }
+
     private void OnBrandClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Logger.Info("Opening project website from brand logo");

@@ -5,7 +5,7 @@ namespace XBVault.Services;
 public static class WindowSettingsService
 {
     public const double DefaultMainWindowWidth = 1140;
-    public const double DefaultMainWindowHeight = 860;
+    public const double DefaultMainWindowHeight = 1000;
     public const double MinMainWindowWidth = 960;
     public const double MinMainWindowHeight = 720;
     public const double MaxMainWindowWidth = 3840;

@@ -58,7 +58,7 @@ public static class WindowFitHelper
             return;
 
         double fit = Math.Min(availW / info.DesignWidth, availH / info.DesignHeight);
-        double scale = Math.Min(fit, 1.0) * userScale;
+        double scale = Math.Min(userScale, fit);
 
         if (scale >= 1.0)
         {

@@ -404,4 +404,27 @@ public partial class SettingsViewModel : ObservableObject
         if (Directory.Exists(dir))
             Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
     }
+
+    // Invoked by the GoToLogs command to switch to the Logs screen
+    public Action? ShowLogsAction { get; set; }
+
+    [RelayCommand]
+    private void OpenLogsFolder()
+    {
+        Logger.Debug("OpenLogsFolder called");
+        var dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "XBVault", "logs");
+        if (Directory.Exists(dir))
+            Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
+        else
+            Logger.Warn("OpenLogsFolder: log directory not found");
+    }
+
+    [RelayCommand]
+    private void GoToLogs()
+    {
+        Logger.Info("GoToLogs called");
+        ShowLogsAction?.Invoke();
+    }
 }
