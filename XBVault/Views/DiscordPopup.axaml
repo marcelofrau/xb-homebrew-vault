@@ -4,7 +4,7 @@
         x:Class="XBVault.Views.DiscordPopup"
         Classes="dialogWindow"
         x:DataType="vm:DiscordPopupViewModel"
-        Title="Join Our Community"
+        Title="XBVault - Join Our Community"
         WindowStartupLocation="CenterOwner"
         Width="360"
         SizeToContent="Height"

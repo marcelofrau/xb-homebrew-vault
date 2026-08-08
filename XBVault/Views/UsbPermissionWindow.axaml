@@ -4,11 +4,12 @@
         x:Class="XBVault.Views.UsbPermissionWindow"
         Classes="dialogWindow"
         x:DataType="vm:UsbPermissionViewModel"
-        Title="USB Media Drive"
+        Title="XBVault - USB Media Drive"
         Width="600" Height="500"
         MinWidth="600" MinHeight="500"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
+        ShowInTaskbar="False"
         WindowDecorations="None"
         Background="{StaticResource SurfaceBrush}"
         Cursor="{Binding Cursor}">

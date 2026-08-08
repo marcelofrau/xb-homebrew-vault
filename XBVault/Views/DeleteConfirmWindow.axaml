@@ -4,7 +4,7 @@
         x:Class="XBVault.Views.DeleteConfirmWindow"
         Classes="dialogWindow"
         x:DataType="vm:DeleteConfirmViewModel"
-        Title="Delete"
+        Title="XBVault - Delete"
         Width="560" Height="420"
         WindowStartupLocation="CenterOwner"
         CanResize="False"

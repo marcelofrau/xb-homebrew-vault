@@ -4,11 +4,12 @@
         x:Class="XBVault.Views.SetupWizardWindow"
         Classes="dialogWindow"
         x:DataType="vm:SetupWizardViewModel"
-        Title="Setup Wizard"
+        Title="XBVault - Setup Wizard"
         Width="600" Height="500"
         MinWidth="600" MinHeight="500"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
+        ShowInTaskbar="False"
         WindowDecorations="None"
         Background="{StaticResource SurfaceBrush}">
 

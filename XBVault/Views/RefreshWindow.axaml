@@ -7,7 +7,7 @@
         x:Class="XBVault.Views.RefreshWindow"
         Classes="dialogWindow"
         x:DataType="vm:RefreshViewModel"
-        Title="Refresh Catalog"
+        Title="XBVault - Refresh Catalog"
         WindowStartupLocation="CenterOwner"
         Width="420"
         SizeToContent="Height"

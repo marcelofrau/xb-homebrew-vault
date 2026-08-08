@@ -4,7 +4,7 @@
         x:Class="XBVault.Views.LoopbackExemptWindow"
         Classes="dialogWindow"
         x:DataType="vm:LoopbackExemptViewModel"
-        Title="Loopback Exempt"
+        Title="XBVault - Loopback Exempt"
         Width="680" Height="520"
         MinWidth="680" MinHeight="520"
         WindowStartupLocation="CenterOwner"

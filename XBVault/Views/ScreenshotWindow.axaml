@@ -4,7 +4,7 @@
         x:Class="XBVault.Views.ScreenshotWindow"
         Classes="dialogWindow"
         x:DataType="vm:ScreenshotViewModel"
-        Title="Screenshot"
+        Title="XBVault - Screenshot"
         WindowStartupLocation="CenterOwner"
         Width="900" Height="680"
         CanResize="False"

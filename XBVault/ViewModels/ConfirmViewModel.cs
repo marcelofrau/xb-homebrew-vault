@@ -12,7 +12,7 @@ public partial class ConfirmViewModel : ObservableObject
 
     public ConfirmViewModel(string title, string message, string confirmText, string cancelText, string? iconSource = null, string? messageIconSource = null, bool isDestructive = false)
     {
-        Title = title;
+        Title = $"XBVault - {title}";
         Message = message;
         ConfirmText = confirmText;
         CancelText = cancelText;

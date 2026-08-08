@@ -4,7 +4,7 @@
         x:Class="XBVault.Views.SystemInfoWindow"
         Classes="dialogWindow"
         x:DataType="vm:SystemInfoViewModel"
-        Title="System Info"
+        Title="XBVault - System Info"
         WindowStartupLocation="CenterOwner"
         Width="520" Height="480"
         CanResize="False"

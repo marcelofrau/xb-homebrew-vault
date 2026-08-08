@@ -2,10 +2,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="XBVault.Views.AboutWindow"
         Classes="dialogWindow"
-        Title="About XB Homebrew Vault"
+        Title="XBVault - About"
         Width="500" Height="420"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
+        ShowInTaskbar="False"
         WindowDecorations="None">
 
   <Border BorderBrush="#9ACA3C" BorderThickness="2" Margin="1">

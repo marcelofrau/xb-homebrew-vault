@@ -5,7 +5,7 @@
         x:Class="XBVault.Views.NetworkInfoWindow"
         Classes="dialogWindow"
         x:DataType="vm:NetworkInfoViewModel"
-        Title="Network Info"
+        Title="XBVault - Network Info"
         WindowStartupLocation="CenterOwner"
         Width="760" Height="620"
         CanResize="False"

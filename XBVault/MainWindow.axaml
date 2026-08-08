@@ -5,7 +5,7 @@
          x:Class="XBVault.MainWindow"
          x:DataType="vm:MainViewModel"
          x:Name="Root"
-        Title="XB Homebrew Vault"
+        Title="XBVault - Home"
         Width="1140" Height="1000"
         MinWidth="960" MinHeight="720"
         CanResize="True"

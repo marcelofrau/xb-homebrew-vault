@@ -5,7 +5,7 @@
         x:Class="XBVault.Views.ProcessesWindow"
         Classes="dialogWindow"
         x:DataType="vm:ProcessesViewModel"
-        Title="Processes"
+        Title="XBVault - Processes"
         WindowStartupLocation="CenterOwner"
         Width="720" Height="540"
         CanResize="False"

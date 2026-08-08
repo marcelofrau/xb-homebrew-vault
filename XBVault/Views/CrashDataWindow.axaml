@@ -5,7 +5,7 @@
         x:Class="XBVault.Views.CrashDataWindow"
         Classes="dialogWindow"
         x:DataType="vm:CrashDataViewModel"
-        Title="Crash Data"
+        Title="XBVault - Crash Data"
         WindowStartupLocation="CenterOwner"
         Width="680" Height="480"
         CanResize="False"

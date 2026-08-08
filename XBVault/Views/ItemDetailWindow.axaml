@@ -7,10 +7,11 @@
         x:Class="XBVault.Views.ItemDetailWindow"
         Classes="dialogWindow"
         x:DataType="vm:BrowseViewModel"
-        Title="Item Details"
+        Title="XBVault - Item Details"
         Width="540" Height="740"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
+        ShowInTaskbar="False"
         WindowDecorations="None"
         Background="{StaticResource SurfaceBrush}">
 

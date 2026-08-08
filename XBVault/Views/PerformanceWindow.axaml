@@ -4,7 +4,7 @@
         x:Class="XBVault.Views.PerformanceWindow"
         Classes="dialogWindow"
         x:DataType="vm:PerformanceViewModel"
-        Title="Xbox Performance"
+        Title="XBVault - Xbox Performance"
         WindowStartupLocation="CenterOwner"
         Width="960" Height="640"
         CanResize="False"

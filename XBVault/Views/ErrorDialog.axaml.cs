@@ -44,6 +44,7 @@ public partial class ErrorDialog : Window
 
     public ErrorDialog(string title, string description, string details, ErrorDialogType type) : this()
     {
+        Title = $"XBVault - {title}";
         TitleText.Text = title;
         DescriptionText.Text = description;
         DetailsText.Text = details;

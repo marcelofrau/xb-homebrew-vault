@@ -4,11 +4,12 @@
         x:Class="XBVault.Views.CustomInstallWindow"
         Classes="dialogWindow"
         x:DataType="vm:CustomInstallViewModel"
-        Title="Custom Install"
+        Title="XBVault - Custom Install"
         Width="600" Height="500"
         MinWidth="600" MinHeight="500"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
+        ShowInTaskbar="False"
         WindowDecorations="None"
         Background="{StaticResource SurfaceBrush}" Cursor="{Binding Cursor}">
 

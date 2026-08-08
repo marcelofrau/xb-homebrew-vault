@@ -17,6 +17,7 @@ public partial class InputDialog : Window
 
     public InputDialog(string title, string message, string defaultValue, string? iconUri) : this()
     {
+        Title = $"XBVault - {title}";
         TitleText.Text = title;
         MessageText.Text = message;
         InputTextBox.Text = defaultValue;

@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="XBVault.Views.SftpInfoWindow"
         Classes="dialogWindow"
-        Title="SFTP Connection"
+        Title="XBVault - SFTP Connection"
         Width="400"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"

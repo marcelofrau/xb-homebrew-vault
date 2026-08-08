@@ -7,7 +7,7 @@
         x:Class="XBVault.Views.ConnectionWindow"
         Classes="dialogWindow"
         x:DataType="vm:ConnectionViewModel"
-        Title="Xbox Connection"
+        Title="XBVault - Xbox Connection"
         WindowStartupLocation="CenterOwner"
         Width="420"
         SizeToContent="Height"
