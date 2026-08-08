@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.1] — 2026-08-08
+
+### Fixed
+
+- **File navigation races** — rapid navigation (quick folder clicks, fast tree expansion) could start overlapping SFTP listings that raced and returned wrong or empty trees/lists. In-flight navigations are now cancelled, re-navigation to the same path is skipped, and tree expansion honours cancellation.
+- **Slow folder / ZIP uploads** — remote directories are now created in a single batched pass (deduplicated, parent-first) instead of one `mkdir` round trip per file, eliminating dozens/hundreds of shell commands on large trees.
+- **Slow uploads / downloads (buffering)** — the SFTP transfer buffer now scales up to 1 MB for files > 1 GB (previous cap 512 KB); download size probing no longer performs a redundant double stat.
+- **Slow downloads (SSH.NET read path)** — upgraded SSH.NET from 2024.2.0 to 2025.1.0, which overhauls the SFTP read path: read-ahead is now built into `SftpFileStream` (previously sequential reads with a single ~32 KB request in flight at a time, so round-trip latency dominated), plus array-backed SFTP packet buffers and `ArraySegment` channel data. Upstream measured 3–20× faster stream copies on high-latency links.
+- **Unnecessary shell round trips on upload** — `CreateDirectoryAsync` now verifies the directory actually exists before falling back to the shell `mkdir`, avoiding a shell command when the folder is already present.
+- **Shell command timeouts now cancellable** — a user cancel is distinguishable from a timeout, and cancelled commands stop promptly instead of waiting out the full timeout.
+
+### Changed
+
+- **Transfer diagnostics** — a transfer sampler logs instantaneous speed every 2 s, warns when a transfer stalls (no data for 5 s), and logs a per-file summary (average/peak speed). Batch transfers log an overall summary and, on failure, the failing file, progress, and elapsed time — making slow transfers much easier to diagnose.
+- **Window titles** — all windows and dialogs now use `XBVault - ...` titles (dynamic for error/input/confirm dialogs), which also lets OBS Window Capture target dialogs individually.
+
+---
+
 ## [1.3.0] — 2026-08-07
 
 ### Added
