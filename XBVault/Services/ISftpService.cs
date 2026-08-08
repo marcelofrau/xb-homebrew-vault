@@ -14,7 +14,7 @@ public interface ISftpService : IDisposable
 
     Task ConnectAsync(string host, int port, string user, string pass);
     void Disconnect();
-    Task<List<SftpEntry>> ListDirectoryAsync(string path);
+    Task<List<SftpEntry>> ListDirectoryAsync(string path, CancellationToken ct = default);
     Task<List<SftpEntry>> RecursiveListAsync(string path);
     Task UploadFileAsync(Stream source, string remotePath, IProgress<double>? progress, CancellationToken ct = default);
     Task<long> GetFileSizeAsync(string remotePath);
@@ -23,5 +23,5 @@ public interface ISftpService : IDisposable
     Task DeleteDirectoryAsync(string path);
     Task CreateDirectoryAsync(string path);
     Task RenameAsync(string oldPath, string newPath);
-    Task<SftpShellResult> RunShellCommandAsync(string command);
+    Task<SftpShellResult> RunShellCommandAsync(string command, CancellationToken ct = default);
 }

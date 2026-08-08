@@ -325,7 +325,7 @@ internal sealed class FakeSftpService : ISftpService
         ConnectionChanged?.Invoke(this, false);
     }
 
-    public Task<List<SftpEntry>> ListDirectoryAsync(string path)
+    public Task<List<SftpEntry>> ListDirectoryAsync(string path, CancellationToken ct = default)
     {
         var prefix = Normalize(path) + "\\";
         lock (_dirs)
@@ -467,7 +467,7 @@ internal sealed class FakeSftpService : ISftpService
         return Task.CompletedTask;
     }
 
-    public Task<SftpShellResult> RunShellCommandAsync(string command) =>
+    public Task<SftpShellResult> RunShellCommandAsync(string command, CancellationToken ct = default) =>
         Task.FromResult(new SftpShellResult { Success = true });
 
     public void Dispose()

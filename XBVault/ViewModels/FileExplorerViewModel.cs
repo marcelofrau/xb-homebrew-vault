@@ -190,8 +190,11 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     public bool ShowIdle => !ShowActivity;
 
     private int _portalListDepth;
+    private int _navListDepth;
+    private CancellationTokenSource? _navCts;
+    private string? _navPath;
 
-    public bool IsListing => _portalListDepth > 0;
+    public bool IsListing => _portalListDepth > 0 || _navListDepth > 0;
     public double ActivityProgress => IsDeleting ? DeleteProgress : IsUploading ? UploadProgress : DownloadProgress;
     public string ActivityText => IsDeleting ? DeleteStatusText : IsUploading ? UploadStatusText : DownloadStatusText;
 
@@ -543,12 +546,22 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         }
     }
 
-    private async Task<List<SftpEntry>> ListDirectoryForAsync(string path)
+    private async Task<List<SftpEntry>> ListDirectoryForAsync(string path, CancellationToken ct = default)
     {
-        if (!PortalAppFilesService.IsPortalPath(path))
-            return await _sftpService.ListDirectoryAsync(path);
+        if (PortalAppFilesService.IsPortalPath(path))
+            return await WithPortalListingAsync(() => _portal.ListDirectoryAsync(path));
 
-        return await WithPortalListingAsync(() => _portal.ListDirectoryAsync(path));
+        _navListDepth++;
+        OnPropertyChanged(nameof(IsListing));
+        try
+        {
+            return await _sftpService.ListDirectoryAsync(path, ct);
+        }
+        finally
+        {
+            _navListDepth--;
+            OnPropertyChanged(nameof(IsListing));
+        }
     }
 
     public async Task<List<SftpEntry>> RecursiveListForAsync(string path)
@@ -585,12 +598,27 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             return;
         }
 
+        if (_navCts is not null && string.Equals(_navPath, path, StringComparison.OrdinalIgnoreCase))
+        {
+            Logger.Trace($"NavigateToPathAsync: '{path}' already in flight, skipping");
+            return;
+        }
+
+        _navCts?.Cancel();
+        _navCts?.Dispose();
+        _navCts = new CancellationTokenSource();
+        _navPath = path;
+        var ct = _navCts.Token;
+
         try
         {
             StatusSeverity = ToolbarStatusSeverity.None;
             StatusMessage = string.Empty;
             CurrentPath = path;
-            var entries = await ListDirectoryForAsync(path);
+            var entries = await ListDirectoryForAsync(path, ct);
+
+            if (ct.IsCancellationRequested)
+                return;
 
             CurrentEntries.Clear();
             var parentDir = GetParentPath(path);
@@ -612,11 +640,15 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             FocusFileList?.Invoke();
             Logger.Trace("NavigateToPathAsync: post-nav focus");
 
-            await ExpandTreeToPathAsync(path);
+            await ExpandTreeToPathAsync(path, ct);
 
             var targetEntry = FindEntry(TreeRoots, path);
             if (targetEntry is not null)
                 ScrollToEntry?.Invoke(targetEntry);
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.Trace($"NavigateToPathAsync: '{path}' cancelled");
         }
         catch (Exception ex)
         {
@@ -624,9 +656,18 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             StatusSeverity = ToolbarStatusSeverity.Warning;
             StatusMessage = $"Could not open: {path}";
         }
+        finally
+        {
+            if (string.Equals(_navPath, path, StringComparison.OrdinalIgnoreCase))
+            {
+                _navCts?.Dispose();
+                _navCts = null;
+                _navPath = null;
+            }
+        }
     }
 
-    public async Task ExpandTreeToPathAsync(string path)
+    public async Task ExpandTreeToPathAsync(string path, CancellationToken ct = default)
     {
         Logger.Debug($"ExpandTreeToPathAsync: '{path}'");
         var norm = path.TrimEnd('\\');
@@ -644,6 +685,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
         for (int i = 1; i < parts.Length; i++)
         {
+            ct.ThrowIfCancellationRequested();
             Logger.Trace($"ExpandTreeToPathAsync: level {i}, expanding '{built}'");
             if (!current.HasLoaded)
                 await ExpandFolderAsync(built);

@@ -2,7 +2,10 @@ using Renci.SshNet;
 using Renci.SshNet.Common;
 using Renci.SshNet.Sftp;
 using XBVault.Models;
+using XBVault.Helpers;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
+using static XBVault.Helpers.FileSystemPathParser;
 
 namespace XBVault.Services;
 
@@ -23,9 +26,10 @@ public class SftpService : ISftpService
 
     private static uint GetBufferSize(long fileSize) => fileSize switch
     {
-        < 1_048_576 => 65536,       // < 1 MB → 64 KB
-        < 104_857_600 => 262144,    // 1–100 MB → 256 KB
-        _ => 524288                 // > 100 MB → 512 KB
+        < 1_048_576 => 65536,        // < 1 MB → 64 KB
+        < 104_857_600 => 262144,     // 1–100 MB → 256 KB
+        < 1_073_741_824 => 524288,   // 100 MB–1 GB → 512 KB
+        _ => 1_048_576               // > 1 GB → 1 MB
     };
 
     private static string NormalizePath(string path)
@@ -128,7 +132,7 @@ public class SftpService : ISftpService
         Logger.Debug("SftpService.Disconnect: complete");
     }
 
-    public Task<List<SftpEntry>> ListDirectoryAsync(string path)
+    public Task<List<SftpEntry>> ListDirectoryAsync(string path, CancellationToken ct = default)
     {
         Logger.Debug($"ListDirectoryAsync: '{path}' (via shell dir /b)");
         return Task.Run(async () =>
@@ -138,14 +142,14 @@ public class SftpService : ISftpService
 
             var parent = path.TrimEnd('\\');
 
-            var dirResult = await RunShellCommandAsync($"dir \"{path}\" /b /ad");
+            var dirResult = await RunShellCommandAsync($"dir \"{path}\" /b /ad", ct);
             var dirNames = dirResult.Success
                 ? dirResult.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
                     .Select(l => l.Trim('\r', ' ', '\t'))
                     .Where(n => n.Length > 0)
                 : Array.Empty<string>();
 
-            var fileResult = await RunShellCommandAsync($"dir \"{path}\" /b /a-d");
+            var fileResult = await RunShellCommandAsync($"dir \"{path}\" /b /a-d", ct);
             var fileNames = fileResult.Success
                 ? fileResult.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
                     .Select(l => l.Trim('\r', ' ', '\t'))
@@ -153,7 +157,7 @@ public class SftpService : ISftpService
                 : Array.Empty<string>();
 
             // dir /a-d (verbose) to extract file sizes
-            var sizeResult = await RunShellCommandAsync($"dir \"{path}\" /a-d");
+            var sizeResult = await RunShellCommandAsync($"dir \"{path}\" /a-d", ct);
             var sizeByName = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
             if (sizeResult.Success)
             {
@@ -287,16 +291,17 @@ public class SftpService : ISftpService
             }
 
             var totalBytes = source.Length;
-            Logger.Debug($"UploadFileAsync: '{norm}' size={totalBytes}");
-
             _sftp.BufferSize = GetBufferSize(totalBytes);
+            Logger.Debug($"UploadFileAsync: '{norm}' size={totalBytes} buffer={_sftp.BufferSize}B");
 
             int lastReportedPct = -1;
+            var sampler = new TransferSampler(norm, "Upload", totalBytes);
 
             Action<ulong> onUploadProgress = bytesTransferred =>
             {
                 ct.ThrowIfCancellationRequested();
-                var pct = (int)((long)bytesTransferred * 100 / totalBytes);
+                sampler.Update((long)bytesTransferred);
+                var pct = totalBytes > 0 ? (int)((long)bytesTransferred * 100 / totalBytes) : 100;
                 if (pct != lastReportedPct)
                 {
                     lastReportedPct = pct;
@@ -306,6 +311,7 @@ public class SftpService : ISftpService
 
             _sftp.UploadFile(source, norm, onUploadProgress);
 
+            sampler.Complete();
             Logger.Debug($"UploadFileAsync: '{norm}' done — {totalBytes}B");
         }, ct);
     }
@@ -337,40 +343,44 @@ public class SftpService : ISftpService
                 Logger.Info($"DownloadFileAsync: reconnect OK");
             }
 
+            // Single stat: try forward-slash first, fall back to backslash only on miss
+            string usePath = norm;
             long fileSize = -1;
             try
             {
                 fileSize = _sftp.GetAttributes(norm).Size;
                 Logger.Debug($"DownloadFileAsync: GetAttributes OK '{norm}' size={fileSize}");
             }
+            catch (SftpPathNotFoundException)
+            {
+                usePath = ShellPath(remotePath);
+                Logger.Warn($"DownloadFileAsync: forward-slash failed, trying backslash '{usePath}'");
+                try
+                {
+                    fileSize = _sftp.GetAttributes(usePath).Size;
+                    Logger.Debug($"DownloadFileAsync: GetAttributes OK '{usePath}' size={fileSize}");
+                }
+                catch (Exception ex2)
+                {
+                    Logger.Warn($"DownloadFileAsync: GetAttributes failed for '{usePath}': {ex2.Message}");
+                }
+            }
             catch (Exception ex)
             {
                 Logger.Warn($"DownloadFileAsync: GetAttributes failed for '{norm}': {ex.Message}");
             }
 
-            // Try forward-slash first; fall back to backslash
-            string usePath = norm;
-            try
-            {
-                Logger.Debug($"DownloadFileAsync: checking path '{usePath}'");
-                _sftp.GetAttributes(usePath);
-            }
-            catch (SftpPathNotFoundException)
-            {
-                usePath = ShellPath(remotePath);
-                Logger.Warn($"DownloadFileAsync: forward-slash failed, trying backslash '{usePath}'");
-            }
-
-            Logger.Debug($"DownloadFileAsync: '{usePath}' opening, size={fileSize}");
-
             if (fileSize > 0)
                 _sftp.BufferSize = GetBufferSize(fileSize);
+            Logger.Debug($"DownloadFileAsync: '{usePath}' opening, size={fileSize} buffer={_sftp.BufferSize}B");
 
             int lastReportedPct = -1;
+            var sampler = new TransferSampler(usePath, "Download", fileSize);
 
             Action<ulong> onDownloadProgress = bytesTransferred =>
             {
                 ct.ThrowIfCancellationRequested();
+                sampler.Update((long)bytesTransferred);
                 if (fileSize <= 0) return;
                 var pct = (int)((long)bytesTransferred * 100 / fileSize);
                 if (pct != lastReportedPct)
@@ -382,6 +392,7 @@ public class SftpService : ISftpService
 
             _sftp.DownloadFile(usePath, destination, onDownloadProgress);
 
+            sampler.Complete();
             Logger.Debug($"DownloadFileAsync: '{usePath}' done — {fileSize}B");
             return fileSize;
         }, ct);
@@ -445,15 +456,31 @@ public class SftpService : ISftpService
         {
             if (_sftp is null || !_sftp.IsConnected)
                 throw new InvalidOperationException("SFTP not connected");
+            var sw = Stopwatch.StartNew();
             try
             {
                 _sftp.CreateDirectory(norm);
+                Logger.Debug($"CreateDirectoryAsync: SFTP mkdir OK '{norm}' in {sw.ElapsedMilliseconds}ms");
+                return;
             }
             catch (Exception ex)
             {
+                // Dir likely exists — verify before shell fallback (avoids per-file shell round trips)
+                try
+                {
+                    _sftp.GetAttributes(norm);
+                    Logger.Trace($"CreateDirectoryAsync: already exists (expected): '{path}'");
+                    return;
+                }
+                catch
+                {
+                    // not found — real failure, fall through to shell
+                }
+
                 Logger.Warn($"SFTP mkdir failed: {ex.Message}, trying shell fallback");
                 var winPath = ShellPath(path);
                 var shellResult = ShellExec($"if not exist \"{winPath}\" mkdir \"{winPath}\"");
+                Logger.Debug($"CreateDirectoryAsync: shell mkdir '{path}' in {sw.ElapsedMilliseconds}ms exit={shellResult.Success}");
                 if (!shellResult.Success)
                 {
                     var err = shellResult.Error ?? ex.Message;
@@ -518,9 +545,9 @@ public class SftpService : ISftpService
         }
     }
 
-    public async Task<SftpShellResult> RunShellCommandAsync(string command)
+    public async Task<SftpShellResult> RunShellCommandAsync(string command, CancellationToken ct = default)
     {
-        await _shellLock.WaitAsync();
+        await _shellLock.WaitAsync(ct);
         try
         {
             if (_ssh is null || !_ssh.IsConnected)
@@ -530,18 +557,27 @@ public class SftpService : ISftpService
 
             try
             {
-                using var cts = new CancellationTokenSource(ShellCommandTimeout);
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                cts.CancelAfter(ShellCommandTimeout);
                 using var cmd = _ssh.CreateCommand(command);
-                var execTask = cmd.ExecuteAsync(cts.Token);
-                var timeoutTask = Task.Delay(ShellCommandTimeout);
-
-                if (await Task.WhenAny(execTask, timeoutTask) != execTask)
+                try
+                {
+                    await cmd.ExecuteAsync(cts.Token);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    Logger.Warn($"SFTP shell command cancelled: {command}");
+                    result.Success = false;
+                    result.Error = "Command cancelled";
+                    return result;
+                }
+                catch (OperationCanceledException)
                 {
                     Logger.Warn($"SFTP shell command timed out after {ShellCommandTimeout.TotalSeconds}s: {command}");
-                    return new SftpShellResult { Success = false, Error = $"Command timed out after {ShellCommandTimeout.TotalSeconds}s" };
+                    result.Success = false;
+                    result.Error = $"Command timed out after {ShellCommandTimeout.TotalSeconds}s";
+                    return result;
                 }
-
-                await execTask;
 
                 result.Output = cmd.Result ?? string.Empty;
                 result.Error = cmd.Error;
@@ -550,12 +586,6 @@ public class SftpService : ISftpService
                 Logger.Debug($"SFTP shell command exit: {cmd.ExitStatus}");
                 if (!string.IsNullOrEmpty(cmd.Error))
                     Logger.Warn($"SFTP shell command stderr: {cmd.Error}");
-            }
-            catch (OperationCanceledException)
-            {
-                Logger.Warn($"SFTP shell command cancelled/timed out: {command}");
-                result.Success = false;
-                result.Error = $"Command timed out after {ShellCommandTimeout.TotalSeconds}s";
             }
             catch (Exception ex)
             {
@@ -576,5 +606,89 @@ public class SftpService : ISftpService
     {
         Disconnect();
         GC.SuppressFinalize(this);
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes >= 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
+        if (bytes >= 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes} B";
+    }
+
+    /// <summary>
+    /// Tracks a single file transfer: logs instantaneous speed every few seconds (Debug),
+    /// warns when the transfer stalls (no data for several seconds), and logs a final
+    /// summary with average/peak speed (Info).
+    /// </summary>
+    private sealed class TransferSampler
+    {
+        private const double SampleIntervalSeconds = 2.0;
+        private const double StallThresholdSeconds = 5.0;
+
+        private readonly string _path;
+        private readonly string _direction;
+        private readonly long _totalBytes;
+        private readonly Stopwatch _sw = Stopwatch.StartNew();
+
+        private long _lastSampleBytes;
+        private double _lastSampleTime;
+        private long _lastProgressBytes;
+        private double _lastProgressTime;
+        private long _peakBps;
+        private bool _stallWarned;
+        private bool _started;
+
+        public TransferSampler(string path, string direction, long totalBytes)
+        {
+            _path = path;
+            _direction = direction;
+            _totalBytes = totalBytes;
+        }
+
+        public void Update(long bytes)
+        {
+            var now = _sw.Elapsed.TotalSeconds;
+            if (!_started)
+            {
+                _lastSampleBytes = bytes;
+                _lastSampleTime = now;
+                _lastProgressBytes = bytes;
+                _lastProgressTime = now;
+                _started = true;
+                return;
+            }
+
+            if (bytes > _lastProgressBytes)
+            {
+                _lastProgressBytes = bytes;
+                _lastProgressTime = now;
+                _stallWarned = false;
+            }
+            else if (!_stallWarned && _totalBytes > 0 && bytes < _totalBytes
+                     && now - _lastProgressTime >= StallThresholdSeconds)
+            {
+                _stallWarned = true;
+                Logger.Warn($"{_direction} stalled: '{_path}' — no data for {now - _lastProgressTime:F0}s at {bytes}/{_totalBytes} bytes");
+            }
+
+            var dt = now - _lastSampleTime;
+            if (dt >= SampleIntervalSeconds && bytes > _lastSampleBytes)
+            {
+                var inst = (long)((bytes - _lastSampleBytes) / dt);
+                if (inst > _peakBps) _peakBps = inst;
+                var pct = _totalBytes > 0 ? 100.0 * bytes / _totalBytes : 0.0;
+                Logger.Debug($"{_direction} progress: '{_path}' {pct:F0}% ({bytes}/{_totalBytes}B) inst={FormatBps(inst)} avg={FormatBps(now > 0 ? bytes / now : 0)} elapsed={now:F1}s");
+                _lastSampleBytes = bytes;
+                _lastSampleTime = now;
+            }
+        }
+
+        public void Complete()
+        {
+            var elapsed = _sw.Elapsed.TotalSeconds;
+            if (elapsed <= 0) return;
+            var avg = _totalBytes > 0 ? _totalBytes / elapsed : 0;
+            Logger.Info($"{_direction} done: '{_path}' {FormatBytes(_totalBytes)} in {elapsed:F1}s avg={FormatBps(avg)} peak={FormatBps(_peakBps)}");
+        }
     }
 }
