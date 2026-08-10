@@ -476,28 +476,80 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             entries[i].IsLastChild = i >= entries.Count - 1;
     }
 
-    private Task<List<SftpEntry>> DetectDrivesAsync()
+    private static readonly string[] DefaultDriveFilter = { "D", "E", "Q", "F" };
+    private static readonly string[] FallbackDrives = { "D", "E", "Q", "F" };
+
+    private async Task<List<SftpEntry>> DetectDrivesAsync()
     {
-        var all = new[] { "C", "D", "E", "G", "J", "L", "M", "N", "Q", "S", "T", "U", "V", "X", "Y" };
-        var letters = ShowAllDrives ? all : new[] { "D", "E" };
-        var drives = letters.Select(l =>
+        var detected = await ProbeDrivesAsync();
+        var letters = detected ?? FallbackDrives.ToList();
+
+        if (detected is not null && !ShowAllDrives)
         {
-            var name = l == "E" ? "E:\\ (external)" : $"{l}:\\";
-            var e = new SftpEntry
-            {
-                Name = name,
-                FullPath = $"{l}:\\",
-                IsDirectory = true,
-                IsDrive = true,
-                LastModified = DateTime.MinValue,
-                IconName = l == "E" ? null : "ssd",
-                ToolTip = l == "E" ? "External USB storage drive" : null
-            };
-            e.Children.Add(new SftpEntry { Name = "" });
-            return e;
-        }).ToList();
+            var filtered = detected.Where(DefaultDriveFilter.Contains).ToList();
+            if (filtered.Count > 0)
+                letters = filtered;
+        }
+
+        Logger.Info($"DetectDrivesAsync: showing {letters.Count} drives (detected={detected?.Count ?? 0}, all={ShowAllDrives}): {string.Join(", ", letters)}");
+
+        var drives = letters.Select(BuildDriveEntry).ToList();
         SetIsLastChild(drives);
-        return Task.FromResult(drives);
+        return drives;
+    }
+
+    /// <summary>
+    /// Lists drives actually present on the console via one SSH round-trip.
+    /// Uses ERRORLEVEL only (`vol` exits 0 if the drive exists), so it works
+    /// regardless of console language (pt-BR/EN/etc). Returns null on failure.
+    /// </summary>
+    private async Task<List<string>?> ProbeDrivesAsync()
+    {
+        const string probe = "for %d in (A B C D E F G H I J K L M N O P Q R S T U V W X Y Z) do @vol %d: >nul 2>nul && echo %d:";
+        try
+        {
+            var result = await _sftpService.RunShellCommandAsync(probe);
+
+            // ExitStatus reflects the last loop iteration (Z:), which usually
+            // fails even when earlier drives were found. Output alone is reliable.
+            if (string.IsNullOrWhiteSpace(result.Output) && !result.Success)
+            {
+                Logger.Warn($"DetectDrivesAsync: probe failed: {result.Error}");
+                return null;
+            }
+
+            var letters = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(l => l.Trim('\r', ' ', '\t', ':', '\\'))
+                .Where(l => l.Length == 1 && char.IsLetter(l[0]))
+                .Select(l => l.ToUpperInvariant())
+                .Distinct()
+                .ToList();
+
+            Logger.Info($"DetectDrivesAsync: probe found {letters.Count} drives: {string.Join(", ", letters)}");
+            return letters;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "DetectDrivesAsync: probe failed with exception");
+            return null;
+        }
+    }
+
+    private static SftpEntry BuildDriveEntry(string l)
+    {
+        var isExternal = l == "E" || l == "F";
+        var e = new SftpEntry
+        {
+            Name = isExternal ? $"{l}:\\ (external)" : $"{l}:\\",
+            FullPath = $"{l}:\\",
+            IsDirectory = true,
+            IsDrive = true,
+            LastModified = DateTime.MinValue,
+            IconName = isExternal ? null : "ssd",
+            ToolTip = isExternal ? "External USB storage drive" : null
+        };
+        e.Children.Add(new SftpEntry { Name = "" });
+        return e;
     }
 
     [RelayCommand]

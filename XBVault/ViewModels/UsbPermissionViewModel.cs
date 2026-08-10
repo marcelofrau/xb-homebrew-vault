@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -246,16 +247,10 @@ public partial class UsbPermissionViewModel : ObservableObject
 
             var errors = new List<string>();
 
-            // Step 1: grant on root (no /T) — sets ACL + inheritance flags
-            ApplyProgressText = "Setting root permissions...";
-            var (code1, _, stderr1) = await RunIcaclsAsync(
-                $"{driveRoot}\\ /grant \"ALL APPLICATION PACKAGES:(OI)(CI)(F)\" /Q");
-            if (code1 > 1)
-                errors.Add($"Root: {stderr1}");
-
-            // Step 2: grant recursively on each top-level item, skipping protected system dirs
+            // Step 1: enumerate top-level items (skip protected system dirs)
+            ApplyProgressText = "Enumerating drive contents...";
             var entries = Directory.EnumerateFileSystemEntries(driveRoot).ToList();
-            var processed = 0;
+            var items = new List<string>();
             foreach (var entry in entries)
             {
                 var name = Path.GetFileName(entry);
@@ -264,18 +259,16 @@ public partial class UsbPermissionViewModel : ObservableObject
                     Logger.Info($"ApplyAsync: skipping protected entry '{name}'");
                     continue;
                 }
-
-                processed++;
-                ApplyProgressText = $"Processing {name}...";
-                var (code, _, stderr) = await RunIcaclsAsync(
-                    $"\"{entry}\" /grant \"ALL APPLICATION PACKAGES:(OI)(CI)(F)\" /T /Q");
-                if (code > 1)
-                    errors.Add($"{name}: {stderr}");
+                items.Add(entry);
             }
+            Logger.Info($"ApplyAsync: {items.Count} items to process");
 
-            Logger.Info($"ApplyAsync: {processed} items processed, {errors.Count} errors");
-
-            if (errors.Count == 0)
+            // Step 2: run every icacls in ONE elevated batch (single UAC prompt).
+            // Volume-root ACL changes need admin; per-item elevation would pop
+            // UAC once per entry. Output goes to a temp file we parse after.
+            ApplyProgressText = "Setting permissions...";
+            var (ok, message) = await RunElevatedIcaclsAsync(driveRoot, items);
+            if (ok)
             {
                 ApplySuccess = true;
                 ResultMessage = "Drive ready for Xbox!";
@@ -285,9 +278,7 @@ public partial class UsbPermissionViewModel : ObservableObject
             {
                 ApplySuccess = false;
                 ResultMessage = "Failed to apply permissions on some items";
-                ResultDetails = string.Join("\n", errors.Take(10));
-                if (errors.Count > 10)
-                    ResultDetails += $"\n... and {errors.Count - 10} more errors";
+                ResultDetails = message;
             }
         }
         catch (Exception ex)
@@ -304,29 +295,121 @@ public partial class UsbPermissionViewModel : ObservableObject
         Logger.Info($"ApplyAsync: complete success={ApplySuccess}");
     }
 
-    private static async Task<(int ExitCode, string Stdout, string Stderr)> RunIcaclsAsync(string arguments)
+    /// <summary>
+    /// Runs icacls elevated once for the drive root and every top-level item.
+    /// Requires administrator (volume-root ACLs), so this triggers a single UAC
+    /// prompt. Commands are serialized to a temp batch file and output is
+    /// captured to a temp log, then parsed per-target.
+    /// </summary>
+    private static async Task<(bool Ok, string? Message)> RunElevatedIcaclsAsync(
+        string driveRoot, List<string> items)
     {
-        var psi = new ProcessStartInfo("icacls", arguments)
+        var tempDir = Path.Combine(Path.GetTempPath(), "XBVault");
+        Directory.CreateDirectory(tempDir);
+        var batPath = Path.Combine(tempDir, $"icacls-{Guid.NewGuid():N}.cmd");
+        var logPath = Path.Combine(tempDir, $"icacls-{Guid.NewGuid():N}.log");
+
+        try
         {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+            // echo a marker before each icacls so we can attribute failures later.
+            var lines = new List<string> { "@echo off" };
+            void Add(string cmd) => lines.Add(cmd);
 
-        using var process = Process.Start(psi);
-        if (process is null)
-            throw new InvalidOperationException("Failed to start icacls process");
+            Add("echo ===TARGET:ROOT===");
+            Add($"icacls \"{driveRoot}\\\" /grant \"ALL APPLICATION PACKAGES:(OI)(CI)(F)\" /Q");
 
-        var stdout = await process.StandardOutput.ReadToEndAsync();
-        var stderr = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+            for (int i = 0; i < items.Count; i++)
+            {
+                Add($"echo ===TARGET:{i}===");
+                Add($"icacls \"{items[i]}\" /grant \"ALL APPLICATION PACKAGES:(OI)(CI)(F)\" /T /Q");
+            }
 
-        Logger.Info($"RunIcaclsAsync: exit={process.ExitCode} args={arguments}");
-        if (!string.IsNullOrEmpty(stdout)) Logger.Info($"RunIcaclsAsync: stdout=\n{stdout}");
-        if (!string.IsNullOrEmpty(stderr)) Logger.Warn($"RunIcaclsAsync: stderr=\n{stderr}");
+            await File.WriteAllLinesAsync(batPath, lines);
 
-        return (process.ExitCode, stdout, stderr);
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c \"\"{batPath}\" > \"{logPath}\" 2>&1\"",
+                UseShellExecute = true,
+                Verb = "runas",
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
+
+            Logger.Info($"RunElevatedIcaclsAsync: elevating batch for {driveRoot}");
+            using (var process = Process.Start(psi))
+            {
+                if (process is null)
+                    throw new InvalidOperationException("Failed to start elevated icacls process");
+                await process.WaitForExitAsync();
+            }
+
+            var output = File.Exists(logPath) ? await File.ReadAllTextAsync(logPath) : "";
+            Logger.Info($"RunElevatedIcaclsAsync: icacls output:\n{output}");
+
+            return ParseIcaclsOutput(output, driveRoot, items);
+        }
+        catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            Logger.Warn("RunElevatedIcaclsAsync: UAC declined by user");
+            return (false, "Administrator permission was declined. The drive was not modified.");
+        }
+        finally
+        {
+            TryDelete(batPath);
+            TryDelete(logPath);
+        }
+    }
+
+    private static (bool Ok, string? Message) ParseIcaclsOutput(
+        string output, string driveRoot, List<string> items)
+    {
+        var errors = new List<string>();
+
+        // Root marker
+        var rootBlock = ExtractBlock(output, "===TARGET:ROOT===");
+        if (rootBlock is not null && BlockFailed(rootBlock))
+            errors.Add($"Root ({driveRoot}\\: {(BlockReason(rootBlock) ?? "Access is denied")})");
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            var block = ExtractBlock(output, $"===TARGET:{i}===");
+            if (block is null || !BlockFailed(block)) continue;
+            var name = Path.GetFileName(items[i]);
+            errors.Add($"{name}: {BlockReason(block) ?? "Access is denied"}");
+        }
+
+        return (errors.Count == 0, errors.Count == 0 ? null : string.Join("\n", errors.Take(10)));
+    }
+
+    private static string? ExtractBlock(string output, string marker)
+    {
+        var start = output.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (start < 0) return null;
+        start += marker.Length;
+        var end = output.IndexOf("===TARGET:", start + 1, StringComparison.OrdinalIgnoreCase);
+        if (end < 0) end = output.Length;
+        return output[start..end];
+    }
+
+    private static bool BlockFailed(string block)
+    {
+        // icacls prints "Successfully processed N files; Failed processing M files"
+        var failIdx = block.IndexOf("Failed processing", StringComparison.OrdinalIgnoreCase);
+        if (failIdx < 0) return false;
+        var rest = block[(failIdx + "Failed processing".Length)..];
+        var num = new string(rest.TakeWhile(char.IsDigit).ToArray());
+        return int.TryParse(num, out var count) && count > 0;
+    }
+
+    private static string? BlockReason(string block)
+    {
+        return block.Contains("denied", StringComparison.OrdinalIgnoreCase) ? "Access is denied" : null;
+    }
+
+    private static void TryDelete(string path)
+    {
+        try { if (File.Exists(path)) File.Delete(path); }
+        catch { /* best effort cleanup */ }
     }
 
     [RelayCommand]
