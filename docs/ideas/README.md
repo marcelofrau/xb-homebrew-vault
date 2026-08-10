@@ -9,7 +9,8 @@ Catalog of ideas for future versions. Organized by area and estimated impact.
 | Area | Document | Impact | Effort | Status |
 |------|----------|--------|--------|--------|
 | **Support** | [Crash Report](crash-report.md) | High | Low | ✅ Done |
-| **DevOps/UX** | [Auto-Update](auto-update.md) | High | Low | ⬜ Open |
+| **DevOps/UX** | [Auto-Update](auto-update.md) | High | Low | ✅ Partial (startup dialog) |
+| **Automation** | [Background & Automation](background-and-automation.md) | High | High | 🔄 Planned (5 changes) |
 | **Build** | [macOS Universal](macos-universal-build.md) | Low | Medium | ⬜ Open |
 | **Quality** | [Testing](testing-infrastructure.md) | High | Medium | ⬜ Open |
 | **Refactoring** | [Split XboxDeviceService](refactor-xboxdeviceservice.md) | High | Medium | ⬜ Open |
