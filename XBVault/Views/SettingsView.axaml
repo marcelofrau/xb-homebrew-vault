@@ -295,6 +295,28 @@
 
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Spacing="4">
+                <TextBlock Text="Connection check interval"
+                           FontSize="13"/>
+                <TextBlock Text="Checks the Xbox is still reachable while connected. 0 = disabled. Default: 30 s"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           TextWrapping="Wrap"/>
+              </StackPanel>
+              <NumericUpDown x:Name="IntervalNud"
+                             Grid.Column="1"
+                             Value="{Binding ConnectionCheckIntervalSeconds}"
+                             Minimum="0"
+                             Maximum="3600"
+                             Increment="5"
+                             Width="120"
+                             VerticalAlignment="Center"
+                             FormatString="0 s"/>
+            </Grid>
+
+            <Separator Background="{StaticResource BorderBrush}" Height="1"/>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
                 <TextBlock Text="Restart application"
                            FontSize="13"/>
                 <TextBlock Text="Restart to apply changes or resolve issues"

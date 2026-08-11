@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:XBVault.ViewModels"
         xmlns:v="using:XBVault.Views"
+        xmlns:models="using:XBVault.Models"
          x:Class="XBVault.MainWindow"
          x:DataType="vm:MainViewModel"
          x:Name="Root"
@@ -121,6 +122,33 @@
 
     <Style Selector="Button#DiscordBtn:pressed">
       <Setter Property="Background" Value="#3D44B8"/>
+    </Style>
+
+    <Style Selector="Border.toast-card">
+      <Setter Property="Transitions">
+        <Setter.Value>
+          <Transitions>
+            <BrushTransition Property="Background" Duration="0:0:0.15"/>
+          </Transitions>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style Selector="Border.toast-card:pointerover">
+      <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+    </Style>
+
+    <Style Selector="Button.topbar-icon">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="6,4"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Focusable" Value="False"/>
+    </Style>
+
+    <Style Selector="Button.topbar-icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
     </Style>
   </Window.Styles>
 
@@ -511,6 +539,160 @@
             <CrossFade Duration="0:0:0.15"/>
           </Carousel.PageTransition>
         </Carousel>
+
+        <!-- Top-right status icons (below title bar) -->
+        <StackPanel x:Name="TopBarIcons"
+                    Grid.Row="0"
+                    Orientation="Horizontal"
+                    Spacing="6"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Margin="12,12,12,0"
+                    ZIndex="45">
+          <Button x:Name="NotificationsButton"
+                  Classes="topbar-icon"
+                  Click="OnBellClick"
+                  ToolTip.Tip="Notifications">
+            <Grid>
+              <Image x:Name="BellIcon"
+                     Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-bell-20.png"
+                     Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center"
+                     Opacity="0.75"/>
+              <Border x:Name="BellBadge"
+                      Background="#E53935"
+                      CornerRadius="8"
+                      MinWidth="15"
+                      Height="15"
+                      Padding="4,0"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Top"
+                      Margin="0,-5,-5,0"
+                      IsVisible="False">
+                <TextBlock x:Name="BellBadgeText"
+                           Foreground="White"
+                           FontSize="9"
+                           FontWeight="Bold"
+                           TextAlignment="Center"
+                           VerticalAlignment="Center"/>
+              </Border>
+            </Grid>
+          </Button>
+          <Button x:Name="TaskIndicator"
+                  Classes="topbar-icon"
+                  Click="OnTaskIndicatorClick"
+                  ToolTip.Tip="Tasks">
+            <Grid>
+              <Image x:Name="TaskIndicatorIcon"
+                     Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-tasks-20.png"
+                     Width="20" Height="20" Stretch="Uniform"/>
+              <Border x:Name="TaskIndicatorBadge"
+                      Background="{StaticResource SuccessBrush}"
+                      CornerRadius="8"
+                      MinWidth="15"
+                      Height="15"
+                      Padding="4,0"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Top"
+                      Margin="0,-5,-5,0"
+                      IsVisible="False">
+                <TextBlock x:Name="TaskIndicatorBadgeText"
+                           Foreground="#1A1A1A"
+                           FontSize="9"
+                           FontWeight="Bold"
+                           TextAlignment="Center"
+                           VerticalAlignment="Center"/>
+              </Border>
+            </Grid>
+          </Button>
+        </StackPanel>
+
+        <!-- Toast overlay (notifications) -->
+        <Border Grid.Row="0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Margin="12,48,12,0"
+                ZIndex="50">
+          <ItemsControl x:Name="ToastItemsControl">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="8"/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:NotificationItem">
+                <Border Classes="toast-card"
+                        Background="{StaticResource CardBgBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="10,8"
+                        MinWidth="240"
+                        MaxWidth="340"
+                        Cursor="Hand"
+                        PointerPressed="OnToastPointerPressed">
+                  <StackPanel Spacing="6">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                      <Image Source="{Binding IconUri}"
+                             Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center"
+                             IsVisible="{Binding IconUri, Converter={StaticResource StringNotEmpty}}"/>
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding Title}"
+                                 FontSize="12"
+                                 FontWeight="Bold"
+                                 Foreground="{StaticResource TextBrush}"
+                                 TextWrapping="Wrap"
+                                 VerticalAlignment="Center"/>
+                    </Grid>
+                    <TextBlock Text="{Binding Message}"
+                               FontSize="11"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               TextWrapping="Wrap"/>
+                    <ItemsControl ItemsSource="{Binding Actions}"
+                                  IsVisible="{Binding IsGrouped}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Orientation="Horizontal" Spacing="6"/>
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:NotificationAction">
+                          <Button Content="{Binding Label}"
+                                  FontSize="11"
+                                  FontWeight="SemiBold"
+                                  Padding="8,3"
+                                  Background="{StaticResource AccentBrush}"
+                                  Foreground="#1A1A1A"
+                                  BorderThickness="0"
+                                  CornerRadius="4"
+                                  Cursor="Hand"
+                                  Click="OnToastActionClick"/>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Border>
+
+        <!-- Tasks flyout (anchored to gear) -->
+        <Popup x:Name="TasksPopup"
+               Grid.Row="0"
+               PlacementTarget="{Binding #TaskIndicator}"
+               Placement="BottomEdgeAlignedRight"
+               IsLightDismissEnabled="False">
+          <v:TasksPanel/>
+        </Popup>
+
+        <!-- Notifications flyout (anchored to bell) -->
+        <Popup x:Name="NotificationsPopup"
+               Grid.Row="0"
+               PlacementTarget="{Binding #NotificationsButton}"
+               Placement="BottomEdgeAlignedRight"
+               IsLightDismissEnabled="False">
+          <v:NotificationsPanel x:Name="NotificationsPanelHost"/>
+        </Popup>
 
         <!-- Status Bar -->
         <Border Grid.Row="1" Background="#151515" Padding="12,0">

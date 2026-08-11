@@ -148,6 +148,11 @@ public class SftpTransferService : IDisposable
     {
         var dirs = new List<string>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // Always ensure the target folder itself exists, even when a dropped folder
+        // contains only root-level files (no subdirectories to derive dirs from).
+        var baseRemote = basePath.Replace('\\', '/');
+        dirs.Add(baseRemote);
+        seen.Add(baseRemote);
         foreach (var relative in relativePaths)
         {
             var sep = relative.LastIndexOf('\\');

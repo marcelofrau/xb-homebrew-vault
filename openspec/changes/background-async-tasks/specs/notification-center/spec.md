@@ -40,16 +40,20 @@ The service SHALL support grouped notifications: multiple related items (e.g. se
 - **WHEN** multiple related notifications would be raised at once
 - **THEN** they are consolidated into a single grouped notification
 
-### Requirement: Notification center history
-The service SHALL keep a history of recent notifications (dismissed or auto-dismissed) accessible from a status-bar notification icon + panel, so the user can re-open and act on them later.
+### Requirement: Status-bar indicator (history panel deferred)
+The system SHALL keep a history of recent notifications (dismissed or auto-dismissed) in memory. A status-bar bell icon SHALL show a count badge for unacknowledged notifications and SHALL be hidden when there are none. **This change places the bell icon only** — the click action and history panel (re-open after dismissal) are deferred to a later change.
 
-#### Scenario: Re-open dismissed notification
-- **WHEN** the user dismisses a notification and later opens the notification-center panel
-- **THEN** the dismissed notification is still listed and actionable
+#### Scenario: History retained in memory
+- **WHEN** a notification is dismissed or auto-dismissed
+- **THEN** the notification is retained in the in-memory history (capped at 50) for a later panel
 
 #### Scenario: Status-bar indicator
 - **WHEN** there are unacknowledged notifications
-- **THEN** the status-bar notification icon is visible (with a count badge); when none, the icon is hidden
+- **THEN** the status-bar bell icon is visible (with a count badge); when none, the icon is hidden
+
+#### Scenario: Bell not wired yet
+- **WHEN** the user clicks the bell in this change
+- **THEN** no panel opens (interaction deferred to a later change)
 
 ### Requirement: UI thread safety
 `NotificationCenterService` SHALL marshal notification display and dismissal to the UI thread regardless of the calling thread.

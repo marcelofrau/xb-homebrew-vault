@@ -1,10 +1,15 @@
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using XBVault.Helpers;
+using XBVault.Models;
 using XBVault.Services;
 using XBVault.ViewModels;
 using XBVault.Views;
@@ -14,6 +19,11 @@ namespace XBVault;
 public partial class MainWindow : Window
 {
     private const int TabCount = 7;
+    private static readonly TimeSpan PopupFadeDuration = TimeSpan.FromMilliseconds(150);
+    private NotificationCenterService? _notificationCenter;
+    private TaskCenterViewModel? _taskCenter;
+    private int _tasksFadeGen;
+    private int _notificationsFadeGen;
 
     public MainWindow()
     {
@@ -26,6 +36,11 @@ public partial class MainWindow : Window
         VersionText.Text = BuildInfo.DisplayVersion;
         UpdateWindowStateIcons();
         AddHandler(InputElement.KeyDownEvent, OnMainWindowKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(InputElement.PointerPressedEvent, OnWindowPointerPressed, RoutingStrategies.Tunnel);
+        TasksPopup.Opened += OnTasksPopupOpened;
+        TasksPopup.Closed += OnTasksPopupClosed;
+        NotificationsPopup.Opened += OnNotificationsPopupOpened;
+        NotificationsPopup.Closed += OnNotificationsPopupClosed;
         Opened += (_, _) => ApplyUiScale();
     }
 
@@ -39,6 +54,235 @@ public partial class MainWindow : Window
             ModalDimOverlay.Opacity = value ? 1.0 : 0.0;
             ModalDimOverlay.IsHitTestVisible = value;
         }
+    }
+
+    public void BindNotifications(NotificationCenterService notificationCenter)
+    {
+        Logger.Trace("Flyout: BindNotifications called");
+        _notificationCenter = notificationCenter;
+        ToastItemsControl.ItemsSource = notificationCenter.Active;
+        NotificationsPopup.DataContext = notificationCenter;
+        NotificationsPanelHost.CloseRequested += () => _ = ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen);
+        notificationCenter.UnacknowledgedChanged += OnUnacknowledgedChanged;
+        SetBellCount(notificationCenter.UnacknowledgedCount);
+    }
+
+    public void UnbindNotifications()
+    {
+        if (_notificationCenter is not null)
+            _notificationCenter.UnacknowledgedChanged -= OnUnacknowledgedChanged;
+        _notificationCenter = null;
+    }
+
+    private void OnUnacknowledgedChanged()
+    {
+        if (_notificationCenter is null) return;
+        SetBellCount(_notificationCenter.UnacknowledgedCount);
+    }
+
+    private void SetBellCount(int count)
+    {
+        var show = count > 0;
+        BellBadge.IsVisible = show;
+        BellBadgeText.Text = count > 99 ? "99+" : count.ToString();
+    }
+
+    public void SetTaskCenter(TaskCenterViewModel taskCenter)
+    {
+        Logger.Trace("Flyout: SetTaskCenter called");
+        _taskCenter = taskCenter;
+        TasksPopup.DataContext = taskCenter;
+        taskCenter.PropertyChanged += OnTaskCenterPropertyChanged;
+        UpdateTaskIndicator();
+    }
+
+    private void OnTaskCenterPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_taskCenter is null) return;
+        if (e.PropertyName is nameof(TaskCenterViewModel.IsOpen))
+        {
+            Logger.Trace($"Flyout: TaskCenter.IsOpen changed -> {_taskCenter.IsOpen}");
+            if (_taskCenter.IsOpen)
+            {
+                Logger.Trace("Flyout: opening TasksPopup (IsOpen=true)");
+                TasksPopup.IsOpen = true;
+            }
+            else
+            {
+                Logger.Trace("Flyout: TaskCenter.IsOpen=false -> fade-close TasksPopup");
+                _ = ClosePopupWithFadeAsync(TasksPopup, _tasksFadeGen);
+            }
+        }
+        else if (e.PropertyName is nameof(TaskCenterViewModel.ActiveCount))
+        {
+            UpdateTaskIndicator();
+        }
+    }
+
+    private void OnTasksPopupOpened(object? sender, EventArgs e)
+    {
+        _tasksFadeGen++;
+        Logger.Trace($"Flyout: TasksPopup.Opened fired (gen={_tasksFadeGen}, isOpen={TasksPopup.IsOpen}, taskCenter.IsOpen={_taskCenter?.IsOpen})");
+        FadeInPopup(TasksPopup);
+        Dispatcher.UIThread.Post(() =>
+        {
+            Logger.Trace($"Flyout: TasksPopup check (isUsingOverlay={TasksPopup.IsUsingOverlayLayer}, childBounds={TasksPopup.Child?.Bounds}, childOpacity={TasksPopup.Child?.Opacity})");
+        }, DispatcherPriority.Background);
+    }
+
+    private void OnTasksPopupClosed(object? sender, EventArgs e)
+    {
+        Logger.Trace($"Flyout: TasksPopup.Closed fired (taskCenter.IsOpen={_taskCenter?.IsOpen})");
+        if (_taskCenter is { IsOpen: true })
+            _taskCenter.IsOpen = false;
+    }
+
+    private void OnNotificationsPopupOpened(object? sender, EventArgs e)
+    {
+        _notificationsFadeGen++;
+        Logger.Trace($"Flyout: NotificationsPopup.Opened fired (gen={_notificationsFadeGen}, isOpen={NotificationsPopup.IsOpen})");
+        FadeInPopup(NotificationsPopup);
+        Dispatcher.UIThread.Post(() =>
+        {
+            Logger.Trace($"Flyout: NotificationsPopup check (isUsingOverlay={NotificationsPopup.IsUsingOverlayLayer}, childBounds={NotificationsPopup.Child?.Bounds}, childOpacity={NotificationsPopup.Child?.Opacity})");
+        }, DispatcherPriority.Background);
+    }
+
+    private void OnNotificationsPopupClosed(object? sender, EventArgs e)
+    {
+        Logger.Trace("Flyout: NotificationsPopup.Closed fired");
+    }
+
+    private static void FadeInPopup(Popup popup)
+    {
+        if (popup.Child is not { } content)
+        {
+            Logger.Trace($"Flyout: FadeInPopup — child null for {popup.Name ?? popup.GetType().Name}");
+            return;
+        }
+        _ = FadeInCoreAsync(popup, content);
+    }
+
+    private static async Task FadeInCoreAsync(Popup popup, Control content)
+    {
+        await FadeOpacityAsync(content, 0, 1, PopupFadeDuration, () => !popup.IsOpen);
+        Logger.Trace($"Flyout: FadeInPopup done ({popup.Name}, opacity={content.Opacity}, isOpen={popup.IsOpen})");
+    }
+
+    private static async Task FadeOpacityAsync(Control content, double from, double to, TimeSpan duration, Func<bool>? abort = null)
+    {
+        const int steps = 8;
+        content.Opacity = from;
+        var step = TimeSpan.FromMilliseconds(duration.TotalMilliseconds / steps);
+        for (var i = 1; i <= steps; i++)
+        {
+            await Task.Delay(step);
+            if (abort?.Invoke() == true) return;
+            content.Opacity = from + (to - from) * i / steps;
+        }
+        content.Opacity = to;
+    }
+
+    private async Task ClosePopupWithFadeAsync(Popup popup, int generation)
+    {
+        var isTasks = ReferenceEquals(popup, TasksPopup);
+        var name = popup.Name ?? (isTasks ? "TasksPopup" : "NotificationsPopup");
+        Logger.Trace($"Flyout: ClosePopupWithFadeAsync start ({name}, gen={generation}, isOpen={popup.IsOpen})");
+        if (popup.Child is { } content)
+            await FadeOpacityAsync(content, content.Opacity, 0, PopupFadeDuration, () => !popup.IsOpen);
+        if (isTasks ? generation != _tasksFadeGen : generation != _notificationsFadeGen)
+        {
+            Logger.Trace($"Flyout: ClosePopupWithFadeAsync stale gen ({name}) — abort close, restore opacity");
+            if (popup.Child is { } restored)
+                restored.Opacity = 1;
+            return;
+        }
+        Logger.Trace($"Flyout: ClosePopupWithFadeAsync closing ({name}, isOpen={popup.IsOpen})");
+        popup.IsOpen = false;
+        if (popup.Child is { } c)
+            c.Opacity = 1;
+    }
+
+    private void UpdateTaskIndicator()
+    {
+        if (_taskCenter is null) return;
+        TaskIndicatorIcon.Classes.Set("statusDot", _taskCenter.ActiveCount > 0);
+        var count = _taskCenter.ActiveCount;
+        TaskIndicatorBadge.IsVisible = count > 0;
+        TaskIndicatorBadgeText.Text = count > 99 ? "99+" : count.ToString();
+    }
+
+    private void OnTaskIndicatorClick(object? sender, RoutedEventArgs e)
+    {
+        Logger.Trace($"Flyout: OnTaskIndicatorClick (notifPopupOpen={NotificationsPopup.IsOpen}, taskCenter.IsOpen={_taskCenter?.IsOpen}, taskCenterNull={_taskCenter is null})");
+        if (NotificationsPopup.IsOpen)
+            _ = ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen);
+        _taskCenter?.ToggleCommand.Execute(null);
+    }
+
+    private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (IsPointOnElement(e, TaskIndicator) || IsPointOnElement(e, NotificationsButton))
+            return;
+
+        if (TasksPopup.IsOpen && !IsPointInPopup(e, TasksPopup))
+        {
+            Logger.Trace("Flyout: outside press -> fade-close tasks");
+            _ = ClosePopupWithFadeAsync(TasksPopup, _tasksFadeGen);
+        }
+
+        if (NotificationsPopup.IsOpen && !IsPointInPopup(e, NotificationsPopup))
+        {
+            Logger.Trace("Flyout: outside press -> fade-close notifications");
+            _ = ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen);
+        }
+    }
+
+    private static bool IsPointInPopup(PointerPressedEventArgs e, Popup popup)
+    {
+        if (popup.Child is not { } child) return false;
+        var pos = e.GetPosition(child);
+        return pos.X >= 0 && pos.Y >= 0 && pos.X <= child.Bounds.Width && pos.Y <= child.Bounds.Height;
+    }
+
+    private static bool IsPointOnElement(PointerPressedEventArgs e, Control element)
+    {
+        var pos = e.GetPosition(element);
+        return pos.X >= 0 && pos.Y >= 0 && pos.X <= element.Bounds.Width && pos.Y <= element.Bounds.Height;
+    }
+
+    private void OnBellClick(object? sender, RoutedEventArgs e)
+    {
+        Logger.Trace($"Flyout: OnBellClick (notifPopupOpen={NotificationsPopup.IsOpen}, taskCenter.IsOpen={_taskCenter?.IsOpen}, notifCenterNull={_notificationCenter is null})");
+        if (_notificationCenter is null) return;
+        if (_taskCenter is { IsOpen: true })
+            _taskCenter.IsOpen = false;
+        if (NotificationsPopup.IsOpen)
+            _ = ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen);
+        else
+            NotificationsPopup.IsOpen = true;
+    }
+
+    private void OnToastPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is not Border { DataContext: NotificationItem item } || _notificationCenter is null) return;
+        _notificationCenter.InvokeAction(item);
+    }
+
+    private void OnToastActionClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: NotificationAction action } btn || _notificationCenter is null) return;
+        try
+        {
+            action.Action?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "MainWindow: toast action threw");
+        }
+        var item = btn.FindAncestorOfType<Border>()?.DataContext as NotificationItem;
+        if (item is not null)
+            _notificationCenter.Dismiss(item.Id);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -137,6 +381,26 @@ public partial class MainWindow : Window
     private void OnMainWindowKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not MainViewModel vm) return;
+
+        // Escape closes the tasks / notifications flyout when open
+        if (e.Key == Key.Escape)
+        {
+            if (NotificationsPopup.IsOpen)
+            {
+                Logger.Trace("Flyout: Escape -> close notifications");
+                _ = ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen);
+                e.Handled = true;
+                return;
+            }
+
+            if (_taskCenter is { IsOpen: true })
+            {
+                Logger.Trace("Flyout: Escape -> close tasks");
+                _taskCenter.IsOpen = false;
+                e.Handled = true;
+                return;
+            }
+        }
 
         // Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+PageDown / Ctrl+PageUp — tab switching
         var ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);

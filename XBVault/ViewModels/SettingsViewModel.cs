@@ -96,6 +96,17 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private int _uiScalePercent = 100;
 
+    [ObservableProperty]
+    private double _connectionCheckIntervalSeconds = 30;
+
+    partial void OnConnectionCheckIntervalSecondsChanged(double value)
+    {
+        var seconds = (int)Math.Round(value);
+        SettingsService.Current.ConnectionCheckIntervalSeconds = seconds;
+        SettingsService.Save();
+        Logger.Info($"Connection check interval set to {seconds}s");
+    }
+
     // Invoked whenever the UI scale changes so live windows can re-apply it
     public Action? UiScaleChanged { get; set; }
 
@@ -144,6 +155,7 @@ public partial class SettingsViewModel : ObservableObject
         Username = conn.Username;
         UseHttps = conn.UseHttps;
         SelectedLogLevel = settings.MinLogLevel;
+        ConnectionCheckIntervalSeconds = settings.ConnectionCheckIntervalSeconds;
         var savedScale = (int)Math.Round(settings.UiScale * 100);
 #pragma warning disable MVVMTK0034
         _uiScalePercent = UiScaleOptions.OrderBy(o => Math.Abs(o - savedScale)).First();

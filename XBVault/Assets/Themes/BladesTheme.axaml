@@ -205,6 +205,108 @@
         <Setter Property="Width" Value="23"/>
       </Style>
     </ControlTheme>
+
+    <!-- NumericUpDown spinner buttons (custom template: small solid white arrows) -->
+    <ControlTheme x:Key="BladesButtonSpinnerTheme" TargetType="ButtonSpinner">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}">
+            <DockPanel>
+              <StackPanel Name="PART_SpinnerPanel"
+                          DockPanel.Dock="Right"
+                          Orientation="Horizontal"
+                          IsVisible="{TemplateBinding ShowButtonSpinner}">
+                <RepeatButton Name="PART_IncreaseButton"
+                              IsTabStop="False"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              Width="22"
+                              VerticalAlignment="Stretch"
+                              HorizontalContentAlignment="Center"
+                              VerticalContentAlignment="Center">
+                  <Path Data="M 0,5 L 5,0 L 10,5 Z"
+                        Fill="#F0F0F0"
+                        Width="10" Height="5"/>
+                </RepeatButton>
+                <RepeatButton Name="PART_DecreaseButton"
+                              IsTabStop="False"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              Width="22"
+                              VerticalAlignment="Stretch"
+                              HorizontalContentAlignment="Center"
+                              VerticalContentAlignment="Center">
+                  <Path Data="M 0,0 L 5,5 L 10,0 Z"
+                        Fill="#F0F0F0"
+                        Width="10" Height="5"/>
+                </RepeatButton>
+              </StackPanel>
+              <ContentPresenter Name="PART_ContentPresenter"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                Content="{TemplateBinding Content}"
+                                HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                Padding="{TemplateBinding Padding}"/>
+            </DockPanel>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+      <Style Selector="^:left /template/ StackPanel#PART_SpinnerPanel">
+        <Setter Property="DockPanel.Dock" Value="Left"/>
+      </Style>
+      <Style Selector="^ /template/ RepeatButton:pointerover">
+        <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+      </Style>
+      <Style Selector="^ /template/ RepeatButton:pressed">
+        <Setter Property="Background" Value="{StaticResource AccentHoverDarkBrush}"/>
+      </Style>
+    </ControlTheme>
+
+    <!-- NumericUpDown template (mirrors Avalonia 12 Fluent structure, uses Blades spinner) -->
+    <ControlTheme x:Key="BladesNumericUpDownTheme" TargetType="NumericUpDown">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <DataValidationErrors>
+            <ButtonSpinner Name="PART_Spinner"
+                           Theme="{StaticResource BladesButtonSpinnerTheme}"
+                           Background="{TemplateBinding Background}"
+                           BorderThickness="{TemplateBinding BorderThickness}"
+                           BorderBrush="{TemplateBinding BorderBrush}"
+                           CornerRadius="{TemplateBinding CornerRadius}"
+                           IsTabStop="False"
+                           Padding="0"
+                           MinWidth="0"
+                           HorizontalContentAlignment="Stretch"
+                           VerticalContentAlignment="Stretch"
+                           AllowSpin="{TemplateBinding AllowSpin}"
+                           ShowButtonSpinner="{TemplateBinding ShowButtonSpinner}"
+                           ButtonSpinnerLocation="{TemplateBinding ButtonSpinnerLocation}">
+              <TextBox Name="PART_TextBox"
+                       Background="Transparent"
+                       BorderBrush="Transparent"
+                       Margin="-1"
+                       Padding="{TemplateBinding Padding}"
+                       MinWidth="0"
+                       Foreground="{TemplateBinding Foreground}"
+                       PlaceholderText="{TemplateBinding PlaceholderText}"
+                       PlaceholderForeground="{TemplateBinding PlaceholderForeground}"
+                       IsReadOnly="{TemplateBinding IsReadOnly}"
+                       VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                       HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                       Text="{TemplateBinding Text}"
+                       TextAlignment="{TemplateBinding TextAlignment}"
+                       AcceptsReturn="False"
+                       TextWrapping="NoWrap"
+                       InnerLeftContent="{Binding InnerLeftContent, RelativeSource={RelativeSource TemplatedParent}}"
+                       InnerRightContent="{Binding InnerRightContent, RelativeSource={RelativeSource TemplatedParent}}"/>
+            </ButtonSpinner>
+          </DataValidationErrors>
+        </ControlTemplate>
+      </Setter>
+    </ControlTheme>
   </Styles.Resources>
 
   <!-- Window -->
@@ -605,11 +707,15 @@
 
   <!-- NumericUpDown -->
   <Style Selector="NumericUpDown">
-    <Setter Property="Background" Value="{StaticResource InputBgBrush}"/>
-    <Setter Property="BorderBrush" Value="{StaticResource InputBorderBrush}"/>
+    <Setter Property="Theme" Value="{StaticResource BladesNumericUpDownTheme}"/>
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
     <Setter Property="FontSize" Value="13"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="Padding" Value="8,4"/>
+    <Setter Property="MinHeight" Value="28"/>
     <Setter Property="ButtonSpinnerLocation" Value="Right"/>
   </Style>
   <Style Selector="NumericUpDown:pointerover">
@@ -617,14 +723,6 @@
   </Style>
   <Style Selector="NumericUpDown:focus-within">
     <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
-  </Style>
-  <Style Selector="NumericUpDown /template/ RepeatButton">
-    <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
-    <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
-  </Style>
-  <Style Selector="NumericUpDown /template/ RepeatButton:pointerover">
-    <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
-    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
   </Style>
 
 </Styles>

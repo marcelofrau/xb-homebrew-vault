@@ -42,17 +42,26 @@ Single class, two concerns. `INotifyPropertyChanged` lets Avalonia bind progress
 
 ### 4. Recurring jobs with PeriodicTimer, run-in-task semantics
 `System.Threading.PeriodicTimer` (not `Timer` + drift) for interval scheduling; each run becomes a one-shot task in the collection.
-- `RegisterJob(name, interval, intervalUnits, async delegate)`.
+- `RegisterJob(name, interval, async delegate)` — interval is a `TimeSpan` (no `intervalUnits` enum).
 - Run visible as a `BackgroundTask`; failure marks run `Failed`, logs, continues scheduling.
+- Interval change: the job **re-creates the PeriodicTimer** when the interval value changes between cycles (option A). Interval `TimeSpan.Zero`/`<= 0` = job disabled (no-op, no timer).
 - `Stop()` cancels all jobs + running tasks; called on app exit.
 
-### 5. Connection monitor = liveness CHECK, not keepalive
-The Xbox console enters sleep regardless of whether the app is "connected", so pinging cannot keep it awake. The monitor is a **check**: `GET /api/os/info` on an interval (default 30 s, configurable in Settings with the default shown) only while connected. On failure: raises `ConnectionLost(reason)`. On subsequent success: raises `ConnectionRestored`. Interval is a `SettingsService` value; job re-reads it each cycle (no restart needed to change it). The autoconnect change (later) subscribes to `ConnectionLost`.
+### 4b. Elapsed display via 1 s DispatcherTimer
+`Elapsed` is a pure computed value (`now − CreatedAt` for running, `CompletedAt − CreatedAt` for finished) — testable without a UI thread. A 1 s `DispatcherTimer` in the service (UI thread, consistent with the marshal-everything-to-dispatcher rule) fires `PropertyChanged` on running tasks so the panel updates live. The timer is a thin UI-refresh layer; tests assert on the pure computation, not the timer.
 
-### 6. Notification center = overlay + history panel
-- **Toasts**: an `ItemsControl` overlay `Border` (Blades style) in the MainWindow root grid. `Notify(...)` posts notification items; auto-dismiss via `System.Threading.Timer` + dispatcher marshal; click = command, dismisses.
+### 5. Connection monitor = liveness CHECK, not keepalive
+The Xbox console enters sleep regardless of whether the app is "connected", so pinging cannot keep it awake. The monitor is a **check**: `GET /api/os/info` (via existing `IXboxAuthService.TestConnectionAsync`, which already maps timeout/refused reasons matching the spec) on an interval (default 30 s, configurable in Settings with the default shown).
+- **Gate**: pings only while `authService.IsConnected` (the `_connected` flag set by `MarkConnected()` on explicit connect) — **not** `IsConfigured`. This avoids pinging on startup before the user ever connects. The flag is re-checked at the start of each cycle (no event subscription needed).
+- **Off-switch**: interval `0` = monitoring disabled (no-op). Same field, no extra checkbox.
+- On failure: raises `ConnectionLost(reason)` + a toast via `NotificationCenterService` (first real toast producer, makes the toast center visible/validatable this change). On subsequent success: raises `ConnectionRestored` + a toast.
+- Interval is a `SettingsService` value; the job re-creates its `PeriodicTimer` when the value changes (no restart needed). The autoconnect change (later) subscribes to `ConnectionLost`.
+
+### 6. Notification center = overlay + history panel (panel deferred)
+- **Toasts**: an `ItemsControl` overlay `Border` (Blades style) in the MainWindow content grid. `Notify(...)` posts notification items; auto-dismiss via `System.Threading.Timer` + dispatcher marshal; click = command, dismisses.
 - **Grouping**: `NotifyGrouped(title, items)` renders one notification with a list of actionable items (used later by app-updates). Concurrency cap (default 4 visible toasts) with oldest-dismiss policy.
-- **History panel**: second status-bar icon (bell) + overlay panel listing recent notifications (re-openable, per-item action, clear-all). Unacknowledged count drives the icon badge.
+- **Status-bar bell**: icon (20 px) + unacknowledged-count badge, hidden at 0, rendered in this change. **No click action, no history panel yet** — `NotificationsPanel.axaml` + re-open-after-dismiss deferred to a later change (in-memory history still kept in the service, cap 50).
+- First toast producer this change: the connection monitor (loss/restore notifications).
 
 ### 7. Task center = status-bar indicator + in-window overlay panel
 - Indicator: small `Border` (icon 20 px + badge `TextBlock` + busy animation) placed in the status bar next to the version text. Hidden when `ActiveCount == 0`.
@@ -72,7 +81,8 @@ flowchart TD
     TCVM -->|bind| TCMainWindow[MainWindow task-center panel]
     BTS -->|UI-thread marshal| DISP[Avalonia Dispatcher]
     NCS[NotificationCenterService] -->|UI-thread marshal| DISP
-    NCS -->|notifications/history| NCPanel[status-bar bell + history panel]
+    CMS -.ConnectionLost/Restored + toast.-> NCS
+    NCS -->|notifications| NCPanel[status-bar bell + toast overlay]
     DISP --> TCVM
     DISP --> MainWindow overlay
 ```
@@ -87,12 +97,15 @@ flowchart TD
 | `XBVault/Services/NotificationCenterService.cs` | Notifications + grouping + history panel |
 | `XBVault/ViewModels/TaskCenterViewModel.cs` | Panel/indicator VM |
 | `XBVault/Views/TasksPanel.axaml` (+`.cs`) | Overlay panel control |
-| `XBVault/Views/NotificationsPanel.axaml` (+`.cs`) | History panel control |
+| `XBVault/Views/NotificationsPanel.axaml` (+`.cs`) | **Deferred** — bell icon only this change |
 | `XBVault/MainWindow.axaml` / `.axaml.cs` | Status-bar indicators (tasks + bell) + overlay hosts + wiring |
 | `XBVault/App.axaml.cs` | Construct/start services |
-| `XBVault/Models/AppSettings.cs` (mod) | `ConnectionCheckIntervalSeconds` (default 30) |
-| `XBVault/Assets/Views/MainWindow/mainwindow-tasks-20.png` | Task indicator icon (Blades/Numix set) |
-| `tests/XBVault.Tests/BackgroundTaskServiceTests.cs` | Unit tests (new test project) |
+| `XBVault/Models/AppSettings.cs` (mod) | `ConnectionCheckIntervalSeconds` (default 30, 0 = disabled) |
+| `XBVault/Views/SettingsView.axaml` / `ViewModels/SettingsViewModel.cs` (mod) | Interval row (value + "default 30" hint) |
+| `XBVault/Assets/Views/MainWindow/mainwindow-tasks-20.png` | Task indicator icon (personal Icons8 set, `icons8-task-2d-20.png`) |
+| `XBVault/Assets/Views/MainWindow/mainwindow-bell-20.png` | Bell icon (personal set, `icons8-bell-20.png`) |
+| `tests/XBVault.Tests/BackgroundTaskServiceTests.cs` + `XBVault.Tests.csproj` | Unit tests (new test project) |
+| `.github/workflows/build.yml` (mod) | Add `dotnet test tests/XBVault.Tests` to the build job |
 
 ## Risks / Trade-offs
 
@@ -111,5 +124,5 @@ flowchart TD
 
 ## Open Questions
 
-- Notification history: should dismissed-notification actions stay actionable indefinitely in-session, or expire (e.g. updates for apps no longer installed are dropped)? (Lean: drop stale items, keep v1 simple.)
-- Whether the connection-check interval needs a Settings UI now or just the settings value (lean: value now, simple Settings row later with autoconnect change).
+- ~~Notification history staleness~~ → **Resolved**: history panel deferred; in-memory history keeps cap 50, no expiry logic this change.
+- ~~Connection-check interval Settings UI~~ → **Resolved**: Settings row now (value + "default 30" hint); interval `0` disables the monitor.

@@ -1,0 +1,236 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:XBVault.ViewModels"
+             xmlns:models="using:XBVault.Models"
+             x:Class="XBVault.Views.TasksPanel"
+             x:DataType="vm:TaskCenterViewModel">
+
+  <Border Width="340"
+          MaxHeight="480"
+          Background="{StaticResource SurfaceAltBrush}"
+          BorderBrush="{StaticResource BorderBrush}"
+          BorderThickness="1"
+          CornerRadius="6"
+          BoxShadow="0 4 20 0 #55000000">
+    <Grid RowDefinitions="Auto,*" Margin="8">
+
+      <!-- Header -->
+      <Grid ColumnDefinitions="*,Auto" Margin="4,4,4,6">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <TextBlock Text="Tasks"
+                     FontSize="13"
+                     FontWeight="Bold"
+                     Foreground="{StaticResource TextBrush}"/>
+          <Border Background="{StaticResource SuccessBrush}"
+                  CornerRadius="8"
+                  MinWidth="18"
+                  Height="14"
+                  Padding="4,0"
+                  IsVisible="{Binding ActiveCount, Converter={StaticResource IntToBool}}">
+            <TextBlock Text="{Binding ActiveCount}"
+                       FontSize="9"
+                       FontWeight="Bold"
+                       Foreground="#1A1A1A"
+                       TextAlignment="Center"
+                       VerticalAlignment="Center"/>
+          </Border>
+        </StackPanel>
+        <Button Grid.Column="1"
+                Content="✕"
+                FontSize="11"
+                Padding="6,1"
+                Background="Transparent"
+                Foreground="{StaticResource TextMutedBrush}"
+                BorderThickness="0"
+                CornerRadius="4"
+                Cursor="Hand"
+                Command="{Binding ToggleCommand}"/>
+      </Grid>
+
+      <!-- Content -->
+      <ScrollViewer Grid.Row="1">
+        <StackPanel Spacing="8">
+
+          <!-- Empty state (nothing running) -->
+          <StackPanel Spacing="4" IsVisible="{Binding Running.Count, Converter={StaticResource IntToBoolInverse}}">
+            <Border Background="{StaticResource CardBgBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="10,8">
+              <TextBlock Text="No jobs running right now."
+                         FontSize="11"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         TextAlignment="Center"/>
+            </Border>
+          </StackPanel>
+
+          <!-- Running -->
+          <StackPanel Spacing="2" IsVisible="{Binding Running.Count, Converter={StaticResource IntToBool}}">
+            <TextBlock Text="RUNNING"
+                       FontSize="9"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource AccentBrush}"
+                       LetterSpacing="1"
+                       Margin="4,0"/>
+            <ItemsControl ItemsSource="{Binding Running}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:BackgroundTask">
+                  <Border Padding="6,4"
+                          CornerRadius="4"
+                          Background="Transparent"
+                          BorderBrush="{StaticResource BorderBrush}"
+                          BorderThickness="0,0,0,1">
+                    <Border.Styles>
+                      <Style Selector="Border:pointerover">
+                        <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+                      </Style>
+                    </Border.Styles>
+                    <StackPanel Spacing="3">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center"/>
+                        <Button Grid.Column="1"
+                                Content="Cancel"
+                                FontSize="9"
+                                Padding="6,1"
+                                Background="{StaticResource DangerBrush}"
+                                Foreground="White"
+                                BorderThickness="0"
+                                CornerRadius="3"
+                                Cursor="Hand"
+                                IsVisible="{Binding CanCancel}"
+                                Click="OnCancelClick"/>
+                      </Grid>
+                      <ProgressBar Maximum="1"
+                                   Value="{Binding Progress}"
+                                   IsIndeterminate="{Binding IsIndeterminate}"
+                                   IsVisible="{Binding ShowProgress}"
+                                   Height="3"/>
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Text="{Binding StatusMessage}"
+                                   FontSize="9"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Elapsed}"
+                                   FontSize="9"
+                                   Foreground="{StaticResource TextDimBrush}"/>
+                      </Grid>
+                      <ToggleButton x:Name="DetailToggle"
+                                    Content="Details"
+                                    FontSize="9"
+                                    Padding="6,1"
+                                    HorizontalAlignment="Left"
+                                    Background="{StaticResource SurfaceHoverBrush}"
+                                    Foreground="{StaticResource TextMutedBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    CornerRadius="3"/>
+                      <ItemsControl ItemsSource="{Binding Details}"
+                                    IsVisible="{Binding #DetailToggle.IsChecked}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <TextBlock Text="{Binding}"
+                                       FontSize="9"
+                                       FontFamily="{StaticResource MonoFont}"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,1,0,1"/>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <!-- Scheduled -->
+          <StackPanel Spacing="2" IsVisible="{Binding Scheduled.Count, Converter={StaticResource IntToBool}}">
+            <TextBlock Text="SCHEDULED"
+                       FontSize="9"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource AccentBrush}"
+                       LetterSpacing="1"
+                       Margin="4,0"/>
+            <ItemsControl ItemsSource="{Binding Scheduled}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:BackgroundTask">
+                  <Border Padding="6,4"
+                          CornerRadius="4"
+                          Background="Transparent"
+                          BorderBrush="{StaticResource BorderBrush}"
+                          BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <TextBlock Text="{Binding Name}"
+                                 FontSize="11"
+                                 FontWeight="SemiBold"
+                                 Foreground="{StaticResource TextBrush}"
+                                 TextTrimming="CharacterEllipsis"
+                                 VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding NextRunAtLocal, StringFormat=next {0:HH:mm:ss}}"
+                                 FontSize="9"
+                                 Foreground="{StaticResource TextDimBrush}"
+                                 VerticalAlignment="Center"/>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <!-- Recent -->
+          <StackPanel Spacing="2" IsVisible="{Binding Recent.Count, Converter={StaticResource IntToBool}}">
+            <TextBlock Text="RECENT"
+                       FontSize="9"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource AccentBrush}"
+                       LetterSpacing="1"
+                       Margin="4,0"/>
+            <ItemsControl ItemsSource="{Binding Recent}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:BackgroundTask">
+                  <Border Padding="6,4"
+                          CornerRadius="4"
+                          Background="Transparent"
+                          BorderBrush="{StaticResource BorderBrush}"
+                          BorderThickness="0,0,0,1">
+                    <Border.Styles>
+                      <Style Selector="Border:pointerover">
+                        <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+                      </Style>
+                    </Border.Styles>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <StackPanel Spacing="1">
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextBrush}"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding StatusMessage}"
+                                   FontSize="9"
+                                   Foreground="{StaticResource TextMutedBrush}"/>
+                      </StackPanel>
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding Elapsed}"
+                                 FontSize="9"
+                                 Foreground="{StaticResource TextDimBrush}"
+                                 VerticalAlignment="Center"/>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </Border>
+</UserControl>

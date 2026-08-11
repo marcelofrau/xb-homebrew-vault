@@ -75,6 +75,12 @@ public partial class App : Application
             var catalogService = new CatalogApiService();
             var overrideService = new PackageOverrideService();
             overrideService.Initialize();
+            var backgroundTaskService = new BackgroundTaskService();
+            backgroundTaskService.Start();
+            var notificationCenter = new NotificationCenterService();
+            var connectionMonitor = new ConnectionMonitorService(authService, notificationCenter, backgroundTaskService);
+            connectionMonitor.Start();
+            var taskCenterViewModel = new TaskCenterViewModel(backgroundTaskService);
 
             var mainViewModel = new MainViewModel(authService);
             var browseViewModel = new BrowseViewModel(installService, authService, packageService, catalogService, overrideService);
@@ -90,7 +96,8 @@ public partial class App : Application
             _ = InitAfterSplashAsync(desktop, splash, mainViewModel, browseViewModel,
                 installedViewModel, fileExplorerViewModel, toolsViewModel,
                 settingsViewModel, authService, packageService, systemService,
-                networkService, processService, performanceService, installService, sftpService, portalService);
+                networkService, processService, performanceService, installService, sftpService, portalService,
+                backgroundTaskService, connectionMonitor, notificationCenter, taskCenterViewModel);
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -186,7 +193,11 @@ public partial class App : Application
         XboxPerformanceService performanceService,
         PackageInstallService installService,
         SftpService sftpService,
-        PortalAppFilesService portalService)
+        PortalAppFilesService portalService,
+        BackgroundTaskService backgroundTaskService,
+        ConnectionMonitorService connectionMonitor,
+        NotificationCenterService notificationCenter,
+        TaskCenterViewModel taskCenterViewModel)
     {
         Logger.Debug("Splash delay starting (2s)");
         await Task.Delay(SplashMinDelayMs);
@@ -201,6 +212,16 @@ public partial class App : Application
 
             desktop.MainWindow = main;
             main.Show();
+
+            main.BindNotifications(notificationCenter);
+            main.SetTaskCenter(taskCenterViewModel);
+
+            main.Closed += (_, _) =>
+            {
+                main.UnbindNotifications();
+                connectionMonitor.Stop();
+                backgroundTaskService.Stop();
+            };
 
             settingsViewModel.UiScaleChanged = () => main.ApplyUiScale();
             settingsViewModel.ShowLogsAction = () => mainViewModel.SelectedTab = 6;
