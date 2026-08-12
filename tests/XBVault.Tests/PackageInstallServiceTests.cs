@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using XBVault.Models;
 using XBVault.Services;
 
 namespace XBVault.Tests;
@@ -205,5 +206,135 @@ public class PackageInstallServiceTests : IDisposable
         Assert.Single(result.Dependencies);
         Assert.Equal("Microsoft.VCLibs.x64.appx", Path.GetFileName(result.Dependencies[0]));
         Assert.Equal(_dir, result.WorkingDirectory);
+    }
+
+    private sealed class FlakyHandler : HttpMessageHandler
+    {
+        private readonly int _failures;
+        private readonly Func<HttpResponseMessage> _response;
+        private int _calls;
+        public int Calls => _calls;
+
+        public FlakyHandler(int failures, Func<HttpResponseMessage> response)
+        {
+            _failures = failures;
+            _response = response;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref _calls);
+            if (_calls <= _failures)
+                throw new HttpRequestException("The response ended prematurely.");
+            return Task.FromResult(_response());
+        }
+    }
+
+    private sealed class FakePackageService : IXboxPackageService
+    {
+        public bool InstallResult { get; set; } = true;
+        public List<string> Installed { get; } = [];
+
+        public Task<List<InstalledPackage>> GetInstalledPackagesAsync() => Task.FromResult(new List<InstalledPackage>());
+        public Task<bool> UninstallPackageAsync(string packageFullName) => Task.FromResult(true);
+        public Task<(bool Success, string? ErrorMessage)> LaunchPackageAsync(string packageFullName, string packageRelativeId)
+            => Task.FromResult((true, (string?)null));
+        public Task<HashSet<string>> GetRunningPackageNamesAsync() => Task.FromResult(new HashSet<string>());
+        public Task<bool> SuspendPackageAsync(string packageFullName) => Task.FromResult(true);
+        public Task<bool> TerminatePackageAsync(string packageFullName) => Task.FromResult(true);
+        public Task<bool> InstallPackageAsync(string filePath, IProgress<double>? progress = null) => Task.FromResult(InstallResult);
+        public Task<bool> InstallPackageAsync(string packagePath, string[] dependencies, IProgress<InstallProgressInfo>? progress = null)
+        {
+            Installed.Add(packagePath);
+            return Task.FromResult(InstallResult);
+        }
+    }
+
+    private HttpResponseMessage ZipResponse()
+    {
+        var zip = CreateZip(("Game_x64.appx", new byte[] { 0x50, 0x4B, 0x03, 0x04 }));
+        var stream = new MemoryStream(File.ReadAllBytes(zip));
+        var msg = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StreamContent(stream)
+        };
+        msg.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+        return msg;
+    }
+
+    private (PackageInstallService service, FlakyHandler handler, FakePackageService pkg) BuildInstallService(Func<HttpResponseMessage>? response = null)
+    {
+        var handler = new FlakyHandler(0, response ?? ZipResponse);
+        var http = new HttpClient(handler);
+        var cache = new CacheService(Path.Combine(_dir, "cache"));
+        var pkg = new FakePackageService();
+        var service = new PackageInstallService(cache, pkg, http);
+        return (service, handler, pkg);
+    }
+
+    private static CatalogItem GameItem() => new()
+    {
+        Id = "game",
+        Name = "Game",
+        Version = "1.0.0",
+        DownloadUrl = "https://example.com/Game.appx",
+        Category = "Games"
+    };
+
+    [Fact]
+    public async Task DownloadAndInstall_RetriesTransientNetworkError_ThenSucceeds()
+    {
+        var (service, handler, _) = BuildInstallService();
+        handler = new FlakyHandler(2, ZipResponse);
+        var http = new HttpClient(handler);
+        var cache = new CacheService(Path.Combine(_dir, "cache"));
+        var pkg = new FakePackageService();
+        service = new PackageInstallService(cache, pkg, http);
+
+        var result = await service.DownloadAndInstallAsync(GameItem());
+
+        Assert.True(result.Success);
+        Assert.Equal(3, handler.Calls);
+    }
+
+    [Fact]
+    public async Task DownloadAndInstall_PersistentNetworkError_ReturnsDownloadStage()
+    {
+        var handler = new FlakyHandler(99, ZipResponse);
+        var http = new HttpClient(handler);
+        var cache = new CacheService(Path.Combine(_dir, "cache"));
+        var pkg = new FakePackageService();
+        var service = new PackageInstallService(cache, pkg, http);
+
+        var result = await service.DownloadAndInstallAsync(GameItem());
+
+        Assert.False(result.Success);
+        Assert.Equal(InstallFailureStage.Download, result.Stage);
+        Assert.Equal(3, handler.Calls);
+    }
+
+    [Fact]
+    public async Task DownloadAndInstall_XboxInstallFails_ReturnsInstallStage()
+    {
+        var (service, handler, pkg) = BuildInstallService();
+        pkg.InstallResult = false;
+
+        var result = await service.DownloadAndInstallAsync(GameItem());
+
+        Assert.False(result.Success);
+        Assert.Equal(InstallFailureStage.Install, result.Stage);
+    }
+
+    [Fact]
+    public async Task DownloadAndInstall_NoDownloadUrl_ReturnsDownloadStage()
+    {
+        var (service, _, _) = BuildInstallService();
+        var item = GameItem();
+        item.DownloadUrl = null;
+
+        var result = await service.DownloadAndInstallAsync(item);
+
+        Assert.False(result.Success);
+        Assert.Equal(InstallFailureStage.Download, result.Stage);
     }
 }

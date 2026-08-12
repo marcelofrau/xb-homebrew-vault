@@ -79,14 +79,35 @@ public class PackageInstallService
     }
 
     public PackageInstallService(CacheService cache, IXboxPackageService packageService)
+        : this(cache, packageService, http: null)
+    {
+    }
+
+    public PackageInstallService(CacheService cache, IXboxPackageService packageService, HttpClient? http)
     {
         _cache = cache;
         _packageService = packageService;
-        _http = new HttpClient() { Timeout = TimeSpan.FromSeconds(30) };
+
+        if (http is not null)
+        {
+            _http = http;
+            return;
+        }
+
+        // GitHub release downloads redirect (302) to a CDN. Reusing a pooled
+        // keep-alive connection that the server has closed causes
+        // "The response ended prematurely". Limit pooled connection lifetime
+        // so stale connections are recycled before they get reused.
+        var handler = new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+            AllowAutoRedirect = true
+        };
+        _http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
         _http.DefaultRequestHeaders.Add("User-Agent", $"XB Homebrew Vault/{BuildInfo.Version}");
     }
 
-    public async Task<bool> DownloadAndInstallAsync(
+    public async Task<InstallResult> DownloadAndInstallAsync(
         CatalogItem item,
         string? downloadUrl = null,
         IProgress<InstallProgressInfo>? progress = null)
@@ -95,7 +116,7 @@ public class PackageInstallService
         if (string.IsNullOrWhiteSpace(url))
         {
             Logger.Error($"No download URL for {item.Name}");
-            return false;
+            return InstallResult.Fail(InstallFailureStage.Download, "No download URL available for this item.");
         }
 
         progress?.Report(new InstallProgressInfo { Status = $"Starting install of {item.Name}..." });
@@ -116,44 +137,62 @@ public class PackageInstallService
             Logger.Debug($"Cache miss — downloading {fileName}");
             progress?.Report(new InstallProgressInfo { Total = 0.05, Status = $"Downloading {fileName}..." });
 
-            try
+            const int maxAttempts = 3;
+            Exception? lastError = null;
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                var response = await _http.GetAsync(url,
-                    HttpCompletionOption.ResponseHeadersRead);
-                response.EnsureSuccessStatusCode();
-
-                var total = response.Content.Headers.ContentLength ?? -1;
-                Logger.Info($"Download size: {(total > 0 ? $"{total} bytes" : "unknown")}");
-                using var stream = await response.Content.ReadAsStreamAsync();
-                using var fileStream = File.Create(localPath);
-
-                var buffer = new byte[81920];
-                long read = 0;
-                int bytesRead;
-
-                while ((bytesRead = await stream.ReadAsync(buffer)) > 0)
+                try
                 {
-                    await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead));
-                    read += bytesRead;
-                    if (total > 0)
-                    {
-                        var pct = 0.05 + (0.35 * (double)read / total);
-                        progress?.Report(new InstallProgressInfo
-                        {
-                            Total = pct,
-                            Status = $"Downloading {fileName} ({FormatBytes(read)}/{FormatBytes(total)})..."
-                        });
-                    }
-                }
+                    if (attempt > 1)
+                        Logger.Warn($"Retry {attempt - 1}/{maxAttempts - 1} for download of {fileName}");
+                    var response = await _http.GetAsync(url,
+                        HttpCompletionOption.ResponseHeadersRead);
+                    response.EnsureSuccessStatusCode();
 
-                Logger.Info($"Downloaded {read} bytes to {localPath}");
+                    var total = response.Content.Headers.ContentLength ?? -1;
+                    Logger.Info($"Download size: {(total > 0 ? $"{total} bytes" : "unknown")}");
+                    using var stream = await response.Content.ReadAsStreamAsync();
+                    using var fileStream = File.Create(localPath);
+
+                    var buffer = new byte[81920];
+                    long read = 0;
+                    int bytesRead;
+
+                    while ((bytesRead = await stream.ReadAsync(buffer)) > 0)
+                    {
+                        await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead));
+                        read += bytesRead;
+                        if (total > 0)
+                        {
+                            var pct = 0.05 + (0.35 * (double)read / total);
+                            progress?.Report(new InstallProgressInfo
+                            {
+                                Total = pct,
+                                Status = $"Downloading {fileName} ({FormatBytes(read)}/{FormatBytes(total)})..."
+                            });
+                        }
+                    }
+
+                    Logger.Info($"Downloaded {read} bytes to {localPath}");
+                    lastError = null;
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                    Logger.Error(ex, $"Download attempt {attempt}/{maxAttempts} failed for {url}");
+                    if (File.Exists(localPath))
+                        File.Delete(localPath);
+                    if (attempt < maxAttempts)
+                        await Task.Delay(TimeSpan.FromSeconds(1.5) * attempt);
+                }
             }
-            catch (Exception ex)
+
+            if (lastError is not null)
             {
-                Logger.Error(ex, $"Download failed for {url}");
-                if (File.Exists(localPath))
-                    File.Delete(localPath);
-                return false;
+                Logger.Error(lastError, $"Download failed for {url} after {maxAttempts} attempts");
+                return InstallResult.Fail(InstallFailureStage.Download,
+                    $"Download failed after {maxAttempts} attempts ({lastError.Message}). The source may be down or your network blocked it.");
             }
         }
 
@@ -170,7 +209,8 @@ public class PackageInstallService
             if (packages.Length == 0)
             {
                 Logger.Error($"No installable packages found in {localPath}");
-                return false;
+                return InstallResult.Fail(InstallFailureStage.Extraction,
+                    "No installable package found after extraction. The download may be corrupt or unsupported.");
             }
             Logger.Info($"Found {packages.Length} installable file(s):");
             foreach (var p in packages)
@@ -179,7 +219,8 @@ public class PackageInstallService
         catch (Exception ex)
         {
             Logger.Error(ex, $"Extraction failed for {localPath}");
-            return false;
+            return InstallResult.Fail(InstallFailureStage.Extraction,
+                $"Extraction failed: {ex.Message}");
         }
 
         // Phase 3: Classify main vs dependencies by name patterns
@@ -189,7 +230,8 @@ public class PackageInstallService
         if (mainPackage is null)
         {
             Logger.Error($"No installable main package found in {localPath}");
-            return false;
+            return InstallResult.Fail(InstallFailureStage.Extraction,
+                "No main package identified after extraction. The download may be corrupt.");
         }
         Logger.Info($"  Main: {Path.GetFileName(mainPackage)}");
         for (int i = 0; i < dependencies.Length; i++)
@@ -235,7 +277,10 @@ public class PackageInstallService
         {
             Logger.Error($"Install FAILED: {item.Name}");
         }
-        return result;
+        return result
+            ? InstallResult.Ok()
+            : InstallResult.Fail(InstallFailureStage.Install,
+                "Xbox rejected the install. The package may be incompatible, corrupted during transfer, or the console rejected it. Check the logs for details.");
     }
 
     private string GetExtractPath(string itemId, string fileName)
