@@ -2,6 +2,7 @@ using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -29,8 +30,61 @@ public partial class SettingsViewModel : ObservableObject
         _authService = authService;
         _cacheService = cacheService;
         LoadSettings();
+        CaptureSnapshot();
         UpdateCacheInfo();
         Logger.Debug("SettingsViewModel initialized");
+    }
+
+    // Snapshot of the last-persisted form state, used for dirty tracking
+    private string _savedAddress = string.Empty;
+    private string _savedPort = "11443";
+    private string _savedUsername = string.Empty;
+    private string _savedPassword = string.Empty;
+    private bool _savedUseHttps = true;
+    private string _savedLogLevel = "Info";
+    private int _savedUiScalePercent = 100;
+    private double _savedIntervalSeconds = 30;
+
+    [ObservableProperty]
+    private bool _hasUnsavedChanges;
+
+    private void CaptureSnapshot()
+    {
+        _savedAddress = Address;
+        _savedPort = Port;
+        _savedUsername = Username;
+        _savedPassword = Password;
+        _savedUseHttps = UseHttps;
+        _savedLogLevel = SelectedLogLevel;
+        _savedUiScalePercent = UiScalePercent;
+        _savedIntervalSeconds = ConnectionCheckIntervalSeconds;
+        HasUnsavedChanges = false;
+        Logger.Debug("Dirty snapshot captured");
+    }
+
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.PropertyName is nameof(Address) or nameof(Port) or nameof(Username)
+            or nameof(Password) or nameof(UseHttps) or nameof(SelectedLogLevel)
+            or nameof(UiScalePercent) or nameof(ConnectionCheckIntervalSeconds))
+        {
+            RefreshDirtyState();
+        }
+    }
+
+    private void RefreshDirtyState()
+    {
+        var dirty = Address != _savedAddress
+            || Port != _savedPort
+            || Username != _savedUsername
+            || Password != _savedPassword
+            || UseHttps != _savedUseHttps
+            || SelectedLogLevel != _savedLogLevel
+            || UiScalePercent != _savedUiScalePercent
+            || Math.Abs(ConnectionCheckIntervalSeconds - _savedIntervalSeconds) > 0.001;
+        if (dirty != HasUnsavedChanges)
+            HasUnsavedChanges = dirty;
     }
 
     [ObservableProperty]
@@ -103,7 +157,6 @@ public partial class SettingsViewModel : ObservableObject
     {
         var seconds = (int)Math.Round(value);
         SettingsService.Current.ConnectionCheckIntervalSeconds = seconds;
-        SettingsService.Save();
         Logger.Info($"Connection check interval set to {seconds}s");
     }
 
@@ -115,7 +168,6 @@ public partial class SettingsViewModel : ObservableObject
     partial void OnUiScalePercentChanged(int value)
     {
         SettingsService.Current.UiScale = value / 100.0;
-        SettingsService.Save();
         UiScaleChanged?.Invoke();
         Logger.Info($"UI scale set to {value}%");
     }
@@ -140,14 +192,17 @@ public partial class SettingsViewModel : ObservableObject
             _       => LogLevel.Info
         };
         SettingsService.Current.MinLogLevel = value;
-        SettingsService.Save();
         Logger.Info($"Log level set to {value}");
     }
 
     private void LoadSettings()
     {
-        Logger.Debug("Loading settings from disk");
-        var settings = SettingsService.Current;
+        LoadFrom(SettingsService.Current);
+    }
+
+    private void LoadFrom(AppSettings settings)
+    {
+        Logger.Debug("Loading settings");
         var conn = settings.XboxConnection;
 
         Address = conn.Address;
@@ -161,8 +216,9 @@ public partial class SettingsViewModel : ObservableObject
         _uiScalePercent = UiScaleOptions.OrderBy(o => Math.Abs(o - savedScale)).First();
 #pragma warning restore MVVMTK0034
 
-        if (!string.IsNullOrEmpty(conn.EncryptedPassword))
-            Password = CryptoService.Deobfuscate(conn.EncryptedPassword);
+        Password = string.IsNullOrEmpty(conn.EncryptedPassword)
+            ? string.Empty
+            : CryptoService.Deobfuscate(conn.EncryptedPassword);
 
         if (conn.IsConfigured)
         {
@@ -170,6 +226,10 @@ public partial class SettingsViewModel : ObservableObject
             _authService.Configure(conn.BaseUrl, conn.Username,
                 CryptoService.Deobfuscate(conn.EncryptedPassword));
             ConnectionStatus = "Configured";
+        }
+        else
+        {
+            ConnectionStatus = "Not configured";
         }
     }
 
@@ -234,48 +294,82 @@ public partial class SettingsViewModel : ObservableObject
     {
         Logger.Debug("SaveSettings called");
 
-        if (string.IsNullOrWhiteSpace(Address))
-        {
-            ConnectionStatus = "Address is required";
-            Logger.Warn("Save aborted: address empty");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(Username))
-        {
-            ConnectionStatus = "Username is required";
-            Logger.Warn("Save aborted: username empty");
-            return;
-        }
-
-        if (!TryGetPort(out var portVal))
-        {
-            if (string.IsNullOrWhiteSpace(PortError))
-                ConnectionStatus = "Port must be 1-65535";
-            Logger.Warn("Save aborted: invalid port");
-            return;
-        }
-
-        var obfuscated = CryptoService.Obfuscate(Password);
-
         var settings = SettingsService.Current;
-        settings.XboxConnection.Address = Address;
-        settings.XboxConnection.Port = portVal;
-        settings.XboxConnection.Username = Username;
-        settings.XboxConnection.EncryptedPassword = obfuscated;
-        settings.XboxConnection.UseHttps = UseHttps;
+        var wantsConnection = !string.IsNullOrWhiteSpace(Address)
+            || !string.IsNullOrWhiteSpace(Username)
+            || !string.IsNullOrWhiteSpace(Password);
+
+        if (wantsConnection)
+        {
+            if (string.IsNullOrWhiteSpace(Address))
+            {
+                ConnectionStatus = "Address is required";
+                Logger.Warn("Save aborted: address empty");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Username))
+            {
+                ConnectionStatus = "Username is required";
+                Logger.Warn("Save aborted: username empty");
+                return;
+            }
+
+            if (!TryGetPort(out var portVal))
+            {
+                if (string.IsNullOrWhiteSpace(PortError))
+                    ConnectionStatus = "Port must be 1-65535";
+                Logger.Warn("Save aborted: invalid port");
+                return;
+            }
+
+            var obfuscated = CryptoService.Obfuscate(Password);
+            settings.XboxConnection.Address = Address;
+            settings.XboxConnection.Port = portVal;
+            settings.XboxConnection.Username = Username;
+            settings.XboxConnection.EncryptedPassword = obfuscated;
+            settings.XboxConnection.UseHttps = UseHttps;
+
+            var baseUrl = $"{(UseHttps ? "https" : "http")}://{Address}:{Port}";
+            _authService.Configure(baseUrl, Username, Password);
+            Logger.Info($"Connection settings saved: {Address}:{Port} (HTTPS={UseHttps})");
+        }
+
         settings.MinLogLevel = SelectedLogLevel;
+        settings.UiScale = UiScalePercent / 100.0;
+        settings.ConnectionCheckIntervalSeconds = (int)Math.Round(ConnectionCheckIntervalSeconds);
 
         SettingsService.Save();
-        Logger.Info($"Settings saved: {Address}:{Port} (HTTPS={UseHttps})");
-
-        var baseUrl = $"{(UseHttps ? "https" : "http")}://{Address}:{Port}";
-        _authService.Configure(baseUrl, Username, Password);
-        Logger.Debug("XboxDeviceService reconfigured with new settings");
+        Logger.Info("Settings saved");
+        CaptureSnapshot();
 
         SavedNotificationText = "Settings saved successfully!";
         ShowSavedNotification = true;
         ConnectionStatus = string.Empty;
+    }
+
+    [RelayCommand]
+    private void DiscardChanges()
+    {
+        Logger.Debug("DiscardChanges called");
+        SettingsService.Load();
+        LoadSettings();
+        CaptureSnapshot();
+        UiScaleChanged?.Invoke();
+        SavedNotificationText = "Changes discarded";
+        ShowSavedNotification = true;
+    }
+
+    [RelayCommand]
+    private void ResetToDefaults()
+    {
+        Logger.Debug("ResetToDefaults called");
+        LoadFrom(new AppSettings());
+        SettingsService.Current.UiScale = UiScalePercent / 100.0;
+        UiScaleChanged?.Invoke();
+        RefreshDirtyState();
+        SavedNotificationText = "Form reset to defaults — press Save to apply";
+        ShowSavedNotification = true;
     }
 
     [RelayCommand]
@@ -387,6 +481,7 @@ public partial class SettingsViewModel : ObservableObject
         Logger.Info("ResetSettings called");
         SettingsService.Reset();
         LoadSettings();
+        CaptureSnapshot();
         SavedNotificationText = "Settings reset to defaults";
         ShowSavedNotification = true;
     }

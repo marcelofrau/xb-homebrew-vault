@@ -7,14 +7,100 @@
   <Grid RowDefinitions="Auto,*" Margin="32">
 
     <!-- Header -->
-    <StackPanel Grid.Row="0" Margin="0,14,0,16">
-      <TextBlock Text="SETTINGS"
-                 Classes="PageTitle"/>
-      <TextBlock Text="Connection and application preferences"
-                 Classes="Muted"
-                 FontSize="14"
-                 Margin="0,4,0,0"/>
-    </StackPanel>
+    <Grid Grid.Row="0" RowDefinitions="Auto,Auto" Margin="0,14,0,16">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel>
+          <TextBlock Text="SETTINGS"
+                     Classes="PageTitle"/>
+          <TextBlock Text="Connection and application preferences"
+                     Classes="Muted"
+                     FontSize="14"
+                     Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- Toolbar: general screen actions -->
+        <StackPanel Grid.Column="1"
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    VerticalAlignment="Center">
+          <Border IsVisible="{Binding HasUnsavedChanges}"
+                  Background="#26F39C12"
+                  BorderBrush="{StaticResource WarningBrush}"
+                  BorderThickness="1"
+                  CornerRadius="12"
+                  Padding="10,5"
+                  VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Ellipse Width="8" Height="8"
+                       Fill="{StaticResource WarningBrush}"
+                       VerticalAlignment="Center"/>
+              <TextBlock Text="Unsaved changes"
+                         FontSize="12"
+                         FontWeight="SemiBold"
+                         Foreground="{StaticResource WarningBrush}"
+                         VerticalAlignment="Center"/>
+            </StackPanel>
+          </Border>
+          <Button Command="{Binding DiscardChangesCommand}"
+                  Padding="16,8">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+              <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-restart-20.png"
+                     Width="20" Height="20"
+                     Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Discard Changes"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <Button Command="{Binding ResetToDefaultsCommand}"
+                  Padding="16,8">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+              <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-reset-20.png"
+                     Width="20" Height="20"
+                     Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Reset to Default"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <Button Classes="Accent"
+                  Command="{Binding SaveSettingsCommand}"
+                  Padding="16,8">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+              <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-save-20.png"
+                     Width="20" Height="20"
+                     Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Save"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+        </StackPanel>
+      </Grid>
+
+      <!-- Saved notification -->
+      <Border Grid.Row="1"
+              IsVisible="{Binding ShowSavedNotification}"
+              Background="#1A3A1E"
+              BorderBrush="{StaticResource AccentBrush}"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="14,10"
+              Margin="0,12,0,0">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+          <Path Data="M10,18 L16,24 L26,12"
+                Stroke="{StaticResource AccentBrush}"
+                StrokeThickness="2"
+                StrokeLineCap="Round"
+                StrokeJoin="Round"
+                Width="20" Height="20"
+                Stretch="Uniform"/>
+          <TextBlock Grid.Column="1"
+                     Text="{Binding SavedNotificationText}"
+                     Foreground="{StaticResource AccentGlowBrush}"
+                     FontSize="13"
+                     FontWeight="SemiBold"
+                     VerticalAlignment="Center"/>
+        </Grid>
+      </Border>
+    </Grid>
 
     <ScrollViewer Grid.Row="1">
       <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="1*,1*" ColumnSpacing="16">
@@ -98,50 +184,15 @@
                              VerticalAlignment="Center"/>
                 </Grid>
               </Button>
-              <Button Classes="Accent"
-                      Command="{Binding SaveSettingsCommand}"
-                      Padding="16,8">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-save-20.png"
-                         Width="20" Height="20"
-                         Stretch="Uniform"/>
-                  <TextBlock Grid.Column="1" Text="Save"
-                             VerticalAlignment="Center"/>
-                </Grid>
-              </Button>
             </StackPanel>
-
-            <!-- Saved notification -->
-            <Border IsVisible="{Binding ShowSavedNotification}"
-                    Background="#1A3A1E"
-                    BorderBrush="{StaticResource AccentBrush}"
-                    BorderThickness="1"
-                    CornerRadius="6"
-                    Padding="14,10">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                <Path Data="M10,18 L16,24 L26,12"
-                      Stroke="{StaticResource AccentBrush}"
-                      StrokeThickness="2"
-                      StrokeLineCap="Round"
-                      StrokeJoin="Round"
-                      Width="20" Height="20"
-                      Stretch="Uniform"/>
-                <TextBlock Grid.Column="1"
-                           Text="{Binding SavedNotificationText}"
-                           Foreground="{StaticResource AccentGlowBrush}"
-                           FontSize="13"
-                           FontWeight="SemiBold"
-                           VerticalAlignment="Center"/>
-              </Grid>
-            </Border>
 
           </StackPanel>
         </Border>
 
-        <!-- Logs Section -->
+        <!-- Maintenance Section -->
         <Border Classes="Card" Padding="16">
           <StackPanel Spacing="10">
-            <TextBlock Text="LOGS"
+            <TextBlock Text="MAINTENANCE"
                        Classes="SectionHeader"/>
 
             <Grid ColumnDefinitions="*,Auto">
@@ -189,16 +240,8 @@
                 </Grid>
               </Button>
             </Grid>
-          </StackPanel>
-        </Border>
 
-      </StackPanel>
-
-        <!-- Application Section (cache, logging, app management) -->
-        <Border Classes="Card" Padding="24" Grid.Column="1" VerticalAlignment="Top">
-          <StackPanel Spacing="12">
-            <TextBlock Text="APPLICATION"
-                       Classes="SectionHeader"/>
+            <Separator Background="{StaticResource BorderBrush}" Height="1"/>
 
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Spacing="4">
@@ -223,7 +266,84 @@
               </Button>
             </Grid>
 
-            <Separator Background="{StaticResource BorderBrush}" Height="1"/>
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Restart application"
+                           FontSize="13"/>
+                <TextBlock Text="Restart to apply changes or resolve issues"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding RestartAppCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-restart-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Restart"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Reset all settings"
+                           FontSize="13"/>
+                <TextBlock Text="Clear saved connection and preferences to defaults"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding ResetSettingsCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-reset-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Reset"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Open settings folder"
+                           FontSize="13"/>
+                <TextBlock Text="View or edit the settings file directly"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding OpenSettingsFolderCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-folder-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Open"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+
+        <!-- Application Section (cache, logging, app management) -->
+        <Border Classes="Card" Padding="24" Grid.Column="1" VerticalAlignment="Top">
+          <StackPanel Spacing="12">
+            <TextBlock Text="APPLICATION"
+                       Classes="SectionHeader"/>
 
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Spacing="4">
@@ -311,81 +431,6 @@
                              Width="120"
                              VerticalAlignment="Center"
                              FormatString="0 s"/>
-            </Grid>
-
-            <Separator Background="{StaticResource BorderBrush}" Height="1"/>
-
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Spacing="4">
-                <TextBlock Text="Restart application"
-                           FontSize="13"/>
-                <TextBlock Text="Restart to apply changes or resolve issues"
-                           FontSize="12"
-                           Foreground="{StaticResource TextMutedBrush}"/>
-              </StackPanel>
-              <Button Grid.Column="1"
-                      Command="{Binding RestartAppCommand}"
-                      Padding="12,6"
-                      VerticalAlignment="Center">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-restart-20.png"
-                         Width="20" Height="20"
-                         Stretch="Uniform"/>
-                  <TextBlock Grid.Column="1" Text="Restart"
-                             FontSize="12"
-                             VerticalAlignment="Center"/>
-                </Grid>
-              </Button>
-            </Grid>
-
-            <Separator Background="{StaticResource BorderBrush}" Height="1"/>
-
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Spacing="4">
-                <TextBlock Text="Reset all settings"
-                           FontSize="13"/>
-                <TextBlock Text="Clear saved connection and preferences to defaults"
-                           FontSize="12"
-                           Foreground="{StaticResource TextMutedBrush}"/>
-              </StackPanel>
-              <Button Grid.Column="1"
-                      Command="{Binding ResetSettingsCommand}"
-                      Padding="12,6"
-                      VerticalAlignment="Center">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-reset-20.png"
-                         Width="20" Height="20"
-                         Stretch="Uniform"/>
-                  <TextBlock Grid.Column="1" Text="Reset"
-                             FontSize="12"
-                             VerticalAlignment="Center"/>
-                </Grid>
-              </Button>
-            </Grid>
-
-            <Separator Background="{StaticResource BorderBrush}" Height="1"/>
-
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Spacing="4">
-                <TextBlock Text="Open settings folder"
-                           FontSize="13"/>
-                <TextBlock Text="View or edit the settings file directly"
-                           FontSize="12"
-                           Foreground="{StaticResource TextMutedBrush}"/>
-              </StackPanel>
-              <Button Grid.Column="1"
-                      Command="{Binding OpenSettingsFolderCommand}"
-                      Padding="12,6"
-                      VerticalAlignment="Center">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-folder-20.png"
-                         Width="20" Height="20"
-                         Stretch="Uniform"/>
-                  <TextBlock Grid.Column="1" Text="Open"
-                             FontSize="12"
-                             VerticalAlignment="Center"/>
-                </Grid>
-              </Button>
             </Grid>
           </StackPanel>
         </Border>

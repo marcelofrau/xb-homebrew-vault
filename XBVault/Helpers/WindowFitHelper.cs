@@ -60,11 +60,16 @@ public static class WindowFitHelper
         double fit = Math.Min(availW / info.DesignWidth, availH / info.DesignHeight);
         double scale = Math.Min(userScale, fit);
 
-        if (scale >= 1.0)
+        if (userScale <= 1.0 && scale >= 1.0)
         {
             if (window.Content is LayoutTransformControl wrapped)
             {
                 wrapped.Child = null;
+                if (info.Original is { } original)
+                {
+                    original.RenderTransform = null;
+                    original.RenderTransformOrigin = default;
+                }
                 window.Content = info.Original;
                 RestoreSize(window, info);
             }

@@ -32,6 +32,9 @@ Thumbs.db
 .cursor/
 .aider/
 
+# Graphify knowledge graph (generated)
+graphify-out/
+
 # Orphaned legacy assets
 XBVault/Assets/_Backup/
 
