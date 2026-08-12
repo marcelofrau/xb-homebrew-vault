@@ -64,4 +64,34 @@ public class NotificationCenterServiceTests
         Assert.Single(center.History);
         Assert.Equal(0, center.UnacknowledgedCount);
     }
+
+    [Fact]
+    public void Replace_SameTag_RemovesOldFromHistoryAndActive()
+    {
+        var center = new InlineNotifications();
+        var first = center.NotifyGroupedReplacing("app-updates", "1 update", [Action("a")], autoDismiss: false);
+        center.Dismiss(first.Id);
+        Assert.Single(center.History);
+
+        var second = center.NotifyGroupedReplacing("app-updates", "2 updates", [Action("a"), Action("b")], autoDismiss: false);
+
+        Assert.Single(center.Active);
+        Assert.Contains(second, center.Active);
+        Assert.DoesNotContain(first, center.History);
+        Assert.Empty(center.History);
+        Assert.Equal(1, center.UnacknowledgedCount);
+    }
+
+    [Fact]
+    public void Replace_DifferentTag_KeepsHistoryEntry()
+    {
+        var center = new InlineNotifications();
+        var first = center.NotifyGroupedReplacing("app-updates", "1 update", [Action("a")], autoDismiss: false);
+        center.Dismiss(first.Id);
+
+        center.NotifyGroupedReplacing("other-tag", "other", [Action("b")], autoDismiss: false);
+
+        Assert.Contains(first, center.History);
+        Assert.Equal(1, center.UnacknowledgedCount);
+    }
 }

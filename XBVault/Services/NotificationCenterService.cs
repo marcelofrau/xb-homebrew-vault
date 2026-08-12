@@ -90,6 +90,9 @@ public class NotificationCenterService
                 AdjustUnacknowledged(-1);
                 Logger.Trace($"NotificationCenter: replaced active '{existing.Title}' with '{item.Title}' (tag '{item.Tag}')");
             }
+            var oldHistory = _history.Where(n => !string.IsNullOrEmpty(n.Tag) && n.Tag == item.Tag).ToList();
+            foreach (var old in oldHistory)
+                _history.Remove(old);
         });
         AddActive(item, autoDismiss);
     }
