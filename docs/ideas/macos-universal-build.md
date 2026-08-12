@@ -118,7 +118,7 @@ Keep existing entries + add `osx-universal` job:
 
 ### Risk: R2R cross-compile on ARM runner
 
-CI `macos-latest` is ARM. `dotnet publish -r osx-x64` with `PublishReadyToRun=true` needs the x64 cross-compiler. Expected behavior (.NET 8 SDK supports this), but needs validation. If it fails:
+CI `macos-latest` is ARM. `dotnet publish -r osx-x64` with `PublishReadyToRun=true` needs the x64 cross-compiler. Expected behavior (.NET 10 SDK supports this), but needs validation. If it fails:
 - Build arm64 on `macos-latest`
 - Build x64 on `macos-13` (Intel, still available as runner)
 - Universal job stays the same — only the x64 artifact source changes

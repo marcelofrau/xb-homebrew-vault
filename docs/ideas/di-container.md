@@ -23,7 +23,12 @@ Lightweight package, standard in .NET ecosystem.
 ```csharp
 var services = new ServiceCollection();
 services.AddSingleton<SettingsService>();
-services.AddSingleton<IXboxDeviceService, XboxDeviceService>();
+services.AddSingleton<IXboxAuthService, XboxAuthService>();
+services.AddSingleton<IXboxPackageService, XboxPackageService>();
+services.AddSingleton<IXboxProcessService, XboxProcessService>();
+services.AddSingleton<IXboxSystemService, XboxSystemService>();
+services.AddSingleton<IXboxNetworkService, XboxNetworkService>();
+services.AddSingleton<IXboxPerformanceService, XboxPerformanceService>();
 services.AddTransient<MainViewModel>();
 services.AddTransient<BrowseViewModel>();
 // ...
@@ -33,8 +38,8 @@ var vm = provider.GetRequiredService<MainViewModel>();
 
 ### 3. Services to make DI-friendly
 - `SettingsService` — remove static singleton pattern, inject where needed
-- `XboxDeviceService` — receive `HttpClient` via `IHttpClientFactory` or injection
-- `PackageInstallService` — already receives `CacheService` and `XboxDeviceService` in constructor (good)
+- `XboxAuthService` — receive `HttpClient` via `IHttpClientFactory` or injection
+- `PackageInstallService` — already receives `CacheService` and `XboxPackageService` in constructor (good)
 - `CacheService` — make injectable (already instantiable)
 
 ### 4. ViewModels

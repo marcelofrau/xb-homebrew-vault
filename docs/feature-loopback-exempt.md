@@ -5,6 +5,8 @@ title: Feature - Loopback Exempt
 
 # Feature — Loopback Exempt (Tools)
 
+> **Status: SHIPPED (v1.3.0).** Implemented as a dedicated `LoopbackExemptWindow` accessible from File Explorer. This spec describes the original design.
+
 ## Goal
 
 Add a **Tools** tool that applies the Xbox loopback exemption for an installed

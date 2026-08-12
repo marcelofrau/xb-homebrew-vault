@@ -46,7 +46,7 @@ New window/tab accessible from Tools view with side-by-side cards:
 - Simple history: mini sparkline of last N CPU/memory points
 
 ### Dependencies
-- Reuses existing `XboxDeviceService` (or [split services](refactor-xboxdeviceservice.md))
+- Reuses existing Xbox services (`XboxSystemService`, `XboxProcessService`, `XboxPerformanceService`)
 - Performance snapshot already has WebSocket implemented
 - No new NuGet dependencies
 

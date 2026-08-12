@@ -15,7 +15,7 @@ Complete guide to using XB Homebrew Vault — from first launch to advanced feat
 
 | Platform | Minimum | Recommended |
 |----------|---------|-------------|
-| **Windows** | Windows 10 64-bit, .NET 8 Runtime | Windows 10/11 64-bit |
+| **Windows** | Windows 10/11 64-bit |
 | **macOS** | macOS 12 (Monterey), Apple Silicon or Intel | macOS 14 (Sonoma) |
 | **Linux** | glibc-based distro (Ubuntu 22.04+, Fedora 38+) | Ubuntu 24.04+ |
 | **Xbox** | Xbox One or Series S\|X in Developer Mode | Latest Dev Mode update |
@@ -29,6 +29,7 @@ Complete guide to using XB Homebrew Vault — from first launch to advanced feat
    - `osx-x64.zip` — macOS Intel
    - `osx-arm64.zip` — macOS Apple Silicon
    - `linux-x64.zip` — Linux 64-bit
+   - `linux-arm64.zip` — Linux ARM (Raspberry Pi, ARM servers)
 3. Extract the ZIP to any folder
 4. Run `XBVault.exe` (Windows) or `XBVault` (macOS/Linux)
 
@@ -191,6 +192,13 @@ Browse and manage files on your Xbox's file system:
 - Delete files and folders
 - Uses SFTP over your existing Dev Mode connection
 
+### User Files (Portal Browser)
+
+Browse the Xbox `UserFiles` folder over the Device Portal (REST):
+- List, rename, delete, and create folders
+- Uses the same credentials as your main connection
+- Lives alongside the SFTP File Explorer for quick access to user content
+
 ### Process Manager
 
 View and control running processes on your Xbox:
@@ -243,11 +251,31 @@ When using an external USB drive with your Xbox:
 4. Click **Grant Permissions** — this sets up NTFS permissions for `ALL APPLICATION PACKAGES`
 5. Move the drive to your Xbox — it will be recognized and writable
 
+### Loopback Exempt & X-Files
+
+Two tools in the **Tools** tab help development-mode apps reach the network:
+- **X-Files Enablement** — one-click wizard: detects the `X-Files` homebrew explorer and applies the loopback exemption so it can reach the Xbox portal REST API on itself (browse `LocalAppData` / `DevelopmentFiles`)
+- **Loopback Exempt** — full manager for loopback exemptions on the Xbox, listing and toggling development-mode packages
+
+### Open Dev Portal
+
+Opens your Xbox's Device Portal web interface in the default browser, pre-filled with your connection address.
+
 > **Note:** USB detection is Windows-only. On macOS/Linux, a manual file path is required.
 
 ---
 
 ## Settings
+
+The Settings screen is divided into three areas. Changes are applied only when you press **Save** — you can edit freely and decide later.
+
+### Toolbar (top-right)
+
+- **Save** — persists all changes on the screen (connection, preferences, and log level)
+- **Discard Changes** — reverts the form to the last saved state, discarding any edits
+- **Reset to Default** — resets the form to factory defaults (saved only after you press Save)
+
+A small **● Unsaved changes** badge appears whenever the form differs from what is saved — a reminder to hit Save or Discard.
 
 ### Connection Configuration
 
@@ -255,12 +283,24 @@ When using an external USB drive with your Xbox:
 - **Port** — Dev Mode API port (default `11443`)
 - **Username** — your Dev Mode credentials (default `DevToolsUser`)
 - **Password** — stored obfuscated (not plaintext)
+- **Use HTTPS** — connects over HTTPS when your Dev Mode serves it
+- **Test Connection** — verifies the connection without saving
 
 ### Application Settings
 
-- **Check for updates on startup** — auto-check for new versions
 - **Log level** — controls verbosity (Info, Warn, Error, Debug)
-- **Theme** — color scheme (future: additional themes)
+- **UI Scale** — 80–120% zoom for the whole interface (applies immediately)
+- **Connection check interval** — how often the app re-checks the Xbox connection
+- **Reset window size** — returns the main window to its default dimensions
+
+### Maintenance
+
+- **Logs folder** — opens the folder where logs are stored
+- **Logs screen** — jumps to the Logs tab
+- **Clear cache** — empties the package catalog cache (re-fetched on next load)
+- **Restart application** — closes and relaunches the app
+- **Open settings folder** — opens the folder containing `settings.json`
+- **Reset all settings** — wipes all saved settings and restores defaults immediately
 
 ### Logging
 

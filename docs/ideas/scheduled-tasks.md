@@ -53,7 +53,7 @@ New window accessible from Settings or Tools:
 
 ### Dependencies
 - No new library
-- Reuses `XboxDeviceService` (restart/shutdown)
+- Reuses `XboxSystemService` (restart/shutdown)
 - Reuses `SftpService` (backup)
 - Reuses `CatalogApiService` (refresh)
 

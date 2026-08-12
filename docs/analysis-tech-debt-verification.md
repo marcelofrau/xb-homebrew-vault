@@ -7,6 +7,8 @@ title: Tech Debt Verification (Internal)
 ## Internal Document
 
 > **Re-verified against v1.2.0 source — August 2026.** This supersedes the June 2026 verification. All line counts, method counts, and locations were re-measured against the current tree; the summary table reflects the live status of every item.
+>
+> **⚠️ Post-verification update (Aug 2026):** The `XboxDeviceService` god class item in this report is **RESOLVED** — it was split into 6 domain services and deleted after this verification ran. `FileExplorerViewModel` remains large (~1,736 lines). See current [Tech Debt](tech-debt).
 
 ---
 

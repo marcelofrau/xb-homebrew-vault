@@ -12,8 +12,8 @@ Catalog of ideas for future versions. Organized by area and estimated impact.
 | **DevOps/UX** | [Auto-Update](auto-update.md) | High | Low | ✅ Partial (startup dialog) |
 | **Automation** | [Background & Automation](background-and-automation.md) | High | High | 🔄 Planned (5 changes) |
 | **Build** | [macOS Universal](macos-universal-build.md) | Low | Medium | ⬜ Open |
-| **Quality** | [Testing](testing-infrastructure.md) | High | Medium | ⬜ Open |
-| **Refactoring** | [Split XboxDeviceService](refactor-xboxdeviceservice.md) | High | Medium | ⬜ Open |
+| **Quality** | [Testing](testing-infrastructure.md) | High | Medium | ✔ Partial (172 tests) |
+| **Refactoring** | [Split XboxDeviceService](refactor-xboxdeviceservice.md) | High | Medium | ✔ Done (Aug 2026) |
 | **Architecture** | [DI Container](di-container.md) | High | Medium | ⬜ Open |
 | **Globalization** | [i18n Localization](i18n-localization.md) | High | High | ⬜ Open |
 | **Tools** | [Health Dashboard](health-dashboard.md) | Medium | Medium | ⬜ Open |
@@ -34,7 +34,7 @@ Phase 1 (short term) — mostly done
   ├── ✓ Crash Report
   ├── Auto-Update (notification) ⬜
   ├── Core service testing ⬜
-  └── Split XboxDeviceService ⬜
+  └── ✓ Split XboxDeviceService
 
 Phase 2 (medium term)
   ├── i18n Localization

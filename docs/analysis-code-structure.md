@@ -8,13 +8,13 @@ title: Code Structure Analysis (Internal)
 
 > **Note:** This is an internal analysis document for comprehensive documentation. Not published on the site.
 
-> **⚠️ Superseded (June 2026 → Aug 2026):** Metrics below reflect the codebase as of the Phase 1 analysis. **Current v1.2.0 measurements differ substantially** — `XboxDeviceService` is now **1,433 lines / ~41 public members / complexity 205**, `async void` grew to **22**, awaits to **~404**, and `FileExplorerViewModel` (1,880 lines / complexity 254) is a second god class. See the current [Tech Debt](tech-debt) and [Tech Debt Verification v3.0](analysis-tech-debt-verification).
+> **⚠️ Superseded (June 2026 → Aug 2026):** Metrics below reflect the codebase as of the Phase 1 analysis. **The `XboxDeviceService` god class has since been split into 6 domain services and deleted**, and the project migrated to .NET 10. `FileExplorerViewModel` remains large (~1,736 lines). See the current [Tech Debt](tech-debt) and [Architecture](architecture).
 
 ---
 
 ## Executive Summary
 
-XB Homebrew Vault is a .NET 8 + Avalonia 12 MVVM desktop application with ~8-10k LOC across Services, ViewModels, and Views. The architecture is layered (Views → ViewModels → Services → Models) with a predominant "god class" pattern in `XboxDeviceService`.
+XB Homebrew Vault is a .NET 10 + Avalonia 12 MVVM desktop application with ~8-10k LOC across Services, ViewModels, and Views. The architecture is layered (Views → ViewModels → Services → Models) with a predominant "god class" pattern in `XboxDeviceService`.
 
 **Key findings:**
 - 1 critical god class (XboxDeviceService)

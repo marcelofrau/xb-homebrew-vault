@@ -101,7 +101,7 @@ Settings > Backups
 |-----------|------|
 | View | `Views/CrashDataWindow.axaml` |
 | ViewModel | `ViewModels/CrashDataViewModel.cs` |
-| API calls | `XboxDeviceService.GetCrashDumpsAsync()`, `DeleteCrashDumpAsync()` |
+| API calls | `XboxSystemService.GetCrashDumpsAsync()`, `DeleteCrashDumpAsync()` |
 | Model | `Models/CrashDumpInfo.cs` |
 | Access | ToolsView → "Crash Data" button |
 

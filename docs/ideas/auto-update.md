@@ -73,7 +73,7 @@ XBVault.exe (running)
 **Projects:**
 - `XBVault.Updater/` — separate project (or same solution)
   - `OutputType`: `Exe` (console, but no window — compile as Windows app)
-  - `TargetFramework`: `net10.0` (or `net8.0` to minimize runtime)
+  - `TargetFramework`: `net10.0` (framework-dependent to keep the update small)
   - No external dependencies — only `System.IO.Compression` + `System.Diagnostics`
   - Built in CI, attached as separate release asset
 

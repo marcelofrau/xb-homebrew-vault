@@ -7,11 +7,11 @@ title: Roadmap
 
 ## Current Status
 
-**Latest release: v1.2.0** · [Download](https://github.com/marcelofrau/xb-homebrew-vault/releases/latest)
+**Latest release: v1.3.1** · [Download](https://github.com/marcelofrau/xb-homebrew-vault/releases/latest)
 
-The app is feature-complete for daily Xbox Dev Mode homebrew management. Core flows — first-run setup, browse, install, uninstall, dev tools, USB permissions, Inspector — are all shipping and stable. **v1.0.0** marked the stabilization milestone with catalog overlay, multi-strategy package matching, and download flyout. **v1.0.1** added pre-flight checks, CLI parameters, and package manager fixes. **v1.1.0** shipped XRay/Inspector integration (TCP agent discovery, Lua REPL, live log streaming), keyboard shortcuts, performance tuning (Skia GPU cache, dirty-rect clipping), and comprehensive custom install wizard fixes. **v1.1.1** added custom install UX polish, single-instance mutex, and shortcut/view tweaks. **v1.2.0** shipped the auto-update checker (GitHub release comparison, NEW/UPDATE catalog badges, outdated-cache detection, update-flow fixes) plus a `linux-arm64` build-matrix entry.
+The app is feature-complete for daily Xbox Dev Mode homebrew management. Core flows — first-run setup, browse, install, uninstall, dev tools, USB permissions, Inspector — are all shipping and stable. **v1.0.0** marked the stabilization milestone with catalog overlay, multi-strategy package matching, and download flyout. **v1.0.1** added pre-flight checks, CLI parameters, and package manager fixes. **v1.1.0** shipped XRay/Inspector integration (TCP agent discovery, Lua REPL, live log streaming), keyboard shortcuts, performance tuning (Skia GPU cache, dirty-rect clipping), and comprehensive custom install wizard fixes. **v1.1.1** added custom install UX polish, single-instance mutex, and shortcut/view tweaks. **v1.2.0** shipped the auto-update checker (GitHub release comparison, NEW/UPDATE catalog badges, outdated-cache detection, update-flow fixes) plus a `linux-arm64` build-matrix entry. **v1.2.1–v1.3.1** shipped the User Files portal browser, X-Files enablement + Loopback Exempt wizards, UI scale, UI scale fixes, SFTP buffering/read-path performance rewrite (SSH.NET 2025.1), transfer diagnostics, and Window titles. **.NET 10 migration** (Aug 2026) moved the app from `net8.0` to `net10.0` — CI, tooling, and docs all updated; release builds stay self-contained.
 
-**Next: hardening + test coverage.** The roadmap past v1.2 is dedicated to tech-debt reduction and adding unit tests — see [Tech Debt](tech-debt) and [Testing Infrastructure](ideas/testing-infrastructure).
+**Next: hardening + test coverage.** The roadmap past v1.3 is dedicated to tech-debt reduction and adding unit tests — see [Tech Debt](tech-debt) and [Testing Infrastructure](ideas/testing-infrastructure).
 
 ---
 
@@ -39,6 +39,10 @@ timeline
     v1.1.0 : XRay Inspector (TCP agent, Lua REPL, log streaming), keyboard shortcuts, performance tuning, custom install fixes
     v1.1.1 : Custom install UX, single-instance mutex, shortcut/view tweaks
     v1.2.0 : Auto-update checker, NEW/UPDATE badges, outdated cache, update-flow fixes, linux-arm64 RID
+    v1.2.1 : XboxDeviceService split finalized, FileExplorerViewModel split, test infrastructure (172 green), About polish
+    v1.3.0 : User Files portal browser, X-Files enablement wizard, Loopback Exempt manager, UI scale to fit screen
+    v1.3.1 : SFTP transfer performance rewrite (SSH.NET 2025.1), buffering up to 1 MB, transfer diagnostics, window titles
+    v1.3.2 : .NET 10 migration (net8.0 → net10.0), CI/tooling/docs updated
 ```
 
 ## What's Shipped
@@ -65,6 +69,9 @@ timeline
 | XRay Inspector | v1.1.0 | TCP agent discovery (ports 9000–9009), Lua REPL with AvaloniaEdit, live log streaming, keyboard shortcuts, performance tuning, custom install fixes |
 | Custom install UX | v1.1.1 | Custom install polish, single-instance mutex, shortcut/view tweaks |
 | Auto-update | v1.2.0 | GitHub release auto-update checker, NEW/UPDATE catalog badges, outdated-cache detection, update-flow fixes, linux-arm64 RID |
+| Hardening | v1.2.1 | XboxDeviceService split finalized, FileExplorerViewModel split, test infrastructure (172 green), About polish |
+| Portal & wizards | v1.3.0 | User Files portal browser, X-Files enablement wizard, Loopback Exempt manager, UI scale to fit screen |
+| SFTP performance | v1.3.1 | SSH.NET 2025.1 read-path rewrite, up-to-1 MB buffers, transfer diagnostics, window titles |
 
 ### Feature Delivery Timeline
 
@@ -181,6 +188,13 @@ gantt
 | Stability | TreeView chevron offset fix | ✅ v0.9.4 |
 | Stability | Duplicate pointer handler cleanup | ✅ v0.9.4 |
 | Stability | CI VirusTotal integration | ✅ v0.9.4 |
+| Stability | Test infrastructure (xUnit, 172 green) | ✅ v1.2.1 |
+| Stability | .NET 10 migration | ✅ v1.3.2 |
+| File Explorer | User Files portal browser (REST) | ✅ v1.3.0 |
+| File Explorer | Portal rename / delete / new folder | ✅ v1.3.0 |
+| Tools | X-Files enablement wizard | ✅ v1.3.0 |
+| Tools | Loopback Exempt manager | ✅ v1.3.0 |
+| UI | UI scale to fit screen (80–120%) | ✅ v1.3.0 |
 
 ---
 
@@ -193,14 +207,14 @@ gantt
     title Road to v1.3 — Hardening
     dateFormat  YYYY-MM-DD
     section Test infrastructure
-    xUnit test project + CI step     : 2026-08, 5d
-    Service layer tests (cache, crypto, catalog, override, install classify) : 2026-08, 10d
+    xUnit test project + CI step     :done, 2026-08, 5d
+    Service layer tests (cache, crypto, catalog, override, install classify) :done, 2026-08, 10d
     section Tech debt sweep
-    Split FileExplorerViewModel     : 2026-08, 14d
-    Split XboxDeviceService         : 2026-08, 14d
+    Split FileExplorerViewModel     :done, 2026-08, 14d
+    Split XboxDeviceService         :done, 2026-08, 14d
+    .NET 10 migration               :done, 2026-08, 3d
     async void fix                  : 2026-08, 3d
     ConfigureAwait(false) sweep     : 2026-08, 2d
-    IDisposable on XboxDeviceService : 2026-08, 1d
     section Beyond v1.3
     Community catalog               : 2026-09, 21d
     Enhanced version checker        : 2026-09, 5d
@@ -215,7 +229,8 @@ The road to **v1.3.0** is dedicated to **tech debt reduction and automated test 
 |------|--------|-------------|
 | **Test infrastructure** | ✅ Shipped | xUnit test project under `tests/`, wired into CI. Proposal in [Testing Infrastructure](ideas/testing-infrastructure) |
 | **Split FileExplorerViewModel** | ✅ Shipped | 1,880 → 1,223 lines / complexity 254 → 177. Extracted `FileSystemPathParser` + `ISftpService` + `SftpTransferService`; VM keeps tree/list state + command wiring |
-| **Split XboxDeviceService** | ✅ Shipped | 1,433-line god class split into `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService` (split #1 + #2, facade removed) |
+| **Split XboxDeviceService** | ✅ Shipped | 1,433-line god class split into `XboxAuthService`, `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService` (split #1 + #2, facade removed) |
+| **.NET 10 migration** | ✅ Shipped | `net8.0` → `net10.0` (app + tests), CI `10.0.x`, `Tmds.DBus.Protocol` 0.92.0 security bump, self-contained release unchanged |
 | **Remove `async void`** | 🟡 Planned | 22 fire-and-forget handlers (was 11) that can crash the process on unhandled exceptions |
 | **ConfigureAwait(false) sweep** | 🟡 Planned | ~404 awaits in services, 0 use `ConfigureAwait(false)` |
 | **IDisposable on XboxDeviceService** | 🟡 Planned | Last service without disposal (SftpService, XrayAgentService, PerformanceViewModel already dispose) |

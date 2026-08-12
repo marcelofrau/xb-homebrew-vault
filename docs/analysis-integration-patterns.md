@@ -6,6 +6,8 @@ title: Integration Patterns & Decisions (Internal)
 # Integration Patterns & Decision Records
 ## Internal Analysis Document
 
+> **Note (Aug 2026):** Decision records below remain valid. The codebase has grown to ~28 service classes (incl. 6 `IXbox*` interfaces) since this analysis was written; the manual composition-root decision still stands. See [Architecture](architecture) and [Tech Debt](tech-debt) for the current state.
+
 > **Note:** This document captures WHY architectural decisions were made. Used to enhance `architecture.md` and inform new documentation.
 
 ---

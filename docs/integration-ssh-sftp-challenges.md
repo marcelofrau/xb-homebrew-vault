@@ -14,12 +14,12 @@ title: SSH/SFTP Integration - Xbox Path Handling & cmd.exe Challenges
 Xbox Developer Mode exposes **two API layers:**
 
 1. **HTTP REST API** (primary)
-   - Used by: XboxDeviceService
+   - Used by: XboxAuthService, XboxPackageService, XboxProcessService, XboxNetworkService, XboxSystemService, XboxPerformanceService
    - Endpoints: Package manager, system info, screenshot, etc.
    - Limitation: Upload/download files requires multipart forms
 
 2. **SSH/SFTP** (secondary, more flexible)
-   - Used by: SftpService (for file browsing, media access)
+   - Used by: SftpService (for file browsing, media access), SftpTransferService (uploads), PortalAppFilesService
    - Protocol: SSH.NET wrapper around Renci.SshNet
    - Advantage: Full filesystem access, directory traversal, symlinks
 
@@ -419,7 +419,7 @@ Device Portal Password (from settings.json)
 
 ### Fetching SMB Password
 
-**Code from `XboxDeviceService.cs:90-105`:**
+**Code from `XboxAuthService.cs`:**
 
 ```csharp
 public async Task<string?> FetchSmbPasswordAsync()
@@ -704,5 +704,5 @@ ToolsView:
 ---
 
 **Document version:** 1.0  
-**Based on:** SftpService.cs + UsbDriveDetector.cs + XboxDeviceService.cs analysis  
+**Based on:** SftpService.cs + UsbDriveDetector.cs + XboxAuthService.cs analysis  
 **Last updated:** 2026-06-25

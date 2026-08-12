@@ -13,13 +13,13 @@ Both Linux (x64) and macOS (x64 + arm64) release artifacts are built and publish
 - Enable building, publishing, and running XBVault on Linux and macOS for development and testing (does not cover final packaging like macOS notarization).
 
 ## Verified Assumptions
-- Project uses .NET 8 + Avalonia (supports Linux/macOS).
+- Project uses .NET 10 + Avalonia (supports Linux/macOS).
 - Currently has dependencies and scripts assuming Windows (WinExe, absolute dotnet path, PublishReadyToRun, BuiltInComInteropSupport).
 
 ## High-Level Checklist (Executable Order)
 
 ### 1. Quick Experiment (prove app launches)
-- On a Linux machine with .NET 8 installed:
+- On a Linux machine with .NET 10 installed:
   ```bash
   dotnet publish XBVault -c Release -r linux-x64 --self-contained false -o out
   ./out/XBVault

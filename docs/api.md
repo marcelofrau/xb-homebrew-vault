@@ -24,7 +24,7 @@ The same credentials are reused across all transports — HTTP Basic (this API),
 
 ## Request Conventions
 
-`XboxDeviceService` applies the same conventions to every call:
+`XboxAuthService` owns the shared `HttpClient` and applies the same conventions to every call:
 
 | Concern | Behavior | Rationale |
 |---------|----------|-----------|

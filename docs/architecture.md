@@ -1,12 +1,12 @@
 ---
 layout: default
 title: Architecture
-description: MVVM architecture of XB Homebrew Vault — Avalonia UI, CommunityToolkit.Mvvm, .NET 8, WDP REST API, and SSH/SFTP integration layers.
+description: MVVM architecture of XB Homebrew Vault — Avalonia UI, CommunityToolkit.Mvvm, .NET 10, WDP REST API, and SSH/SFTP integration layers.
 ---
 
 # Architecture
 
-XB Homebrew Vault uses the **MVVM** pattern with **CommunityToolkit.Mvvm** and **Avalonia UI 12**. It targets Windows and Linux via .NET 8, communicating with an Xbox console in Developer Mode via the Windows Device Portal (WDP) REST API and WebSocket.
+XB Homebrew Vault uses the **MVVM** pattern with **CommunityToolkit.Mvvm** and **Avalonia UI 12**, running on **.NET 10**.
 
 ## Layered Architecture
 
@@ -22,6 +22,9 @@ graph TD
         TV[ToolsView]
         LV[LogsView]
         FV[FileExplorerView]
+        InV[InspectorView]
+        NotifP[NotificationsPanel]
+        TasksP[TasksPanel]
         CW[ConnectionWindow]
         NIW[NetworkInfoWindow]
         PW[ProcessesWindow]
@@ -29,6 +32,13 @@ graph TD
         CDW[CrashDataWindow]
         PerfW[PerformanceWindow]
         UsbW[UsbPermissionWindow]
+        LbW[LoopbackExemptWindow]
+        SS[SScreenshotWindow]
+        CustW[CustomInstallWindow]
+        ItemW[ItemDetailWindow]
+        DelW[DeleteConfirmWindow]
+        DiscW[DiscordPopup]
+        SftpW[SftpInfoWindow]
     end
 
     subgraph ViewModels["ViewModels (CommunityToolkit.Mvvm)"]
@@ -37,6 +47,8 @@ graph TD
         IVM[InstalledViewModel]
         SVM[SettingsViewModel]
         TVM[ToolsViewModel]
+        FVM[FileExplorerViewModel]
+        InVM[InspectorViewModel]
         CVM[ConnectionViewModel]
         NIVM[NetworkInfoViewModel]
         PVM[ProcessesViewModel]
@@ -48,10 +60,20 @@ graph TD
         CIWM[CustomInstallViewModel]
         SWVM[SetupWizardViewModel]
         USBVM[UsbPermissionViewModel]
+        ShVM[ScreenshotViewModel]
+        LbVM[LoopbackExemptViewModel]
+        DelVM[DeleteConfirmViewModel]
+        TkVM[TaskCenterViewModel]
     end
 
     subgraph Services["Services"]
-        XS[XboxDeviceService]
+        Auth[XboxAuthService]
+        Pkg[XboxPackageService]
+        Proc[XboxProcessService]
+        Net[XboxNetworkService]
+        Sys[XboxSystemService]
+        Perf[XboxPerformanceService]
+        Parser[XboxResponseParser]
         CAS[CatalogApiService]
         PS[PackageInstallService]
         SSvc[SettingsService]
@@ -59,9 +81,19 @@ graph TD
         CSvc[CacheService]
         UDD[UsbDriveDetector]
         Sftp[SftpService]
+        SftpT[SftpTransferService]
+        Portal[PortalAppFilesService]
         XRay[XrayAgentService]
         UpdChk[GitHubReleaseCheckerService]
         PO[PackageOverrideService]
+        BgT[BackgroundTaskService]
+        ConnMon[ConnectionMonitorService]
+        NotifC[NotificationCenterService]
+        PreF[PreFlightChecker]
+        WinSet[WindowSettingsService]
+        UpdCache[UpdateVersionCache]
+        Colorizer[InspectorConsoleColorizer]
+        PDiag[PlatformDialog]
         L[Logger]
     end
 
@@ -77,78 +109,27 @@ graph TD
         AS[AppSettings]
         IPI[InstallProgressInfo]
         UDI[UsbDriveInfo]
+        SftpE[SftpEntry]
+        XA[XrayAgentInfo]
+        BgTask[BackgroundTask]
+        Notif[NotificationItem]
     end
 
     Views --> ViewModels
     ViewModels --> Services
     Services --> Models
-    
+
     style Views fill:#1A1D23,stroke:#447F3E,color:#9ACA3C
     style ViewModels fill:#1A1D23,stroke:#447F3E,color:#9ACA3C
     style Services fill:#447F3E,stroke:#9ACA3C,color:#fff
     style Models fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style MW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SetupW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style BV fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style IV fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SV fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style TV fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style LV fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style FV fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style CW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style NIW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style PW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SIW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style CDW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style PerfW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style UsbW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style MVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style BVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style IVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style TVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style CVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style NIVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style PVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SIVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style CDVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style PerfVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style RVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style ConfVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style CIWM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SWVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style USBVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style XS fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style CAS fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style PS fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style SSvc fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style CS fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style CSvc fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style UDD fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style Sftp fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style XRay fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style UpdChk fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style PO fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style L fill:#2A2D33,stroke:#9ACA3C,color:#fff
-    style CI fill:#2A2D33,stroke:#9ACA3C,color:#000
-    style IP fill:#2A2D33,stroke:#9ACA3C,color:#000
-    style PI fill:#2A2D33,stroke:#9ACA3C,color:#000
-    style NI fill:#2A2D33,stroke:#9ACA3C,color:#000
-    style SI fill:#2A2D33,stroke:#9ACA3C,color:#000
-    style CD fill:#2A2D33,stroke:#9ACA3C,color:#000
-    style PSnap fill:#2A2D33,stroke:#9ACA3C,color:#000
-    style XC fill:#2A2D33,stroke:#9ACA3C,color:#000
-    style AS fill:#2A2D33,stroke:#9ACA3C,color:#000
-    style IPI fill:#2A2D33,stroke:#9ACA3C,color:#000
-    style UDI fill:#2A2D33,stroke:#9ACA3C,color:#000
 ```
 
 | Layer | Responsibility |
 |-------|---------------|
 | **Views** | Avalonia AXAML windows and user controls — purely declarative |
 | **ViewModels** | Commands, observable state, business-logic orchestration |
-| **Services** | All I/O: HTTP, WebSocket, file system, settings, crypto, caching, WMI |
+| **Services** | All I/O: HTTP, WebSocket, SSH/SFTP, file system, settings, crypto, caching, WMI |
 | **Models** | Plain data classes — `CatalogItem`, `InstalledPackage`, `PerformanceSnapshot`, etc. |
 
 ## Data Flow
@@ -163,7 +144,7 @@ flowchart LR
     S -->|ObservableProperty| VM
     VM -->|Binding| V
     V -->|Render| U
-    
+
     style U fill:#447F3E,stroke:#9ACA3C,color:#fff
     style V fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style VM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
@@ -200,6 +181,8 @@ sequenceDiagram
         App->>Setup: ShowDialog() — 3-step wizard
         Setup->>App: credentials captured
     end
+    App->>App: Compose services (auth, package, system, network, process, performance, sftp, portal, cache, catalog, override)
+    App->>App: Start BackgroundTaskService + ConnectionMonitorService
     App->>MainW: new MainWindow
     App->>Splash: Close()
     App->>MainW: Show()
@@ -209,167 +192,141 @@ sequenceDiagram
 
 ## Services
 
-| Service | Responsibility |
-|---------|---------------|
-| `XboxDeviceService` | All Xbox Device Portal API calls (REST + WebSocket). God class — split planned. **1,433 lines, ~41 public members, complexity 205** across 8 domains (see detailed breakdown below). |
-| `CatalogApiService` | Fetches and parses the Emulation Revival `catalog.json` API. Replaced the former HTML scraper. |
-| `PackageInstallService` | Package analysis, dependency resolution, install pipeline |
-| `PackageOverrideService` | Catalog ID lookup by PFN/name, embedded + remote override merging |
-| `SftpService` | SSH.NET SFTP operations for the File Explorer; wraps sync SSH.NET in `Task.Run`; implements `IDisposable` |
-| `XrayAgentService` | XRay TCP agent discovery + log streaming for the Inspector; implements `IDisposable` |
-| `GitHubReleaseCheckerService` | Auto-update checker — compares installed version against latest GitHub release |
-| `SettingsService` | Persists `AppSettings` to `%APPDATA%/XBVault/settings.json` |
-| `CryptoService` | XOR + Base64 credential obfuscation |
-| `CacheService` | In-memory catalog cache with expiry |
-| `UsbDriveDetector` | Lists USB drives via WMI (`System.Management`) — Windows-only (`#if WINDOWS_BUILD`) |
-| `Logger` | File + console logging (`AttachConsole` via `DllImport` — Windows-only) |
+| Service | Responsibility | Lines |
+|---------|---------------|-------|
+| `XboxAuthService` | WDP connection: HTTP client, Basic auth, CSRF cookie, connection test, SMB password fetch, credential state (`IsConfigured`, `IsConnected`) | 334 |
+| `XboxPackageService` | Package lifecycle: list installed, install (single + dependencies), uninstall, launch, suspend, terminate, running-package detection | 504 |
+| `XboxProcessService` | Process info: list processes, kill by PID, running title | 90 |
+| `XboxNetworkService` | Network config + WiFi interface/network listing | 99 |
+| `XboxSystemService` | System info, crash dumps (list/delete/control), screenshot, restart/shutdown | 237 |
+| `XboxPerformanceService` | WebSocket performance stream → `PerformanceSnapshot` | 87 |
+| `XboxResponseParser` | Shared WDP JSON parsing helpers for the Xbox services | 169 |
+| `CatalogApiService` | Fetches and parses the Emulation Revival `catalog.json` API (6h TTL, disk cache, stale fallback) | 444 |
+| `PackageInstallService` | Package analysis, dependency resolution, multi-phase install pipeline | 515 |
+| `PackageOverrideService` | Catalog ID lookup by PFN/name, embedded + remote override merging | 183 |
+| `SftpService` | SSH.NET SFTP connection + low-level ops for the File Explorer | 694 |
+| `SftpTransferService` | High-level transfers: upload file/folder/mixed/ZIP-extract, download, progress + cancel | 789 |
+| `PortalAppFilesService` | WDP file API (portal) for the File Explorer: list/upload/download/rename/delete | 449 |
+| `XrayAgentService` | XRay TCP agent discovery + log streaming for the Inspector | 267 |
+| `GitHubReleaseCheckerService` | Auto-update checker — compares installed version against latest GitHub release | 72 |
+| `BackgroundTaskService` | Recurring background job runner + task center registry | 358 |
+| `ConnectionMonitorService` | Periodic connectivity polling → notifications | 90 |
+| `NotificationCenterService` | In-app notification aggregation + dismiss/action routing | 171 |
+| `SettingsService` | Persists `AppSettings` to `%APPDATA%/XBVault/settings.json` | 103 |
+| `CryptoService` | XOR + Base64 credential obfuscation | 47 |
+| `CacheService` | In-memory catalog cache with expiry | 116 |
+| `UsbDriveDetector` | Lists USB drives via WMI (`System.Management`) — Windows-only (`#if WINDOWS_BUILD`) | 218 |
+| `PreFlightChecker` | Startup settings/cache integrity validation + corrupt-repair | 270 |
+| `WindowSettingsService` | Persists window size/position | 43 |
+| `UpdateVersionCache` | Update-availability memoization | 83 |
+| `InspectorConsoleColorizer` | Log/console colorization for the Inspector | 37 |
+| `PlatformDialog` | Platform-aware file dialogs (WPF/Avalonia interop) | 135 |
+| `Logger` | File + console logging (`AttachConsole` via `DllImport` — Windows-only) | 351 |
 
-> **Verified from v1.2.0 code analysis (Aug 2026).** Metrics and rationale below reflect the actual source.
+> **Verified from `main` code analysis (Aug 2026).** Line counts approximate.
 
-### Service Responsibilities (Detailed)
+### Xbox Service Split
 
-#### XboxDeviceService — domains
+The former `XboxDeviceService` god class (1,433 lines, ~41 public members, complexity 205) was split into focused services, each behind an interface:
 
-The god class spans **8 unrelated domains** (1,433 lines, ~41 public members):
+| Service | Interface | Domains |
+|---------|-----------|---------|
+| `XboxAuthService` | `IXboxAuthService` | Connection, credentials, SMB password, test |
+| `XboxPackageService` | `IXboxPackageService` | Install, uninstall, launch, suspend, terminate, list |
+| `XboxProcessService` | `IXboxProcessService` | List, kill, running title |
+| `XboxNetworkService` | `IXboxNetworkService` | Network config, WiFi |
+| `XboxSystemService` | `IXboxSystemService` | Info, crash dumps, screenshot, restart, shutdown |
+| `XboxPerformanceService` | `IXboxPerformanceService` | WebSocket performance stream |
 
-| Domain | Methods | Examples |
-|--------|--------:|----------|
-| Connection | 6 | `Configure(baseUrl, user, pass)`, `IsConfigured`, connection test |
-| Packages | 9 | `ListPackagesAsync`, `InstallPackageAsync`, `UninstallAsync`, `LaunchAsync`, `SuspendAsync`, `TerminateAsync`, `WaitForPackageManagerReady` |
-| Processes | 2 | `GetProcessesAsync`, `KillProcessAsync(pid)` |
-| Crash dumps | 4 | `ListCrashDumpsAsync`, `DeleteCrashDumpAsync`, `GetCrashControlAsync`, `SetCrashControl` |
-| Network | 4 | `GetNetworkConfigAsync`, `GetWifiInterfacesAsync`, `GetWifiNetworksAsync` |
-| System | 3 | `GetSystemInfoAsync`, `RestartXboxAsync`, `ShutdownXboxAsync` |
-| Screenshot | 1 | `GetScreenshotAsync` (WebSocket) |
-| SFTP auth | 2 | `FetchSmbPasswordAsync`, `GetSshCredentials` |
+Each takes `XboxAuthService` (shared connection) as its only constructor dependency. The split removed the god class; ViewModels now inject only the interfaces they need. See [Refactor Proposal](ideas/refactor-xboxdeviceservice).
 
-**Key design patterns:**
+**Key connection patterns (inherited from the original design):**
 - **HTTP client recreation on `Configure`** — a fresh `HttpClient` per connection works around `BaseAddress` immutability.
 - **Certificate validation bypass** — self-signed console certificates; dev-only.
 - **CSRF token via `CookieContainer`** — token attached automatically to requests.
 - **WebSocket for performance** — real-time metrics stream, separate from the REST surface.
 
-**Planned split** (tracked in [Tech Debt](tech-debt)):
-
-```text
-XboxPackageService     → install, uninstall, launch, suspend, terminate, list
-XboxProcessService     → list, kill, running title
-XboxCrashService       → list, delete, control
-XboxNetworkService     → network config, WiFi
-XboxSystemService      → info, restart, shutdown, screenshot
-XboxPerformanceService → WebSocket connection
-```
-
-#### Other services
-
-| Service | Notes & rationale |
-|---------|-------------------|
-| `CatalogApiService` | Fetches `catalog.json`, 6-hour TTL, persistent disk cache, stale-fallback on API failure. See [Data Sources](data-sources). |
-| `PackageInstallService` | Multi-phase pipeline: download → analyze → upload → install → poll. Regex-based dependency/junk classification. See [Package Installation Flow](integration-package-installation-flow). |
-| `SftpService` | Implements `IDisposable`. Wraps synchronous SSH.NET in `Task.Run` to keep the UI responsive; operation timeout + keep-alive. Powers the File Explorer. See [SSH/SFTP & Path Handling](integration-ssh-sftp-challenges). |
-| `XrayAgentService` | XRay TCP agent discovery + log streaming; implements `IDisposable`. See [Inspector](inspector). |
-| `GitHubReleaseCheckerService` | Auto-update checker; implements `IDisposable`. Compares `BuildInfo.DisplayVersion` against latest GitHub release. |
-| `PackageOverrideService` | Catalog-ID overrides: looks up a package by PFN or name, merges embedded + remote override JSON; implements `IDisposable`. |
-| `SettingsService` | Persists to `%APPDATA%\XBVault\settings.json`; credentials obfuscated (XOR + Base64), not encrypted. |
-| `CryptoService` | XOR each byte with a key, then Base64 — obfuscation only, not security. |
-| `CacheService` | In-memory TTL cache for catalog items; used by browse/refresh flows. |
-| `UsbDriveDetector` | WMI enumeration + `icacls` permissioning; Windows-only (`#if WINDOWS_BUILD`). See [USB Device Discovery](integration-usb-device-discovery). |
-| `Logger` | File + console logging; `AttachConsole` via `DllImport("kernel32.dll")` — Windows-specific. |
-
 ## ViewModel → Service Dependency Map
 
 ```mermaid
 graph LR
-    MVM[MainViewModel] --> XS
-    MVM --> SSvc
+    MVM[MainViewModel] --> Auth
     BVM[BrowseViewModel] --> CAS
     BVM --> CSvc
-    BVM --> XS
+    BVM --> Auth
+    BVM --> Pkg
     BVM --> PS
     BVM --> PO
-    IVM[InstalledViewModel] --> XS
-    FVM[FileExplorerViewModel] --> XS
+    IVM[InstalledViewModel] --> Auth
+    IVM --> Pkg
+    FVM[FileExplorerViewModel] --> Auth
     FVM --> Sftp
-    SVM[SettingsViewModel] --> SSvc
-    SVM --> CS
-    TVM[ToolsViewModel] --> XS
-    CVM[ConnectionViewModel] --> XS
-    NIVM[NetworkInfoViewModel] --> XS
-    PVM[ProcessesViewModel] --> XS
-    SIVM[SystemInfoViewModel] --> XS
-    CDVM[CrashDataViewModel] --> XS
-    PerfVM[PerformanceViewModel] --> XS
+    FVM --> SftpT
+    FVM --> Portal
+    SVM[SettingsViewModel] --> Auth
+    SVM --> CSvc
+    TVM[ToolsViewModel] --> Auth
+    TVM --> Sys
+    CVM[ConnectionViewModel] --> Auth
+    CVM --> Net
+    NIVM[NetworkInfoViewModel] --> Net
+    PVM[ProcessesViewModel] --> Proc
+    SIVM[SystemInfoViewModel] --> Auth
+    SIVM --> Sys
+    CDVM[CrashDataViewModel] --> Auth
+    CDVM --> Sys
+    PerfVM[PerformanceViewModel] --> Auth
+    PerfVM --> Perf
     RVM[RefreshViewModel] --> CAS
-    RVM --> CSvc
-    CIWM[CustomInstallViewModel] --> XS
+    CIWM[CustomInstallViewModel] --> Pkg
     CIWM --> PS
-    InVM[InspectorViewModel] --> XS
+    InVM[InspectorViewModel] --> Auth
     InVM --> XRay
-    ShVM[ScreenshotViewModel] --> XS
-    LVM[LogsViewModel]
-    ConfVM[ConfirmViewModel] --> XS
-    USBVM[UsbPermissionViewModel] --> UDD
-    SWVM[SetupWizardViewModel] --> SSvc
-    SWVM --> CS
-    
-    XS[XboxDeviceService]
+    ShVM[ScreenshotViewModel] --> Sys
+    LbVM[LoopbackExemptViewModel] --> Auth
+    LbVM --> Sftp
+    LbVM --> Pkg
+    USBVM[UsbPermissionViewModel]
+    SWVM[SetupWizardViewModel] --> Auth
+    TkVM[TaskCenterViewModel] --> BgT
+
+    Auth[XboxAuthService]
+    Pkg[XboxPackageService]
+    Proc[XboxProcessService]
+    Net[XboxNetworkService]
+    Sys[XboxSystemService]
+    Perf[XboxPerformanceService]
     CAS[CatalogApiService]
-    SSvc[SettingsService]
-    CS[CryptoService]
     CSvc[CacheService]
-    UDD[UsbDriveDetector]
     PS[PackageInstallService]
     Sftp[SftpService]
+    SftpT[SftpTransferService]
+    Portal[PortalAppFilesService]
     XRay[XrayAgentService]
     PO[PackageOverrideService]
-    L[Logger]
-    
-    style MVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style BVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style IVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style FVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style TVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style CVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style NIVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style PVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SIVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style CDVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style PerfVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style RVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style CIWM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style InVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style ShVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style LVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style ConfVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style USBVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SWVM fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style XS fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style CAS fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style SSvc fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style CS fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style CSvc fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style UDD fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style PS fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style Sftp fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style XRay fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style PO fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style L fill:#447F3E,stroke:#9ACA3C,color:#fff
+    BgT[BackgroundTaskService]
 ```
 
 | ViewModel | Window/View | Key services |
 |-----------|-------------|-------------|
-| `BrowseViewModel` | BrowseView | CatalogApiService, CacheService, XboxDeviceService, PackageInstallService, PackageOverrideService |
-| `InstalledViewModel` | InstalledView | XboxDeviceService |
-| `FileExplorerViewModel` | FileExplorerView | XboxDeviceService, SftpService |
-| `ToolsViewModel` | ToolsView | XboxDeviceService |
-| `CustomInstallViewModel` | CustomInstallWindow | XboxDeviceService, PackageInstallService |
-| `InspectorViewModel` | InspectorView | XboxDeviceService, XrayAgentService |
-| `PerformanceViewModel` | PerformanceWindow | XboxDeviceService (WebSocket) |
-| `ScreenshotViewModel` | ScreenshotWindow | XboxDeviceService |
-| `SettingsViewModel` | SettingsView | SettingsService, CryptoService |
-| `UsbPermissionViewModel` | UsbPermissionWindow | UsbDriveDetector |
-| `SetupWizardViewModel` | SetupWizardWindow | SettingsService, CryptoService |
+| `BrowseViewModel` | BrowseView | CatalogApiService, CacheService, XboxAuthService, XboxPackageService, PackageInstallService, PackageOverrideService |
+| `InstalledViewModel` | InstalledView | XboxAuthService, XboxPackageService |
+| `FileExplorerViewModel` | FileExplorerView | XboxAuthService, SftpService, SftpTransferService, PortalAppFilesService |
+| `ToolsViewModel` | ToolsView | XboxAuthService, XboxSystemService |
+| `InspectorViewModel` | InspectorView | XboxAuthService, XrayAgentService |
+| `PerformanceViewModel` | PerformanceWindow | XboxAuthService, XboxPerformanceService |
+| `ScreenshotViewModel` | ScreenshotWindow | XboxSystemService |
+| `SettingsViewModel` | SettingsView | XboxAuthService, CacheService |
+| `UsbPermissionViewModel` | UsbPermissionWindow | none (WMI directly) |
+| `SetupWizardViewModel` | SetupWizardWindow | XboxAuthService |
+| `TaskCenterViewModel` | TasksPanel | BackgroundTaskService |
+| `ConnectionViewModel` | ConnectionWindow | XboxAuthService, XboxNetworkService |
+| `NetworkInfoViewModel` | NetworkInfoWindow | XboxNetworkService |
+| `ProcessesViewModel` | ProcessesWindow | XboxProcessService |
+| `SystemInfoViewModel` | SystemInfoWindow | XboxAuthService, XboxSystemService |
+| `CrashDataViewModel` | CrashDataWindow | XboxAuthService, XboxSystemService |
+
+> **DI pattern:** manual composition in `App.axaml.cs` (no DI container). Services constructed once, shared across VMs; dialog VMs constructed per-open with the services they need.
 
 ## MVVM Patterns & Conventions
 
@@ -388,10 +345,14 @@ private async Task BrowseItemAsync() { } // generates BrowseItemCommand (IAsyncR
 **ViewModel lifecycle:** constructor injection of services → synchronous setup → async initialization fired from the View (e.g. `Loaded`) via a `[RelayCommand]`.
 
 ```csharp
-public BrowseViewModel(CatalogApiService catalog, CacheService cache)
+public BrowseViewModel(PackageInstallService install, IXboxAuthService auth,
+    IXboxPackageService packages, CatalogApiService catalog, PackageOverrideService overrides)
 {
-    _catalog = catalog;                  // constructor injection
-    _cache = cache;
+    _install = install;
+    _auth = auth;
+    _packages = packages;
+    _catalog = catalog;
+    _overrides = overrides;
 }
 
 [RelayCommand]
@@ -416,11 +377,13 @@ flowchart TD
     MW[MainWindow] --> SB[Sidebar ListBox]
     SB -->|SelectedTab=0| BV[BrowseView]
     SB -->|SelectedTab=1| IV[InstalledView]
-    SB -->|SelectedTab=2| TV[ToolsView]
-    SB -->|SelectedTab=3| SV[SettingsView]
-    SB -->|SelectedTab=4| LV[LogsView]
-    SB -->|SelectedTab=5| FV[FileExplorerView]
+    SB -->|SelectedTab=2| FV[FileExplorerView]
+    SB -->|SelectedTab=3| TV[ToolsView]
+    SB -->|SelectedTab=4| InV[InspectorView]
+    SB -->|SelectedTab=5| SV[SettingsView]
+    SB -->|SelectedTab=6| LV[LogsView]
     MW -->|Dialogs| Dialogs
+    MW -->|Panels| Panels
     subgraph Dialogs["Dialog Windows"]
         SetupW[SetupWizardWindow]
         CW[ConnectionWindow]
@@ -429,80 +392,58 @@ flowchart TD
         SIW[SystemInfoWindow]
         CDW[CrashDataWindow]
         PerfW[PerformanceWindow]
-        CD[CustomInstallWindow]
+        CustW[CustomInstallWindow]
         ConfW[ConfirmWindow]
         RD[RefreshWindow]
         ED[ErrorDialog]
         AW[AboutWindow]
         SS[ScreenshotWindow]
-        ID[ItemDetailWindow]
+        ItemW[ItemDetailWindow]
         UsbW[UsbPermissionWindow]
         SftpW[SftpInfoWindow]
         InD[InputDialog]
         DiscD[DiscordPopup]
+        LbW[LoopbackExemptWindow]
+        DelW[DeleteConfirmWindow]
     end
-    
-    style MW fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style SB fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style BV fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style IV fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style TV fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SV fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style LV fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style FV fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style Dialogs fill:#1A1D23,stroke:#447F3E,color:#9ACA3C
-    style SetupW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style CW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style NIW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style PW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SIW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style CDW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style PerfW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style CD fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style ConfW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style RD fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style ED fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style AW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SS fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style ID fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style UsbW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style SftpW fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style InD fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style DiscD fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    subgraph Panels["In-Window Panels"]
+        NotifP[NotificationsPanel]
+        TasksP[TasksPanel]
+    end
 ```
 
-Dialogs are opened via registered delegate actions in `App.axaml.cs`.
+Dialogs are opened via delegate actions wired in `App.axaml.cs` (e.g. `ShowConnectAction`, `ShowConfirmAsync`, `ShowDetailAction`).
 
-> **Note:** `FileExplorerView` (tab 5) ships as a functional SSH/SFTP file explorer in **v0.8.7** (it was a "Not implemented yet" placeholder in earlier releases). See [SSH/SFTP & Path Handling](integration-ssh-sftp-challenges).
+> **Note:** `FileExplorerView` (tab 2) is a functional SSH/SFTP file explorer, powered by `SftpService`, `SftpTransferService`, and `PortalAppFilesService`. See [SSH/SFTP & Path Handling](integration-ssh-sftp-challenges).
 
 ## Xbox WDP API Integration
 
-`XboxDeviceService` communicates with the Xbox Developer Mode Device Portal:
+The Xbox services communicate with the Xbox Developer Mode Device Portal:
 
 Base URL: `https://{xbox-ip}:11443` · Auth: HTTP Basic
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/os/info` | GET | Device info, connection test |
-| `/api/app/packagemanager/packages` | GET | List installed packages |
-| `/api/app/packagemanager/package` | POST | Install package |
-| `/api/app/packagemanager/package` | DELETE | Uninstall package |
-| `/api/taskmanager/app` | POST | Launch app by PackageRelativeId |
-| `/api/taskmanager/app/state` | POST | Suspend/resume/terminate package |
-| `/api/resourcemanager/processes` | GET | List running processes |
-| `/api/taskmanager/process` | DELETE | Kill process by PID |
-| `/ext/app/runningtitle` | GET | Get currently running title |
-| `/api/app/debug/crashdump` | GET | List crash dumps |
-| `/api/app/debug/crashdump/{filename}` | DELETE | Delete crash dump |
-| `/api/app/debug/crashcontrol` | GET | Get crash dump settings |
-| `/api/app/debug/crashcontrol` | POST | Enable/disable crash dumps |
-| `/api/networking/networkconfig` | GET | Get network configuration |
-| `/api/wifi/interfaces` | GET | List WiFi interfaces |
-| `/api/wifi/networks/{guid}` | GET | List WiFi networks |
-| `/api/system/info` | GET | Get system information |
-| `/api/screenshot` | GET | Capture screenshot |
-| `/api/system/restart` | POST | Restart Xbox |
-| `/api/system/shutdown` | POST | Shutdown Xbox |
+| Endpoint | Method | Purpose | Service |
+|----------|--------|---------|---------|
+| `/api/os/info` | GET | Device info, connection test | XboxAuthService |
+| `/api/app/packagemanager/packages` | GET | List installed packages | XboxPackageService |
+| `/api/app/packagemanager/package` | POST | Install package | XboxPackageService |
+| `/api/app/packagemanager/package` | DELETE | Uninstall package | XboxPackageService |
+| `/api/taskmanager/app` | POST | Launch app by PackageRelativeId | XboxPackageService |
+| `/api/taskmanager/app/state` | POST | Suspend/resume/terminate package | XboxPackageService |
+| `/api/resourcemanager/processes` | GET | List running processes | XboxProcessService |
+| `/api/taskmanager/process` | DELETE | Kill process by PID | XboxProcessService |
+| `/ext/app/runningtitle` | GET | Get currently running title | XboxProcessService |
+| `/api/app/debug/crashdump` | GET | List crash dumps | XboxSystemService |
+| `/api/app/debug/crashdump/{filename}` | DELETE | Delete crash dump | XboxSystemService |
+| `/api/app/debug/crashcontrol` | GET | Get crash dump settings | XboxSystemService |
+| `/api/app/debug/crashcontrol` | POST | Enable/disable crash dumps | XboxSystemService |
+| `/api/networking/networkconfig` | GET | Get network configuration | XboxNetworkService |
+| `/api/wifi/interfaces` | GET | List WiFi interfaces | XboxNetworkService |
+| `/api/wifi/networks?interface={guid}` | GET | List WiFi networks | XboxNetworkService |
+| `/api/systeminfo` | GET | Get system information | XboxSystemService |
+| `/ext/screenshot?download=true&hdr=false` | GET | Capture screenshot | XboxSystemService |
+| `/api/control/restart` | POST | Restart Xbox | XboxSystemService |
+| `/api/control/shutdown` | POST | Shutdown Xbox | XboxSystemService |
 
 ## Catalog API
 
@@ -512,13 +453,13 @@ Base URL: `https://{xbox-ip}:11443` · Auth: HTTP Basic
 https://emulationrevival.github.io/catalog.json
 ```
 
-The JSON is parsed into `CatalogItem` models covering categories: Emulator, Frontend, GamePort, App, Experimental, Media, Utility. Results are cached by `CacheService`.
+The JSON is parsed into `CatalogItem` models covering categories: Emulator, Frontend, GamePort, App, Experimental, Media, Utility. Results are cached by `CacheService` (6h TTL) with a persistent disk cache and stale-fallback on API failure.
 
-> **Previously:** the catalog was scraped from 7 individual HTML pages using HtmlAgilityPack. That approach was replaced when Emulation Revival published the `catalog.json` API, which provides more reliable and structured data.
+> **Previously:** the catalog was scraped from 7 individual HTML pages using HtmlAgilityPack. That approach was replaced when Emulation Revival published the `catalog.json` API.
 
 ## Performance WebSocket
 
-`XboxDeviceService` connects to a WebSocket endpoint for real-time performance:
+`XboxPerformanceService` connects to a WebSocket endpoint for real-time performance:
 
 ```
 wss://{xbox-ip}:11443/api/resourcemanager/processes
@@ -539,6 +480,10 @@ Receives JSON frames with `PerformanceSnapshot` data (CPU, memory, GPU clock, te
 3. Includes a spinner, 1-second minimum delay, and skips protected system directories
 
 This allows Xbox Dev Mode to read ROM/media files from USB drives.
+
+## Loopback Exempt Wizard
+
+`LoopbackExemptViewModel` + `LoopbackExemptWindow` (opened from Tools, in both full and quick mode) automate the X-Files package loopback-exempt workflow over SFTP/package services.
 
 ## Window Pattern
 
@@ -569,6 +514,7 @@ Key architectural decisions and the reasoning behind them:
 | 7 | **Manual service composition (no DI container)** | Transparent and easy to follow at this size; would adopt `Microsoft.Extensions.DependencyInjection` if the service count grows substantially. |
 | 8 | **Shared window template** | `WindowDecorations="None"` + green border + gradient title bar + `BeginMoveDrag()` for consistent Blades styling. See [Window Template](window-template). |
 | 9 | **Single credential reuse** | The same Xbox credentials drive HTTP Basic (WDP), SFTP (SSH.NET), and SMB (USB folders) — one credential simplifies the UX. |
+| 10 | **Split `XboxDeviceService` into focused services** | The 1,433-line god class mixed 8 unrelated domains; per-domain services + interfaces make each testable in isolation and let VMs depend only on what they use. |
 
 ## CI / Build
 
@@ -576,10 +522,10 @@ CI runs on every push and PR via GitHub Actions:
 
 | Job | Runs on | Steps |
 |-----|---------|-------|
-| `build` | Windows + Ubuntu (matrix) | restore → build Release |
-| `release` | Windows + Ubuntu + macOS (tag push only) | publish win-x64, win-arm64, linux-x64, osx-x64, osx-arm64 → ZIP → GitHub Release |
+| `build` | Windows + Ubuntu (matrix) | restore → build Release → test |
+| `release` | Windows + Ubuntu + macOS (tag push only) | publish win-x64, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64 → ZIP → GitHub Release |
 
-Release artifacts: `XBVault-{version}-win-x64.zip`, `XBVault-{version}-linux-x64.zip`, `XBVault-{version}-osx-x64.zip`, and `XBVault-{version}-osx-arm64.zip` (all self-contained).
+Release artifacts: `XBVault-{version}-win-x64.zip`, `XBVault-{version}-win-arm64.zip`, `XBVault-{version}-linux-x64.zip`, `XBVault-{version}-linux-arm64.zip`, `XBVault-{version}-osx-x64.zip`, `XBVault-{version}-osx-arm64.zip` (all self-contained, no client runtime required).
 
 ---
 

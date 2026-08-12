@@ -339,7 +339,7 @@ foreach (var dep in dependencies)
 
 ### Polling Strategy: Exponential Backoff
 
-**Code from `XboxDeviceService.cs:571-590`:**
+**Code from `XboxPackageService.cs`:**
 
 ```csharp
 private async Task WaitForPackageManagerReady()
@@ -741,7 +741,7 @@ Content-Type: application/octet-stream
 
 ### Issue 1: Bare catch in TryParseError
 
-**Code:** Line 422 in XboxDeviceService  
+**Code:** `TryParseError` in `XboxResponseParser.cs`  
 **Risk:** JSON parse error silently swallowed  
 **Workaround:** Assume no error message if parse fails
 
@@ -775,5 +775,5 @@ Content-Type: application/octet-stream
 ---
 
 **Document version:** 1.0  
-**Based on:** PackageInstallService.cs + XboxDeviceService.cs analysis  
+**Based on:** PackageInstallService.cs + XboxPackageService.cs analysis  
 **Last updated:** 2026-06-25

@@ -7,7 +7,7 @@ title: Tech Debt
 
 Known issues in the codebase, ordered by severity. This page is updated as items are resolved or discovered.
 
-> **Last verified against code:** August 2026 (v1.2.0). Line counts and locations below reflect the current source and were re-verified against the v1.2.0 tree — several items grew significantly since the June 2026 verification.
+> **Last verified against code:** August 2026 (main, after .NET 10 migration). Line counts and locations below reflect the current source. **172 tests green**, build 0 warnings/0 errors.
 
 ---
 
@@ -40,15 +40,15 @@ Known issues in the codebase, ordered by severity. This page is updated as items
 
 ### ~~2. `FileExplorerViewModel` — new god class~~ ✅ Resolved (Aug 2026, split)
 
-**File:** `XBVault/ViewModels/FileExplorerViewModel.cs` · **1,880 lines** · **cyclomatic complexity 254** (highest in the project)
+**File:** `XBVault/ViewModels/FileExplorerViewModel.cs` · **1,736 lines** (post-split growth: was 1,223 after split, 1,880 pre-split)
 
-**Problem:** Added in v0.9.0 and never tracked in tech debt. It is now the **largest file in the codebase** — bigger than `XboxDeviceService`. Mixes SSH/SFTP operations, drive mounting, recursive folder upload, path parsing, drag-drop state, and UI state management. Upload logic alone spans `UploadFolderAsync`/`UploadMixedAsync`/`UploadFileAsync` with per-file progress reporting.
+**Problem:** Added in v0.9.0 and never tracked in tech debt. Became the largest file in the codebase — bigger than `XboxDeviceService`. Mixed SSH/SFTP operations, drive mounting, recursive folder upload, path parsing, drag-drop state, and UI state management. Upload logic alone spanned `UploadFolderAsync`/`UploadMixedAsync`/`UploadFileAsync` with per-file progress reporting.
 
 **Split (Aug 2026):** extracted into three layers —
 - `FileSystemPathParser` (`XBVault/Helpers/`) — 9 static helpers (`FormatBps`, `InsertSorted`, `UpdateChildrenPathsRecursive`, `CollectExpandedPaths`, `ClearTreeCache`, `FindEntry`, `GetParentPath`, `FindParent`, `BuildBreadcrumbSegments`); VM keeps them via `using static`.
 - `ISftpService` + `SftpService : ISftpService` — SSH/SFTP transport interface.
 - `SftpTransferService` (`XBVault/Services/`) — upload/download pipelines (`UploadFilesAsync`, `UploadFolderAsync`, `UploadMixedAsync`, `UploadZipExtractAsync`, `DownloadFilesAsync`, `DownloadSingleFileAsync`, `DownloadFolderAsync`). Owns its own `CancellationTokenSource`; reports via `IProgress<TransferUpdate>`; returns `TransferResult` with `NewEntries` for the VM to splice into the tree. Best-effort partial-file cleanup on cancel.
-- `FileExplorerViewModel` (1,880 → **1,223 lines**, complexity **254 → 177**) keeps tree/list state + command wiring only.
+- `FileExplorerViewModel` (1,880 → 1,223 lines at split, complexity 254 → 177) keeps tree/list state + command wiring only. Post-split USB/drive work grew it back to **1,736 lines** (see #10).
 
 ### ~~3. `_Backup/` directory tracked in git~~ ✅ Resolved (v0.8.x)
 
@@ -58,12 +58,12 @@ Removed from tracking, added to `.gitignore`, deleted from disk.
 
 ## 🟡 Medium
 
-### 4. `App.axaml.cs` — 724 lines, manual composition root (partial)
+### 4. `App.axaml.cs` — ~786 lines, manual composition root (partial)
 
-**File:** `XBVault/App.axaml.cs` (was 497 lines in June 2026)
+**File:** `XBVault/App.axaml.cs` (~786 lines)
 
 **Still open:**
-- Manually instantiates all core services with `new` (XboxDeviceService, CacheService, PackageInstallService, SftpService, CatalogApiService, PackageOverrideService) — no DI container. Zero `Microsoft.Extensions.DependencyInjection` usage anywhere in the project.
+- Manually instantiates all core services with `new` (XboxAuthService + 5 Xbox* domain services, CacheService, PackageInstallService, SftpService, SftpTransferService, CatalogApiService, PackageOverrideService, BackgroundTaskService, ConnectionMonitorService, NotificationCenterService, PortalAppFilesService) — no DI container. Zero `Microsoft.Extensions.DependencyInjection` usage anywhere in the project.
 - `InitAfterSplashAsync` is a very large method wiring all window delegate callbacks, sidebar views, catalog load, splash close, and first-run wizard.
 
 **Resolved since June 2026:**
@@ -150,7 +150,7 @@ The god class held `HttpClient _http` and `HttpClientHandler? _handler` (both di
 
 | File | Lines | Complexity | Notes |
 |------|-------|-----------|-------|
-| `ViewModels/FileExplorerViewModel.cs` | **1,223** | **177** | split done, see #2 |
+| `ViewModels/FileExplorerViewModel.cs` | **1,736** | — | post-split growth, see #2 |
 | `ViewModels/BrowseViewModel.cs` | **899** | 167 | grew from 580 |
 | `ViewModels/CustomInstallViewModel.cs` | 726 | 98 | wizard orchestration |
 | `ViewModels/InstalledViewModel.cs` | 632 | 112 | package list + refresh |
@@ -219,13 +219,13 @@ The File Explorer surfaces a **static** set of drives — `{ "C", "D", "E", "G",
 
 ### 21. Zero test coverage — highest-impact gap
 
-**Status:** Mostly resolved (Aug 2026) — **160 tests green**: Phase 1a/1b (pure services) + Phase 1c (19 god-class helpers characterized, 2 real bugs found/fixed) + `SftpTransferServiceTests` (13 tests over an in-memory `FakeSftpService` — upload files/folder/mixed/zip-extract, download single/folder/multi, cancel with partial cleanup, empty results, connection-lost path). See [Testing Infrastructure](ideas/testing-infrastructure).
+**Status:** Mostly resolved (Aug 2026) — **172 tests green** (up from 160): Phase 1a/1b (pure services) + Phase 1c (19 god-class helpers characterized, 2 real bugs found/fixed) + `SftpTransferServiceTests` (13 tests over an in-memory `FakeSftpService` — upload files/folder/mixed/zip-extract, download single/folder/multi, cancel with partial cleanup, empty results, connection-lost path). See [Testing Infrastructure](ideas/testing-infrastructure).
 
 **Still open:** instance logic of the Xbox domain services (HTTP/WebSocket) — `XboxAuthService`, `XboxPackageService`, … need in-memory fakes/stubs.
 
 ### 22. Comment ratio 0–2% across Services/ViewModels
 
-`Services/` at 2% comments, `ViewModels/` at 0%. Business logic in `XboxDeviceService` (error-code interpretation, retry loops) and `PackageInstallService` (dependency classification) is undocumented inline.
+`Services/` at 2% comments, `ViewModels/` at 0%. Business logic in the Xbox domain services (error-code interpretation, retry loops) and `PackageInstallService` (dependency classification) is undocumented inline.
 
 **Progress (Aug 2026):** `// why` comments added at every site touched by the #2 split and the #6/#13/#23 passes — bare-catch rationales, culture-invariance rationale on all 8 formatters, and the delay constants in `DialogFadeBehavior`/`CustomInstallViewModel`. Still open for untouched business logic.
 
@@ -270,9 +270,10 @@ graph LR
 
 ### Notable changes since June 2026 verification
 
-- **`XboxDeviceService` 1,433 → 170 lines** (split #1): extracted `XboxAuthService`, `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService`, `XboxResponseParser`. Facade keeps `ConnectionChanged` + static helper delegates; **147 tests green, 0 build warnings**. See [Split XboxDeviceService](ideas/refactor-xboxdeviceservice).
-- **Testing (Aug 2026):** 147 tests green. 17 god-class helpers characterized (#1 ×10, #2 ×9 → now `FileSystemPathParser`). Two real bugs found+fixed: `UpdateChildrenPathsRecursive` duplicated path segments on nested rename (grandchild got `\sub\sub\`); `SizeFormat`/`FormatBps` were culture-dependent (pt-BR comma vs CI dot).
-- **`FileExplorerViewModel` (1,880 → 1,223 lines, complexity 254 → 177)** — split done (Aug 2026): `FileSystemPathParser` helpers, `ISftpService`, `SftpTransferService`; VM keeps tree/list state + command wiring. `TransferResult.NewEntries` re-splices into tree on upload. Build 0 warnings/0 errors, 147 tests green.
+- **`XboxDeviceService` 1,433 → deleted** (split #1 facade, split #2 removed it entirely): extracted `XboxAuthService`, `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService`, `XboxResponseParser`. See [Split XboxDeviceService](ideas/refactor-xboxdeviceservice).
+- **.NET 10 migration (Aug 2026):** `net8.0` → `net10.0` (app + tests), CI `dotnet-version: 10.0.x`, `Tmds.DBus.Protocol` bumped to 0.92.0 (GHSA-xrw6-gwf8-vvr9), 172 tests green. Release stays self-contained (no client runtime).
+- **Testing (Aug 2026):** **172 tests green.** 17 god-class helpers characterized (#1 ×10, #2 ×9 → now `FileSystemPathParser`). Two real bugs found+fixed: `UpdateChildrenPathsRecursive` duplicated path segments on nested rename (grandchild got `\sub\sub\`); `SizeFormat`/`FormatBps` were culture-dependent (pt-BR comma vs CI dot).
+- **`FileExplorerViewModel` (1,880 → 1,223 lines at split, complexity 254 → 177)** — split done (Aug 2026): `FileSystemPathParser` helpers, `ISftpService`, `SftpTransferService`; VM keeps tree/list state + command wiring. `TransferResult.NewEntries` re-splices into tree on upload. Post-split USB/drive work grew it back to **1,736 lines** (see #10).
 - **Cleanup pass (Aug 2026):** **160 tests green.** Resolved **#6** (all ⚠️ bare catches logged via `Logger.Trace` with `// why`), **#13** (last magic delays → `FadeOutDelay`/`UninstallRetryDelayMs`), **#23** (all 8 size formatters → `CultureInfo.InvariantCulture`). **#21** extended: `SftpTransferServiceTests` + in-memory `FakeSftpService` (13 tests, incl. cancel-with-partial-cleanup determinism via `await Task.Yield()` before the sync wait — the naive version deadlocked the test thread). **#22** progress: `// why` comments on every touched site.
 - **`App.axaml.cs` 497 → 724 lines**; bare `catch { }` at 107/110 **fixed** (now logged).
 - **`BrowseViewModel` 580 → 899 lines** — past the god-class threshold.

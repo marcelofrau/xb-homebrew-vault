@@ -2,7 +2,7 @@
 
 [![GitHub release](https://img.shields.io/github/v/release/marcelofrau/xb-homebrew-vault?style=flat-square)](https://github.com/marcelofrau/xb-homebrew-vault/releases)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](LICENSE)
-[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square)](https://dotnet.microsoft.com/download)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square)](https://dotnet.microsoft.com/download)
 [![Build](https://img.shields.io/github/actions/workflow/status/marcelofrau/xb-homebrew-vault/build.yml?style=flat-square&label=build)](https://github.com/marcelofrau/xb-homebrew-vault/actions)
 [![Docs](https://img.shields.io/github/actions/workflow/status/marcelofrau/xb-homebrew-vault/deploy-docs.yml?style=flat-square&label=docs&logo=cloudflare)](https://github.com/marcelofrau/xb-homebrew-vault/actions/workflows/deploy-docs.yml)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0078D6?style=flat-square)](https://github.com/marcelofrau/xb-homebrew-vault/releases)
@@ -94,7 +94,9 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 
 **Releases available for:**
 - `XBVault-v{version}-win-x64.zip` — Windows 10/11 x64
+- `XBVault-v{version}-win-arm64.zip` — Windows on ARM (Snapdragon)
 - `XBVault-v{version}-linux-x64.zip` — Linux x64
+- `XBVault-v{version}-linux-arm64.zip` — Linux ARM64
 - `XBVault-v{version}-osx-x64.zip` — macOS Intel
 - `XBVault-v{version}-osx-arm64.zip` — macOS Apple Silicon
 
@@ -122,8 +124,11 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 | Dev Tools | ✅ | Screenshot, system info, processes, network, performance chart |
 | USB permission wizard | ✅ | WMI drive detection, icacls permission grant |
 | File Explorer (SSH/SFTP) | ✅ | Browse, upload/download, delete, create folders — dual-pane tree + list |
-| XRay / Inspector | ✅ | TCP agent discovery, Lua REPL, live log streaming |
-| Cross-platform polish | ⏳ | macOS build v0.8.6, Linux/macOS runtime guards v0.9.2 |
+| User Files portal browser | ✅ | REST-based portal browsing, rename/delete/new folder |
+| X-Ray / Inspector | ✅ | TCP agent discovery, Lua REPL, live log streaming |
+| Wizards | ✅ | X-Files enablement, Loopback Exempt manager |
+| Cross-platform polish | ✅ | Windows/macOS/Linux x64+arm64, self-contained builds |
+| Modern runtime | ✅ | .NET 10 (LTS) — see the [migration notes](docs/architecture.md) |
 
 See the full [Roadmap](https://marcelofrau.github.io/xb-homebrew-vault/roadmap) for details and future plans.
 
@@ -150,7 +155,7 @@ XRay runs as a separate agent on your Xbox. XB Homebrew Vault discovers it and p
 
 | Layer | Technology |
 |-------|-----------|
-| Runtime | .NET 8 |
+| Runtime | .NET 10 |
 | UI Framework | Avalonia UI 12 |
 | Architecture | MVVM — CommunityToolkit.Mvvm with source generators |
 | Catalog API | Emulation Revival `catalog.json` |
@@ -161,7 +166,7 @@ XRay runs as a separate agent on your Xbox. XB Homebrew Vault discovers it and p
 
 ## 🏗️ Building from Source
 
-Requires **.NET 8 SDK**.
+Requires **.NET 10 SDK**.
 
 ```powershell
 # Clone
@@ -172,7 +177,7 @@ cd xb-homebrew-vault
 .\build\run.ps1
 
 # Build release (produces self-contained ZIP)
-.\build\build-release.ps1 -Version 0.9.4 -Arch x64
+.\build\build-release.ps1 -Version 1.3.1 -Arch x64
 ```
 
 ## 🏛️ Project Structure
@@ -183,12 +188,16 @@ XBVault/
 ├── ViewModels/    # MVVM view models (CommunityToolkit source generators)
 ├── Views/         # Avalonia AXAML windows & controls
 ├── Services/      # Business logic & API clients
-│   ├── XboxDeviceService.cs      — All Xbox Device Portal calls
-│   ├── CatalogApiService.cs      — Emulation Revival catalog.json
-│   ├── PackageInstallService.cs  — Package analysis & install pipeline
-│   ├── UsbDriveDetector.cs       — WMI USB drive listing
-│   ├── SettingsService.cs        — Settings persistence
-│   └── Logger.cs                 — Application logging
+│   ├── XboxAuthService.cs          — Authentication & connection
+│   ├── XboxPackageService.cs       — Package catalog & install
+│   ├── XboxProcessService.cs       — Running processes & crash dumps
+│   ├── XboxSystemService.cs        — System info & screenshots
+│   ├── XboxNetworkService.cs       — Network & performance telemetry
+│   ├── XboxPerformanceService.cs   — Real-time CPU/GPU/RAM WebSocket feed
+│   ├── CatalogApiService.cs        — Emulation Revival catalog.json
+│   ├── SftpService.cs / SftpTransferService.cs — SSH/SFTP file operations
+│   ├── SettingsService.cs          — Settings persistence
+│   └── Logger.cs                   — Application logging
 ├── Controls/      # Custom UI controls (CdSpinner, IconTextBlock)
 ├── Converters/    # Value converters
 └── Assets/        # Icons, fonts, themes
@@ -196,12 +205,16 @@ build/             # Build & packaging scripts
 docs/              # Documentation + Jekyll site source
 ```
 
+> **Note:** `XboxDeviceService` was split into the six `Xbox*Service` classes above (see [docs/architecture.md](docs/architecture.md)).
+
 ## 📦 Release Artifacts
 
 Releases are built on tag push (`v*`) via GitHub Actions (Windows + Ubuntu + macOS matrix). Each release includes:
 
 - `XBVault-{version}-win-x64.zip` — Windows self-contained
+- `XBVault-{version}-win-arm64.zip` — Windows ARM64 self-contained
 - `XBVault-{version}-linux-x64.zip` — Linux self-contained
+- `XBVault-{version}-linux-arm64.zip` — Linux ARM64 self-contained
 - `XBVault-{version}-osx-x64.zip` — macOS Intel
 - `XBVault-{version}-osx-arm64.zip` — macOS Apple Silicon
 

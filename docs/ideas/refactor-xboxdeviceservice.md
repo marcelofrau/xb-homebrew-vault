@@ -2,7 +2,7 @@
 
 **Impact:** High | **Effort:** Medium | **Suggested priority:** Phase 1
 
-## Status: **split #2 done (Aug 2026)** — facade deleted, interfaces + VM migration complete, 147 tests green
+## Status: **DONE (Aug 2026)** — facade deleted, interfaces + VM migration complete, .NET 10 migration landed. Tests: 172 green. Architecture now documents the split services (`docs/architecture.md`).
 
 ## Problem
 

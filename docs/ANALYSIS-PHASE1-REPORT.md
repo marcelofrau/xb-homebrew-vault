@@ -1,6 +1,6 @@
 # Phase 1 Analysis Complete - Summary Report
 
-> **⚠️ Superseded (June 2026 → Aug 2026):** Metrics in this report reflect Phase 1 (June 2026). Current v1.2.0 measurements are in [Tech Debt](tech-debt) and [Tech Debt Verification v3.0](analysis-tech-debt-verification) — `XboxDeviceService` grew to 1,433 lines, `async void` to 22, and `FileExplorerViewModel` (1,880 lines) emerged as a second god class.
+> **⚠️ Superseded (June 2026 → Aug 2026):** Metrics in this report reflect Phase 1 (June 2026). `XboxDeviceService` has since been **split and deleted** (replaced by 6 domain services) and the project migrated to .NET 10. `FileExplorerViewModel` remains large (~1,736 lines). Current state: [Tech Debt](tech-debt) and [Architecture](architecture).
 
 ## Overview
 

@@ -34,6 +34,12 @@ title: Requirements
 | F23 | User can select which dependencies to install in the custom install wizard | v0.8.5 |
 | F24 | Application guides first-time users through a 3-step setup wizard | v0.8.6 |
 | F25 | User can grant `ALL APPLICATION PACKAGES` NTFS permissions to a USB drive | v0.8.6 |
+| F26 | User can browse the Xbox filesystem and transfer files (upload/download/rename/delete/mkdir via SFTP) | v0.9.4 |
+| F27 | User can copy files to a USB drive connected to the console | v0.9.4 |
+| F28 | User can browse app `LocalAppData`/`DevelopmentFiles` via the Dev Portal REST API and manage entries | v1.3.0 |
+| F29 | User can apply/remove the loopback exemption for any installed app (X-Files wizard) | v1.3.0 |
+| F30 | User can adjust UI scale (80–120%) and connection check interval in Settings | v1.3.1 |
+| F31 | User can save/discard/reset Settings changes from the header toolbar | v1.3.1 |
 
 > **F05 note:** Originally implemented as HTML scraping of 7 catalog pages via HtmlAgilityPack. Replaced in v0.8.5 with `CatalogApiService` consuming the `catalog.json` endpoint published by Emulation Revival, which provides more reliable and structured data.
 
@@ -41,7 +47,7 @@ title: Requirements
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| NF01 | Application targets .NET 8 | High |
+| NF01 | Application targets .NET 10 | High |
 | NF02 | UI uses Xbox 360 Blades theme colors | High |
 | NF03 | Application uses MVVM pattern with CommunityToolkit.Mvvm | High |
 | NF04 | Application obfuscates stored passwords (not cryptographic security) | Medium |
@@ -55,6 +61,5 @@ title: Requirements
 
 | Feature | Notes |
 |---------|-------|
-| File Explorer | Placeholder tab — SSH/SFTP implementation planned next |
 | XCRD USB (`xcrdutil`) | Requires Xbox hardware testing; deferred to future version |
 | Companion UWP app | Still under consideration for deeper file system access |

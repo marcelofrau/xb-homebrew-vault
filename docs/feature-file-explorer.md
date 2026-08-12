@@ -6,6 +6,8 @@ published: false
 
 # File Explorer — SSH/SFTP Browser
 
+> **Status: SHIPPED (v1.0.0+).** The placeholder tab was replaced with a functional SSH/SFTP browser, then extended with USB media drive access and portal filesystem browsing. This spec describes the original design.
+
 ## Goal
 Replace the `FileExplorerView` placeholder tab (index 2) with a functional file browser for the Xbox Dev Mode filesystem using SSH/SFTP — no companion app, no REST API.
 
@@ -99,9 +101,11 @@ Junctions make `C:\`, `D:\`, `E:\` appear as folders inside `D:\DevelopmentFiles
 | File | Change |
 |---|---|
 | `XBVault.csproj` | Add `Renci.SshNet` NuGet |
-| `Services/XboxDeviceService.cs` | Add `GetSshCredentials()` |
-| `ViewModels/FileExplorerViewModel.cs` | Rewrite (34→~250 lines) |
-| `Views/FileExplorerView.axaml` | Rewrite placeholder |
+| `Services/SftpService.cs` | SSH/SFTP client (connect, list, upload, download) |
+| `Services/XboxAuthService.cs` | SMB/SSH credential acquisition |
+| `Services/SftpTransferService.cs` | Background transfer queue |
+| `ViewModels/FileExplorerViewModel.cs` | Browse + transfer logic |
+| `Views/FileExplorerView.axaml` | Browse + transfer UI |
 | `Views/FileExplorerView.axaml.cs` | Drag-drop handlers |
 
 **Icons** (from `F:\workspace\icons8-personal-set`):
