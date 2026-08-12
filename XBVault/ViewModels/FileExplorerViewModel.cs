@@ -399,9 +399,15 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task InitializeAsync()
     {
-        if (!_authService.IsConnected || IsLoading || _sftpService.IsConnected)
+        if (IsLoading || _sftpService.IsConnected)
         {
-            Logger.Debug($"InitializeAsync: skipped (connected={_authService.IsConnected}, loading={IsLoading}, sftp={_sftpService.IsConnected})");
+            Logger.Debug($"InitializeAsync: skipped (loading={IsLoading}, sftp={_sftpService.IsConnected})");
+            return;
+        }
+
+        if (!await _authService.EnsureConnectedAsync())
+        {
+            Logger.Debug("InitializeAsync: auto-connect failed or disabled");
             return;
         }
 

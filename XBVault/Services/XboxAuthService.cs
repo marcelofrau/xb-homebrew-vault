@@ -17,6 +17,9 @@ public class XboxAuthService : IXboxAuthService
     private HttpClientHandler? _handler;
     private bool _configured;
     private bool _connected;
+    private bool _userDisconnected;
+    private DateTime? _lastAutoConnectFailAt;
+    private readonly SemaphoreSlim _connectLock = new(1, 1);
     private string? _csrfToken;
     private string? _baseUrl;
     private string? _username;
@@ -122,6 +125,7 @@ public class XboxAuthService : IXboxAuthService
     public void MarkConnected()
     {
         _connected = true;
+        _userDisconnected = false;
         ConnectionChanged?.Invoke(true);
         Logger.Debug("XboxAuthService marked as connected");
     }
@@ -129,6 +133,7 @@ public class XboxAuthService : IXboxAuthService
     public void Disconnect()
     {
         Logger.Info("XboxAuthService.Disconnect");
+        _userDisconnected = true;
         _configured = false;
         _connected = false;
         ConnectionChanged?.Invoke(false);
@@ -143,7 +148,7 @@ public class XboxAuthService : IXboxAuthService
         _http = new HttpClient(_handler) { Timeout = TimeSpan.FromSeconds(30) };
     }
 
-    public async Task<ConnectionTestResult> TestConnectionAsync(CancellationToken ct = default)
+    public virtual async Task<ConnectionTestResult> TestConnectionAsync(CancellationToken ct = default)
     {
         if (!_configured)
         {
@@ -203,6 +208,51 @@ public class XboxAuthService : IXboxAuthService
             return new ConnectionTestResult(false, null, ex.Message);
         }
     }
+
+    private static readonly TimeSpan AutoConnectCooldown = TimeSpan.FromSeconds(30);
+
+    public async Task<bool> EnsureConnectedAsync(CancellationToken ct = default)
+    {
+        if (_connected) return true;
+        if (!_configured || _userDisconnected || !SettingsService.Current.AutoConnect)
+            return false;
+        if (IsAutoConnectCooldownActive())
+            return false;
+
+        await _connectLock.WaitAsync(ct);
+        try
+        {
+            // Re-check after acquiring the lock — another caller may have connected meanwhile
+            if (_connected) return true;
+            if (!_configured || _userDisconnected || !SettingsService.Current.AutoConnect)
+                return false;
+            if (IsAutoConnectCooldownActive())
+                return false;
+
+            if (string.IsNullOrEmpty(_baseUrl) || string.IsNullOrEmpty(_username) || string.IsNullOrEmpty(_password))
+                return false;
+
+            Configure(_baseUrl, _username, _password);
+            var result = await TestConnectionAsync(ct);
+            if (result.Success)
+            {
+                MarkConnected();
+                Logger.Info("Auto-connect succeeded");
+                return true;
+            }
+
+            _lastAutoConnectFailAt = DateTime.UtcNow;
+            Logger.Info($"Auto-connect failed: {result.ErrorDetail ?? "unknown reason"}");
+            return false;
+        }
+        finally
+        {
+            _connectLock.Release();
+        }
+    }
+
+    private bool IsAutoConnectCooldownActive()
+        => _lastAutoConnectFailAt is { } last && DateTime.UtcNow - last < AutoConnectCooldown;
 
     internal HttpClient Http => _http;
     internal string? CsrfToken => _csrfToken;

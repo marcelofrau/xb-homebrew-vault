@@ -321,7 +321,7 @@ public partial class InspectorViewModel : ObservableObject
     [RelayCommand]
     private async Task ScanAsync()
     {
-        if (!_authService.IsConnected && !HasOverride)
+        if (!HasOverride && !await _authService.EnsureConnectedAsync())
         {
             StatusMessage = "Not connected. Connect via sidebar first.";
             return;

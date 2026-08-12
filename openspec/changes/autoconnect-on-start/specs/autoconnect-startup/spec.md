@@ -1,18 +1,18 @@
 ## ADDED Requirements
 
 ### Requirement: Autoconnect toggle
-The system SHALL expose a single "Autoconnect & reconnect" setting, persisted, default **off**. Changing the toggle SHALL take effect immediately and persist.
+The system SHALL expose a single "Autoconnect" setting, persisted, default **off**. Changing the toggle SHALL take effect immediately (for subsequent operations) and persist on save.
 
 #### Scenario: Toggle off by default
 - **WHEN** a fresh install is first run
-- **THEN** autoconnect-and-reconnect is off
+- **THEN** autoconnect is off
 
 #### Scenario: Toggle persists
 - **WHEN** the user enables the toggle and restarts the app
 - **THEN** the toggle is still enabled
 
 ### Requirement: Connect on launch
-When the "Autoconnect & reconnect" toggle is enabled and the app launches, the system SHALL attempt a one-time connection to the Xbox Dev Portal after the window is shown, using saved credentials.
+When the "Autoconnect" toggle is enabled and the app launches, the system SHALL attempt a one-time connection to the Xbox Dev Portal after the window is shown, using saved credentials.
 
 #### Scenario: Connect on launch when enabled
 - **WHEN** the app starts with autoconnect enabled and valid credentials

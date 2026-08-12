@@ -43,7 +43,7 @@ public partial class SettingsViewModel : ObservableObject
     private bool _savedUseHttps = true;
     private string _savedLogLevel = "Info";
     private int _savedUiScalePercent = 100;
-    private double _savedIntervalSeconds = 30;
+    private bool _savedAutoConnect;
 
     [ObservableProperty]
     private bool _hasUnsavedChanges;
@@ -57,7 +57,7 @@ public partial class SettingsViewModel : ObservableObject
         _savedUseHttps = UseHttps;
         _savedLogLevel = SelectedLogLevel;
         _savedUiScalePercent = UiScalePercent;
-        _savedIntervalSeconds = ConnectionCheckIntervalSeconds;
+        _savedAutoConnect = AutoConnect;
         HasUnsavedChanges = false;
         Logger.Debug("Dirty snapshot captured");
     }
@@ -67,7 +67,7 @@ public partial class SettingsViewModel : ObservableObject
         base.OnPropertyChanged(e);
         if (e.PropertyName is nameof(Address) or nameof(Port) or nameof(Username)
             or nameof(Password) or nameof(UseHttps) or nameof(SelectedLogLevel)
-            or nameof(UiScalePercent) or nameof(ConnectionCheckIntervalSeconds))
+            or nameof(UiScalePercent) or nameof(AutoConnect))
         {
             RefreshDirtyState();
         }
@@ -82,7 +82,7 @@ public partial class SettingsViewModel : ObservableObject
             || UseHttps != _savedUseHttps
             || SelectedLogLevel != _savedLogLevel
             || UiScalePercent != _savedUiScalePercent
-            || Math.Abs(ConnectionCheckIntervalSeconds - _savedIntervalSeconds) > 0.001;
+            || AutoConnect != _savedAutoConnect;
         if (dirty != HasUnsavedChanges)
             HasUnsavedChanges = dirty;
     }
@@ -151,13 +151,12 @@ public partial class SettingsViewModel : ObservableObject
     private int _uiScalePercent = 100;
 
     [ObservableProperty]
-    private double _connectionCheckIntervalSeconds = 30;
+    private bool _autoConnect;
 
-    partial void OnConnectionCheckIntervalSecondsChanged(double value)
+    partial void OnAutoConnectChanged(bool value)
     {
-        var seconds = (int)Math.Round(value);
-        SettingsService.Current.ConnectionCheckIntervalSeconds = seconds;
-        Logger.Info($"Connection check interval set to {seconds}s");
+        SettingsService.Current.AutoConnect = value;
+        Logger.Info($"Auto-connect set to {value}");
     }
 
     // Invoked whenever the UI scale changes so live windows can re-apply it
@@ -210,7 +209,7 @@ public partial class SettingsViewModel : ObservableObject
         Username = conn.Username;
         UseHttps = conn.UseHttps;
         SelectedLogLevel = settings.MinLogLevel;
-        ConnectionCheckIntervalSeconds = settings.ConnectionCheckIntervalSeconds;
+        AutoConnect = settings.AutoConnect;
         var savedScale = (int)Math.Round(settings.UiScale * 100);
 #pragma warning disable MVVMTK0034
         _uiScalePercent = UiScaleOptions.OrderBy(o => Math.Abs(o - savedScale)).First();
@@ -337,7 +336,7 @@ public partial class SettingsViewModel : ObservableObject
 
         settings.MinLogLevel = SelectedLogLevel;
         settings.UiScale = UiScalePercent / 100.0;
-        settings.ConnectionCheckIntervalSeconds = (int)Math.Round(ConnectionCheckIntervalSeconds);
+        settings.AutoConnect = AutoConnect;
 
         SettingsService.Save();
         Logger.Info("Settings saved");

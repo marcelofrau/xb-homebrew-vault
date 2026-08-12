@@ -26,6 +26,14 @@ public partial class ToolsViewModel : ObservableObject
         IsConnected = connected;
     }
 
+    private async Task<bool> EnsureConnectedAsync()
+    {
+        if (await _authService.EnsureConnectedAsync())
+            return true;
+        StatusMessage = "Not connected. Connect via sidebar first.";
+        return false;
+    }
+
     [ObservableProperty]
     private bool _isConnected;
 
@@ -68,51 +76,51 @@ public partial class ToolsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void OpenScreenshot()
+    private async Task OpenScreenshotAsync()
     {
-        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!await EnsureConnectedAsync()) return;
         ShowScreenshotAction?.Invoke();
     }
 
     [RelayCommand]
-    private void OpenSystemInfo()
+    private async Task OpenSystemInfoAsync()
     {
-        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!await EnsureConnectedAsync()) return;
         ShowSystemInfoAction?.Invoke();
     }
 
     [RelayCommand]
-    private void OpenProcesses()
+    private async Task OpenProcessesAsync()
     {
-        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!await EnsureConnectedAsync()) return;
         ShowProcessesAction?.Invoke();
     }
 
     [RelayCommand]
-    private void OpenNetworkInfo()
+    private async Task OpenNetworkInfoAsync()
     {
-        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!await EnsureConnectedAsync()) return;
         ShowNetworkInfoAction?.Invoke();
     }
 
     [RelayCommand]
-    private void OpenPerformance()
+    private async Task OpenPerformanceAsync()
     {
-        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!await EnsureConnectedAsync()) return;
         ShowPerformanceAction?.Invoke();
     }
 
     [RelayCommand]
-    private void OpenCustomInstall()
+    private async Task OpenCustomInstallAsync()
     {
-        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!await EnsureConnectedAsync()) return;
         ShowCustomInstallAction?.Invoke();
     }
 
     [RelayCommand]
-    private void OpenCrashData()
+    private async Task OpenCrashDataAsync()
     {
-        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!await EnsureConnectedAsync()) return;
         ShowCrashDataAction?.Invoke();
     }
 
@@ -134,23 +142,23 @@ public partial class ToolsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void OpenLoopbackExempt()
+    private async Task OpenLoopbackExemptAsync()
     {
-        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!await EnsureConnectedAsync()) return;
         OpenLoopbackExemptAction?.Invoke();
     }
 
     [RelayCommand]
-    private void OpenLoopbackExemptQuick()
+    private async Task OpenLoopbackExemptQuickAsync()
     {
-        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!await EnsureConnectedAsync()) return;
         OpenLoopbackExemptQuickAction?.Invoke();
     }
 
     [RelayCommand]
-    private void OpenDevPortal()
+    private async Task OpenDevPortalAsync()
     {
-        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!await EnsureConnectedAsync()) return;
         var url = _authService.GetDevPortalUrl();
         if (string.IsNullOrEmpty(url))
         {
@@ -171,7 +179,7 @@ public partial class ToolsViewModel : ObservableObject
     [RelayCommand]
     private async Task RestartXboxAsync()
     {
-        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!await EnsureConnectedAsync()) return;
         if (ShowConfirmAsync is not null)
         {
             var ok = await ShowConfirmAsync("Restart Xbox", "Are you sure you want to restart the Xbox? This will disconnect you.", "Restart", "Cancel", null, "avares://XBVault/Assets/Views/ErrorDialog/errordialog-restart-48.png");
@@ -193,7 +201,7 @@ public partial class ToolsViewModel : ObservableObject
     [RelayCommand]
     private async Task ShutdownXboxAsync()
     {
-        if (!_authService.IsConnected) { StatusMessage = "Not connected. Connect via sidebar first."; return; }
+        if (!await EnsureConnectedAsync()) return;
         if (ShowConfirmAsync is not null)
         {
             var ok = await ShowConfirmAsync("Shutdown Xbox", "Are you sure you want to shutdown the Xbox? This will disconnect you.", "Shutdown", "Cancel", null, "avares://XBVault/Assets/Views/ErrorDialog/errordialog-shutdown-48.png");

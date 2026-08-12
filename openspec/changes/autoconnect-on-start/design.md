@@ -1,83 +1,65 @@
 ## Context
 
-`background-async-tasks` (previous change) adds `ConnectionMonitorService` raising `ConnectionLost`/`ConnectionRestored`, plus notification center + task center. This change consumes those events. The app is a small singleton-style .NET 8/Avalonia app; no DI container. Connection client is `XboxConnectionService` (built on SSH.NET) with explicit Connect/Disconnect and saved credentials in `SettingsService`.
+`background-async-tasks` (previous change) shipped the notification center + task center. This change drops its `ConnectionMonitorService` (recurring liveness job) as overengineered and adds a minimal auto-connect: one startup connect + lazy connect-before-operation. The app is a small singleton-style .NET 10/Avalonia app; no DI container. "Connected" is a reachability flag (`IXboxAuthService.IsConnected`), not a real session — REST calls work off saved credentials, so auto-connect is just Configure + Test + MarkConnected.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Reconnect with exponential backoff on `ConnectionLost`, only while the user opted in.
-- Optional connect-at-startup behavior under the same single toggle (default off).
-- Every attempt visible (task center + notifications); bounded retries (configurable, default 5) so a dead console doesn't spin forever.
+- Connect once at startup when the user opts in (default off).
+- Lazily auto-connect before any operation that needs the console, then proceed.
+- Bounded self-mediation: cooldown after a failed auto-connect (~30 s) so a dead console doesn't get hammered.
+- Explicit disconnect is respected until a manual reconnect or app restart.
 
 **Non-Goals:**
-- Replacing manual connect flow.
-- Auto-reconnect for the file-transfer/storage connection beyond the portal connection.
-- Persisting reconnect state across app restarts.
+- Background retry loops, reconnect manager, or recurring liveness probing (removed).
+- Auto-connect for SFTP/storage operations (portal REST only).
+- Detecting loss proactively — loss surfaces as an error on the next console-touching operation.
 
 ## Decisions
 
-### 1. ReconnectManager subscribes to ConnectionLost, not to HTTP failures
-The connection monitor already surfaces loss; manager is a pure consumer (single event source, no duplicate detection logic).
+### 1. `EnsureConnectedAsync` owns auto-connect
+`IXboxAuthService.EnsureConnectedAsync(ct)` returns true when already connected; otherwise, only when `AutoConnect` on + configured + not explicitly disconnected. It re-Configures from in-memory credentials, Tests the connection, and on success `MarkConnected()` (which flips all bound UI via `ConnectionChanged`). In-flight calls share one attempt via a `SemaphoreSlim`; a failed attempt stamps a 30 s cooldown.
 
-### 2. Backoff owned by a single retry loop task
-One `BackgroundTask` ("Reconnecting to console…") drives all attempts for a single loss episode. Each failed attempt appends to task `Details`; a bounded attempt counter (from Settings, default 5) stops the loop. Backoff sequence 1/2/4/8/16/30/60 s, implemented with `Task.Delay` (no timer needed).
+### 2. Single setting, one toggle
+`AutoConnect` (bool, default false). Toggle written to `SettingsService.Current` immediately; persisted on Settings Save. No max-attempts field, no interval — both dead concepts.
 
-### 3. Stop conditions centralized in the loop guard
-The loop checks a combined condition each iteration: autoconnect enabled AND not explicitly disconnected AND app not shutting down. Manual Connect resets state; manual Disconnect sets the stop flag.
+### 3. Startup connect is a visible one-shot task
+After the window shows (and first-run wizard handled), if `AutoConnect` + credentials + not connected, a single `BackgroundTaskService.RunAsync("Connecting to Xbox…")` runs the connect with a result toast. No recurring job.
 
-### 4. Startup connect reuses the same code path as manual connect
-`AutoconnectAtStartup` runs once after the main window shows (`MainWindow.Opened`), guarded by: single toggle on, credentials present, not already connected. Runs through `BackgroundTaskService.RunTaskAsync` so it appears in the task center with the same UI as manual connect.
-
-### 5. Settings shape — one toggle + one number
-- `AutoConnect` (bool, default false) — the single **"Autoconnect & reconnect"** toggle: gates both startup connect and automatic reconnect.
-- `ReconnectMaxAttempts` (int, default 5) — bound for consecutive failed attempts, shown in Settings with its default. (Lean answer to the earlier "separate toggle vs tied" question: tied — one toggle, simpler UX.)
-Reconnect manager re-reads both on each loop iteration; no restart needed to change them.
+### 4. Explicit disconnect sticks
+`Disconnect()` sets `_userDisconnected`; `EnsureConnectedAsync` refuses while set. `MarkConnected()` (manual connect) clears it — the user re-opted into auto behavior. App restart resets it.
 
 ## Architecture
 
 ```mermaid
-sequenceDiagram
-    participant M as ConnectionMonitorService
-    participant RM as ReconnectManager
-    participant BTS as BackgroundTaskService
-    participant X as XboxConnectionService
-    M->>RM: ConnectionLost(reason)
-    RM->>BTS: RunTaskAsync("Reconnecting…")
-    loop until success / stop / max attempts
-        RM->>X: Connect()
-        alt success
-            X-->>RM: connected
-            RM->>M: ConnectionRestored (existing event)
-            RM-->>UI: success notification
-        else fail
-            RM-->>UI: failure notification
-            RM->>RM: Task.Delay(backoff)
-        end
-    end
+flowchart LR
+    S[Startup / any console op] -->|"EnsureConnectedAsync()"| A[XboxAuthService]
+    A -->|"IsConnected?"| Y1[yes → return true]
+    A -->|"no: flag + creds + !userDisconnected?"| Y2[no → return false → existing not-connected flow]
+    A -->|"yes"| T[Configure + TestConnection]
+    T -->|success| M[MarkConnected → ConnectionChanged → UI]
+    T -->|fail| C[cooldown 30 s → return false]
 ```
 
 ## File map
 
 | File | Purpose |
 | --- | --- |
-| `XBVault/Services/ReconnectManager.cs` | Subscribes `ConnectionLost`, runs backoff loop, stop conditions |
-| `XBVault/Services/SettingsService.cs` (mod) | `AutoConnect`, `ReconnectMaxAttempts` keys |
-| `XBVault/Services/AppStartup.cs` (new or mod) | Startup connect wiring on window opened |
-| Settings view (mod) | Toggle + max-attempts field (default shown) |
+| `XBVault/Services/ConnectionMonitorService.cs` | **deleted** (job + events + toasts) |
+| `XBVault/Services/IXboxAuthService.cs` + `XboxAuthService.cs` | `EnsureConnectedAsync` + `_userDisconnected` + `SemaphoreSlim` + cooldown |
+| `XBVault/Models/AppSettings.cs` | +`AutoConnect`; −`ConnectionCheckIntervalSeconds` |
+| `XBVault/ViewModels/SettingsViewModel.cs` + `Views/SettingsView.axaml` | toggle row; interval row removed |
+| `XBVault/App.axaml.cs` | monitor wiring removed; startup autoconnect task + result toast |
+| Installed / Tools / FileExplorer / Inspector / Browse ViewModels | `IsConnected` guards → `EnsureConnectedAsync` (flag-off keeps old flows) |
+| `tests/XBVault.Tests/EnsureConnectedTests.cs` | 8 unit tests (flag, configured, disconnect, manual-reconnect, success, cooldown, concurrency) |
 
 ## Risks / Trade-offs
 
-- **Reconnect storms on flaky Wi-Fi** → bounded attempts (`ReconnectMaxAttempts`, default 5) then stop; user must act. Trade-off: fully automatic reconnect beyond the bound is not attempted.
-- **Startup connect slows first paint** → runs after window shown, asynchronously; UI stays responsive.
-- **Console on sleep/unreachable** → backoff cap 60 s bounds request rate.
-- **Two connect sources race** (startup + user click) → guard `if (IsConnected || connecting) return;` in the connect path.
+- **Dead console + AutoConnect on** → each operation stalls up to the 10 s test timeout, bounded to one attempt per 30 s by cooldown.
+- **Loss detection is reactive** → no "Connection Lost" toast; the user notices when the next operation fails or lazily reconnects.
+- **Stale in-memory credentials** → only if settings are edited on disk without ever reconnecting; negligible.
 
 ## Migration Plan
 
-- Additive, off by default. Rollback: toggle off; manager loop no-ops.
-- Ships after `background-async-tasks` (connection monitor, notification center, task center must exist).
-
-## Open Questions
-
-- Max-attempts input type in Settings: numeric field vs fixed presets (lean: small numeric field, default 5).
-- Whether reconnect should also fire when the app detects loss during an in-flight task (e.g. install) — lean: no auto-reconnect mid-task, surface error instead.
+- Additive, off by default. Rollback: toggle off; `EnsureConnectedAsync` no-ops; monitor stays removed.
+- Removes the `ConnectionCheckIntervalSeconds` setting (orphan JSON key ignored on load) and the task-center "Connection Monitor" scheduled/recent churn.

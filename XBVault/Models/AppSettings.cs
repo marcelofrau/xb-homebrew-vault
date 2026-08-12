@@ -12,7 +12,7 @@ public class AppSettings
     public double LogFontSize { get; set; } = 15;
     public double ConsoleFontSize { get; set; } = 13;
     public double UiScale { get; set; } = 1.0;
-    public int ConnectionCheckIntervalSeconds { get; set; } = 30;
+    public bool AutoConnect { get; set; }
     public double MainWindowWidth { get; set; }
     public double MainWindowHeight { get; set; }
 }

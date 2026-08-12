@@ -6,6 +6,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using System.Diagnostics;
 using XBVault.Helpers;
+using XBVault.Models;
 using XBVault.Services;
 using XBVault.ViewModels;
 using XBVault.Views;
@@ -78,8 +79,6 @@ public partial class App : Application
             var backgroundTaskService = new BackgroundTaskService();
             backgroundTaskService.Start();
             var notificationCenter = new NotificationCenterService();
-            var connectionMonitor = new ConnectionMonitorService(authService, notificationCenter, backgroundTaskService);
-            connectionMonitor.Start();
             var taskCenterViewModel = new TaskCenterViewModel(backgroundTaskService);
 
             var mainViewModel = new MainViewModel(authService);
@@ -97,7 +96,7 @@ public partial class App : Application
                 installedViewModel, fileExplorerViewModel, toolsViewModel,
                 settingsViewModel, authService, packageService, systemService,
                 networkService, processService, performanceService, installService, sftpService, portalService,
-                backgroundTaskService, connectionMonitor, notificationCenter, taskCenterViewModel);
+                backgroundTaskService, notificationCenter, taskCenterViewModel);
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -195,7 +194,6 @@ public partial class App : Application
         SftpService sftpService,
         PortalAppFilesService portalService,
         BackgroundTaskService backgroundTaskService,
-        ConnectionMonitorService connectionMonitor,
         NotificationCenterService notificationCenter,
         TaskCenterViewModel taskCenterViewModel)
     {
@@ -219,7 +217,6 @@ public partial class App : Application
             main.Closed += (_, _) =>
             {
                 main.UnbindNotifications();
-                connectionMonitor.Stop();
                 backgroundTaskService.Stop();
             };
 
@@ -741,9 +738,34 @@ public partial class App : Application
                 }
             }
 
+            // Autoconnect on start (visible in task center) — only when enabled and credentials present
+            if (SettingsService.Current.AutoConnect && authService.IsConfigured && !authService.IsConnected)
+            {
+                var connectTask = backgroundTaskService.RunAsync("Connecting to Xbox…",
+                    async (task, ct) =>
+                    {
+                        var ok = await authService.EnsureConnectedAsync(ct);
+                        if (!ok)
+                            throw new InvalidOperationException("Could not connect to the Xbox console. Check that it's powered on and on the same network.");
+                    });
+                _ = NotifyAutoconnectResultAsync(notificationCenter, connectTask);
+            }
+
             // Auto-update check
             _ = CheckForUpdatesAsync(main);
         });
+    }
+
+    private static async Task NotifyAutoconnectResultAsync(NotificationCenterService notifications, BackgroundTask task)
+    {
+        while (!task.IsFinished)
+            await Task.Delay(100);
+        if (task.IsFailed)
+            notifications.Notify("Autoconnect failed", "Could not connect to the Xbox console.",
+                "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-error-20.png");
+        else if (task.Status == BackgroundTaskStatus.Succeeded)
+            notifications.Notify("Connected", "Connected to the Xbox console.",
+                "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-success-20.png");
     }
 
     private static async Task CheckForUpdatesAsync(Window main)

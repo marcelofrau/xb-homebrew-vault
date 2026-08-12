@@ -20,5 +20,6 @@ public interface IXboxAuthService : IDisposable
     string? GetDevPortalUrl();
     void MarkConnected();
     void Disconnect();
+    Task<bool> EnsureConnectedAsync(CancellationToken ct = default);
     Task<ConnectionTestResult> TestConnectionAsync(CancellationToken ct = default);
 }

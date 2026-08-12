@@ -413,24 +413,19 @@
 
             <Separator Background="{StaticResource BorderBrush}" Height="1"/>
 
-            <Grid ColumnDefinitions="*,Auto">
+            <!-- Autoconnect toggle -->
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
               <StackPanel Spacing="4">
-                <TextBlock Text="Connection check interval"
+                <TextBlock Text="Autoconnect"
                            FontSize="13"/>
-                <TextBlock Text="Checks the Xbox is still reachable while connected. 0 = disabled. Default: 30 s"
+                <TextBlock Text="Connects to the Xbox at startup and automatically before operations that need it"
                            FontSize="12"
                            Foreground="{StaticResource TextMutedBrush}"
                            TextWrapping="Wrap"/>
               </StackPanel>
-              <NumericUpDown x:Name="IntervalNud"
-                             Grid.Column="1"
-                             Value="{Binding ConnectionCheckIntervalSeconds}"
-                             Minimum="0"
-                             Maximum="3600"
-                             Increment="5"
-                             Width="120"
-                             VerticalAlignment="Center"
-                             FormatString="0 s"/>
+              <CheckBox Grid.Column="1"
+                        IsChecked="{Binding AutoConnect}"
+                        VerticalAlignment="Center"/>
             </Grid>
           </StackPanel>
         </Border>

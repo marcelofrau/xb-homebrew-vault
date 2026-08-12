@@ -265,7 +265,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             IsCheckingInstalled = false;
             return;
         }
-        if (!_authService.IsConnected)
+        if (!await _authService.EnsureConnectedAsync())
         {
             CheckComplete = true;
             CheckError = true;
@@ -509,7 +509,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             InstallResultMessage = "This is a Windows tool — not installable on Xbox.";
             return;
         }
-        if (!_authService.IsConnected)
+        if (!await _authService.EnsureConnectedAsync())
         {
             Logger.Info("Xbox not connected — cannot install");
             CheckComplete = false;

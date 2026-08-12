@@ -448,6 +448,9 @@ public partial class InstalledViewModel : ObservableObject
 
     private async Task RefreshRunningStateAsync()
     {
+        if (!await _authService.EnsureConnectedAsync())
+            return;
+
         var running = await _packageService.GetRunningPackageNamesAsync();
 
         if (running.Count > 0)
@@ -462,7 +465,7 @@ public partial class InstalledViewModel : ObservableObject
     [RelayCommand]
     private async Task RefreshPackagesAsync()
     {
-        if (!_authService.IsConnected)
+        if (!await _authService.EnsureConnectedAsync())
         {
             Logger.Info("Xbox not connected — showing error dialog");
             if (ShowErrorWithConnectAction is not null)
