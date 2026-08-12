@@ -23,7 +23,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
 
     - name: Restore
       run: dotnet restore XBVault/XBVault.csproj
@@ -35,7 +35,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: XBVault-build-${{ matrix.os }}
-        path: XBVault/bin/Release/net8.0/
+        path: XBVault/bin/Release/net10.0/
 
   test:
     strategy:
@@ -49,7 +49,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
 
     - name: Test
       run: dotnet test tests/XBVault.Tests/XBVault.Tests.csproj -c Release
@@ -85,7 +85,7 @@ jobs:
 
     - uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
 
     - name: Install Inno Setup (Windows)
       if: matrix.os == 'windows-latest'
