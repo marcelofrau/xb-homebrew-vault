@@ -13,9 +13,10 @@ public class NotificationCenterService
     public const int MaxVisibleToasts = 4;
     public const int MaxHistory = 50;
     public static readonly TimeSpan DefaultAutoDismiss = TimeSpan.FromSeconds(6);
+    public const string DefaultIconUri = "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-info-20.png";
 
     private readonly object _gate = new();
-    private readonly List<NotificationItem> _history = [];
+    private readonly ObservableCollection<NotificationItem> _history = [];
     private readonly Dictionary<Guid, Timer> _dismissTimers = [];
 
     public ObservableCollection<NotificationItem> Active { get; } = [];
@@ -26,7 +27,7 @@ public class NotificationCenterService
 
     public int UnacknowledgedCount { get; private set; }
 
-    public IReadOnlyList<NotificationItem> History => _history.AsReadOnly();
+    public IReadOnlyList<NotificationItem> History => _history;
 
     public NotificationItem Notify(string title, string message, string? iconUri = null, Action? clickAction = null)
     {
@@ -34,7 +35,7 @@ public class NotificationCenterService
         {
             Title = title,
             Message = message,
-            IconUri = iconUri,
+            IconUri = iconUri ?? DefaultIconUri,
             ClickAction = clickAction
         };
         AddActive(item);
@@ -47,7 +48,7 @@ public class NotificationCenterService
         {
             Title = title,
             Message = $"{items.Count} notification{(items.Count == 1 ? string.Empty : "s")}",
-            IconUri = null,
+            IconUri = DefaultIconUri,
             ClickAction = null,
             Actions = items
         };
@@ -75,6 +76,26 @@ public class NotificationCenterService
             var item = Active.FirstOrDefault(n => n.Id == id);
             if (item is not null)
                 Complete(item);
+        });
+    }
+
+    public void RemoveFromHistory(Guid id)
+    {
+        PostToUi(() =>
+        {
+            var item = _history.FirstOrDefault(n => n.Id == id);
+            if (item is not null)
+                _history.Remove(item);
+        });
+    }
+
+    public void ClearAll()
+    {
+        PostToUi(() =>
+        {
+            foreach (var item in Active.ToList())
+                Complete(item);
+            _history.Clear();
         });
     }
 

@@ -15,7 +15,7 @@
     <Grid RowDefinitions="Auto,*" Margin="8">
 
       <!-- Header -->
-      <Grid ColumnDefinitions="*,Auto" Margin="4,4,4,6">
+      <Grid ColumnDefinitions="*,Auto,Auto" Margin="4,4,4,6">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <TextBlock Text="Notifications"
                      FontSize="13"
@@ -36,9 +36,21 @@
           </Border>
         </StackPanel>
         <Button Grid.Column="1"
+                Content="Clear all"
+                FontSize="10"
+                Padding="6,2"
+                Background="Transparent"
+                Foreground="{StaticResource TextMutedBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Cursor="Hand"
+                Click="OnClearAllClick"/>
+        <Button Grid.Column="2"
                 Content="✕"
                 FontSize="11"
                 Padding="6,1"
+                Margin="4,0,0,0"
                 Background="Transparent"
                 Foreground="{StaticResource TextMutedBrush}"
                 BorderThickness="0"
@@ -57,7 +69,7 @@
                     BorderThickness="1"
                     CornerRadius="4"
                     Padding="10,8">
-              <TextBlock Text="No active notifications."
+              <TextBlock Text="No notifications yet."
                          FontSize="11"
                          Foreground="{StaticResource TextMutedBrush}"
                          TextAlignment="Center"/>
@@ -126,7 +138,7 @@
           </StackPanel>
 
           <!-- History -->
-          <StackPanel Spacing="2" IsVisible="{Binding History.Count, Converter={StaticResource IntToBool}}">
+          <StackPanel Spacing="2">
             <TextBlock Text="HISTORY"
                        FontSize="9"
                        FontWeight="Bold"
@@ -141,7 +153,12 @@
                           Background="Transparent"
                           BorderBrush="{StaticResource BorderBrush}"
                           BorderThickness="0,0,0,1">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <Border.Styles>
+                      <Style Selector="Border:pointerover">
+                        <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+                      </Style>
+                    </Border.Styles>
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                       <StackPanel Spacing="1">
                         <TextBlock Text="{Binding Title}"
                                    FontSize="10"
@@ -157,6 +174,17 @@
                                  FontSize="9"
                                  Foreground="{StaticResource TextDimBrush}"
                                  VerticalAlignment="Center"/>
+                      <Button Grid.Column="2"
+                              Content="✕"
+                              FontSize="9"
+                              Padding="4,0"
+                              Background="Transparent"
+                              Foreground="{StaticResource TextDimBrush}"
+                              BorderThickness="0"
+                              CornerRadius="3"
+                              Cursor="Hand"
+                              VerticalAlignment="Center"
+                              Click="OnHistoryClearClick"/>
                     </Grid>
                   </Border>
                 </DataTemplate>

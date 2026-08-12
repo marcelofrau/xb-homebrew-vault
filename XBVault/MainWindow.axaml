@@ -132,10 +132,33 @@
           </Transitions>
         </Setter.Value>
       </Setter>
+      <Style.Animations>
+        <Animation Duration="0:0:0.25" FillMode="Forward">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="0"/>
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="1"/>
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
     </Style>
 
     <Style Selector="Border.toast-card:pointerover">
-      <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+      <Setter Property="Background" Value="{StaticResource AccentHoverDarkBrush}"/>
+    </Style>
+
+    <Style Selector="Border.toast-card.toast-closing">
+      <Style.Animations>
+        <Animation Duration="0:0:0.25" FillMode="Forward">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="1"/>
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0"/>
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
     </Style>
 
     <Style Selector="Button.topbar-icon">
@@ -609,8 +632,8 @@
         <!-- Toast overlay (notifications) -->
         <Border Grid.Row="0"
                 HorizontalAlignment="Right"
-                VerticalAlignment="Top"
-                Margin="12,48,12,0"
+                VerticalAlignment="Bottom"
+                Margin="12,0,12,12"
                 ZIndex="50">
           <ItemsControl x:Name="ToastItemsControl">
             <ItemsControl.ItemsPanel>
@@ -619,36 +642,38 @@
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="models:NotificationItem">
+              <DataTemplate x:DataType="models:ToastHost">
                 <Border Classes="toast-card"
-                        Background="{StaticResource CardBgBrush}"
-                        BorderBrush="{StaticResource BorderBrush}"
+                        Background="#284325"
+                        BorderBrush="Black"
                         BorderThickness="1"
-                        CornerRadius="6"
-                        Padding="10,8"
-                        MinWidth="240"
-                        MaxWidth="340"
+                        CornerRadius="8"
+                        BoxShadow="0 4 16 0 #66000000"
+                        Padding="12,10"
+                        MinWidth="260"
+                        MaxWidth="360"
                         Cursor="Hand"
                         PointerPressed="OnToastPointerPressed">
                   <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                      <Image Source="{Binding IconUri}"
-                             Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center"
-                             IsVisible="{Binding IconUri, Converter={StaticResource StringNotEmpty}}"/>
+                      <Image Source="{Binding Item.IconUri}"
+                             Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center"/>
                       <TextBlock Grid.Column="1"
-                                 Text="{Binding Title}"
+                                 Text="{Binding Item.Title}"
                                  FontSize="12"
                                  FontWeight="Bold"
                                  Foreground="{StaticResource TextBrush}"
                                  TextWrapping="Wrap"
                                  VerticalAlignment="Center"/>
                     </Grid>
-                    <TextBlock Text="{Binding Message}"
+                    <TextBlock Text="{Binding Item.Message}"
                                FontSize="11"
                                Foreground="{StaticResource TextMutedBrush}"
-                               TextWrapping="Wrap"/>
-                    <ItemsControl ItemsSource="{Binding Actions}"
-                                  IsVisible="{Binding IsGrouped}">
+                               TextWrapping="Wrap"
+                               Margin="28,0,0,0"/>
+                    <ItemsControl ItemsSource="{Binding Item.Actions}"
+                                  IsVisible="{Binding Item.IsGrouped}"
+                                  Margin="28,0,0,0">
                       <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                           <StackPanel Orientation="Horizontal" Spacing="6"/>

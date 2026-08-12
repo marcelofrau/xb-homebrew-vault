@@ -1,5 +1,8 @@
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -20,6 +23,8 @@ public partial class MainWindow : Window
 {
     private const int TabCount = 7;
     private static readonly TimeSpan PopupFadeDuration = TimeSpan.FromMilliseconds(150);
+    private const int ToastFadeOutMs = 250;
+    private readonly ObservableCollection<ToastHost> _toastHosts = [];
     private NotificationCenterService? _notificationCenter;
     private TaskCenterViewModel? _taskCenter;
     private int _tasksFadeGen;
@@ -28,6 +33,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ToastItemsControl.ItemsSource = _toastHosts;
         MinWidth = WindowSettingsService.MinMainWindowWidth;
         MinHeight = WindowSettingsService.MinMainWindowHeight;
         var size = WindowSettingsService.GetMainWindowSize();
@@ -60,7 +66,9 @@ public partial class MainWindow : Window
     {
         Logger.Trace("Flyout: BindNotifications called");
         _notificationCenter = notificationCenter;
-        ToastItemsControl.ItemsSource = notificationCenter.Active;
+        foreach (var item in notificationCenter.Active)
+            _toastHosts.Add(new ToastHost(item));
+        notificationCenter.Active.CollectionChanged += OnActiveNotificationsChanged;
         NotificationsPopup.DataContext = notificationCenter;
         NotificationsPanelHost.CloseRequested += () => _ = ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen);
         notificationCenter.UnacknowledgedChanged += OnUnacknowledgedChanged;
@@ -70,8 +78,48 @@ public partial class MainWindow : Window
     public void UnbindNotifications()
     {
         if (_notificationCenter is not null)
+        {
+            _notificationCenter.Active.CollectionChanged -= OnActiveNotificationsChanged;
             _notificationCenter.UnacknowledgedChanged -= OnUnacknowledgedChanged;
+        }
         _notificationCenter = null;
+        _toastHosts.Clear();
+    }
+
+    private void OnActiveNotificationsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems is not null)
+        {
+            foreach (NotificationItem item in e.NewItems)
+                _toastHosts.Add(new ToastHost(item));
+        }
+        else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems is not null)
+        {
+            foreach (NotificationItem item in e.OldItems)
+                _ = CloseToastAsync(item);
+        }
+    }
+
+    private async Task CloseToastAsync(NotificationItem item)
+    {
+        var host = _toastHosts.FirstOrDefault(h => ReferenceEquals(h.Item, item));
+        if (host is null) return;
+        if (FindToastBorder(host) is { } border)
+        {
+            border.Classes.Add("toast-closing");
+            await Task.Delay(ToastFadeOutMs);
+        }
+        _toastHosts.Remove(host);
+    }
+
+    private Border? FindToastBorder(ToastHost host)
+    {
+        foreach (var descendant in ToastItemsControl.GetVisualDescendants())
+        {
+            if (descendant is Border border && ReferenceEquals(border.DataContext, host))
+                return border;
+        }
+        return null;
     }
 
     private void OnUnacknowledgedChanged()
@@ -265,8 +313,8 @@ public partial class MainWindow : Window
 
     private void OnToastPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is not Border { DataContext: NotificationItem item } || _notificationCenter is null) return;
-        _notificationCenter.InvokeAction(item);
+        if (sender is not Border { DataContext: ToastHost host } || _notificationCenter is null) return;
+        _notificationCenter.InvokeAction(host.Item);
     }
 
     private void OnToastActionClick(object? sender, RoutedEventArgs e)
@@ -280,9 +328,9 @@ public partial class MainWindow : Window
         {
             Logger.Error(ex, "MainWindow: toast action threw");
         }
-        var item = btn.FindAncestorOfType<Border>()?.DataContext as NotificationItem;
-        if (item is not null)
-            _notificationCenter.Dismiss(item.Id);
+        var host = btn.FindAncestorOfType<Border>()?.DataContext as ToastHost;
+        if (host is not null)
+            _notificationCenter.Dismiss(host.Item.Id);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)

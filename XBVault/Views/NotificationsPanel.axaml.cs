@@ -26,4 +26,17 @@ public partial class NotificationsPanel : UserControl
         if (sender is not Button { DataContext: NotificationItem item }) return;
         service.Dismiss(item.Id);
     }
+
+    private void OnHistoryClearClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not NotificationCenterService service) return;
+        if (sender is not Button { DataContext: NotificationItem item }) return;
+        service.RemoveFromHistory(item.Id);
+    }
+
+    private void OnClearAllClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is NotificationCenterService service)
+            service.ClearAll();
+    }
 }
