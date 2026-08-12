@@ -30,6 +30,13 @@ public partial class TaskCenterViewModel : ObservableObject
 
     public void Cancel(BackgroundTask task) => _service.Cancel(task.Id);
 
+    public bool RunNow(BackgroundTask task)
+    {
+        if (string.IsNullOrEmpty(task.JobKey))
+            return false;
+        return _service.RunJobNow(task.JobKey);
+    }
+
     [RelayCommand]
     private void Toggle()
     {

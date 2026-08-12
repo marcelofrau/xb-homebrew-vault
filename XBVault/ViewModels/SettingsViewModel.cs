@@ -44,6 +44,7 @@ public partial class SettingsViewModel : ObservableObject
     private string _savedLogLevel = "Info";
     private int _savedUiScalePercent = 100;
     private bool _savedAutoConnect;
+    private int _savedUpdateCheckIntervalMinutes = 30;
 
     [ObservableProperty]
     private bool _hasUnsavedChanges;
@@ -58,6 +59,7 @@ public partial class SettingsViewModel : ObservableObject
         _savedLogLevel = SelectedLogLevel;
         _savedUiScalePercent = UiScalePercent;
         _savedAutoConnect = AutoConnect;
+        _savedUpdateCheckIntervalMinutes = UpdateCheckIntervalMinutes;
         HasUnsavedChanges = false;
         Logger.Debug("Dirty snapshot captured");
     }
@@ -67,7 +69,7 @@ public partial class SettingsViewModel : ObservableObject
         base.OnPropertyChanged(e);
         if (e.PropertyName is nameof(Address) or nameof(Port) or nameof(Username)
             or nameof(Password) or nameof(UseHttps) or nameof(SelectedLogLevel)
-            or nameof(UiScalePercent) or nameof(AutoConnect))
+            or nameof(UiScalePercent) or nameof(AutoConnect) or nameof(UpdateCheckIntervalMinutes))
         {
             RefreshDirtyState();
         }
@@ -82,7 +84,8 @@ public partial class SettingsViewModel : ObservableObject
             || UseHttps != _savedUseHttps
             || SelectedLogLevel != _savedLogLevel
             || UiScalePercent != _savedUiScalePercent
-            || AutoConnect != _savedAutoConnect;
+            || AutoConnect != _savedAutoConnect
+            || UpdateCheckIntervalMinutes != _savedUpdateCheckIntervalMinutes;
         if (dirty != HasUnsavedChanges)
             HasUnsavedChanges = dirty;
     }
@@ -159,6 +162,17 @@ public partial class SettingsViewModel : ObservableObject
         Logger.Info($"Auto-connect set to {value}");
     }
 
+    [ObservableProperty]
+    private int _updateCheckIntervalMinutes = 30;
+
+    public List<int> UpdateCheckIntervals { get; } = [15, 30, 60, 120, 240];
+
+    partial void OnUpdateCheckIntervalMinutesChanged(int value)
+    {
+        SettingsService.Current.UpdateCheckIntervalMinutes = value;
+        Logger.Info($"Update check interval set to {value} minutes");
+    }
+
     // Invoked whenever the UI scale changes so live windows can re-apply it
     public Action? UiScaleChanged { get; set; }
 
@@ -210,6 +224,7 @@ public partial class SettingsViewModel : ObservableObject
         UseHttps = conn.UseHttps;
         SelectedLogLevel = settings.MinLogLevel;
         AutoConnect = settings.AutoConnect;
+        UpdateCheckIntervalMinutes = settings.UpdateCheckIntervalMinutes;
         var savedScale = (int)Math.Round(settings.UiScale * 100);
 #pragma warning disable MVVMTK0034
         _uiScalePercent = UiScaleOptions.OrderBy(o => Math.Abs(o - savedScale)).First();
@@ -337,6 +352,7 @@ public partial class SettingsViewModel : ObservableObject
         settings.MinLogLevel = SelectedLogLevel;
         settings.UiScale = UiScalePercent / 100.0;
         settings.AutoConnect = AutoConnect;
+        settings.UpdateCheckIntervalMinutes = UpdateCheckIntervalMinutes;
 
         SettingsService.Save();
         Logger.Info("Settings saved");

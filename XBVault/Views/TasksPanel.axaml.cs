@@ -17,4 +17,10 @@ public partial class TasksPanel : UserControl
         if (DataContext is TaskCenterViewModel vm && sender is Button { DataContext: BackgroundTask task })
             vm.Cancel(task);
     }
+
+    private void OnRunNowClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is TaskCenterViewModel vm && sender is Button { DataContext: BackgroundTask task })
+            vm.RunNow(task);
+    }
 }

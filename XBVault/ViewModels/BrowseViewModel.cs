@@ -27,7 +27,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     private readonly IXboxAuthService _authService;
     private readonly IXboxPackageService _packageService;
     private readonly PackageOverrideService _overrideService;
-    private readonly UpdateVersionCache _updateCache = new();
+    private readonly VersionCheckerService _versionChecker;
     private List<CatalogItem> _allItems = [];
 
     public Action<CatalogItem>? ShowDetailAction;
@@ -48,13 +48,14 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     private readonly ConcurrentDictionary<string, Task<Bitmap?>> _overrideImageCache = new();
     private CancellationTokenSource? _thumbnailCts;
 
-    public BrowseViewModel(PackageInstallService installService, IXboxAuthService authService, IXboxPackageService packageService, CatalogApiService catalogService, PackageOverrideService overrideService)
+    public BrowseViewModel(PackageInstallService installService, IXboxAuthService authService, IXboxPackageService packageService, CatalogApiService catalogService, PackageOverrideService overrideService, VersionCheckerService versionChecker)
     {
         _catalogService = catalogService;
         _installService = installService;
         _authService = authService;
         _packageService = packageService;
         _overrideService = overrideService;
+        _versionChecker = versionChecker;
         Logger.Debug("BrowseViewModel created");
     }
 
@@ -112,9 +113,6 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     public bool ShowRecheckButton => !IsUpdateMode && CheckComplete;
     public bool IsUpdateComplete => IsUpdateMode && InstallComplete && InstallSuccess;
     public bool ShowUpdateButton => IsUpdateMode && !IsUpdateComplete;
-
-    // tracks just-updated item to suppress outdated flag after refresh
-    private string? _justUpdatedItemName;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Cursor))]
@@ -180,7 +178,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     partial void OnInstallSuccessChanged(bool value)
     {
         if (value && SelectedItem is not null)
-            _justUpdatedItemName = SelectedItem.Name;
+            _versionChecker.MarkJustUpdated(SelectedItem.Name);
         OnPropertyChanged(nameof(IsUpdateComplete));
         OnPropertyChanged(nameof(ShowUpdateButton));
         OnPropertyChanged(nameof(ShowInstallFinishButton));
@@ -281,7 +279,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             var packages = await _packageService.GetInstalledPackagesAsync();
             Logger.Debug($"Got {packages.Count} installed packages from Xbox");
 
-            var match = packages.FirstOrDefault(p => IsPackageMatch(item, p));
+            var match = packages.FirstOrDefault(p => _versionChecker.IsPackageMatch(item, p));
             CheckComplete = true;
 
             if (match is not null)
@@ -358,6 +356,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             Logger.Debug("FetchCatalogAsync start (JSON API primary)");
             _allItems = await _catalogService.FetchCatalogAsync(forceRefresh: false);
             Logger.Info($"Catalog loaded: {_allItems.Count} items total");
+            _versionChecker.SetCatalog(_allItems);
             OnCatalogLoaded?.Invoke();
 
             for (var i = 0; i < _allItems.Count; i++)
@@ -410,6 +409,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             {
                 _allItems = await _catalogService.FetchCatalogAsync(forceRefresh: true);
                 Logger.Info($"Catalog refreshed: {_allItems.Count} items total");
+                _versionChecker.SetCatalog(_allItems);
 
                 for (var i = 0; i < _allItems.Count; i++)
                 {
@@ -554,7 +554,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             Logger.Debug("Calling DownloadAndInstallAsync");
             var result = await _installService.DownloadAndInstallAsync(SelectedItem!, downloadUrl, progress);
 
-            if (result)
+            if (result.Success)
             {
                 InstallStatus = "✓ Complete!";
                 InstallComplete = true;
@@ -567,11 +567,11 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
                 InstallStatus = "✗ Install failed";
                 InstallComplete = true;
                 InstallSuccess = false;
-                InstallResultMessage = "Install failed";
-                Logger.Error($"Install failed: {itemName}");
+                InstallResultMessage = result.Message ?? "Install failed";
+                Logger.Error($"Install failed: {itemName} (stage={result.Stage})");
             }
 
-            InstallProgress = result ? 1.0 : 0;
+            InstallProgress = result.Success ? 1.0 : 0;
         }
         catch (Exception ex)
         {
@@ -719,7 +719,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
 
     public async Task<Bitmap?> FindThumbnailByPackageAsync(InstalledPackage pkg)
     {
-        var match = _allItems.FirstOrDefault(i => IsPackageMatch(i, pkg));
+        var match = _versionChecker.FindCatalogMatch(pkg).match;
         if (match?.Thumbnail is not null)
             return match.Thumbnail;
 
@@ -730,36 +730,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     }
 
     public (CatalogItem? match, bool isOutdated) FindCatalogMatch(InstalledPackage pkg)
-    {
-        var match = _allItems.FirstOrDefault(i => IsPackageMatch(i, pkg));
-        if (match is null)
-            return (null, false);
-
-        var installedVer = pkg.Version ?? string.Empty;
-        var catalogVer = match.Version ?? string.Empty;
-
-        // suppress outdated for package just updated — persist to cache
-        if (_justUpdatedItemName is not null &&
-            match.Name.Equals(_justUpdatedItemName, StringComparison.OrdinalIgnoreCase))
-        {
-            _justUpdatedItemName = null;
-            _updateCache.RecordUpdate(match.Name, catalogVer, installedVer);
-            return (match, false);
-        }
-
-        // persistent cache: same pair of versions = already synced
-        if (_updateCache.TryGetSuppressed(match.Name, catalogVer, installedVer))
-            return (match, false);
-
-        var isOutdated = false;
-        if (Version.TryParse(installedVer, out var installedV) &&
-            Version.TryParse(catalogVer, out var catalogV))
-        {
-            isOutdated = catalogV > installedV;
-        }
-
-        return (match, isOutdated);
-    }
+        => _versionChecker.FindCatalogMatch(pkg);
 
     private static async Task<Bitmap?> FetchImageAsync(string url)
     {
@@ -777,7 +748,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
 
     private string? GetOverrideImageUrl(InstalledPackage pkg)
     {
-        var pfn = !string.IsNullOrEmpty(pkg.PackageFamilyName) ? StripPackageFamilyName(pkg.PackageFamilyName) : null;
+        var pfn = !string.IsNullOrEmpty(pkg.PackageFamilyName) ? VersionCheckerService.StripPackageFamilyName(pkg.PackageFamilyName) : null;
         if (pfn is not null && _overrideService.TryGetImageUrl(pfn, out var url))
             return url;
         if (_overrideService.TryGetImageUrlByName(pkg.Name, out var url2))
@@ -785,118 +756,6 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         if (!string.IsNullOrEmpty(pkg.DisplayName) && _overrideService.TryGetImageUrlByName(pkg.DisplayName, out var url3))
             return url3;
         return null;
-    }
-
-    private bool IsPackageMatch(CatalogItem catalog, InstalledPackage pkg)
-    {
-        // E0: Exact matches (highest confidence)
-        if (catalog.Name.Equals(pkg.Name, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        if (!string.IsNullOrEmpty(pkg.DisplayName) && catalog.Name.Equals(pkg.DisplayName, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        var pfn = !string.IsNullOrEmpty(pkg.PackageFamilyName) ? StripPackageFamilyName(pkg.PackageFamilyName) : null;
-
-        if (pfn is not null && catalog.Name.Equals(pfn, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        if (!string.IsNullOrEmpty(catalog.AppId) && pkg.Name.Contains(catalog.AppId, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        if (!string.IsNullOrEmpty(catalog.Id) && pkg.Name.Contains(catalog.Id, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        // E1: Alphanumeric normalization — strip non-alnum, lowercase
-        // Handles "Super Mario Bros Remastered" vs "SuperMarioBrosRemastered" (spaces)
-        var catNorm = NormalizeAlnum(catalog.Name);
-        if (pfn is not null && catNorm.Equals(NormalizeAlnum(pfn), StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        // E2: Download URL filename contains package Name or DisplayName
-        // Handles SMBR: downloadUrl "SMBR_1.2.zip" contains Name "SMBR"
-        if (DownloadUrlContains(pkg.Name, catalog) ||
-            (!string.IsNullOrEmpty(pkg.DisplayName) && DownloadUrlContains(pkg.DisplayName, catalog)))
-            return true;
-
-        // E3: Reverse — catalog.AppId contains normalized PFN
-        // Handles cases where PFN is abbreviation embedded in appId
-        if (!string.IsNullOrEmpty(catalog.AppId) && pfn is not null &&
-            catalog.AppId.Contains(pfn, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        // E4: Download URL filename first-token prefix of PFN (or vice versa), minimum 4 chars
-        // Handles SMWRP: url firstToken "SMWR" is prefix of PFN "SMWRP"
-        if (pfn is not null && DownloadTokenPrefixMatch(pfn, catalog))
-            return true;
-
-        // E5: Manual override table (final fallback — zero false positives)
-        if (!string.IsNullOrEmpty(pfn) && _overrideService.TryGetCatalogId(pfn, out var overrideId))
-        {
-            if (catalog.Id.Equals(overrideId, StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
-
-        if (_overrideService.TryGetCatalogIdByName(pkg.Name, out var overrideIdByName))
-        {
-            if (catalog.Id.Equals(overrideIdByName, StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
-
-        return false;
-    }
-
-    private static string StripPackageFamilyName(string familyName)
-    {
-        var idx = familyName.LastIndexOf('_');
-        return idx > 0 ? familyName[..idx] : familyName;
-    }
-
-    private static string NormalizeAlnum(string value)
-    {
-        return System.Text.RegularExpressions.Regex.Replace(value, "[^a-zA-Z0-9]", "");
-    }
-
-    private static bool DownloadUrlContains(string value, CatalogItem catalog)
-    {
-        if (string.IsNullOrEmpty(value) || value.Length < 3) return false;
-
-        var urls = new[] { catalog.DownloadUrl }
-            .Concat(catalog.Downloads.Select(d => d.Url))
-            .Where(u => !string.IsNullOrEmpty(u))
-            .Distinct();
-
-        foreach (var url in urls)
-        {
-            var filename = Path.GetFileNameWithoutExtension(url);
-            if (filename is not null && filename.Contains(value, StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
-
-        return false;
-    }
-
-    private static bool DownloadTokenPrefixMatch(string pfn, CatalogItem catalog)
-    {
-        var urls = new[] { catalog.DownloadUrl }
-            .Concat(catalog.Downloads.Select(d => d.Url))
-            .Where(u => !string.IsNullOrEmpty(u))
-            .Distinct();
-
-        foreach (var url in urls)
-        {
-            var filename = Path.GetFileNameWithoutExtension(url);
-            if (string.IsNullOrEmpty(filename)) continue;
-
-            var token = filename.Split('_')[0];
-            if (token.Length < 4 && pfn.Length < 4) continue;
-
-            if (pfn.StartsWith(token, StringComparison.OrdinalIgnoreCase) ||
-                token.StartsWith(pfn, StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
-
-        return false;
     }
 
     public void Dispose()

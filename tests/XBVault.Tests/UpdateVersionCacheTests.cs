@@ -46,6 +46,26 @@ public class UpdateVersionCacheTests : IDisposable
     }
 
     [Fact]
+    public void RecordUpdate_OutdatedPair_NotSuppressed()
+    {
+        var cache = new UpdateVersionCache(_filePath);
+
+        // stale entry from an old scan: catalog ahead of installed
+        cache.RecordUpdate("game", "1.2.0", "1.0.0");
+
+        Assert.False(cache.TryGetSuppressed("game", "1.2.0", "1.0.0"));
+    }
+
+    [Fact]
+    public void RecordUpdate_UnparseableVersions_NotSuppressed()
+    {
+        var cache = new UpdateVersionCache(_filePath);
+        cache.RecordUpdate("game", "abc", "xyz");
+
+        Assert.False(cache.TryGetSuppressed("game", "abc", "xyz"));
+    }
+
+    [Fact]
     public void RecordUpdate_FileCreated()
     {
         var cache = new UpdateVersionCache(_filePath);

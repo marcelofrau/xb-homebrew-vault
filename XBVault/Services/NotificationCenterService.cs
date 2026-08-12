@@ -38,11 +38,12 @@ public class NotificationCenterService
             IconUri = iconUri ?? DefaultIconUri,
             ClickAction = clickAction
         };
+        Logger.Trace($"NotificationCenter: Notify '{title}' — {message}");
         AddActive(item);
         return item;
     }
 
-    public NotificationItem NotifyGrouped(string title, IReadOnlyList<NotificationAction> items)
+    public NotificationItem NotifyGrouped(string title, IReadOnlyList<NotificationAction> items, bool autoDismiss = true)
     {
         var item = new NotificationItem
         {
@@ -52,11 +53,48 @@ public class NotificationCenterService
             ClickAction = null,
             Actions = items
         };
-        AddActive(item);
+        Logger.Trace($"NotificationCenter: NotifyGrouped '{title}' ({items.Count} actions):");
+        foreach (var a in items)
+            Logger.Trace($"  → {a.Label}");
+        AddActive(item, autoDismiss);
         return item;
     }
 
-    private void AddActive(NotificationItem item)
+    public NotificationItem NotifyGroupedReplacing(string tag, string title, IReadOnlyList<NotificationAction> items, bool autoDismiss = true)
+    {
+        var item = new NotificationItem
+        {
+            Tag = tag,
+            Title = title,
+            Message = $"{items.Count} notification{(items.Count == 1 ? string.Empty : "s")}",
+            IconUri = DefaultIconUri,
+            ClickAction = null,
+            Actions = items
+        };
+        Logger.Trace($"NotificationCenter: NotifyGroupedReplacing '{title}' (tag '{tag}', {items.Count} actions):");
+        foreach (var a in items)
+            Logger.Trace($"  → {a.Label}");
+        ReplaceActive(item, autoDismiss);
+        return item;
+    }
+
+    private void ReplaceActive(NotificationItem item, bool autoDismiss = true)
+    {
+        PostToUi(() =>
+        {
+            var existing = Active.FirstOrDefault(n => !string.IsNullOrEmpty(n.Tag) && n.Tag == item.Tag);
+            if (existing is not null)
+            {
+                StopDismissTimer(existing.Id);
+                Active.Remove(existing);
+                AdjustUnacknowledged(-1);
+                Logger.Trace($"NotificationCenter: replaced active '{existing.Title}' with '{item.Title}' (tag '{item.Tag}')");
+            }
+        });
+        AddActive(item, autoDismiss);
+    }
+
+    private void AddActive(NotificationItem item, bool autoDismiss = true)
     {
         AdjustUnacknowledged(1);
         PostToUi(() =>
@@ -66,7 +104,8 @@ public class NotificationCenterService
                 Complete(Active[0]);
             NotificationAdded?.Invoke(this, item);
         });
-        StartAutoDismiss(item);
+        if (autoDismiss)
+            StartAutoDismiss(item);
     }
 
     public void Dismiss(Guid id)

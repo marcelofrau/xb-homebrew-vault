@@ -76,17 +76,20 @@ public partial class App : Application
             var catalogService = new CatalogApiService();
             var overrideService = new PackageOverrideService();
             overrideService.Initialize();
+            var versionChecker = new VersionCheckerService(overrideService);
             var backgroundTaskService = new BackgroundTaskService();
             backgroundTaskService.Start();
             var notificationCenter = new NotificationCenterService();
             var taskCenterViewModel = new TaskCenterViewModel(backgroundTaskService);
 
             var mainViewModel = new MainViewModel(authService);
-            var browseViewModel = new BrowseViewModel(installService, authService, packageService, catalogService, overrideService);
+            var browseViewModel = new BrowseViewModel(installService, authService, packageService, catalogService, overrideService, versionChecker);
             var installedViewModel = new InstalledViewModel(authService, packageService);
             var fileExplorerViewModel = new FileExplorerViewModel(authService, sftpService, sftpTransferService, portalService);
             var toolsViewModel = new ToolsViewModel(authService, systemService);
             var settingsViewModel = new SettingsViewModel(authService, cacheService);
+
+            var updateService = new InstalledAppUpdateService(authService, packageService, versionChecker, notificationCenter, backgroundTaskService);
 
             // splash first, main after delay
             var splash = new SplashWindow();
@@ -96,7 +99,7 @@ public partial class App : Application
                 installedViewModel, fileExplorerViewModel, toolsViewModel,
                 settingsViewModel, authService, packageService, systemService,
                 networkService, processService, performanceService, installService, sftpService, portalService,
-                backgroundTaskService, notificationCenter, taskCenterViewModel);
+                backgroundTaskService, notificationCenter, taskCenterViewModel, updateService);
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -195,7 +198,8 @@ public partial class App : Application
         PortalAppFilesService portalService,
         BackgroundTaskService backgroundTaskService,
         NotificationCenterService notificationCenter,
-        TaskCenterViewModel taskCenterViewModel)
+        TaskCenterViewModel taskCenterViewModel,
+        InstalledAppUpdateService updateService)
     {
         Logger.Debug("Splash delay starting (2s)");
         await Task.Delay(SplashMinDelayMs);
@@ -217,6 +221,7 @@ public partial class App : Application
             main.Closed += (_, _) =>
             {
                 main.UnbindNotifications();
+                updateService.Stop();
                 backgroundTaskService.Stop();
             };
 
@@ -384,6 +389,13 @@ public partial class App : Application
                 browseViewModel.IsUpdateMode = true;
                 browseViewModel.SelectedItem = catalogItem;
             };
+            updateService.OpenUpdateDialogAsync = catalogItem =>
+            {
+                browseViewModel.IsUpdateMode = true;
+                browseViewModel.SelectedItem = catalogItem;
+                return Task.CompletedTask;
+            };
+            updateService.Start();
             browseViewModel.OnCatalogLoaded = () =>
             {
                 if (installedViewModel is not null)

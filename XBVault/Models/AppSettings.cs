@@ -13,6 +13,7 @@ public class AppSettings
     public double ConsoleFontSize { get; set; } = 13;
     public double UiScale { get; set; } = 1.0;
     public bool AutoConnect { get; set; }
+    public int UpdateCheckIntervalMinutes { get; set; } = 30;
     public double MainWindowWidth { get; set; }
     public double MainWindowHeight { get; set; }
 }

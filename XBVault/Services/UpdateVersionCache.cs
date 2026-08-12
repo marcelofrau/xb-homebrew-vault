@@ -76,7 +76,14 @@ public class UpdateVersionCache
     {
         if (_cache.TryGetValue(itemName, out var entry))
         {
-            return entry.CatalogVersion == catalogVersion && entry.InstalledVersion == installedVersion;
+            if (entry.CatalogVersion != catalogVersion || entry.InstalledVersion != installedVersion)
+                return false;
+
+            // Only suppress when the installed version is up-to-date (or ahead).
+            // An outdated pair (installed < catalog) must always surface the badge,
+            // even if it was recorded by an earlier scan or stale cache file.
+            if (Version.TryParse(installedVersion, out var iv) && Version.TryParse(catalogVersion, out var cv))
+                return iv >= cv;
         }
         return false;
     }

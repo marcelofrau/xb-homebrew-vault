@@ -21,6 +21,7 @@
     <Color x:Key="BladesWarning">#F39C12</Color>
     <Color x:Key="BladesYellow">#FFD700</Color>
     <Color x:Key="BladesBorder">#2A2D33</Color>
+    <Color x:Key="BladesCardBorder">#3A3F47</Color>
     <Color x:Key="BladesCardBg">#1E2128</Color>
     <Color x:Key="BladesSidebarBg">#0F1F10</Color>
     <Color x:Key="BladesInputBg">#0F1F0F</Color>
@@ -44,6 +45,7 @@
     <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource BladesWarning}"/>
     <SolidColorBrush x:Key="YellowBrush" Color="{StaticResource BladesYellow}"/>
     <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BladesBorder}"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="{StaticResource BladesCardBorder}"/>
     <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource BladesCardBg}"/>
     <SolidColorBrush x:Key="SidebarBgBrush" Color="{StaticResource BladesSidebarBg}"/>
     <SolidColorBrush x:Key="SurfaceHoverBrush" Color="{StaticResource BladesSurfaceHover}"/>

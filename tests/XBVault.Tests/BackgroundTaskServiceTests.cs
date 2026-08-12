@@ -231,6 +231,88 @@ public class BackgroundTaskServiceTests
         Assert.Empty(service.ActiveTasks);
     }
 
+    [Fact]
+    public void RunJobNow_ThrowsWhenNotStarted()
+    {
+        var service = new InlineDispatcherTaskService();
+
+        Assert.Throws<InvalidOperationException>(() => service.RunJobNow("conn-monitor"));
+    }
+
+    [Fact]
+    public async Task RunJobNow_UnknownJob_ReturnsFalse()
+    {
+        var service = new InlineDispatcherTaskService();
+        service.Start();
+
+        Assert.False(service.RunJobNow("does-not-exist"));
+        service.Stop();
+    }
+
+    [Fact]
+    public async Task RunJobNow_ExecutesWorkImmediately()
+    {
+        var service = new InlineDispatcherTaskService();
+        service.Start();
+        var runs = 0;
+        service.RegisterJob("conn-monitor", () => TimeSpan.FromMinutes(30), (t, ct) =>
+        {
+            Interlocked.Increment(ref runs);
+            return Task.CompletedTask;
+        });
+
+        await WaitUntil(() => service.ScheduledJobs.Count == 1);
+        Assert.True(service.RunJobNow("conn-monitor"));
+
+        await WaitUntil(() => runs == 1);
+        service.Stop();
+    }
+
+    [Fact]
+    public async Task RunJobNow_AppearsInActiveTasks_ThenMovesToRecent()
+    {
+        var service = new InlineDispatcherTaskService();
+        service.Start();
+        var started = new TaskCompletionSource();
+        service.RegisterJob("job", () => TimeSpan.FromMinutes(30), async (t, ct) =>
+        {
+            started.TrySetResult();
+            await Task.Delay(20);
+        });
+
+        await WaitUntil(() => service.ScheduledJobs.Count == 1);
+        Assert.True(service.RunJobNow("job"));
+
+        await started.Task;
+        Assert.Equal(BackgroundTaskStatus.Running, service.ActiveTasks.Single(t => t.JobKey == "job").Status);
+
+        await WaitUntil(() => service.ActiveCount == 0);
+        Assert.Single(service.RecentTasks);
+        service.Stop();
+    }
+
+    [Fact]
+    public async Task RunJobNow_DoesNotDisturbScheduledNextRun()
+    {
+        var service = new InlineDispatcherTaskService();
+        service.Start();
+        var runs = 0;
+        service.RegisterJob("job", () => TimeSpan.FromMinutes(30), (t, ct) =>
+        {
+            Interlocked.Increment(ref runs);
+            return Task.CompletedTask;
+        });
+
+        await WaitUntil(() => service.ScheduledJobs.Count == 1);
+        var scheduledBefore = service.ScheduledJobs.Single().NextRunAt;
+
+        Assert.True(service.RunJobNow("job"));
+        await WaitUntil(() => runs == 1);
+
+        Assert.Equal(scheduledBefore, service.ScheduledJobs.Single().NextRunAt);
+        service.Stop();
+    }
+
     private static async Task WaitUntil(Func<bool> condition, int timeoutMs = 5000)
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);

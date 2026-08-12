@@ -427,6 +427,23 @@
                         IsChecked="{Binding AutoConnect}"
                         VerticalAlignment="Center"/>
             </Grid>
+
+            <!-- Update check interval -->
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Update check interval"
+                           FontSize="13"/>
+                <TextBlock Text="How often the app checks installed packages for newer versions"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           TextWrapping="Wrap"/>
+              </StackPanel>
+              <ComboBox Grid.Column="1"
+                        ItemsSource="{Binding UpdateCheckIntervals}"
+                        SelectedValue="{Binding UpdateCheckIntervalMinutes}"
+                        MinWidth="72"
+                        VerticalAlignment="Center"/>
+            </Grid>
           </StackPanel>
         </Border>
 

@@ -333,6 +333,14 @@ public partial class MainWindow : Window
             _notificationCenter.Dismiss(host.Item.Id);
     }
 
+    private void OnToastMoreClick(object? sender, RoutedEventArgs e)
+    {
+        if (_notificationCenter is null) return;
+        if (_taskCenter is { IsOpen: true })
+            _taskCenter.IsOpen = false;
+        NotificationsPopup.IsOpen = true;
+    }
+
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         if (WindowState == WindowState.Normal)

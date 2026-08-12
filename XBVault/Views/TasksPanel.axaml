@@ -18,17 +18,17 @@
       <Grid ColumnDefinitions="*,Auto" Margin="4,4,4,6">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <TextBlock Text="Tasks"
-                     FontSize="13"
+                     FontSize="15"
                      FontWeight="Bold"
                      Foreground="{StaticResource TextBrush}"/>
           <Border Background="{StaticResource SuccessBrush}"
                   CornerRadius="8"
-                  MinWidth="18"
-                  Height="14"
+                  MinWidth="22"
+                  Height="18"
                   Padding="4,0"
                   IsVisible="{Binding ActiveCount, Converter={StaticResource IntToBool}}">
             <TextBlock Text="{Binding ActiveCount}"
-                       FontSize="9"
+                       FontSize="11"
                        FontWeight="Bold"
                        Foreground="#1A1A1A"
                        TextAlignment="Center"
@@ -37,7 +37,7 @@
         </StackPanel>
         <Button Grid.Column="1"
                 Content="✕"
-                FontSize="11"
+                FontSize="13"
                 Padding="6,1"
                 Background="Transparent"
                 Foreground="{StaticResource TextMutedBrush}"
@@ -59,7 +59,7 @@
                     CornerRadius="4"
                     Padding="10,8">
               <TextBlock Text="No jobs running right now."
-                         FontSize="11"
+                         FontSize="13"
                          Foreground="{StaticResource TextMutedBrush}"
                          TextAlignment="Center"/>
             </Border>
@@ -68,7 +68,7 @@
           <!-- Running -->
           <StackPanel Spacing="2" IsVisible="{Binding Running.Count, Converter={StaticResource IntToBool}}">
             <TextBlock Text="RUNNING"
-                       FontSize="9"
+                       FontSize="11"
                        FontWeight="Bold"
                        Foreground="{StaticResource AccentBrush}"
                        LetterSpacing="1"
@@ -89,14 +89,14 @@
                     <StackPanel Spacing="3">
                       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBlock Text="{Binding Name}"
-                                   FontSize="11"
+                                   FontSize="13"
                                    FontWeight="SemiBold"
                                    Foreground="{StaticResource TextBrush}"
                                    TextTrimming="CharacterEllipsis"
                                    VerticalAlignment="Center"/>
                         <Button Grid.Column="1"
                                 Content="Cancel"
-                                FontSize="9"
+                                FontSize="11"
                                 Padding="6,1"
                                 Background="{StaticResource DangerBrush}"
                                 Foreground="White"
@@ -113,17 +113,17 @@
                                    Height="3"/>
                       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBlock Text="{Binding StatusMessage}"
-                                   FontSize="9"
+                                   FontSize="11"
                                    Foreground="{StaticResource TextMutedBrush}"
                                    TextTrimming="CharacterEllipsis"/>
                         <TextBlock Grid.Column="1"
                                    Text="{Binding Elapsed}"
-                                   FontSize="9"
+                                   FontSize="11"
                                    Foreground="{StaticResource TextDimBrush}"/>
                       </Grid>
                       <ToggleButton x:Name="DetailToggle"
                                     Content="Details"
-                                    FontSize="9"
+                                    FontSize="11"
                                     Padding="6,1"
                                     HorizontalAlignment="Left"
                                     Background="{StaticResource SurfaceHoverBrush}"
@@ -135,7 +135,7 @@
                         <ItemsControl.ItemTemplate>
                           <DataTemplate>
                             <TextBlock Text="{Binding}"
-                                       FontSize="9"
+                                       FontSize="11"
                                        FontFamily="{StaticResource MonoFont}"
                                        Foreground="{StaticResource TextMutedBrush}"
                                        TextWrapping="Wrap"
@@ -153,7 +153,7 @@
           <!-- Scheduled -->
           <StackPanel Spacing="2" IsVisible="{Binding Scheduled.Count, Converter={StaticResource IntToBool}}">
             <TextBlock Text="SCHEDULED"
-                       FontSize="9"
+                       FontSize="11"
                        FontWeight="Bold"
                        Foreground="{StaticResource AccentBrush}"
                        LetterSpacing="1"
@@ -166,18 +166,29 @@
                           Background="Transparent"
                           BorderBrush="{StaticResource BorderBrush}"
                           BorderThickness="0,0,0,1">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                       <TextBlock Text="{Binding Name}"
-                                 FontSize="11"
+                                 FontSize="13"
                                  FontWeight="SemiBold"
                                  Foreground="{StaticResource TextBrush}"
                                  TextTrimming="CharacterEllipsis"
                                  VerticalAlignment="Center"/>
                       <TextBlock Grid.Column="1"
                                  Text="{Binding NextRunAtLocal, StringFormat=next {0:HH:mm:ss}}"
-                                 FontSize="9"
+                                 FontSize="11"
                                  Foreground="{StaticResource TextDimBrush}"
                                  VerticalAlignment="Center"/>
+                      <Button Grid.Column="2"
+                              Content="Run now"
+                              FontSize="11"
+                              Padding="6,1"
+                              Background="{StaticResource AccentHoverDarkBrush}"
+                              Foreground="White"
+                              BorderThickness="0"
+                              CornerRadius="3"
+                              Cursor="Hand"
+                              VerticalAlignment="Center"
+                              Click="OnRunNowClick"/>
                     </Grid>
                   </Border>
                 </DataTemplate>
@@ -188,7 +199,7 @@
           <!-- Recent -->
           <StackPanel Spacing="2" IsVisible="{Binding Recent.Count, Converter={StaticResource IntToBool}}">
             <TextBlock Text="RECENT"
-                       FontSize="9"
+                       FontSize="11"
                        FontWeight="Bold"
                        Foreground="{StaticResource AccentBrush}"
                        LetterSpacing="1"
@@ -209,17 +220,17 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                       <StackPanel Spacing="1">
                         <TextBlock Text="{Binding Name}"
-                                   FontSize="10"
+                                   FontSize="12"
                                    FontWeight="SemiBold"
                                    Foreground="{StaticResource TextBrush}"
                                    TextTrimming="CharacterEllipsis"/>
                         <TextBlock Text="{Binding StatusMessage}"
-                                   FontSize="9"
+                                   FontSize="11"
                                    Foreground="{StaticResource TextMutedBrush}"/>
                       </StackPanel>
                       <TextBlock Grid.Column="1"
                                  Text="{Binding Elapsed}"
-                                 FontSize="9"
+                                 FontSize="11"
                                  Foreground="{StaticResource TextDimBrush}"
                                  VerticalAlignment="Center"/>
                     </Grid>

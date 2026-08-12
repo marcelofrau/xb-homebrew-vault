@@ -97,6 +97,28 @@ public class BackgroundTaskService
         }
     }
 
+    public bool RunJobNow(string jobName)
+    {
+        EnsureStarted();
+        JobEntry entry;
+        lock (_gate)
+        {
+            if (!_jobs.TryGetValue(jobName, out var found))
+                return false;
+            entry = found;
+        }
+
+        Logger.Info($"BackgroundTaskService: running job '{jobName}' now (manual trigger)");
+        var task = CreateTask(entry.Key, BackgroundTaskKind.Job, entry.CanCancel, entry.Key);
+        PostToUi(() =>
+        {
+            ActiveTasks.Add(task);
+            TaskAdded?.Invoke(this, task);
+        });
+        _ = RunCoreAsync(task, entry.Work);
+        return true;
+    }
+
     public void Stop()
     {
         if (!_started) return;
