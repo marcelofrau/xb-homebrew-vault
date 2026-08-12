@@ -26,7 +26,7 @@ Zero tests in the project. All 110+ code files ship without automated coverage. 
 
 ### 1. Test project setup
 - New xUnit project: `tests/XBVault.Tests/XBVault.Tests.csproj`
-- Target `net8.0`, references `XBVault.csproj`
+- Target `net10.0`, references `XBVault.csproj`
 - Packages (shipped):
   - `xunit` (`2.9.2`), `xunit.runner.visualstudio` (`2.8.2`), `Microsoft.NET.Test.Sdk` (`17.11.1`)
   - No mock library needed so far — HTTP stubbed via custom `StubHttpMessageHandler`. Add `NSubstitute` if ViewModel tests demand it.

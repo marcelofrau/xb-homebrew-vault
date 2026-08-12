@@ -1,7 +1,7 @@
 High-signal notes for automated agents working on this repo.
 
 Build env
-- SDK installed via scoop at `C:\Program Files\dotnet\dotnet.exe` (v10.0, builds net8.0 targets fine).
+- SDK installed via scoop at `C:\Program Files\dotnet\dotnet.exe` (v10.0, builds net10.0 targets fine).
 - `rtk` wrapper breaks `dotnet` resolution. Run `dotnet` directly — do NOT prefix with `rtk`.
 - If `dotnet` fails via PATH, use full path: `& "C:\Program Files\dotnet\dotnet.exe" build ...`
 
@@ -22,7 +22,7 @@ CI (`.github/workflows/build.yml`)
 - `publish` job: creates GitHub release from tag with all ZIPs.
 
 Environment
-- Requires .NET 8 SDK. CI uses `dotnet-version: 8.0.x`.
+- Requires .NET 10 SDK. CI uses `dotnet-version: 10.0.x`.
 - Windows scripts default to `"C:\Program Files\dotnet\dotnet.exe"`. Fallback: `dotnet` on PATH (build-release.ps1 checks both).
 - `OutputType` is `WinExe` on Windows, `Exe` on other platforms (csproj lines 3-4).
 - `PublishReadyToRun` enabled on Windows, disabled for arm64 cross-compile.
@@ -33,8 +33,8 @@ Project / conventions
 - Project folder name must remain `XBVault` (build scripts expect it). Do not rename.
 - Settings stored at `%APPDATA%/XBVault/settings.json`. Credentials obfuscated via `CryptoService` (XOR + salt). Do not commit this file.
 - `Assets/**` embedded as AvaloniaResource — referenced in AXAML via `avares://XBVault/...`.
-- No test project exists. No test framework. Do not invent test runs.
-- Tech stack: .NET 8, Avalonia 12, CommunityToolkit.Mvvm 8.4 (source generators), SSH.NET 2024.2.
+- Test project lives in `tests/XBVault.Tests` (xUnit). Run `dotnet test tests/XBVault.Tests/XBVault.Tests.csproj -c Release`.
+- Tech stack: .NET 10, Avalonia 12, CommunityToolkit.Mvvm 8.4 (source generators), SSH.NET 2025.1.
 
 OpenSpec workflow
 - `openspec/` directory tracks spec-driven changes. Check `openspec/changes/` for active work.
@@ -58,7 +58,7 @@ Docs
 
 When unsure
 - Prefer executable sources (build scripts, csproj) over prose docs.
-- If change touches build scripts, verify on Windows with PowerShell 7+ and .NET 8.
+- If change touches build scripts, verify on Windows with PowerShell 7+ and .NET 10.
 
 ## graphify
 
