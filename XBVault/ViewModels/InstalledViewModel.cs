@@ -85,6 +85,7 @@ public partial class InstalledViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsPackageRunning))]
     [NotifyPropertyChangedFor(nameof(IsPackageNotRunning))]
     [NotifyPropertyChangedFor(nameof(IsPackageSelectedNotRunning))]
+    [NotifyPropertyChangedFor(nameof(CanToggleAutostart))]
     [NotifyPropertyChangedFor(nameof(CanUpdateSelected))]
     [NotifyPropertyChangedFor(nameof(UpdateTooltipMessage))]
     private bool _isLoading;
@@ -99,6 +100,7 @@ public partial class InstalledViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsPackageRunning))]
     [NotifyPropertyChangedFor(nameof(IsPackageNotRunning))]
     [NotifyPropertyChangedFor(nameof(IsPackageSelectedNotRunning))]
+    [NotifyPropertyChangedFor(nameof(CanToggleAutostart))]
     [NotifyPropertyChangedFor(nameof(CanRefresh))]
     [NotifyPropertyChangedFor(nameof(CanUpdateSelected))]
     [NotifyPropertyChangedFor(nameof(UpdateTooltipMessage))]
@@ -168,7 +170,8 @@ public partial class InstalledViewModel : ObservableObject
         OnPropertyChanged(nameof(IsPackageRunning));
         OnPropertyChanged(nameof(IsPackageNotRunning));
         OnPropertyChanged(nameof(IsPackageSelectedNotRunning));
-        NotifyUpdateState();
+        OnPropertyChanged(nameof(IsSelectedPackageAutostart));
+        OnPropertyChanged(nameof(CanToggleAutostart));
     }
 
     partial void OnIsLoadingChanged(bool value)
@@ -195,6 +198,8 @@ public partial class InstalledViewModel : ObservableObject
     public bool IsPackageRunning => !IsLoading && !IsUninstalling && (SelectedPackage?.IsRunning ?? false) && IsConnected;
     public bool IsPackageNotRunning => !IsLoading && !IsUninstalling && (SelectedPackage is null || !SelectedPackage.IsRunning);
     public bool IsPackageSelectedNotRunning => !IsLoading && !IsUninstalling && SelectedPackage is not null && !SelectedPackage.IsRunning && IsConnected;
+    public bool IsSelectedPackageAutostart => SelectedPackage?.IsAutostart ?? false;
+    public bool CanToggleAutostart => IsPackageSelected && !IsSelectedPackageAutostart;
     public bool CanRefresh => !IsUninstalling && IsConnected;
     public bool CanUpdateSelected => IsPackageSelected && (SelectedPackage?.IsOutdated ?? false);
     public string UpdateTooltipMessage => SelectedPackage is null ? "Select a package" : SelectedPackage.IsOutdated ? "Update available" : "No update available";
@@ -220,6 +225,8 @@ public partial class InstalledViewModel : ObservableObject
         OnPropertyChanged(nameof(IsPackageRunning));
         OnPropertyChanged(nameof(IsPackageNotRunning));
         OnPropertyChanged(nameof(IsPackageSelectedNotRunning));
+        OnPropertyChanged(nameof(IsSelectedPackageAutostart));
+        OnPropertyChanged(nameof(CanToggleAutostart));
         NotifyUpdateState();
         if (value is not null)
         {
@@ -231,6 +238,11 @@ public partial class InstalledViewModel : ObservableObject
     {
         if (e.PropertyName == nameof(InstalledPackage.IsOutdated))
             NotifyUpdateState();
+        if (e.PropertyName == nameof(InstalledPackage.IsAutostart))
+        {
+            OnPropertyChanged(nameof(IsSelectedPackageAutostart));
+            OnPropertyChanged(nameof(CanToggleAutostart));
+        }
     }
 
     private void NotifyUpdateState()

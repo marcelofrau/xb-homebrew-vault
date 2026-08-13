@@ -551,6 +551,13 @@
     <Setter Property="Foreground" Value="{StaticResource TextDimBrush}"/>
   </Style>
 
+  <Style Selector="MenuFlyoutPresenter MenuItem /template/ ContentPresenter#PART_Header">
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+  </Style>
+  <Style Selector="MenuFlyoutPresenter MenuItem:disabled /template/ ContentPresenter#PART_Header">
+    <Setter Property="Foreground" Value="{StaticResource TextDimBrush}"/>
+  </Style>
+
   <!-- TextBox -->
   <Style Selector="TextBox">
 

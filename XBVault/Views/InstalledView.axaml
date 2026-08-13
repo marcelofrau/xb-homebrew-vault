@@ -53,29 +53,24 @@
 
     <!-- Toolbar -->
     <Grid Grid.Row="1"
-          ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto"
+          ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto"
           Margin="0,0,0,16">
 
       <Button x:Name="RefreshBtn"
               Grid.Column="0"
               Command="{Binding RefreshPackagesCommand}"
               IsEnabled="{Binding CanRefresh}"
-              Padding="12,8">
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-          <Grid>
-            <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-refresh-20.png"
-                   IsVisible="{Binding #RefreshBtn.IsEnabled}"
-                   Width="20" Height="20"
-                   Stretch="Uniform"/>
-            <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-refresh-20-disabled.png"
-                   IsVisible="{Binding #RefreshBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
-                   Width="20" Height="20"
-                   Stretch="Uniform"/>
-          </Grid>
-          <TextBlock Grid.Column="1"
-                     Text="Refresh"
-                     FontSize="13"
-                     VerticalAlignment="Center"/>
+              Padding="10,6"
+              ToolTip.Tip="Refresh">
+        <Grid>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-refresh-20.png"
+                 IsVisible="{Binding #RefreshBtn.IsEnabled}"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-refresh-20-disabled.png"
+                 IsVisible="{Binding #RefreshBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
         </Grid>
       </Button>
 
@@ -83,24 +78,19 @@
               Grid.Column="1"
               Command="{Binding UninstallSelectedCommand}"
               Classes="Danger"
-              Padding="12,8"
+              Padding="10,6"
               IsEnabled="{Binding IsPackageSelected}"
-              Margin="8,0,0,0">
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-          <Grid>
-            <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
-                   IsVisible="{Binding #UninstallBtn.IsEnabled}"
-                   Width="20" Height="20"
-                   Stretch="Uniform"/>
-            <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20-disabled.png"
-                   IsVisible="{Binding #UninstallBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
-                   Width="20" Height="20"
-                   Stretch="Uniform"/>
-          </Grid>
-          <TextBlock Grid.Column="1"
-                     Text="Uninstall"
-                     FontSize="13"
-                     VerticalAlignment="Center"/>
+              Margin="8,0,0,0"
+              ToolTip.Tip="Uninstall">
+        <Grid>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
+                 IsVisible="{Binding #UninstallBtn.IsEnabled}"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20-disabled.png"
+                 IsVisible="{Binding #UninstallBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
         </Grid>
       </Button>
 
@@ -109,89 +99,104 @@
               Grid.Column="2"
               Classes="Accent"
               Command="{Binding UpdateSelectedCommand}"
-              Padding="12,8"
+              Padding="10,6"
               IsEnabled="{Binding CanUpdateSelected}"
               IsVisible="{Binding IsConnected}"
               ToolTip.Tip="{Binding UpdateTooltipMessage}"
               Margin="8,0,0,0">
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-          <Grid>
-            <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
-                   IsVisible="{Binding #UpdateBtn.IsEnabled}"
-                   Width="20" Height="20"
-                   Stretch="Uniform"/>
-            <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20-disabled.png"
-                   IsVisible="{Binding #UpdateBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
-                   Width="20" Height="20"
-                   Stretch="Uniform"/>
-          </Grid>
-          <TextBlock Grid.Column="1"
-                     Text="Update"
-                     FontSize="13"
-                     VerticalAlignment="Center"/>
+        <Grid>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
+                 IsVisible="{Binding #UpdateBtn.IsEnabled}"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20-disabled.png"
+                 IsVisible="{Binding #UpdateBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                 Width="20" Height="20"
+                 Stretch="Uniform"/>
         </Grid>
       </Button>
 
-      <!-- Launch -->
-      <Button x:Name="LaunchBtn"
+      <!-- Actions hamburger (Launch / Suspend / Terminate / Autostart) -->
+      <Button x:Name="ActionsMenuBtn"
               Grid.Column="3"
-              Command="{Binding LaunchSelectedCommand}"
               Padding="10,6"
-              IsEnabled="{Binding IsPackageSelectedNotRunning}"
               Margin="8,0,0,0"
-              ToolTip.Tip="Launch">
-        <Grid>
-          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-20.png"
-                 IsVisible="{Binding #LaunchBtn.IsEnabled}"
-                 Width="20" Height="20" Stretch="Uniform"/>
-          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-20-disabled.png"
-                 IsVisible="{Binding #LaunchBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
-                 Width="20" Height="20" Stretch="Uniform"/>
-        </Grid>
-      </Button>
-
-      <!-- Suspend -->
-      <Button x:Name="SuspendBtn"
-              Grid.Column="4"
-              Command="{Binding SuspendSelectedCommand}"
-              Padding="10,6"
-              IsEnabled="{Binding IsPackageRunning}"
-              Margin="8,0,0,0"
-              ToolTip.Tip="Suspend">
-        <Grid>
-          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-suspend-20.png"
-                 IsVisible="{Binding #SuspendBtn.IsEnabled}"
-                 Width="20" Height="20" Stretch="Uniform"/>
-          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-suspend-20-disabled.png"
-                 IsVisible="{Binding #SuspendBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
-                 Width="20" Height="20" Stretch="Uniform"/>
-        </Grid>
-      </Button>
-
-      <!-- Terminate -->
-      <Button x:Name="TerminateBtn"
-              Grid.Column="5"
-              Command="{Binding TerminateSelectedCommand}"
-              Padding="10,6"
-              IsEnabled="{Binding IsPackageRunning}"
-              Margin="8,0,0,0"
-              ToolTip.Tip="Terminate">
-        <Grid>
-          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-terminate-20.png"
-                 IsVisible="{Binding #TerminateBtn.IsEnabled}"
-                 Width="20" Height="20" Stretch="Uniform"/>
-          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-terminate-20-disabled.png"
-                 IsVisible="{Binding #TerminateBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
-                 Width="20" Height="20" Stretch="Uniform"/>
-        </Grid>
+              ToolTip.Tip="Actions">
+        <Button.Flyout>
+          <MenuFlyout>
+            <MenuItem Header="Launch"
+                      IsEnabled="{Binding IsPackageSelectedNotRunning}"
+                      Command="{Binding LaunchSelectedCommand}">
+              <MenuItem.Icon>
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-16.png"
+                         Width="16" Height="16" Stretch="Uniform"
+                         IsVisible="{Binding IsEnabled, RelativeSource={RelativeSource AncestorType=MenuItem}}"/>
+                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-16-disabled.png"
+                         Width="16" Height="16" Stretch="Uniform"
+                         IsVisible="{Binding IsEnabled, RelativeSource={RelativeSource AncestorType=MenuItem}, Converter={StaticResource BoolInverse}}"/>
+                </Grid>
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Suspend"
+                      IsEnabled="{Binding IsPackageRunning}"
+                      Command="{Binding SuspendSelectedCommand}">
+              <MenuItem.Icon>
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-suspend-20.png"
+                         Width="16" Height="16" Stretch="Uniform"
+                         IsVisible="{Binding IsEnabled, RelativeSource={RelativeSource AncestorType=MenuItem}}"/>
+                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-suspend-20-disabled.png"
+                         Width="16" Height="16" Stretch="Uniform"
+                         IsVisible="{Binding IsEnabled, RelativeSource={RelativeSource AncestorType=MenuItem}, Converter={StaticResource BoolInverse}}"/>
+                </Grid>
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Terminate"
+                      IsEnabled="{Binding IsPackageRunning}"
+                      Command="{Binding TerminateSelectedCommand}">
+              <MenuItem.Icon>
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-terminate-16.png"
+                         Width="16" Height="16" Stretch="Uniform"
+                         IsVisible="{Binding IsEnabled, RelativeSource={RelativeSource AncestorType=MenuItem}}"/>
+                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-terminate-16-disabled.png"
+                         Width="16" Height="16" Stretch="Uniform"
+                         IsVisible="{Binding IsEnabled, RelativeSource={RelativeSource AncestorType=MenuItem}, Converter={StaticResource BoolInverse}}"/>
+                </Grid>
+              </MenuItem.Icon>
+            </MenuItem>
+            <Separator/>
+            <MenuItem Header="Autostart on connect"
+                      IsVisible="{Binding CanToggleAutostart}"
+                      Command="{Binding ToggleAutostartCommand}"
+                      CommandParameter="{Binding SelectedPackage}">
+              <MenuItem.Icon>
+                <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-autostart-16.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Remove autostart"
+                      IsVisible="{Binding IsSelectedPackageAutostart}"
+                      Command="{Binding ToggleAutostartCommand}"
+                      CommandParameter="{Binding SelectedPackage}">
+              <MenuItem.Icon>
+                <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-autostart-16.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+              </MenuItem.Icon>
+            </MenuItem>
+          </MenuFlyout>
+        </Button.Flyout>
+        <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-menu-16.png"
+               Width="16" Height="16" Stretch="Uniform"/>
       </Button>
 
       <!-- Drop hint -->
-      <StackPanel Grid.Column="6"
+      <StackPanel Grid.Column="4"
                   Orientation="Horizontal"
                   Spacing="6"
                   VerticalAlignment="Center"
-                  Margin="12,0,0,0"
+                  HorizontalAlignment="Center"
                   Opacity="0.45">
         <Image Source="avares://XBVault/Assets/Icons/droppackage-64.png"
                Width="14" Height="14" Stretch="Uniform"/>
@@ -203,7 +208,7 @@
 
       <!-- Custom Install -->
       <Button x:Name="CustomInstallBtn"
-              Grid.Column="7"
+              Grid.Column="5"
               Command="{Binding OpenCustomInstallCommand}"
               IsEnabled="{Binding IsConnected}"
               HorizontalAlignment="Right"
@@ -223,7 +228,7 @@
         </Grid>
       </Button>
 
-      <TextBox Grid.Column="8"
+      <TextBox Grid.Column="6"
                Text="{Binding SearchText}"
                PlaceholderText="Filter packages..."
                FontSize="13"
