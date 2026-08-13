@@ -19,15 +19,23 @@ public partial class InstalledViewModel : ObservableObject
 {
     private readonly IXboxAuthService _authService;
     private readonly IXboxPackageService _packageService;
+    private readonly AutostartService _autostartService;
+    private readonly PackageLauncher _launcher;
     private readonly List<InstalledPackage> _allPackages = [];
 
     public Func<string, Task>? OpenCustomInstallWithFileAction { get; set; }
     public Action? ShowCustomInstallAction { get; set; }
 
-    public InstalledViewModel(IXboxAuthService authService, IXboxPackageService packageService)
+    public InstalledViewModel(
+        IXboxAuthService authService,
+        IXboxPackageService packageService,
+        AutostartService? autostartService = null,
+        PackageLauncher? launcher = null)
     {
         _authService = authService;
         _packageService = packageService;
+        _autostartService = autostartService ?? new AutostartService();
+        _launcher = launcher ?? new PackageLauncher(packageService);
         _authService.ConnectionChanged += OnConnectionChanged;
         IsConnected = _authService.IsConnected;
         Logger.Debug("InstalledViewModel initialized");
@@ -38,6 +46,8 @@ public partial class InstalledViewModel : ObservableObject
         IsConnected = connected;
         if (connected)
             StatusMessage = null;
+        if (connected)
+            _ = LaunchAutostartAsync();
     }
 
     private DispatcherTimer? _pollTimer;
@@ -243,6 +253,8 @@ public partial class InstalledViewModel : ObservableObject
     public Func<InstalledPackage, Task<(CatalogItem? match, bool isOutdated)>>? CheckOutdatedAsync { get; set; }
     public Action<CatalogItem>? ShowCatalogDetailAction { get; set; }
     public Action? OnCatalogReady { get; set; }
+    public Func<InstalledPackage, string?, Task<bool>>? ConfirmAutostartAction { get; set; }
+    public Action<string>? NotifyAutostartAction { get; set; }
 
     [ObservableProperty]
     private bool _isCatalogReady;
@@ -281,22 +293,96 @@ public partial class InstalledViewModel : ObservableObject
         }
     }
 
-    private async Task<bool> SuspendAnyRunningAsync(InstalledPackage? excludePkg = null)
+    public bool IsAutostartApp(InstalledPackage pkg)
     {
-        var running = _allPackages.FirstOrDefault(p => p.IsRunning && p != excludePkg);
-        if (running is null) return true;
+        var fullName = _autostartService.GetAutostartFullName();
+        return !string.IsNullOrEmpty(fullName) && pkg.FullName == fullName;
+    }
 
-        var ok = await _packageService.SuspendPackageAsync(running.FullName);
-        if (ok)
+    private void SyncAutostartFlags()
+    {
+        foreach (var pkg in _allPackages)
+            pkg.IsAutostart = IsAutostartApp(pkg);
+    }
+
+    [RelayCommand]
+    private async Task ToggleAutostartAsync(InstalledPackage pkg)
+    {
+        if (pkg is null) return;
+
+        var current = _autostartService.GetAutostartFullName();
+        if (!string.IsNullOrEmpty(current) && current == pkg.FullName)
         {
-            running.IsRunning = false;
-            UpdateRunningState();
-            Logger.Info($"Suspended {running.Name} before launch");
-            return true;
+            _autostartService.ClearAutostart();
+            pkg.IsAutostart = false;
+            ToolbarStatus = $"Autostart removed: {pkg.Name}";
+            return;
         }
 
-        Logger.Warn($"Failed to suspend {running.Name}, will refresh");
-        return false;
+        var previousPkg = _allPackages.FirstOrDefault(p => p.FullName == current);
+        if (ConfirmAutostartAction is not null)
+        {
+            var ok = await ConfirmAutostartAction(pkg, previousPkg?.Name);
+            if (!ok) return;
+        }
+
+        _autostartService.SetAutostart(pkg.FullName);
+        foreach (var p in _allPackages)
+            p.IsAutostart = p.FullName == pkg.FullName;
+        ToolbarStatus = $"Autostart on connect: {pkg.Name}";
+        Logger.Info($"Autostart enabled for {pkg.Name}");
+    }
+
+    private async Task LaunchAutostartAsync()
+    {
+        var fullName = _autostartService.GetAutostartFullName();
+        if (string.IsNullOrEmpty(fullName))
+            return;
+
+        var candidates = _allPackages;
+        if (candidates.Count == 0)
+        {
+            Logger.Debug("LaunchAutostartAsync: no installed list yet — fetching");
+            try
+            {
+                var packages = await _packageService.GetInstalledPackagesAsync();
+                candidates = packages;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "LaunchAutostartAsync: failed to fetch installed packages");
+                return;
+            }
+        }
+
+        var pkg = candidates.FirstOrDefault(p => p.FullName == fullName);
+        if (pkg is null)
+        {
+            _autostartService.ClearAutostart();
+            SyncAutostartFlags();
+            Logger.Warn($"Autostart app {fullName} no longer installed — selection cleared");
+            NotifyAutostartAction?.Invoke($"Autostart app no longer installed — cleared. Re-enable from the Installed tab.");
+            return;
+        }
+
+        if (pkg.IsRunning)
+        {
+            Logger.Info($"Autostart: {pkg.Name} already running — skipping");
+            return;
+        }
+
+        Logger.Info($"Autostart: launching {pkg.Name} on connect");
+        var result = await _launcher.LaunchAsync(pkg, _allPackages, status => ToolbarStatus = status);
+        if (!result.Success)
+        {
+            Logger.Warn($"Autostart launch failed for {pkg.Name}: {result.Error}");
+            NotifyAutostartAction?.Invoke($"Failed to auto-launch {pkg.Name}: {result.Error}");
+        }
+        else
+        {
+            ToolbarStatus = $"Launched: {pkg.Name}";
+            _ = RefreshRunningStateAsync();
+        }
     }
 
     [RelayCommand]
@@ -304,39 +390,13 @@ public partial class InstalledViewModel : ObservableObject
     {
         if (SelectedPackage is null || SelectedPackage.IsRunning) return;
 
-        var rid = SelectedPackage.PackageRelativeId;
-        if (string.IsNullOrEmpty(rid))
-        {
-            ToolbarStatus = "Cannot launch: no package relative id";
-            return;
-        }
-
-        if (!await SuspendAnyRunningAsync(SelectedPackage))
-        {
+        var result = await _launcher.LaunchAsync(SelectedPackage, _allPackages, status => ToolbarStatus = status);
+        if (result.Success)
+            _ = RefreshRunningStateAsync();
+        else if (result.SuspendFailed)
             await RefreshPackagesAsync();
-            return;
-        }
-
-        try
-        {
-            var (ok, err) = await _packageService.LaunchPackageAsync(SelectedPackage.FullName, rid);
-            if (ok)
-            {
-                SelectedPackage.IsRunning = true;
-                ToolbarStatus = $"Launched: {SelectedPackage.Name}";
-                UpdateRunningState();
-                _ = RefreshRunningStateAsync();
-            }
-            else
-            {
-                ToolbarStatus = $"Failed: {err ?? "unknown error"}";
-            }
-        }
-        catch (Exception ex)
-        {
-            ToolbarStatus = "Launch failed";
-            Logger.Error(ex, $"Launch failed for {SelectedPackage.Name}");
-        }
+        else
+            ToolbarStatus = $"Launch failed: {result.Error}";
     }
 
     [RelayCommand]
@@ -378,38 +438,13 @@ public partial class InstalledViewModel : ObservableObject
     {
         if (pkg is null || pkg.IsRunning) return;
 
-        var rid = pkg.PackageRelativeId;
-        if (string.IsNullOrEmpty(rid))
-        {
-            ToolbarStatus = "Cannot launch: no package relative id";
-            return;
-        }
-
-        if (!await SuspendAnyRunningAsync(pkg))
-        {
+        var result = await _launcher.LaunchAsync(pkg, _allPackages, status => ToolbarStatus = status);
+        if (result.Success)
+            _ = RefreshRunningStateAsync();
+        else if (result.SuspendFailed)
             await RefreshPackagesAsync();
-            return;
-        }
-
-        try
-        {
-            var (ok, err) = await _packageService.LaunchPackageAsync(pkg.FullName, rid);
-            if (ok)
-            {
-                pkg.IsRunning = true;
-                ToolbarStatus = $"Launched: {pkg.Name}";
-                _ = RefreshRunningStateAsync();
-            }
-            else
-            {
-                ToolbarStatus = $"Failed: {err ?? "unknown error"}";
-            }
-        }
-        catch (Exception ex)
-        {
-            ToolbarStatus = "Launch failed";
-            Logger.Error(ex, $"Launch failed for {pkg.Name}");
-        }
+        else
+            ToolbarStatus = $"Launch failed: {result.Error}";
     }
 
     [RelayCommand]
@@ -509,6 +544,8 @@ public partial class InstalledViewModel : ObservableObject
                 .OrderBy(p => p.Name));
 
             Logger.Info($"Total packages from Xbox: {packages.Count}, after system filter: {_allPackages.Count}");
+
+            SyncAutostartFlags();
 
             foreach (var pkg in _allPackages)
                 Logger.Info($"  {pkg.Name,-30} v{pkg.Version,-14}  {pkg.DisplayPublisher ?? "-",-20}  {pkg.PackageFamilyName ?? ""}");

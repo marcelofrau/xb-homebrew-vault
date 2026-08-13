@@ -399,6 +399,19 @@
                         <Image Source="{Binding BannerImage}"
                                Stretch="UniformToFill"
                                RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                        <!-- Autostart badge -->
+                        <Border Background="#1B8A5A"
+                                CornerRadius="4"
+                                Padding="8,3"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                Margin="8,8,0,0"
+                                IsVisible="{Binding IsAutostart}">
+                          <TextBlock Text="AUTOSTART"
+                                     Foreground="White"
+                                     FontSize="11"
+                                     FontWeight="Bold"/>
+                        </Border>
                         <!-- Outdated badge -->
                         <Border Background="#DDCC3333"
                                 CornerRadius="4"
@@ -526,6 +539,24 @@
                                         CommandParameter="{Binding}">
                                 <MenuItem.Icon>
                                   <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-flyout-update-16.png"
+                                         Width="16" Height="16" Stretch="Uniform"/>
+                                </MenuItem.Icon>
+                              </MenuItem>
+                              <MenuItem Header="Autostart on connect"
+                                        IsVisible="{Binding IsAutostart, Converter={StaticResource BoolInverse}}"
+                                        Command="{Binding #ThisRoot.DataContext.ToggleAutostartCommand}"
+                                        CommandParameter="{Binding}">
+                                <MenuItem.Icon>
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-autostart-16.png"
+                                         Width="16" Height="16" Stretch="Uniform"/>
+                                </MenuItem.Icon>
+                              </MenuItem>
+                              <MenuItem Header="Remove autostart"
+                                        IsVisible="{Binding IsAutostart}"
+                                        Command="{Binding #ThisRoot.DataContext.ToggleAutostartCommand}"
+                                        CommandParameter="{Binding}">
+                                <MenuItem.Icon>
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-autostart-16.png"
                                          Width="16" Height="16" Stretch="Uniform"/>
                                 </MenuItem.Icon>
                               </MenuItem>

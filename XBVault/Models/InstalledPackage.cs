@@ -40,8 +40,9 @@ public class VersionToStringConverter : JsonConverter<string?>
 public class InstalledPackage : INotifyPropertyChanged
 {
     private bool _isUninstalling;
-    private bool _isRunning;
-    private bool _isOutdated;
+   private bool _isRunning;
+   private bool _isOutdated;
+   private bool _isAutostart;
 
     [JsonPropertyName("Name")]
     public string Name { get; set; } = string.Empty;
@@ -136,6 +137,18 @@ public class InstalledPackage : INotifyPropertyChanged
         {
             if (_isOutdated == value) return;
             _isOutdated = value;
+            OnPropertyChanged();
+        }
+    }
+
+    [JsonIgnore]
+    public bool IsAutostart
+    {
+        get => _isAutostart;
+        set
+        {
+            if (_isAutostart == value) return;
+            _isAutostart = value;
             OnPropertyChanged();
         }
     }

@@ -339,6 +339,30 @@ public partial class App : Application
                 return confirmVm.Confirmed;
             };
 
+            installedViewModel.ConfirmAutostartAction = async (pkg, previousName) =>
+            {
+                var message = string.IsNullOrEmpty(previousName)
+                    ? $"Launch {pkg.Name} automatically when XBVault connects to the Xbox?"
+                    : $"Replace {previousName} with {pkg.Name} as the app that launches automatically on connect?";
+                var confirmVm = new ConfirmViewModel(
+                    "Autostart on Connect",
+                    message,
+                    "Enable", "Cancel",
+                    "avares://XBVault/Assets/Views/InstalledView/installed-autostart-20.png",
+                    "avares://XBVault/Assets/Views/InstalledView/installed-autostart-48.png");
+                var confirmWindow = new Views.ConfirmWindow { DataContext = confirmVm };
+                await confirmWindow.ShowDialog(main);
+                return confirmVm.Confirmed;
+            };
+
+            installedViewModel.NotifyAutostartAction = message =>
+            {
+                notificationCenter.Notify(
+                    "Autostart",
+                    message,
+                    "avares://XBVault/Assets/Views/InstalledView/installed-autostart-16.png");
+            };
+
             toolsViewModel.ShowConnectAction = async () =>
             {
                 var connVm = new ConnectionViewModel(authService, networkService);

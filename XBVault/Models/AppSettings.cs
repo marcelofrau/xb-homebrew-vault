@@ -14,6 +14,7 @@ public class AppSettings
     public double UiScale { get; set; } = 1.0;
     public bool AutoConnect { get; set; }
     public int UpdateCheckIntervalMinutes { get; set; } = 30;
+    public string? AutostartPackageFullName { get; set; }
     public double MainWindowWidth { get; set; }
     public double MainWindowHeight { get; set; }
 }
