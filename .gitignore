@@ -45,3 +45,6 @@ docs/.jekyll-metadata
 docs/.sass-cache/
 
 session.txt
+
+# Session tooling (magic-context, historian)
+.cortexkit/
