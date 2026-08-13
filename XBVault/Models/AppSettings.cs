@@ -15,6 +15,7 @@ public class AppSettings
     public bool AutoConnect { get; set; }
     public int UpdateCheckIntervalMinutes { get; set; } = 30;
     public string? AutostartPackageFullName { get; set; }
+    public List<string> IgnoredUpdatePackageFamilies { get; set; } = [];
     public double MainWindowWidth { get; set; }
     public double MainWindowHeight { get; set; }
 }

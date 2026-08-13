@@ -408,6 +408,7 @@ public partial class App : Application
                 var result = browseViewModel.FindCatalogMatch(pkg);
                 return result;
             };
+            installedViewModel.RescanUpdatesAction = () => updateService.ScanAsync();
             installedViewModel.ShowCatalogDetailAction = catalogItem =>
             {
                 browseViewModel.IsUpdateMode = true;

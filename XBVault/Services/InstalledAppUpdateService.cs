@@ -95,7 +95,10 @@ public class InstalledAppUpdateService
                 Logger.Trace($"  {op.Catalog.Name}: {op.InstalledVersion} → {op.AvailableVersion}");
 
             if (outdated.Count == 0)
+            {
+                _notifications.DismissByTag(UpdateNotificationTag);
                 return;
+            }
 
             Notify(outdated);
         }

@@ -25,6 +25,7 @@ public partial class InstalledViewModel : ObservableObject
 
     public Func<string, Task>? OpenCustomInstallWithFileAction { get; set; }
     public Action? ShowCustomInstallAction { get; set; }
+    public Func<Task>? RescanUpdatesAction { get; set; }
 
     public InstalledViewModel(
         IXboxAuthService authService,
@@ -317,6 +318,61 @@ public partial class InstalledViewModel : ObservableObject
             pkg.IsAutostart = IsAutostartApp(pkg);
     }
 
+    private void SyncIgnoreUpdateFlags()
+    {
+        var ignored = SettingsService.Current?.IgnoredUpdatePackageFamilies ?? [];
+        foreach (var pkg in _allPackages)
+            pkg.IgnoreUpdateAlerts = !string.IsNullOrEmpty(pkg.PackageFamilyName) &&
+                ignored.Contains(pkg.PackageFamilyName, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [RelayCommand]
+    private async Task ToggleIgnoreUpdateAsync(InstalledPackage pkg)
+    {
+        if (pkg is null) return;
+
+        pkg.IgnoreUpdateAlerts = !pkg.IgnoreUpdateAlerts;
+
+        var settings = SettingsService.Current;
+        var list = settings?.IgnoredUpdatePackageFamilies ?? [];
+        if (string.IsNullOrEmpty(pkg.PackageFamilyName))
+            return;
+
+        if (pkg.IgnoreUpdateAlerts)
+        {
+            if (!list.Contains(pkg.PackageFamilyName, StringComparer.OrdinalIgnoreCase))
+                list.Add(pkg.PackageFamilyName);
+            ToolbarStatus = $"Update alerts ignored: {pkg.Name}";
+            Logger.Info($"Ignoring update alerts for {pkg.Name} ({pkg.PackageFamilyName})");
+        }
+        else
+        {
+            list.RemoveAll(x => x.Equals(pkg.PackageFamilyName, StringComparison.OrdinalIgnoreCase));
+            ToolbarStatus = $"Update alerts enabled: {pkg.Name}";
+            Logger.Info($"Re-enabling update alerts for {pkg.Name} ({pkg.PackageFamilyName})");
+        }
+        SettingsService.Save();
+
+        if (CheckOutdatedAsync is not null)
+        {
+            try
+            {
+                var (_, outdated) = await CheckOutdatedAsync(pkg);
+                pkg.IsOutdated = outdated;
+            }
+            catch (Exception ex)
+            {
+                Logger.Trace($"ToggleIgnoreUpdateAsync: outdated re-check failed for {pkg.Name} — {ex.Message}");
+            }
+        }
+
+        if (RescanUpdatesAction is not null)
+        {
+            try { await RescanUpdatesAction(); }
+            catch (Exception ex) { Logger.Trace($"ToggleIgnoreUpdateAsync: rescan failed — {ex.Message}"); }
+        }
+    }
+
     [RelayCommand]
     private async Task ToggleAutostartAsync(InstalledPackage pkg)
     {
@@ -559,6 +615,7 @@ public partial class InstalledViewModel : ObservableObject
             Logger.Info($"Total packages from Xbox: {packages.Count}, after system filter: {_allPackages.Count}");
 
             SyncAutostartFlags();
+            SyncIgnoreUpdateFlags();
 
             foreach (var pkg in _allPackages)
                 Logger.Info($"  {pkg.Name,-30} v{pkg.Version,-14}  {pkg.DisplayPublisher ?? "-",-20}  {pkg.PackageFamilyName ?? ""}");

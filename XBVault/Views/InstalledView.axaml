@@ -185,6 +185,18 @@
                        Width="16" Height="16" Stretch="Uniform"/>
               </MenuItem.Icon>
             </MenuItem>
+            <Separator/>
+            <MenuItem Header="Ignore update alerts"
+                      ToggleType="CheckBox"
+                      IsChecked="{Binding SelectedPackage.IgnoreUpdateAlerts, Mode=OneWay}"
+                      IsEnabled="{Binding IsPackageSelected}"
+                      Command="{Binding ToggleIgnoreUpdateCommand}"
+                      CommandParameter="{Binding SelectedPackage}">
+              <MenuItem.Icon>
+                <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-ignore-update-16.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+              </MenuItem.Icon>
+            </MenuItem>
           </MenuFlyout>
         </Button.Flyout>
         <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-menu-16.png"
@@ -544,6 +556,16 @@
                                         CommandParameter="{Binding}">
                                 <MenuItem.Icon>
                                   <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-flyout-update-16.png"
+                                         Width="16" Height="16" Stretch="Uniform"/>
+                                </MenuItem.Icon>
+                              </MenuItem>
+                              <MenuItem Header="Ignore update alerts"
+                                        ToggleType="CheckBox"
+                                        IsChecked="{Binding IgnoreUpdateAlerts, Mode=OneWay}"
+                                        Command="{Binding #ThisRoot.DataContext.ToggleIgnoreUpdateCommand}"
+                                        CommandParameter="{Binding}">
+                                <MenuItem.Icon>
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-ignore-update-16.png"
                                          Width="16" Height="16" Stretch="Uniform"/>
                                 </MenuItem.Icon>
                               </MenuItem>

@@ -121,6 +121,16 @@ public class NotificationCenterService
         });
     }
 
+    public void DismissByTag(string tag)
+    {
+        PostToUi(() =>
+        {
+            var item = Active.FirstOrDefault(n => !string.IsNullOrEmpty(n.Tag) && n.Tag == tag);
+            if (item is not null)
+                Complete(item);
+        });
+    }
+
     public void RemoveFromHistory(Guid id)
     {
         PostToUi(() =>

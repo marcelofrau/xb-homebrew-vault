@@ -43,6 +43,9 @@ public class VersionCheckerService
 
     public (CatalogItem? match, bool isOutdated) FindCatalogMatch(InstalledPackage pkg, bool ignoreSuppression = false)
     {
+        if (IsIgnoredForUpdates(pkg))
+            return (null, false);
+
         var match = _catalog.FirstOrDefault(i => IsPackageMatch(i, pkg));
         if (match is null)
             return (null, false);
@@ -140,6 +143,16 @@ public class VersionCheckerService
     {
         var idx = familyName.LastIndexOf('_');
         return idx > 0 ? familyName[..idx] : familyName;
+    }
+
+    private static bool IsIgnoredForUpdates(InstalledPackage pkg)
+    {
+        var pfn = pkg.PackageFamilyName;
+        if (string.IsNullOrEmpty(pfn))
+            return false;
+
+        var ignored = SettingsService.Current?.IgnoredUpdatePackageFamilies;
+        return ignored is { Count: > 0 } && ignored.Contains(pfn, StringComparer.OrdinalIgnoreCase);
     }
 
     private static string NormalizeAlnum(string value)

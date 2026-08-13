@@ -42,7 +42,8 @@ public class InstalledPackage : INotifyPropertyChanged
     private bool _isUninstalling;
    private bool _isRunning;
    private bool _isOutdated;
-   private bool _isAutostart;
+    private bool _isAutostart;
+    private bool _ignoreUpdateAlerts;
 
     [JsonPropertyName("Name")]
     public string Name { get; set; } = string.Empty;
@@ -155,6 +156,18 @@ public class InstalledPackage : INotifyPropertyChanged
 
     [JsonIgnore]
     public string StateLabel => IsRunning ? "Running" : "Not Running";
+
+    [JsonIgnore]
+    public bool IgnoreUpdateAlerts
+    {
+        get => _ignoreUpdateAlerts;
+        set
+        {
+            if (_ignoreUpdateAlerts == value) return;
+            _ignoreUpdateAlerts = value;
+            OnPropertyChanged();
+        }
+    }
 
     [JsonIgnore]
     public Bitmap? BannerImage { get; set; }

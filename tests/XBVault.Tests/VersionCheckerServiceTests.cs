@@ -95,6 +95,44 @@ public class VersionCheckerServiceTests : IDisposable
     }
 
     [Fact]
+    public void FindOutdated_IgnoredFamily_ReturnsNull()
+    {
+        var checker = CreateService([Item("Sonic", "1.2.0")]);
+        var pkg = Pkg("sonic", "1.0.0");
+        SettingsService.Current.IgnoredUpdatePackageFamilies.Add(pkg.PackageFamilyName!);
+
+        try
+        {
+            Assert.Null(checker.FindOutdated(pkg));
+
+            var (match, isOutdated) = checker.FindCatalogMatch(pkg);
+            Assert.Null(match);
+            Assert.False(isOutdated);
+        }
+        finally
+        {
+            SettingsService.Current.IgnoredUpdatePackageFamilies.Remove(pkg.PackageFamilyName!);
+        }
+    }
+
+    [Fact]
+    public void FindOutdated_OtherFamilyIgnored_StillDetectsCurrent()
+    {
+        var checker = CreateService([Item("Sonic", "1.2.0")]);
+        var pkg = Pkg("sonic", "1.0.0");
+        SettingsService.Current.IgnoredUpdatePackageFamilies.Add("other_8wekyb3d8bbwe");
+
+        try
+        {
+            Assert.NotNull(checker.FindOutdated(pkg));
+        }
+        finally
+        {
+            SettingsService.Current.IgnoredUpdatePackageFamilies.Remove("other_8wekyb3d8bbwe");
+        }
+    }
+
+    [Fact]
     public void FindOutdated_AfterRecordUpdate_OutdatedPairNotSuppressed()
     {
         var checker = CreateService([Item("Sonic", "1.2.0")]);
