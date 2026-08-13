@@ -438,6 +438,7 @@ public partial class InstalledViewModel : ObservableObject
             SelectedPackage.IsRunning = false;
             ToolbarStatus = $"Terminated: {SelectedPackage.Name}";
             UpdateRunningState();
+            _ = RefreshRunningStateAsync();
         }
         else
         {
