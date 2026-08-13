@@ -17,6 +17,6 @@
 ## 4. Validation
 
 - [x] 4.1 `dotnet build` passes
-- [ ] 4.2 Manual: set autostart → badge shows → disconnect/reconnect → app launches automatically
-- [ ] 4.3 Manual: set autostart on app B while A active → confirm prompt → A cleared, B badge shown
-- [ ] 4.4 Manual: uninstall autostart app → reconnect clears selection + notification
+- [x] 4.2 Manual: set autostart → badge shows → disconnect/reconnect → app launches automatically
+- [x] 4.3 Manual: set autostart on app B while A active → confirm prompt → A cleared, B badge shown
+- [x] 4.4 Manual: uninstall autostart app → reconnect clears selection + notification

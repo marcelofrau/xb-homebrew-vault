@@ -78,5 +78,5 @@ sequenceDiagram
 
 ## Open Questions
 
-- Exact icon for the flyout item + badge (Blades/Numix set) — pick during UI pass.
-- Where the connect-complete signal is best observed (`MainViewModel.IsXboxConnected` setter vs `App.axaml.cs`) — resolve during implementation.
+- Exact icon for the flyout item + badge (Blades/Numix set) — **resolved**: `icons8-automatic` family (`installed-autostart-16/20/48.png`).
+- Where the connect-complete signal is best observed (`MainViewModel.IsXboxConnected` setter vs `App.axaml.cs`) — **resolved**: `InstalledViewModel.OnConnectionChanged` (via `ConnectionStateService`).
