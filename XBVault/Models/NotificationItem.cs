@@ -22,6 +22,7 @@ public sealed class NotificationItem
     public Action? ClickAction { get; init; }
     public IReadOnlyList<NotificationAction> Actions { get; init; } = [];
     public bool IsGrouped => Actions.Count > 0;
+    public bool AutoDismissToast { get; init; } = true;
     public DateTime CreatedAt { get; } = DateTime.UtcNow;
 
     public IReadOnlyList<NotificationAction> ToastVisibleActions => Actions.Take(ToastVisibleActionLimit).ToList();

@@ -67,7 +67,7 @@ public partial class MainWindow : Window
         Logger.Trace("Flyout: BindNotifications called");
         _notificationCenter = notificationCenter;
         foreach (var item in notificationCenter.Active)
-            _toastHosts.Add(new ToastHost(item));
+            AddToastHost(item);
         notificationCenter.Active.CollectionChanged += OnActiveNotificationsChanged;
         NotificationsPopup.DataContext = notificationCenter;
         NotificationsPanelHost.CloseRequested += () => _ = ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen);
@@ -91,13 +91,28 @@ public partial class MainWindow : Window
         if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems is not null)
         {
             foreach (NotificationItem item in e.NewItems)
-                _toastHosts.Add(new ToastHost(item));
+                AddToastHost(item);
         }
         else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems is not null)
         {
             foreach (NotificationItem item in e.OldItems)
                 _ = CloseToastAsync(item);
         }
+    }
+
+    private void AddToastHost(NotificationItem item)
+    {
+        var host = new ToastHost(item);
+        _toastHosts.Add(host);
+        if (item.AutoDismissToast)
+            _ = AutoHideToastAsync(item, host);
+    }
+
+    private async Task AutoHideToastAsync(NotificationItem item, ToastHost host)
+    {
+        await Task.Delay(NotificationCenterService.DefaultAutoDismiss);
+        if (_toastHosts.Contains(host))
+            await CloseToastAsync(item);
     }
 
     private async Task CloseToastAsync(NotificationItem item)
