@@ -5,27 +5,37 @@ title: Android Architecture
 
 # Architecture — Android Port
 
-## Design Decision: Separate Project
+## Design Decision: 3-Project Structure
 
-The Android port uses a **separate project** (`XBVault.Android`) rather than multi-targeting the existing `XBVault.csproj`. Rationale:
+The Android port uses the **canonical Avalonia multi-platform pattern** — a shared library + platform-specific hosts:
 
-| Approach | Pros | Cons |
-|----------|------|------|
-| **Separate project** (chosen) | Clean build — no Windows-only packages polluting Android builds; independent CI; no risk of breaking desktop | Some shared code duplication in project file |
-| Multi-target in same csproj | Single project to maintain | `Avalonia.Desktop`, `System.Management`, `Tmds.DBus` all pulled into Android builds; complex conditional compilation; risk of breaking desktop |
+| Project | Type | Target | Purpose |
+|---------|------|--------|---------|
+| `XBVault/` | Library | net10.0 | Shared code: Views, ViewModels, Services, Models, Assets |
+| `XBVault.Desktop/` | Exe | net10.0 | Desktop host: `Program.cs` (entry point, CLI, mutex) |
+| `XBVault.Android/` | Exe | net10.0-android36.0 | Android host: `MainActivity.cs`, `AndroidApp.cs` |
+| `tests/XBVault.Tests/` | Library | net10.0 | xUnit tests (240 tests) |
 
-The shared code (ViewModels, Services, Models, Helpers) lives in the existing `XBVault` project and is consumed via `<ProjectReference>`.
+### Why This Pattern?
 
-> **BLOCKER — NETSDK1150 (discovered during Phase 0):**
-> The desktop project (`XBVault.csproj`) has `OutputType=Exe` (non-self-contained). The Android project is self-contained by default. .NET **does not allow** a self-contained executable to reference a non-self-contained executable.
->
-> **Required fix (after refactoring branch merges):** Extract shared code into `XBVault.Shared` (OutputType=Library, net10.0). Both desktop and Android heads reference it. This is the standard Avalonia multi-platform pattern. See [05-implementation-plan.md](05-implementation-plan.md) Phase 0 tasks for details.
+The shared library (`XBVault/`) is a **pure Library** (no OutputType, no RuntimeIdentifiers). This is critical:
+- MSBuild outer-multi-RID builds propagate RIDs to referenced projects
+- A library with no RIDs avoids the propagation problem entirely
+- Both Desktop and Android simply reference `XBVault` with a plain `<ProjectReference>`
+- No `SetTargetFramework`, `SkipGetTargetFrameworkProperties`, or `XBVaultShared` hacks needed
+
+### Why Not a Separate `XBVault.Shared` Project?
+
+Initially we tried renaming `XBVault` to `XBVault.Shared`, but:
+- All AXAML resources reference `avares://XBVault/...` (assembly name = `XBVault`)
+- Renaming the assembly would break every resource reference
+- So `XBVault/` stays as the shared library with assembly name `XBVault`
 
 ## Project Structure
 
 ```mermaid
 graph TD
-    subgraph "XBVault (existing — net10.0)"
+    subgraph "XBVault (shared library — net10.0)"
         Views["Views/ (9 UserControls)"]
         ViewModels["ViewModels/ (24)"]
         Services["Services/ (33)"]
@@ -33,33 +43,28 @@ graph TD
         Helpers["Helpers/"]
         Converters["Converters/"]
         Assets["Assets/ (embedded)"]
+        App["App.axaml + App.axaml.cs"]
+        AppBoot["AppBoot.cs"]
     end
 
-    subgraph "XBVault.Android (new — net10.0-android36.0)"
+    subgraph "XBVault.Desktop (host — net10.0)"
+        Program["Program.cs"]
+        DesktopCsproj["XBVault.Desktop.csproj"]
+    end
+
+    subgraph "XBVault.Android (host — net10.0-android36.0)"
         MainActivity["MainActivity.cs"]
         AndroidApp["AndroidApp.cs"]
         AndroidManifest["AndroidManifest.xml"]
-        MobileViews["Mobile-specific AXAML (if needed)"]
-        Resources["Resources/ (icons, splash)"]
+        Resources["Resources/ (styles, splash)"]
     end
 
-    AndroidProject["XBVault.Android.csproj"]
-    DesktopProject["XBVault.csproj"]
+    DesktopCsproj -->|"ProjectReference"| Views
+    Program -->|"AppBoot.PreFlightReport"| AppBoot
+    Program -->|"AppBuilder.Configure<App>"| App
 
-    AndroidProject -->|"ProjectReference"| DesktopProject
-    AndroidProject --> MainActivity
-    AndroidProject --> AndroidApp
-    AndroidProject --> AndroidManifest
-    AndroidProject --> MobileViews
-    AndroidProject --> Resources
-
-    DesktopProject --> Views
-    DesktopProject --> ViewModels
-    DesktopProject --> Services
-    DesktopProject --> Models
-    DesktopProject --> Helpers
-    DesktopProject --> Converters
-    DesktopProject --> Assets
+    MainActivity --> App
+    AndroidApp -->|"AvaloniaAndroidApplication<App>"| App
 ```
 
 ## Dependency Flow
@@ -92,18 +97,18 @@ graph TD
 
 ## Entry Point — Android vs Desktop
 
-### Desktop (`Program.cs`)
+### Desktop (`XBVault.Desktop/Program.cs`)
 
 ```
 Main(args)
   → Parse CLI args (--help, --console, --reset-data, --check)
   → Logger.AttachConsole()
   → Single-instance Mutex
-  → PreFlightChecker.Run()
+  → PreFlightChecker.Run() → AppBoot.PreFlightReport = report
   → BuildAvaloniaApp().StartWithClassicDesktopLifetime(args)
 ```
 
-### Android (`MainActivity.cs` + `AndroidApp.cs`)
+### Android (`XBVault.Android/MainActivity.cs` + `AndroidApp.cs`)
 
 ```csharp
 // AndroidApp.cs
@@ -130,6 +135,12 @@ Key differences:
 - **No PreFlightChecker console output** — health checks run silently
 - **No `StartWithClassicDesktopLifetime`** — Android uses its own lifecycle via `AvaloniaMainActivity`
 - `App.OnFrameworkInitializationCompleted()` runs the same service initialization
+
+## Circular Dependency Resolution
+
+`App.axaml.cs` references `Program.PreFlightReport` to log pre-flight results. When `Program.cs` moved to `XBVault.Desktop`, this became a circular dependency (shared → desktop → shared).
+
+**Solution:** `AppBoot.cs` in the shared library holds the static `PreFlightReport` property. Desktop sets it before calling `BuildAvaloniaApp()`. Shared code reads from `AppBoot.PreFlightReport`.
 
 ## Navigation Architecture
 
@@ -194,11 +205,11 @@ No resource duplication needed — the `XBVault` project is referenced as a depe
 
 | File | Purpose |
 |------|---------|
-| `XBVault.Android/MainActivity.cs` | Android activity entry point |
-| `XBVault.Android/AndroidApp.cs` | Avalonia Android application class |
-| `XBVault.Android/AndroidManifest.xml` | Permissions (INTERNET, ACCESS_NETWORK_STATE), min SDK, screen config |
-| `XBVault.Android/Resources/` | Android-native splash screen, launcher icons |
-| `XBVault.Android/Styles/` | Android theme overrides if needed |
+| `XBVault.Android/MainActivity.cs` | Android activity entry point (`AvaloniaMainActivity`) |
+| `XBVault.Android/AndroidApp.cs` | Avalonia Android application class (`AvaloniaAndroidApplication<App>`) |
+| `XBVault.Android/AndroidManifest.xml` | Permissions (INTERNET, ACCESS_NETWORK_STATE), theme |
+| `XBVault.Android/Resources/values/styles.xml` | `MainTheme` (AppCompat DayNight NoActionBar) |
+| `XBVault.Android/Resources/values-v31/styles.xml` | Material You variant |
 
 ## Package References
 
@@ -209,7 +220,8 @@ No resource duplication needed — the `XBVault` project is referenced as a depe
   <PropertyGroup>
     <TargetFramework>net10.0-android36.0</TargetFramework>
     <OutputType>Exe</OutputType>
-    <SupportedOSPlatformVersion>21</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
+    <RuntimeIdentifier>android-arm64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
@@ -225,8 +237,8 @@ No resource duplication needed — the `XBVault` project is referenced as a depe
 </Project>
 ```
 
-**Not included** (desktop-only):
-- `Avalonia.Desktop` — desktop platform support
+**Not included** (in shared library but not called on Android):
+- `Avalonia.Desktop` — desktop platform support (only in `XBVault.Desktop`)
 - `Avalonia.AvaloniaEdit` — code editor (mobile feature TBD)
-- `System.Management` — WMI (Windows only)
-- `Tmds.DBus.Protocol` — Linux D-Bus
+- `System.Management` — WMI (Windows only, guarded by `IsWindows()`)
+- `Tmds.DBus.Protocol` — Linux D-Bus (never used)

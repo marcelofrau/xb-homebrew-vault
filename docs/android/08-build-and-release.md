@@ -12,273 +12,201 @@ title: Build and Release
 | Tool | Version | Purpose |
 |------|---------|---------|
 | .NET SDK | 10.0.x | Build runtime |
-| Android SDK | API 34+ | Android platform |
-| Android Build Tools | 34.0.0+ | APK/AAB compilation |
+| Android SDK | API 36 | Android platform (`$env:LOCALAPPDATA\Android\Sdk\platforms;android-36`) |
+| Android Build Tools | 36.0.0 | APK compilation (`$env:LOCALAPPDATA\Android\Sdk\build-tools;36.0.0`) |
+| Java JDK | **21** (exactly) | Android toolchain — JDK 25+ fails with XA0030 |
 | Android Emulator | Latest | Testing |
-| Java JDK | 17+ | Android toolchain |
-| Visual Studio 2022 | 17.8+ | IDE (optional) |
 
-### Android Workload
+### JDK Setup (Windows)
 
-```bash
-# Install Android workload for .NET
-dotnet workload install android
+```powershell
+# JDK 21 is bundled with Android SDK
+$env:JAVA_HOME = "$env:LOCALAPPDATA\Android\Sdk\jdk-21"
 
 # Verify
-dotnet workload list
-# Should show: android
+& "$env:JAVA_HOME\bin\java" -version
+# openjdk version "21.0.x" ...
 ```
 
-### Environment Variables
+**Do NOT use JDK 25+** — the Android SDK build tooling rejects it with `error XA0030: Building with JDK version 25.x is not supported`.
 
-```bash
-# Windows
-set ANDROID_HOME=%LOCALAPPDATA%\Android\Sdk
-set JAVA_HOME=C:\Program Files\Microsoft\jdk-17.x.x
+### Visual Studio
 
-# Linux/macOS
-export ANDROID_HOME=$HOME/Android/Sdk
-export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
-```
+For running from Visual Studio (VS2022+):
+1. Install workload: **.NET Multi-platform App UI development** (includes .NET for Android)
+2. Ensure Android SDK and JDK 21 are detected by VS
+3. Open `XBVault.sln`, set `XBVault.Android` as startup project, select emulator/device, F5
 
 ---
 
-## Project Configuration
+## Project Structure
 
-### XBVault.Android.csproj
+```
+XBVault.sln                         ← Solution with all 4 projects
 
-```xml
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0-android36.0</TargetFramework>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>XBVault.Android</RootNamespace>
-    <AssemblyName>XBVault.Android</AssemblyName>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-
-    <!-- Android-specific -->
-    <SupportedOSPlatformVersion>21</SupportedOSPlatformVersion>
-    <AndroidApplication>true</AndroidApplication>
-    <AndroidSigningKeyStore>debug.keystore</AndroidSigningKeyStore>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.0.0" />
-    <PackageReference Include="Avalonia.Android" Version="12.0.0" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.0" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\XBVault\XBVault.csproj" />
-  </ItemGroup>
-</Project>
+XBVault/XBVault.csproj              ← Shared library (net10.0, Library)
+XBVault.Desktop/XBVault.Desktop.csproj  ← Desktop host (net10.0, WinExe/Exe)
+XBVault.Android/XBVault.Android.csproj  ← Android host (net10.0-android36.0, Exe)
+tests/XBVault.Tests/XBVault.Tests.csproj ← xUnit tests (net10.0)
 ```
 
-### Conditional Packages (if needed)
+### Why 3 Projects?
 
-If certain NuGet packages don't support Android:
-
-```xml
-<!-- SSH.NET — should work, but add fallback if needed -->
-<PackageReference Include="SSH.NET" Version="2026.0.0"
-                  Condition="'$(TargetFramework)' != 'net10.0-android36.0'" />
-
-<!-- AvaloniaEdit — may not support Android -->
-<PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0"
-                  Condition="'$(TargetFramework)' != 'net10.0-android36.0'" />
-```
-
-### Desktop csproj Guards
-
-The existing `XBVault.csproj` may need adjustments to avoid pulling desktop-only packages into Android builds. These are already mostly guarded:
-
-```xml
-<!-- Existing guards in XBVault.csproj — verify these work -->
-<PackageReference Include="Avalonia.Desktop" Version="12.0.0" />
-<!-- ^^^ This should NOT be referenced by XBVault.Android -->
-
-<PackageReference Include="System.Management" Version="8.0.0" />
-<!-- ^^^ Only needed on Windows — conditional reference may be needed -->
-```
-
-Since `XBVault.Android` references `XBVault` as a `<ProjectReference>`, transitive packages flow through. If `Avalonia.Desktop` causes issues on Android, make it conditional in the desktop csproj:
-
-```xml
-<PackageReference Include="Avalonia.Desktop" Version="12.0.0"
-                  Condition="'$(TargetFramework)' != 'net10.0-android36.0'" />
-```
+The Avalonia canonical pattern uses a shared library + platform hosts:
+- `XBVault/` is a **pure Library** (no OutputType, no RuntimeIdentifiers) — this is what makes the Android `ProjectReference` work without MSBuild outer-build hacks
+- `XBVault.Desktop/` contains only `Program.cs` (entry point) and references `Avalonia.Desktop`
+- `XBVault.Android/` contains only `MainActivity.cs` and `AndroidApp.cs`, references `Avalonia.Android`
 
 ---
 
 ## Build Commands
 
-### Debug Build
+### Solution (everything)
 
-```bash
-dotnet build XBVault.Android -f net10.0-android36.0 -c Debug
+```powershell
+$env:JAVA_HOME = "$env:LOCALAPPDATA\Android\Sdk\jdk-21"
+rtk dotnet build XBVault.sln -c Debug
 ```
 
-### Release Build
+### Desktop only
 
-```bash
-dotnet build XBVault.Android -f net10.0-android36.0 -c Release
+```powershell
+powershell -File build/build.ps1
+# or
+rtk dotnet build XBVault.Desktop/XBVault.Desktop.csproj -c Debug
 ```
 
-### Publish as APK (sideloading)
+### Android only
 
-```bash
-dotnet publish XBVault.Android -f net10.0-android36.0 -c Release -o ./publish-android
-# Output: ./publish-android/xbvault.android.apk
+```powershell
+$env:JAVA_HOME = "$env:LOCALAPPDATA\Android\Sdk\jdk-21"
+powershell -File build/build-android.ps1
+# or
+rtk dotnet build XBVault.Android/XBVault.Android.csproj -c Debug
 ```
 
-### Publish as AAB (Google Play)
+### Run desktop
 
-```bash
-dotnet publish XBVault.Android -f net10.0-android36.0 -c Release -p:AndroidAppBundle=true -o ./publish-android-aab
-# Output: ./publish-android-aab/xbvault.android.aab
+```powershell
+powershell -File build/run.ps1
 ```
 
----
+### Run Android (requires emulator or device)
 
-## Signing
-
-### Debug Signing
-
-Debug builds use the default Android debug keystore:
-
-```bash
-# Default location
-~/.android/debug.keystore
-# Password: android
-# Alias: androiddebugkey
+```powershell
+$env:JAVA_HOME = "$env:LOCALAPPDATA\Android\Sdk\jdk-21"
+powershell -File build/run-android.ps1
 ```
 
-### Release Signing
+### Release builds
 
-For production releases:
+```powershell
+# Desktop (Windows x64)
+powershell -File build/build-release.ps1 -Version 1.4.0 -Arch x64
 
-```bash
-# Generate keystore
-keytool -genkeypair -v -keystore release.keystore \
-  -alias xbvault -keyalg RSA -keysize 2048 -validity 10000
+# Desktop (Linux/macOS)
+bash build/build-release.sh 1.4.0 x64
 
-# Configure in csproj
-<PropertyGroup>
-  <AndroidSigningKeyStore>release.keystore</AndroidSigningKeyStore>
-  <AndroidSigningKeyAlias>xbvault</AndroidSigningKeyAlias>
-  <AndroidSigningStorePass>$(KEYSTORE_PASSWORD)</AndroidSigningStorePass>
-  <AndroidSigningKeyPass>$(KEY_PASSWORD)</AndroidSigningKeyPass>
-</PropertyGroup>
+# Android (arm64)
+$env:JAVA_HOME = "$env:LOCALAPPDATA\Android\Sdk\jdk-21"
+powershell -File build/build-release-android.ps1 -Version 1.4.0
 ```
 
-**Never commit keystores or passwords to the repository.**
+### Tests
 
----
-
-## Android Manifest
-
-### AndroidManifest.xml
-
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.marcelofrau.xbvault">
-
-  <!-- Network access (required for Xbox connection) -->
-  <uses-permission android:name="android.permission.INTERNET" />
-  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-  <!-- Optional: WiFi state for network detection -->
-  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-
-  <application
-      android:label="XBVault"
-      android:icon="@mipmap/ic_launcher"
-      android:allowBackup="false"
-      android:supportsRtl="true"
-      android:theme="@style/MainTheme">
-  </application>
-</manifest>
+```powershell
+rtk dotnet test tests/XBVault.Tests/XBVault.Tests.csproj -c Release
+# 240 tests, all pass
 ```
-
-### Permissions Summary
-
-| Permission | Required | Purpose |
-|------------|----------|---------|
-| `INTERNET` | Yes | HTTP/SSH communication with Xbox |
-| `ACCESS_NETWORK_STATE` | Yes | Detect network availability |
-| `ACCESS_WIFI_STATE` | Optional | WiFi-specific state detection |
-| `WRITE_EXTERNAL_STORAGE` | No | Not needed — app uses private storage |
-| `READ_EXTERNAL_STORAGE` | No | Not needed — file picker uses SAF |
 
 ---
 
 ## CI/CD Pipeline
 
-### GitHub Actions Workflow
+### GitHub Actions (`.github/workflows/build.yml`)
 
-Add to `.github/workflows/build.yml`:
+| Job | Trigger | Runner | What it does |
+|-----|---------|--------|--------------|
+| `build` | push/PR to main | windows-latest + ubuntu-latest | `dotnet build XBVault.Desktop` |
+| `build-android` | push/PR to main | windows-latest | `dotnet build XBVault.Android` (JDK 21 + Android SDK) |
+| `test` | push/PR to main | windows-latest + ubuntu-latest | `dotnet test` |
+| `release` | tag `v*` | matrix | win-x64, win-arm64, linux-x64, osx-x64, osx-arm64, **android-arm64** |
+| `publish` | tag `v*` | ubuntu-latest | GitHub Release with all ZIPs + checksums |
 
-```yaml
-  build-android:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+### Release Matrix
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
+| Platform | RID | Script | Output |
+|----------|-----|--------|--------|
+| Windows x64 | win-x64 | `build-release.ps1` | `XBVault-v{V}-win-x64.zip` + optional installer |
+| Windows ARM64 | win-arm64 | `build-release.ps1 -Arch arm64` | `XBVault-v{V}-win-arm64.zip` |
+| Linux x64 | linux-x64 | `build-release.sh` | `XBVault-v{V}-linux-x64.zip` |
+| Linux ARM64 | linux-arm64 | `build-release.sh` | `XBVault-v{V}-linux-arm64.zip` |
+| macOS x64 | osx-x64 | `build-release.sh` | `XBVault-v{V}-osx-x64.zip` |
+| macOS ARM64 | osx-arm64 | `build-release.sh` | `XBVault-v{V}-osx-arm64.zip` |
+| Android ARM64 | android-arm64 | `build-release-android.ps1` | `XBVault-v{V}-android-arm64.zip` |
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'microsoft'
-          java-version: '17'
+---
 
-      - name: Install Android workload
-        run: dotnet workload install android
+## Android Manifest
 
-      - name: Restore
-        run: dotnet restore XBVault.Android
+`XBVault.Android/AndroidManifest.xml`:
 
-      - name: Build
-        run: dotnet build XBVault.Android -f net10.0-android36.0 -c Release --no-restore
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: xbvault-android
-          path: XBVault.Android/bin/Release/net10.0-android36.0/*.apk
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <application
+      android:label="XBVault"
+      android:allowBackup="false"
+      android:supportsRtl="true"
+      android:theme="@style/MainTheme" />
+</manifest>
 ```
 
-### Release Workflow (tag-triggered)
+Permissions: `INTERNET` + `ACCESS_NETWORK_STATE` (required for Xbox HTTP/SSH).
 
-```yaml
-  release-android:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - uses: actions/checkout@v4
+---
 
-      - name: Setup .NET + Java + Android
-        # ... same as above
+## Android Resources
 
-      - name: Publish APK
-        run: |
-          dotnet publish XBVault.Android \
-            -f net10.0-android36.0 \
-            -c Release \
-            -p:AndroidAppBundle=false \
-            -o ./publish-android
+`XBVault.Android/Resources/values/styles.xml`:
 
-      - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ./publish-android/*.apk
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+  <style name="MainTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <item name="android:windowActionBar">false</item>
+    <item name="android:windowNoTitle">true</item>
+  </style>
+</resources>
 ```
+
+A `values-v31` variant provides Material You splash support.
+
+---
+
+## Troubleshooting
+
+### "Building with JDK version 25.x is not supported"
+
+Use JDK 21: `set JAVA_HOME=%LOCALAPPDATA%\Android\Sdk\jdk-21`
+
+### "minSdkVersion 21 cannot be smaller than version 23"
+
+`SupportedOSPlatformVersion` in `XBVault.Android.csproj` must be `23` (required by `androidx.lifecycle.runtime` dependency from Avalonia.Android).
+
+### "Ambiguous project name 'XBVault'"
+
+The shared library and desktop host must not both have `AssemblyName=XBVault`. Currently, neither sets `AssemblyName` explicitly — defaults to `XBVault` (shared) and `XBVault.Desktop` (host).
+
+### "resource style/MainTheme not found"
+
+Ensure `XBVault.Android/Resources/values/styles.xml` exists with a `MainTheme` style definition.
+
+### Android build hangs / OOM
+
+Single RID (`android-arm64`) avoids MSBuild outer-multi-RID build issues. Do not add more RIDs to `RuntimeIdentifiers` in the Android csproj without understanding the outer-build propagation problem.
 
 ---
 
@@ -293,67 +221,5 @@ Add to `.github/workflows/build.yml`:
 ### File Naming Convention
 
 ```
-XBVault-v{Version}-android.apk
-XBVault-v{Version}-android.aab
+XBVault-v{Version}-android-arm64.zip
 ```
-
-Example: `XBVault-v1.4.0-android.apk`
-
----
-
-## Distribution
-
-### Sideload (direct APK)
-
-Users download the APK and install directly:
-1. Enable "Install from unknown sources" on device
-2. Transfer APK to device
-3. Open APK file to install
-
-### Google Play Store (future)
-
-Requires:
-1. Google Play Developer account ($25 one-time)
-2. AAB format
-3. Store listing (screenshots, description, privacy policy)
-4. Content rating questionnaire
-5. Data safety section (network usage disclosure)
-
-Not required for initial release.
-
----
-
-## Troubleshooting
-
-### Build Fails: "Android workload not installed"
-
-```bash
-dotnet workload install android
-dotnet workload restore
-```
-
-### Build Fails: "ANDROID_HOME not set"
-
-```bash
-# Find SDK location
-dotnet workload search android
-# Set ANDROID_HOME to the SDK path
-```
-
-### Build Fails: "Java SDK not found"
-
-Install Java JDK 17+ and set `JAVA_HOME`.
-
-### APK Installs But Crashes on Launch
-
-1. Check logcat: `adb logcat -s "XBVault"`
-2. Common causes:
-   - Missing NuGet package for Android RID
-   - P/Invoke without platform guard
-   - `Avalonia.Desktop` package pulled into Android build
-
-### SSH Connection Fails on Android
-
-1. Verify INTERNET permission in manifest
-2. Test with `adb shell curl` to Xbox IP
-3. Check SSH.NET package supports Android RID
