@@ -1,4 +1,6 @@
+#nullable enable
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Avalonia.Threading;
 using Serilog;
@@ -98,19 +100,20 @@ public static class Logger
             // Rotate: keep 5 newest, delete rest
             CleanupOldLogs();
 
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd-HHmmss");
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd-HHmmss", CultureInfo.InvariantCulture);
             var logPath = Path.Combine(_logDir, $"XBVault-{timestamp}.log");
             const string outputTemplate = "[{Timestamp:HH:mm:ss.fff}] [{Level:u4}] {Message:lj}{NewLine}{Exception}";
 
             var loggerConfiguration = new LoggerConfiguration()
                 .MinimumLevel.ControlledBy(_levelSwitch)
                 .WriteTo.Sink(new ApplicationLogSink())
-                .WriteTo.File(logPath, outputTemplate: outputTemplate, shared: false);
+                .WriteTo.File(logPath, formatProvider: CultureInfo.InvariantCulture, outputTemplate: outputTemplate, shared: false);
 
             if (_consoleAttached)
             {
                 loggerConfiguration = loggerConfiguration.WriteTo.Console(
                     theme: AnsiConsoleTheme.Code,
+                    formatProvider: CultureInfo.InvariantCulture,
                     outputTemplate: outputTemplate);
             }
 
@@ -139,6 +142,7 @@ public static class Logger
         {
             loggerConfiguration = loggerConfiguration.WriteTo.Console(
                 theme: AnsiConsoleTheme.Code,
+                formatProvider: CultureInfo.InvariantCulture,
                 outputTemplate: outputTemplate);
         }
 
@@ -276,13 +280,7 @@ public static class Logger
     {
         try
         {
-            if (Dispatcher.UIThread.CheckAccess())
-            {
-                AddEntryCore(entry);
-                return;
-            }
-
-            Dispatcher.UIThread.Post(() => AddEntryCore(entry));
+            UIHelpers.RunOnUI(() => AddEntryCore(entry));
         }
         catch
         {
@@ -335,7 +333,7 @@ public static class Logger
             {
                 Timestamp = logEvent.Timestamp.LocalDateTime,
                 Level = FromSerilogLevel(logEvent.Level),
-                Message = logEvent.RenderMessage() + (logEvent.Exception is null ? string.Empty : Environment.NewLine + logEvent.Exception)
+                Message = logEvent.RenderMessage(CultureInfo.InvariantCulture) + (logEvent.Exception is null ? string.Empty : Environment.NewLine + logEvent.Exception)
             });
         }
     }

@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using Avalonia.Controls;
 using Avalonia.Interactivity;

@@ -1,3 +1,4 @@
+#nullable enable
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -28,7 +29,7 @@ public partial class App : Application
         Logger.Init();
 
         // Log pre-flight repairs from Program.Main
-        if (Program.PreFlightReport is { } report)
+        if (AppBoot.PreFlightReport is { } report)
         {
             if (report.SettingsReset)
                 Logger.Warn($"Pre-flight: settings were corrupted, reset to defaults");
@@ -93,6 +94,7 @@ public partial class App : Application
 
             // splash first, main after delay
             var splash = new SplashWindow();
+            desktop.MainWindow = splash;
             splash.Show();
 
             _ = InitAfterSplashAsync(desktop, splash, mainViewModel, browseViewModel,
@@ -130,7 +132,7 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
             var ex = e.ExceptionObject as Exception;
-            Logger.Fatal(ex ?? new Exception("Unknown"), "AppDomain unhandled exception");
+            Logger.Fatal(ex ?? new InvalidOperationException("Unknown"), "AppDomain unhandled exception");
             ShowErrorDialogSafe("Fatal Error", "An unrecoverable error occurred.", ex?.ToString() ?? "Unknown error", ErrorDialogType.Error);
         };
 
@@ -155,7 +157,7 @@ public partial class App : Application
     {
         try
         {
-            Dispatcher.UIThread.Post(async () =>
+            _ = XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
             {
                 try
                 {
@@ -170,7 +172,7 @@ public partial class App : Application
                 {
                     Logger.Error(ex, "ShowErrorDialogSafe: failed to show dialog");
                 }
-            }, DispatcherPriority.Send);
+            });
         }
         catch (Exception ex)
         {
@@ -205,7 +207,7 @@ public partial class App : Application
         await Task.Delay(SplashMinDelayMs);
         Logger.Debug("Splash delay complete, building main window");
 
-        await Dispatcher.UIThread.InvokeAsync(async () =>
+        await XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
         {
             var main = new MainWindow
             {
@@ -291,7 +293,7 @@ public partial class App : Application
             {
                 var refreshVm = new RefreshViewModel(new CatalogApiService(), async () =>
                 {
-                    await Dispatcher.UIThread.InvokeAsync(async () =>
+                await XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
                     {
                         await browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
                     });

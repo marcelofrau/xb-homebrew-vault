@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -80,7 +81,7 @@ public partial class InspectorViewModel : ObservableObject
             _ => _defaultBrush
         };
 
-        Dispatcher.UIThread.Post(() => ConsoleEntries.Add(entry));
+        XBVault.Helpers.UIHelpers.RunOnUI(() => ConsoleEntries.Add(entry));
     }
 
     private void OnAgentReplResult(XrayReplResult result)
@@ -88,7 +89,7 @@ public partial class InspectorViewModel : ObservableObject
         var p = result.Payload;
         if (p is null) return;
 
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             LogMuted($"[{DateTime.Now:HH:mm:ss}] <<< REPL result (succ={p.Success})");
             if (p.Success && !string.IsNullOrEmpty(p.Output))
@@ -103,7 +104,7 @@ public partial class InspectorViewModel : ObservableObject
         var p = result.Payload;
         if (p is null) return;
 
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             LogMuted($"[{DateTime.Now:HH:mm:ss}] <<< cmd result ({p.Command} succ={p.Success})");
             if (p.Success)
@@ -115,7 +116,7 @@ public partial class InspectorViewModel : ObservableObject
 
     private void OnAgentDisconnected(string reason)
     {
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             LogWarn($"Agent disconnected: {reason}");
             if (SelectedSession is not null)

@@ -6,28 +6,34 @@ Build env
 - If `dotnet` fails via PATH, use full path: `& "C:\Program Files\dotnet\dotnet.exe" build ...`
 
 Run / build
-- Dev run: `powershell -File build/run.ps1` (or `dotnet run --project XBVault`)
-- Quick build (debug): `powershell -File build/build.ps1` (or `dotnet build XBVault/XBVault.csproj`)
+- Dev run (desktop): `powershell -File build/run.ps1` (or `dotnet run --project XBVault.Desktop`)
+- Quick build (debug): `powershell -File build/build.ps1` (or `dotnet build XBVault.Desktop/XBVault.Desktop.csproj`)
 - Release build (mandatory Version):
   - Windows: `powershell -File build/build-release.ps1 -Version 0.1.0 -Arch x64`
   - Linux/macOS: `bash build/build-release.sh 0.1.0 x64`
   - Optional Windows installer: add `-Installer` flag (requires Inno Setup)
   - Output ZIP: `build/dist/XBVault-v<Version>-<RID>.zip`
-- No `.sln` file — single project. All commands target `XBVault/` directly.
+- Android build: `powershell -File build/build-android.ps1` (requires JAVA_HOME to Android SDK JDK 21)
+- Android run: `powershell -File build/run-android.ps1`
+- Solution file: `XBVault.sln` includes all projects. `dotnet build XBVault.sln` builds everything (requires JAVA_HOME for Android).
 - `.gitignore` excludes `AGENTS.md` — committing it is opt-in.
 
 CI (`.github/workflows/build.yml`)
 - `build` job: runs on push/PR to `main` (windows-latest + ubuntu-latest). `dotnet restore` + `dotnet build -c Release`.
-- `release` job: on tag `v*`. Builds matrix: win-x64, win-arm64, linux-x64, osx-x64, osx-arm64. Self-contained ZIP per RID.
+- `build-android` job: runs on push/PR to `main` (windows-latest). Builds Android arm64 APK.
+- `release` job: on tag `v*`. Builds matrix: win-x64, win-arm64, linux-x64, osx-x64, osx-arm64, android-arm64. ZIP per RID.
 - `publish` job: creates GitHub release from tag with all ZIPs.
 
 Environment
 - Requires .NET 10 SDK. CI uses `dotnet-version: 10.0.x`.
 - Windows scripts default to `"C:\Program Files\dotnet\dotnet.exe"`. Fallback: `dotnet` on PATH (build-release.ps1 checks both).
-- `OutputType` is `WinExe` on Windows, `Exe` on other platforms (csproj lines 3-4).
+- Desktop `OutputType` is `WinExe` on Windows, `Exe` on other platforms.
 - `PublishReadyToRun` enabled on Windows, disabled for arm64 cross-compile.
-- `BuiltInComInteropSupport` is Windows-only (csproj line 9).
+- `BuiltInComInteropSupport` is Windows-only (Desktop csproj).
 - USB detection via WMI (`System.Management`) — Windows only, macOS/Linux no-op.
+- Android requires JDK 21 (`$env:LOCALAPPDATA\Android\Sdk\jdk-21`) and Android SDK (API 36, build-tools 36.0.0).
+- Android `SupportedOSPlatformVersion` is 23 (required by `androidx.lifecycle.runtime`).
+- Android `RuntimeIdentifier` is `android-arm64` (single RID to avoid outer multi-RID build issues).
 
 Project / conventions
 - Project folder name must remain `XBVault` (build scripts expect it). Do not rename.

@@ -1,3 +1,4 @@
+#nullable enable
 using System.Collections.Specialized;
 using System.Text;
 using Avalonia.Controls;
@@ -32,7 +33,7 @@ public partial class LogsView : UserControl
     {
         if (DataContext is LogsViewModel vm && vm.AutoScroll)
         {
-            Dispatcher.UIThread.Post(ScrollToBottom);
+            XBVault.Helpers.UIHelpers.RunOnUI(ScrollToBottom);
         }
     }
 
@@ -58,12 +59,12 @@ public partial class LogsView : UserControl
 
         var orig = CopyButtonText.Text;
         CopyButtonText.Text = "Copied!";
-        Task.Delay(CopyFeedbackDelayMs).FireAndForget();
         // restore text after delay without blocking UI thread
         Task.Run(async () =>
         {
             await Task.Delay(CopyFeedbackDelayMs).ConfigureAwait(false);
-            CopyButtonText.Text = orig;
+            // update UI on UI thread
+            XBVault.Helpers.UIHelpers.RunOnUI(() => CopyButtonText.Text = orig);
         }).FireAndForget();
     }
 

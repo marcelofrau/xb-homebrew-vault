@@ -1,3 +1,4 @@
+#nullable enable
 namespace XBVault.Models;
 
 public enum InstallFailureStage

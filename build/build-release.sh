@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VERSION="${1:?Usage: $0 <version> [arch]}"
 ARCH="${2:-x64}"
-PROJECT="${3:-XBVault}"
+PROJECT="${3:-XBVault.Desktop}"
 OUTPUT_DIR="${4:-dist}"
 
 # Strip leading v prefix if present

@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,6 +10,13 @@ using XBVault.Models;
 
 namespace XBVault.Services;
 
+/// <summary>
+/// Tracks user-visible background tasks and scheduled jobs.
+/// </summary>
+/// <remarks>
+/// Collection mutations are marshaled through <see cref="PostToUi"/> so tests can override dispatching
+/// and frontends can keep UI-bound collections on the UI thread.
+/// </remarks>
 public class BackgroundTaskService
 {
     public const int MaxRecentTasks = 50;
@@ -357,10 +365,7 @@ public class BackgroundTaskService
     {
         try
         {
-            if (Dispatcher.UIThread.CheckAccess())
-                action();
-            else
-                Dispatcher.UIThread.Post(action, DispatcherPriority.Normal);
+            UIHelpers.RunOnUI(action, DispatcherPriority.Normal);
         }
         catch (Exception ex)
         {

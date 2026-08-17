@@ -3,6 +3,8 @@ using System.Globalization;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
 
+#nullable enable
+
 namespace XBVault.Converters;
 
 public class BoolToHighlightBgConverter : IValueConverter

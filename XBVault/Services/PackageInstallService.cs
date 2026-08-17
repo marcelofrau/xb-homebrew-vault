@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -14,6 +15,14 @@ using XBVault.Models;
 
 namespace XBVault.Services;
 
+/// <summary>
+/// Downloads, analyzes, and installs Xbox packages with dependency handling.
+/// </summary>
+/// <remarks>
+/// This service is UI-agnostic and should remain reusable by desktop and Android frontends.
+/// It owns install-file classification, dependency ordering, temporary extraction, and progress reporting;
+/// ViewModels own user-facing status state and dialogs.
+/// </remarks>
 public class PackageInstallService
 {
     private readonly HttpClient _http;
@@ -84,6 +93,12 @@ public class PackageInstallService
     {
     }
 
+    // Back-compat overload used throughout tests and callers: keep three-arg ctor
+    public PackageInstallService(CacheService cache, IXboxPackageService packageService, HttpClient? http)
+        : this(cache, packageService, http, log: null)
+    {
+    }
+
     public PackageInstallService(CacheService cache, IXboxPackageService packageService, HttpClient? http, IAppLogger? log)
     {
         _cache = cache;
@@ -117,7 +132,7 @@ public class PackageInstallService
         var url = downloadUrl ?? item.DownloadUrl;
         if (string.IsNullOrWhiteSpace(url))
         {
-            _log.Error($"No download URL for {item.Name}");
+            _log.LogError($"No download URL for {item.Name}");
             return InstallResult.Fail(InstallFailureStage.Download, "No download URL available for this item.");
         }
 
@@ -182,7 +197,7 @@ public class PackageInstallService
                 catch (Exception ex)
                 {
                     lastError = ex;
-                    _log.Error(ex, $"Download attempt {attempt}/{maxAttempts} failed for {url}");
+                    _log.LogError(ex, $"Download attempt {attempt}/{maxAttempts} failed for {url}");
                     if (File.Exists(localPath))
                         File.Delete(localPath);
                     if (attempt < maxAttempts)
@@ -192,7 +207,7 @@ public class PackageInstallService
 
             if (lastError is not null)
             {
-                _log.Error(lastError, $"Download failed for {url} after {maxAttempts} attempts");
+                _log.LogError(lastError, $"Download failed for {url} after {maxAttempts} attempts");
                 return InstallResult.Fail(InstallFailureStage.Download,
                     $"Download failed after {maxAttempts} attempts ({lastError.Message}). The source may be down or your network blocked it.");
             }
@@ -220,7 +235,7 @@ public class PackageInstallService
         }
         catch (Exception ex)
         {
-            _log.Error(ex, $"Extraction failed for {localPath}");
+            _log.LogError(ex, $"Extraction failed for {localPath}");
             return InstallResult.Fail(InstallFailureStage.Extraction,
                 $"Extraction failed: {ex.Message}");
         }
@@ -277,7 +292,7 @@ public class PackageInstallService
         }
         else
         {
-            _log.Error($"Install FAILED: {item.Name}");
+            _log.LogError($"Install FAILED: {item.Name}");
         }
         return result
             ? InstallResult.Ok()

@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,8 +14,14 @@ using static XBVault.Helpers.FileSystemPathParser;
 
 namespace XBVault.Services;
 
+/// <summary>
+/// Progress update emitted during SFTP upload/download workflows.
+/// </summary>
 public readonly record struct TransferUpdate(double Progress, string StatusText);
 
+/// <summary>
+/// Result object returned by high-level SFTP transfer workflows.
+/// </summary>
 public class TransferResult
 {
     public bool Cancelled { get; init; }
@@ -44,6 +51,13 @@ public class TransferResult
         };
 }
 
+/// <summary>
+/// Orchestrates high-level SFTP upload, download, extraction, and cancellation workflows.
+/// </summary>
+/// <remarks>
+/// Keep primitive SSH/SFTP operations in <see cref="ISftpService"/>. This service composes those primitives
+/// into user-facing file workflows and reports progress in a frontend-neutral way.
+/// </remarks>
 public class SftpTransferService : IDisposable
 {
     private readonly ISftpService _sftp;
@@ -97,7 +111,7 @@ public class SftpTransferService : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private void Report(IProgress<TransferUpdate>? progress, double value, string status)
+    private static void Report(IProgress<TransferUpdate>? progress, double value, string status)
         => progress?.Report(new TransferUpdate(value, status));
 
     private ForwardingProgress MakeProgress(IProgress<TransferUpdate>? progress, Func<double, string> status)
@@ -256,7 +270,7 @@ public class SftpTransferService : IDisposable
         }
         catch (Exception ex)
         {
-            _log.Error(ex, FailureContext("Upload"));
+            _log.LogError(ex, FailureContext("Upload"));
             return TransferResult.Fail(ex, $"Upload failed: {ex.Message}");
         }
         finally
@@ -558,7 +572,7 @@ public class SftpTransferService : IDisposable
         }
         catch (Exception ex)
         {
-            _log.Error(ex, FailureContext("ZIP upload"));
+            _log.LogError(ex, FailureContext("ZIP upload"));
             return TransferResult.Fail(ex, $"ZIP upload failed: {ex.Message}");
         }
         finally
@@ -663,7 +677,7 @@ public class SftpTransferService : IDisposable
         }
         catch (Exception ex)
         {
-            _log.Error(ex, FailureContext("Download"));
+            _log.LogError(ex, FailureContext("Download"));
             return TransferResult.Fail(ex, $"Download failed: {ex.Message}");
         }
         finally
@@ -703,7 +717,7 @@ public class SftpTransferService : IDisposable
         }
         catch (Exception ex)
         {
-            _log.Error(ex, FailureContext("Download"));
+            _log.LogError(ex, FailureContext("Download"));
             return TransferResult.Fail(ex, $"Download failed: {entry.Name}: {ex.Message}");
         }
         finally

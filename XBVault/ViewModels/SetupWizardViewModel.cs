@@ -1,3 +1,4 @@
+#nullable enable
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
@@ -8,8 +9,9 @@ namespace XBVault.ViewModels;
 public partial class SetupWizardViewModel : ObservableObject
 {
     private readonly IXboxAuthService _authService;
+    private readonly bool _canCancel = true;
 
-    public Action? CloseAction;
+    public Action? CloseAction { get; set; }
 
     public SetupWizardViewModel(IXboxAuthService authService)
     {
@@ -57,7 +59,7 @@ public partial class SetupWizardViewModel : ObservableObject
     };
 
     public bool CanGoBack => CurrentStep > 0;
-    public bool CanCancel => true;
+    public bool CanCancel => _canCancel;
 
     partial void OnCurrentStepChanged(int value)
     {

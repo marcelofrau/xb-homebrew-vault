@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Net;
 using System.Net.Http;
@@ -25,6 +26,7 @@ public class XboxAuthService : IXboxAuthService
     private string? _username;
     private string? _password;
     private string? _smbPassword;
+    private readonly int _maxResponseBodyLogLength = 2000;
 
     public event Action<bool>? ConnectionChanged;
 
@@ -269,7 +271,7 @@ public class XboxAuthService : IXboxAuthService
         {
             var body = await resp.Content.ReadAsStringAsync();
             if (string.IsNullOrWhiteSpace(body)) return "(empty body)";
-            return body.Length <= 2000 ? body : body[..2000] + "... (truncated)";
+            return body.Length <= _maxResponseBodyLogLength ? body : body[.._maxResponseBodyLogLength] + "... (truncated)";
         }
         catch
         {

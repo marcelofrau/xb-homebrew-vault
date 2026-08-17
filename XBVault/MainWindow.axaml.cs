@@ -1,7 +1,9 @@
+#nullable enable
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
@@ -147,7 +149,7 @@ public partial class MainWindow : Window
     {
         var show = count > 0;
         BellBadge.IsVisible = show;
-        BellBadgeText.Text = count > 99 ? "99+" : count.ToString();
+        BellBadgeText.Text = count > 99 ? "99+" : count.ToString(CultureInfo.InvariantCulture);
     }
 
     public void SetTaskCenter(TaskCenterViewModel taskCenter)
@@ -187,10 +189,10 @@ public partial class MainWindow : Window
         _tasksFadeGen++;
         Logger.Trace($"Flyout: TasksPopup.Opened fired (gen={_tasksFadeGen}, isOpen={TasksPopup.IsOpen}, taskCenter.IsOpen={_taskCenter?.IsOpen})");
         FadeInPopup(TasksPopup);
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             Logger.Trace($"Flyout: TasksPopup check (isUsingOverlay={TasksPopup.IsUsingOverlayLayer}, childBounds={TasksPopup.Child?.Bounds}, childOpacity={TasksPopup.Child?.Opacity})");
-        }, DispatcherPriority.Background);
+        }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
     private void OnTasksPopupClosed(object? sender, EventArgs e)
@@ -205,10 +207,10 @@ public partial class MainWindow : Window
         _notificationsFadeGen++;
         Logger.Trace($"Flyout: NotificationsPopup.Opened fired (gen={_notificationsFadeGen}, isOpen={NotificationsPopup.IsOpen})");
         FadeInPopup(NotificationsPopup);
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             Logger.Trace($"Flyout: NotificationsPopup check (isUsingOverlay={NotificationsPopup.IsUsingOverlayLayer}, childBounds={NotificationsPopup.Child?.Bounds}, childOpacity={NotificationsPopup.Child?.Opacity})");
-        }, DispatcherPriority.Background);
+        }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
     private void OnNotificationsPopupClosed(object? sender, EventArgs e)
@@ -272,7 +274,7 @@ public partial class MainWindow : Window
         TaskIndicatorIcon.Classes.Set("statusDot", _taskCenter.ActiveCount > 0);
         var count = _taskCenter.ActiveCount;
         TaskIndicatorBadge.IsVisible = count > 0;
-        TaskIndicatorBadgeText.Text = count > 99 ? "99+" : count.ToString();
+        TaskIndicatorBadgeText.Text = count > 99 ? "99+" : count.ToString(CultureInfo.InvariantCulture);
     }
 
     private void OnTaskIndicatorClick(object? sender, RoutedEventArgs e)
@@ -614,8 +616,8 @@ public partial class MainWindow : Window
 
     private void OnDiscordClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        // Fire-and-forget to keep handler signature and avoid unobserved exceptions
-        Task.Run(async () =>
+        // Run UI work on Avalonia UI thread to avoid "different thread owns it" errors.
+        _ = XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
         {
             try
             {
@@ -628,12 +630,13 @@ public partial class MainWindow : Window
             {
                 Logger.Error(ex, "OnDiscordClick failed");
             }
-        }).FireAndForget();
+        });
     }
 
     private void OnDisconnectClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        Task.Run(async () =>
+        // Ensure UI work runs on UI thread (window construction must happen on UI thread).
+        _ = XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
         {
             try
             {
@@ -664,6 +667,6 @@ public partial class MainWindow : Window
             {
                 Logger.Error(ex, "OnDisconnectClick failed");
             }
-        }).FireAndForget();
+        });
     }
 }

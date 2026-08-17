@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -96,7 +97,7 @@ public partial class BrowseView : UserControl
     private Window? GetWindow() =>
         TopLevel.GetTopLevel(this) as Window;
 
-    private async Task ShowUnsupportedDialog(Window owner)
+    private static async Task ShowUnsupportedDialog(Window owner)
     {
         var dlg = new ErrorDialog(
             "Unsupported File",

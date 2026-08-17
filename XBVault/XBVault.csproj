@@ -1,23 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType Condition="$([MSBuild]::IsOSPlatform('windows'))">WinExe</OutputType>
-    <OutputType Condition="!$([MSBuild]::IsOSPlatform('windows'))">Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-Recommended</AnalysisLevel>
-    <BuiltInComInteropSupport Condition="$([MSBuild]::IsOSPlatform('windows'))">true</BuiltInComInteropSupport>
-    <ApplicationIcon>Assets/Icons/app.ico</ApplicationIcon>
-    <AssemblyName>XBVault</AssemblyName>
     <RootNamespace>XBVault</RootNamespace>
     <Version>1.4.0</Version>
     <Authors>Marcelo Frau</Authors>
     <Description>XB Homebrew Vault — Desktop manager for Xbox Dev Mode homebrew</Description>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <Copyright>Copyright (c) 2026 Marcelo Frau</Copyright>
-    <PublishReadyToRun Condition="$([MSBuild]::IsOSPlatform('windows'))">true</PublishReadyToRun>
     <DefineConstants Condition="$([MSBuild]::IsOSPlatform('windows'))">$(DefineConstants);WINDOWS_BUILD</DefineConstants>
   </PropertyGroup>
 
@@ -25,7 +18,6 @@
     <PackageReference Include="Avalonia" Version="12.0.0" />
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
     <PackageReference Include="Avalonia.Controls.ItemsRepeater" Version="12.0.0" />
-    <PackageReference Include="Avalonia.Desktop" Version="12.0.0" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.0" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
@@ -43,5 +35,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="XBVault.Tests" />
+    <InternalsVisibleTo Include="XBVault.Desktop" />
+    <InternalsVisibleTo Include="XBVault.Android" />
   </ItemGroup>
 </Project>

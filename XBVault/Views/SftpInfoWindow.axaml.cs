@@ -1,7 +1,9 @@
+#nullable enable
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Input;
+using System.Globalization;
 
 namespace XBVault.Views;
 
@@ -15,7 +17,7 @@ public partial class SftpInfoWindow : Window
     public void SetConnectionInfo(string host, string user, string password, int port)
     {
         HostText.Text = host;
-        PortText.Text = port.ToString();
+        PortText.Text = port.ToString(CultureInfo.InvariantCulture);
         UserText.Text = user;
         PasswordText.Text = password;
     }

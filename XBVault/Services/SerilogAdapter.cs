@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using Serilog;
 
@@ -9,8 +10,8 @@ public sealed class SerilogAdapter : IAppLogger
     public void Debug(string msg) => Logger.Debug(msg);
     public void Info(string msg) => Logger.Info(msg);
     public void Warn(string msg) => Logger.Warn(msg);
-    public void Error(string msg) => Logger.Error(msg);
-    public void Error(Exception ex, string? context = null) => Logger.Error(ex, context);
+    public void LogError(string msg) => Logger.Error(msg);
+    public void LogError(Exception ex, string? context = null) => Logger.Error(ex, context);
     public void Fatal(string msg) => Logger.Fatal(msg);
     public void Fatal(Exception ex, string? context = null) => Logger.Fatal(ex, context);
 }

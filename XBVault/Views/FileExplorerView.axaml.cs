@@ -1,3 +1,4 @@
+#nullable enable
 using System.IO;
 using System.Linq;
 using Avalonia;
@@ -16,6 +17,8 @@ namespace XBVault.Views;
 
 public partial class FileExplorerView : UserControl
 {
+    private static readonly FilePickerFileType[] ZipFileTypes = [new("ZIP Archive") { Patterns = ["*.zip"] }];
+
     private FileExplorerViewModel? _vm;
     private DispatcherTimer? _cdTimer;
     private double _cdAngle;
@@ -388,7 +391,7 @@ public partial class FileExplorerView : UserControl
         {
             Title = "Select ZIP file to extract and upload",
             AllowMultiple = false,
-            FileTypeFilter = new[] { new FilePickerFileType("ZIP Archive") { Patterns = new[] { "*.zip" } } }
+            FileTypeFilter = ZipFileTypes
         });
         if (files.Count == 0)
         {
@@ -646,7 +649,7 @@ public partial class FileExplorerView : UserControl
     {
         Logger.Debug($"ScrollToEntry: '{entry.FullPath}'");
         var treeView = this.FindControl<TreeView>("FolderTree");
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             if (treeView is null || _vm is null) return;
 
@@ -660,7 +663,7 @@ public partial class FileExplorerView : UserControl
             {
                 _vm.SuppressTreeNavigation = prevSuppress;
             }
-        }, DispatcherPriority.Loaded);
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     private async Task<string?> ShowInputDialogAsync(string title, string message, string defaultValue, string? iconUri)

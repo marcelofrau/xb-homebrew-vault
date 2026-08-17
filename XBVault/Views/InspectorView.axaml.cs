@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -77,7 +78,7 @@ public partial class InspectorView : UserControl
 
     private void ScrollToEndDeferred()
     {
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             if (ConsoleEditor.Document is null) return;
             ConsoleEditor.CaretOffset = ConsoleEditor.Document.TextLength;
@@ -170,7 +171,7 @@ public partial class InspectorView : UserControl
     private Window? GetWindow() =>
         TopLevel.GetTopLevel(this) as Window;
 
-    private async Task ShowUnsupportedDialog(Window owner)
+    private static async Task ShowUnsupportedDialog(Window owner)
     {
         var dlg = new ErrorDialog(
             "Unsupported File",
