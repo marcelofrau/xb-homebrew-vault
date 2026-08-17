@@ -8,6 +8,7 @@ namespace XBVault.Android;
     Label = "XBVault",
     Theme = "@style/MainTheme",
     MainLauncher = true,
+    ScreenOrientation = ScreenOrientation.Portrait,
     ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode)]
 public class MainActivity : AvaloniaMainActivity
 {

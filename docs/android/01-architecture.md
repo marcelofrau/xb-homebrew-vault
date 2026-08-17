@@ -162,18 +162,29 @@ graph LR
 
 ```mermaid
 graph TB
-    TabBar["Bottom Tab Bar (5 tabs)"] --> Content["Content Area"]
-    Content --> BV["BrowseView"]
-    Content --> IV["InstalledView"]
-    Content --> FE["FileExplorerView"]
-    Content --> TV["ToolsView"]
-    Content --> SV["SettingsView"]
+    TabBar["Bottom Tab Bar (4 tabs)"] --> Content["Content Area"]
+    Content --> BV["BrowsePage"]
+    Content --> IV["InstalledPage"]
+    Content --> FE["FilesPage"]
+    Content --> TV["ToolsPage"]
 
-    Inspector["Inspector (accessible via Tools or Settings)"]
-    Logs["Logs (accessible via Settings)"]
+    Hamburger["Hamburger Menu"] --> Settings["Settings"]
+    Hamburger --> Logs["Logs"]
+    Hamburger --> Notifications["Notifications"]
+    Hamburger --> Jobs["Jobs"]
+    Hamburger --> About["About"]
+
+    ConnectionIcon["Connection Icon (top bar)"] --> ConnectionPage["ConnectionPage"]
 ```
 
 The `MainViewModel.SelectedTab` index maps to both navigation systems — the Carousel binding works identically; only the visual chrome changes.
+
+**Key differences from desktop:**
+- **4 tabs** (Browse, Installed, Files, Tools) — not 7
+- **Inspector excluded** from Android
+- **Settings, Logs** accessed via hamburger menu, not tabs
+- **Connection** accessed via top bar icon, not sidebar
+- **All Android views are independent files** in `XBVault.Android/Views/` — no shared AXAML with desktop
 
 ## Dialog Strategy
 

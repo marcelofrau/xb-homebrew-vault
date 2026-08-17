@@ -49,32 +49,46 @@ Five-phase implementation plan with incremental deliverables. Each phase produce
 
 ## Phase 1: Mobile Shell (3–5 days)
 
-**Goal:** Working mobile navigation shell with bottom tab bar, top bar, and content area switching between views.
+**Goal:** Pre-splash, Avalonia splash, and working mobile navigation shell with bottom tab bar, top bar, and content area switching between views.
 
-### Tasks
+**UI/UX Design Reference:** [09-mobile-ux-design.md](09-mobile-ux-design.md)
+
+### Phase 1A: Pre-Splash + Avalonia Splash (done)
+
+**Status:** ✅ Complete. App builds, deploys to emulator, shows placeholder screen.
+
+### Phase 1B: Shell + Splash (current)
+
+**Goal:** Pre-splash native, Avalonia splash, MobileMainWindow shell with top bar, tab bar, hamburger menu.
+
+#### Tasks
 
 | # | Task | Estimate | Dependencies |
 |---|------|----------|--------------|
-| 1.1 | Create `MobileMainWindow.axaml` — bottom tab bar + content area | 2h | Phase 0 |
-| 1.2 | Create `MobileMainWindow.axaml.cs` — tab selection → `SelectedTab` binding | 2h | 1.1 |
-| 1.3 | Create `MobileTabBar.axaml` — reusable bottom navigation component | 2h | — |
-| 1.4 | Wire `App.axaml.cs` — detect platform, show `MainWindow` or `MobileMainWindow` | 2h | 1.1, 1.2 |
-| 1.5 | Create top bar with app title, notifications bell, tasks indicator | 2h | 1.1 |
-| 1.6 | Move status bar content (connection status) to top bar strip | 1h | 1.5 |
-| 1.7 | Test: BrowseView loads in content area on Android | 1h | 1.4 |
-| 1.8 | Test: All 5 tabs switch content correctly | 1h | 1.4 |
-| 1.9 | Remove desktop-only elements on Android: window resize handles, title bar | 1h | 1.4 |
-| 1.10 | Guard `WindowSettingsService` calls in `MainWindow` constructor with platform check | 30min | — |
-| 1.11 | Guard single-instance mutex in `Program.cs` — skip on Android | 30min | — |
+| 1B.1 | Copy hamburger icon from personal set → shared (`mainwindow-hamburger-20.png`) | 15min | — |
+| 1B.2 | Copy splash_icon.png to Android drawable | 15min | — |
+| 1B.3 | Pre-splash: update `styles.xml` (values + values-v31) with `#284325` + logo | 30min | 1B.2 |
+| 1B.4 | Create `MobileSplashView.axaml` + `.cs` (portrait splash, all text, version) | 2h | Assets do shared |
+| 1B.5 | Create `MobileMainWindow.axaml` + `.cs` (top bar + content + tab bar) | 3h | 1B.1 |
+| 1B.6 | Wire `App.axaml.cs`: init services, splash → main transition | 2h | 1B.3, 1B.4, 1B.5 |
+| 1B.7 | Update `MainActivity`: portrait lock | 15min | — |
+| 1B.8 | Build + deploy emulador — validate full flow | 1h | 1B.1–1B.7 |
 
-### Acceptance Criteria
+#### Acceptance Criteria
 
-- [ ] Android app shows bottom tab bar with 5 tabs
-- [ ] Tapping each tab shows the correct view
-- [ ] Top bar displays app title and notification/task icons
-- [ ] Connection status indicator visible
-- [ ] No desktop window chrome (resize handles, title bar buttons)
-- [ ] Desktop behavior unchanged
+- [ ] Pre-splash: fundo `#284325` + logo appears instantly on app open
+- [ ] Avalonia splash: portrait layout, all text elements, dynamic version
+- [ ] Transitions: pre-splash → splash → main are automatic
+- [ ] Top bar: logo + title left, connection icon + hamburger right
+- [ ] Top bar: `TitleGradient` background (#447F3E → #9ACA3C)
+- [ ] Bottom tab bar: 4 icons (Browse, Installed, Files, Tools), no text
+- [ ] Tab switching works (Browse default)
+- [ ] Selected tab shows accent color indicator
+- [ ] Hamburger menu opens with 5 options (Notifications, Jobs, Logs, Settings, About)
+- [ ] Connection icon visible (tap shows placeholder)
+- [ ] Portrait-only (rotation locked)
+- [ ] Blade theme consistent: Xbox green colors, Oxanium fonts
+- [ ] Desktop build unchanged
 
 ---
 

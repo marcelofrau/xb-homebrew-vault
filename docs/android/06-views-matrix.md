@@ -138,3 +138,25 @@ These views work on Android without modification:
 | App.axaml | Styles and resources — platform-agnostic |
 | SplashWindow | Minimal code — just sets version text |
 | All 24 ViewModels | Pure MVVM — no platform dependencies |
+
+---
+
+## Android-Specific Views (New Files)
+
+These are **independent Android views** in `XBVault.Android/Views/`. They reuse ViewModels from the shared project but have their own AXAML layouts designed for mobile.
+
+| View | File | Phase | Description |
+|------|------|-------|-------------|
+| MobileSplashView | `Views/MobileSplashView.axaml` | 1B | Portrait splash with all text elements |
+| MobileMainWindow | `Views/MobileMainWindow.axaml` | 1B | Shell: top bar + content + tab bar |
+| BrowsePage | `Views/Pages/BrowsePage.axaml` | 2 | Browse content (responsive cards) |
+| InstalledPage | `Views/Pages/InstalledPage.axaml` | 2 | Installed packages list |
+| ConnectionPage | `Views/Pages/ConnectionPage.axaml` | 2 | Connection wizard (fullscreen) |
+| FilesPage | `Views/Pages/FilesPage.axaml` | 3 | File explorer (breadcrumbs) |
+| ToolsPage | `Views/Pages/ToolsPage.axaml` | 3 | Tools (vertical card list) |
+| SettingsPage | `Views/Pages/SettingsPage.axaml` | 3 | Settings + Logs link |
+| ConfirmPage | `Views/Pages/ConfirmPage.axaml` | 2 | Simple confirm (bottom sheet) |
+| ErrorPage | `Views/Pages/ErrorPage.axaml` | 2 | Error display (bottom sheet) |
+| AboutPage | `Views/Pages/AboutPage.axaml` | 3 | About dialog (fullscreen) |
+
+**Rule**: All Android views are independent — copy visual patterns from desktop when needed, but have full freedom to change later.
