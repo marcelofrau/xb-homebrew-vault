@@ -32,6 +32,39 @@ This is a fatal boot error. Common causes:
 3. Run with `--console` to see log output in real-time
 4. Check log files for error messages
 
+### macOS: "Unable to load shared library 'libAvaloniaNative'" or "code signature not valid"
+
+This is a **macOS Gatekeeper** issue. When you download the ZIP, macOS marks all files with a quarantine attribute. The Avalonia native library (`libAvaloniaNative.dylib`) is then blocked from loading.
+
+**Fix — run this in Terminal:**
+
+```bash
+xattr -cr /path/to/xbvault
+```
+
+Replace `/path/to/xbvault` with the actual folder path. For example, if you extracted to Desktop:
+
+```bash
+xattr -cr ~/Desktop/XBVault
+```
+
+**Or use the included helper script:**
+
+```bash
+cd /path/to/xbvault
+./xbv-fix-macos.sh
+```
+
+You only need to do this **once** after extracting. If it still doesn't work:
+
+```bash
+sudo spctl --master-disable    # temporarily lower security
+# launch XBVault
+sudo spctl --master-enable     # re-enable after
+```
+
+> **Note:** The `--check` command works fine because it doesn't load the UI native libraries — it only runs diagnostics.
+
 ---
 
 ## Can't Connect to Xbox
