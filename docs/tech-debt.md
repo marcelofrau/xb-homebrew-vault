@@ -2,6 +2,79 @@
 layout: default
 title: Tech Debt
 ---
+ 
+## 🛠️ Action Plan (Prioritized)
+
+Use this section as the tracked backlog for technical-debt work. Items are ordered by expected impact and ease of rollout. Each item includes a short why, recommended fix, risk, and rough estimate.
+
+1. DI + composition-root cleanup (Priority: High)
+   - Why: Manual `new` wiring in `App.axaml.cs` couples startup, hides lifetimes, and prevents easy testing.
+   - Fix: Add `Microsoft.Extensions.DependencyInjection`, implement `CompositionRoot` to register services/interfaces, resolve services from provider in `App` and ensure provider disposal on shutdown.
+   - Risk: medium (startup touchpoints). Tests must pass.
+   - Estimate: 6–12 hours.
+
+2. Convert `async void` handlers (Priority: High — safety)
+   - Why: `async void` throws unobserved exceptions and can crash app.
+   - Fix: Convert to `async Task` where possible; for event APIs that require `void`, wrap body with `FireAndForget` helper that logs exceptions.
+   - Risk: low.
+   - Estimate: 2–6 hours.
+
+3. Apply `.ConfigureAwait(false)` in services (Priority: High — correctness/perf)
+   - Why: Service-layer awaits capture UI sync context unnecessarily.
+   - Fix: Add `.ConfigureAwait(false)` to service I/O/HTTP/WebSocket awaits. Skip in ViewModels when interacting with UI-bound state.
+   - Risk: low-mechanical; run tests.
+   - Estimate: 2–8 hours (automatable via Roslyn fixer).
+
+4. Secrets: replace XOR obfuscation (Priority: High — security)
+   - Why: `CryptoService` currently only obfuscates secrets; not secure for real credentials.
+   - Fix: Introduce `ISecretStore` abstraction. Implement DPAPI/DataProtection on Windows, Keychain on macOS, libsecret on Linux, or use `Microsoft.AspNetCore.DataProtection` with OS-backed key protection as a pragmatic cross-platform option.
+   - Risk: medium (platform differences, migration of persisted settings).
+   - Estimate: 6–16 hours.
+
+5. Increase tests for Xbox domain services (Priority: High)
+   - Why: HTTP/WebSocket-heavy services (`XboxAuthService`, `XboxPackageService`, etc.) lack instance-level unit tests.
+   - Fix: Add fakes/stubs for `HttpMessageHandler` and WebSocket streams; write integration-style unit tests exercising error paths and retry logic.
+   - Risk: medium.
+   - Estimate: 8–24 hours.
+
+6. Extract coordinators from large ViewModels (Priority: Medium)
+   - Why: `BrowseViewModel`, `FileExplorerViewModel`, `CustomInstallViewModel` contain orchestration and transport logic violating SRP.
+   - Fix: Create small coordinator/services (e.g., `BrowseInstallCoordinator`, `ThumbnailService`, `FileExplorerTransferCoordinator`) and inject them.
+   - Risk: medium-high (integration surface), perform incrementally with tests.
+   - Estimate: 8–40 hours per ViewModel (iterative).
+
+7. Logging & observability (Priority: Medium)
+   - Why: Static `Logger` is convenient but incompatible with DI-first lifecycles and structured logging.
+   - Fix: Add `IAppLogger` wrapper and adapter for current `Logger`; plan migration to `Microsoft.Extensions.Logging` sinks incrementally.
+   - Risk: low.
+   - Estimate: 2–6 hours.
+
+8. Cancellation/disposal audit (Priority: Medium)
+   - Why: Some services create CTS internally and occasionally leak disposables.
+   - Fix: Prefer passing `CancellationToken` from callers, ensure every `CancellationTokenSource` is disposed, and add `IDisposable` where ownership exists. Add unit tests for disposal behaviors where feasible.
+   - Risk: low.
+   - Estimate: 4–8 hours.
+
+9. UI clipping workaround (Priority: Low)
+   - Why: Avalonia 12 CornerRadius does not clip inner Image.
+   - Fix: Use `RectangleGeometry` clip bound to `ActualWidth/ActualHeight` in code-behind or switch to `ImageBrush` render path.
+   - Risk: low.
+   - Estimate: 1–2 hours.
+
+10. CI checks & analyzers (Priority: Low)
+   - Why: Prevent regressions for `async void`, `.ConfigureAwait(false)`, formatting, and style.
+   - Fix: Add Roslyn analyzers, `dotnet format`, and GitHub Actions job(s) to run analyzers + tests.
+   - Risk: low.
+   - Estimate: 3–8 hours.
+
+Quick wins to do immediately
+- Replace highest-risk `async void` handlers (MainWindow, FileExplorer drop/upload handlers, ConnectionWindow). Small PRs reduce crash surface quickly.
+- Add `FireAndForget` helper and replace trivial event bodies.
+- Add `IAppLogger` wrapper and use it in startup.
+
+How to track progress in this doc
+- Mark item status with emoji: ✅ done, ⚠️ in-progress, ⏳ planned, ❗ blocked.
+- Add per-item `owner`, `branch`, and `PR` links when work starts.
 
 # Technical Debt
 

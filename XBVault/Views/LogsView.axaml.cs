@@ -41,7 +41,7 @@ public partial class LogsView : UserControl
         LogScrollViewer?.ScrollToEnd();
     }
 
-    private async void OnCopyClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnCopyClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not LogsViewModel vm || vm.Logs.Count == 0) return;
 
@@ -54,12 +54,17 @@ public partial class LogsView : UserControl
 
         var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
         if (clipboard is not null)
-            await clipboard.SetTextAsync(sb.ToString());
+            clipboard.SetTextAsync(sb.ToString()).FireAndForget();
 
         var orig = CopyButtonText.Text;
         CopyButtonText.Text = "Copied!";
-        await Task.Delay(CopyFeedbackDelayMs);
-        CopyButtonText.Text = orig;
+        Task.Delay(CopyFeedbackDelayMs).FireAndForget();
+        // restore text after delay without blocking UI thread
+        Task.Run(async () =>
+        {
+            await Task.Delay(CopyFeedbackDelayMs).ConfigureAwait(false);
+            CopyButtonText.Text = orig;
+        }).FireAndForget();
     }
 
     private void OnClearClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

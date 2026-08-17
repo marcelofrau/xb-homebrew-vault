@@ -128,7 +128,8 @@ public partial class BrowseView : UserControl
         }
 
         if (DataContext is BrowseViewModel vm && vm.OpenCustomInstallWithFileAction is not null)
-            await vm.OpenCustomInstallWithFileAction(path);
+            // call into VM and let its task run safely
+            vm.OpenCustomInstallWithFileAction(path).FireAndForget();
     }
 
     private void OnItemPointerPressed(object? sender, PointerPressedEventArgs e)

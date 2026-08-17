@@ -56,14 +56,25 @@ public partial class ConnectionWindow : Window
         }
     }
 
-    private async void OnConnectionCompleted(bool success)
+    private void OnConnectionCompleted(bool success)
     {
-        Logger.Info($"Connection dialog completed: success={success}");
-        if (success)
-            await Task.Delay(SuccessCloseDelayMs);
-        else
-            await Task.Delay(FailureCloseDelayMs);
-        Close();
+        // Run close delay without crashing on exceptions from async void
+        Task.Run(async () =>
+        {
+            try
+            {
+                Logger.Info($"Connection dialog completed: success={success}");
+                if (success)
+                    await Task.Delay(SuccessCloseDelayMs).ConfigureAwait(false);
+                else
+                    await Task.Delay(FailureCloseDelayMs).ConfigureAwait(false);
+                Close();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "OnConnectionCompleted delayed close failed");
+            }
+        }).FireAndForget();
     }
 
     private void OnClosing(object? sender, WindowClosingEventArgs e)

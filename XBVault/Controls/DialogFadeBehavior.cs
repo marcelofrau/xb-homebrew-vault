@@ -53,7 +53,8 @@ public static class DialogFadeBehavior
         e.Cancel = true;
         window.Closing -= OnClosing;
         window.Opacity = 0;
-        await Task.Delay(FadeOutDelay);
+        // run delay without capturing synchronization context
+        await Task.Delay(FadeOutDelay).ConfigureAwait(false);
 
         ClearDim(window);
         window.Close();

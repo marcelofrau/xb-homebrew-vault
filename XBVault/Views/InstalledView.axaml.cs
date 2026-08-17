@@ -127,7 +127,7 @@ public partial class InstalledView : UserControl
         }
 
         if (DataContext is InstalledViewModel vm && vm.OpenCustomInstallWithFileAction is not null)
-            await vm.OpenCustomInstallWithFileAction(path);
+            vm.OpenCustomInstallWithFileAction(path).FireAndForget();
     }
 
     private void OnItemPointerPressed(object? sender, PointerPressedEventArgs e)

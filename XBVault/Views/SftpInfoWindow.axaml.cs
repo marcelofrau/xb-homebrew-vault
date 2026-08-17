@@ -20,7 +20,7 @@ public partial class SftpInfoWindow : Window
         PasswordText.Text = password;
     }
 
-    private async void OnCopyHostClick(object? sender, RoutedEventArgs e)
+    private void OnCopyHostClick(object? sender, RoutedEventArgs e)
     {
         if (Clipboard is { } cb)
         {
@@ -28,11 +28,11 @@ public partial class SftpInfoWindow : Window
             item.Set(DataFormat.Text, HostText.Text ?? "");
             var transfer = new DataTransfer();
             transfer.Add(item);
-            await cb.SetDataAsync(transfer);
+            cb.SetDataAsync(transfer).FireAndForget();
         }
     }
 
-    private async void OnCopyPortClick(object? sender, RoutedEventArgs e)
+    private void OnCopyPortClick(object? sender, RoutedEventArgs e)
     {
         if (Clipboard is { } cb)
         {
@@ -40,11 +40,11 @@ public partial class SftpInfoWindow : Window
             item.Set(DataFormat.Text, PortText.Text ?? "");
             var transfer = new DataTransfer();
             transfer.Add(item);
-            await cb.SetDataAsync(transfer);
+            cb.SetDataAsync(transfer).FireAndForget();
         }
     }
 
-    private async void OnCopyUserClick(object? sender, RoutedEventArgs e)
+    private void OnCopyUserClick(object? sender, RoutedEventArgs e)
     {
         if (Clipboard is { } cb)
         {
@@ -52,11 +52,11 @@ public partial class SftpInfoWindow : Window
             item.Set(DataFormat.Text, UserText.Text ?? "");
             var transfer = new DataTransfer();
             transfer.Add(item);
-            await cb.SetDataAsync(transfer);
+            cb.SetDataAsync(transfer).FireAndForget();
         }
     }
 
-    private async void OnCopyPasswordClick(object? sender, RoutedEventArgs e)
+    private void OnCopyPasswordClick(object? sender, RoutedEventArgs e)
     {
         if (Clipboard is { } cb)
         {
@@ -64,7 +64,7 @@ public partial class SftpInfoWindow : Window
             item.Set(DataFormat.Text, PasswordText.Text ?? "");
             var transfer = new DataTransfer();
             transfer.Add(item);
-            await cb.SetDataAsync(transfer);
+            cb.SetDataAsync(transfer).FireAndForget();
         }
     }
 
