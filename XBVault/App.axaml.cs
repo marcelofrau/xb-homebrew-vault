@@ -17,7 +17,7 @@ namespace XBVault;
 
 public partial class App : Application
 {
-    private const int SplashMinDelayMs = 3000;
+    private const int SplashMinDelayMs = 5000;
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -898,33 +898,27 @@ public partial class App : Application
 
         Logger.Debug("Android services initialized, switching to MobileMainWindow");
 
-        // Switch to MobileMainWindow
         await XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
         {
             var main = new Views.MobileMainWindow();
             main.SetDataContext(mainViewModel);
 
-            // Swap splash → main in the root panel
             rootPanel.Children.Remove(splash);
             rootPanel.Children.Add(main);
 
-            // Wire up actions (placeholders for now — Fase 2 will add real dialogs)
             mainViewModel.ShowConnectAction = async () =>
             {
-                // TODO: Fase 2 — show ConnectionPage
                 Logger.Info("Android: ShowConnectAction placeholder");
                 return false;
             };
 
             mainViewModel.ShowAboutAction = () =>
             {
-                // TODO: Fase 2 — show AboutPage
                 Logger.Info("Android: ShowAboutAction placeholder");
             };
 
             settingsViewModel.ShowLogsAction = () =>
             {
-                // TODO: Fase 2 — show LogsPage
                 Logger.Info("Android: ShowLogsAction placeholder");
             };
 

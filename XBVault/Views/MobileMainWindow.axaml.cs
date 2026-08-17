@@ -13,6 +13,7 @@ public partial class MobileMainWindow : UserControl
 {
     private static readonly IBrush ActiveTabBrush = new SolidColorBrush(Color.Parse("#9ACA3C"));
     private static readonly IBrush InactiveTabBrush = new SolidColorBrush(Color.Parse("#888888"));
+    private static readonly IBrush ActiveTabBgBrush = new SolidColorBrush(Color.Parse("#229ACA3C"));
 
     public MobileMainWindow()
     {
@@ -105,6 +106,11 @@ public partial class MobileMainWindow : UserControl
         TabInstalledLabel.Foreground = selected == 1 ? ActiveTabBrush : InactiveTabBrush;
         TabFilesLabel.Foreground = selected == 2 ? ActiveTabBrush : InactiveTabBrush;
         TabToolsLabel.Foreground = selected == 3 ? ActiveTabBrush : InactiveTabBrush;
+
+        TabBrowseBtn.Background = selected == 0 ? ActiveTabBgBrush : Avalonia.Media.Brushes.Transparent;
+        TabInstalledBtn.Background = selected == 1 ? ActiveTabBgBrush : Avalonia.Media.Brushes.Transparent;
+        TabFilesBtn.Background = selected == 2 ? ActiveTabBgBrush : Avalonia.Media.Brushes.Transparent;
+        TabToolsBtn.Background = selected == 3 ? ActiveTabBgBrush : Avalonia.Media.Brushes.Transparent;
     }
 
     private void OnConnectionClick(object? sender, RoutedEventArgs e)
@@ -140,7 +146,10 @@ public partial class MobileMainWindow : UserControl
 
     private void OnMenuAbout(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is MainViewModel vm)
-            vm.OpenAboutCommand.Execute(null);
+        var about = new MobileAboutView();
+        about.SetOnBack(() => NavigationPanel.Children.Clear());
+        NavigationPanel.Children.Clear();
+        NavigationPanel.Children.Add(about);
+        NavigationPanel.IsVisible = true;
     }
 }
