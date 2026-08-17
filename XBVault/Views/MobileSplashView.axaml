@@ -1,0 +1,70 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="XBVault.Views.MobileSplashView"
+             Background="#284325">
+
+  <Grid RowDefinitions="*,Auto">
+      <StackPanel VerticalAlignment="Center"
+                  HorizontalAlignment="Center"
+                  Spacing="4">
+        <Image Source="avares://XBVault/Assets/Views/SplashWindow/splash-appicon-80.png"
+               Width="120" Height="120"
+               Stretch="Uniform"
+               HorizontalAlignment="Center"
+               Margin="0,0,0,8"/>
+        <TextBlock Text="XB HOMEBREW"
+                   FontFamily="Oxanium"
+                   FontSize="18"
+                   FontWeight="Bold"
+                   Foreground="#9ACA3C"
+                   HorizontalAlignment="Center"
+                   LetterSpacing="2"/>
+        <TextBlock Text="VAULT"
+                   FontFamily="Oxanium"
+                   FontSize="36"
+                   FontWeight="Bold"
+                   Foreground="White"
+                   HorizontalAlignment="Center"
+                   LetterSpacing="4"
+                   Margin="0,-4,0,0"/>
+        <TextBlock Text="Companion for Xbox Dev Mode"
+                   FontFamily="Oxanium"
+                   FontSize="13"
+                   Foreground="#B0B0B0"
+                   HorizontalAlignment="Center"
+                   Margin="0,4,0,0"/>
+        <Separator Width="40" Height="2"
+                   Background="#9ACA3C"
+                   Margin="0,6"
+                   HorizontalAlignment="Center"/>
+        <StackPanel Spacing="3" Margin="0,4,0,0">
+          <TextBlock x:Name="VersionText"
+                     FontFamily="Oxanium"
+                     FontSize="15"
+                     FontWeight="Bold"
+                     Foreground="#9ACA3C"
+                     HorizontalAlignment="Center"/>
+          <TextBlock Text="Marcelo Frau"
+                     FontFamily="Oxanium"
+                     FontSize="11"
+                     Foreground="#888"
+                     HorizontalAlignment="Center"/>
+          <TextBlock Text="GPL-3.0-only"
+                     FontFamily="Oxanium"
+                     FontSize="12"
+                     FontWeight="SemiBold"
+                     Foreground="#FFD700"
+                     HorizontalAlignment="Center"/>
+        </StackPanel>
+      </StackPanel>
+
+      <ProgressBar Grid.Row="1"
+                   IsIndeterminate="True"
+                   Height="2"
+                   HorizontalAlignment="Stretch"
+                   Foreground="#9ACA3C"
+                   Background="Transparent"
+                   Margin="32,0,32,24"/>
+    </Grid>
+
+</UserControl>

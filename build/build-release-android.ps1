@@ -16,8 +16,12 @@ $zipName = "XBVault-v$Version-$rid.zip"
 $zipPath = Join-Path $dist $zipName
 $publishDir = Join-Path $dist "publish-android"
 
-# Set JAVA_HOME to Android SDK JDK if not already set
-if (-not $env:JAVA_HOME -or -not (Test-Path $env:JAVA_HOME)) {
+# Set JAVA_HOME: prefer scoop temurin21-jdk, fallback to ANDROID_HOME/jdk-21
+$scoopJdk = "$env:USERPROFILE\scoop\apps\temurin21-jdk\current"
+if (Test-Path $scoopJdk) {
+    $env:JAVA_HOME = $scoopJdk
+    Write-Host "Set JAVA_HOME to scoop temurin21-jdk" -ForegroundColor DarkGray
+} elseif (-not $env:JAVA_HOME -or -not (Test-Path $env:JAVA_HOME)) {
     $androidSdk = "$env:LOCALAPPDATA\Android\Sdk"
     $jdkPath = "$androidSdk\jdk-21"
     if (Test-Path $jdkPath) {

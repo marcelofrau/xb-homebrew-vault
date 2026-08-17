@@ -9,7 +9,6 @@
     <BuiltInComInteropSupport Condition="$([MSBuild]::IsOSPlatform('windows'))">true</BuiltInComInteropSupport>
     <ApplicationIcon>../XBVault/Assets/Icons/app.ico</ApplicationIcon>
     <RootNamespace>XBVault</RootNamespace>
-    <Version>1.4.0</Version>
     <Authors>Marcelo Frau</Authors>
     <Description>XB Homebrew Vault — Desktop manager for Xbox Dev Mode homebrew</Description>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>

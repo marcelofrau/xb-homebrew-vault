@@ -2,6 +2,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -16,7 +17,7 @@ namespace XBVault;
 
 public partial class App : Application
 {
-    private const int SplashMinDelayMs = 2000;
+    private const int SplashMinDelayMs = 3000;
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -61,7 +62,19 @@ public partial class App : Application
 
         Logger.Info("Application initialized");
 
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (ApplicationLifetime is IActivityApplicationLifetime activity)
+        {
+            // Android: root panel holds splash initially, swaps to main after init
+            Logger.Info("Android: IActivityApplicationLifetime detected");
+            var rootPanel = new Panel();
+            var splash = new Views.MobileSplashView();
+            rootPanel.Children.Add(splash);
+            activity.MainViewFactory = () => rootPanel;
+            Logger.Info("Android: MainViewFactory set, launching init");
+
+            _ = InitAndroidAfterSplashAsync(rootPanel, splash);
+        }
+        else if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var authService = new XboxAuthService();
             var packageService = new XboxPackageService(authService);
@@ -843,5 +856,116 @@ public partial class App : Application
         // The configured backend is logged here; actual GPU/software
         // fallback info is available once a TopLevel window exists.
         Logger.Info("Rendering: Skia via ANGLE (D3D11), MaxGpuResourceSizeBytes=512MB, UseRegionDirtyRectClipping=true");
+    }
+
+    private static async Task InitAndroidAfterSplashAsync(
+        Panel rootPanel,
+        Views.MobileSplashView splash)
+    {
+        try
+        {
+            Logger.Debug("Android splash delay starting (2s)");
+            await Task.Delay(SplashMinDelayMs);
+            Logger.Debug("Android splash delay complete, initializing services");
+
+        // Initialize all services (same as desktop)
+        var authService = new XboxAuthService();
+        var packageService = new XboxPackageService(authService);
+        var systemService = new XboxSystemService(authService);
+        var networkService = new XboxNetworkService(authService);
+        var processService = new XboxProcessService(authService);
+        var performanceService = new XboxPerformanceService(authService);
+        var cacheService = new CacheService();
+        var installService = new PackageInstallService(cacheService, packageService);
+        var sftpService = new SftpService();
+        var sftpTransferService = new SftpTransferService(sftpService);
+        var portalService = new PortalAppFilesService(authService, packageService);
+        var catalogService = new CatalogApiService();
+        var overrideService = new PackageOverrideService();
+        overrideService.Initialize();
+        var versionChecker = new VersionCheckerService(overrideService);
+        var backgroundTaskService = new BackgroundTaskService();
+        backgroundTaskService.Start();
+        var notificationCenter = new NotificationCenterService();
+        var taskCenterViewModel = new TaskCenterViewModel(backgroundTaskService);
+
+        var mainViewModel = new MainViewModel(authService);
+        var browseViewModel = new BrowseViewModel(installService, authService, packageService, catalogService, overrideService, versionChecker);
+        var installedViewModel = new InstalledViewModel(authService, packageService);
+        var fileExplorerViewModel = new FileExplorerViewModel(authService, sftpService, sftpTransferService, portalService);
+        var toolsViewModel = new ToolsViewModel(authService, systemService);
+        var settingsViewModel = new SettingsViewModel(authService, cacheService);
+
+        Logger.Debug("Android services initialized, switching to MobileMainWindow");
+
+        // Switch to MobileMainWindow
+        await XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
+        {
+            var main = new Views.MobileMainWindow();
+            main.SetDataContext(mainViewModel);
+
+            // Swap splash → main in the root panel
+            rootPanel.Children.Remove(splash);
+            rootPanel.Children.Add(main);
+
+            // Wire up actions (placeholders for now — Fase 2 will add real dialogs)
+            mainViewModel.ShowConnectAction = async () =>
+            {
+                // TODO: Fase 2 — show ConnectionPage
+                Logger.Info("Android: ShowConnectAction placeholder");
+                return false;
+            };
+
+            mainViewModel.ShowAboutAction = () =>
+            {
+                // TODO: Fase 2 — show AboutPage
+                Logger.Info("Android: ShowAboutAction placeholder");
+            };
+
+            settingsViewModel.ShowLogsAction = () =>
+            {
+                // TODO: Fase 2 — show LogsPage
+                Logger.Info("Android: ShowLogsAction placeholder");
+            };
+
+            mainViewModel.OnTabChanged = tab =>
+            {
+                if (tab == 1)
+                {
+                    installedViewModel.StartPolling();
+                    if (authService.IsConnected)
+                        _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
+                }
+                else
+                {
+                    installedViewModel.StopPolling();
+                }
+            };
+
+            Logger.Info("Android: MobileMainWindow loaded");
+        });
+        }
+        catch (Exception ex)
+        {
+            var fullMsg = ex.InnerException != null
+                ? $"{ex.Message}\n\nInner: {ex.InnerException.Message}"
+                : ex.Message;
+            Logger.Error($"Android splash transition failed: {fullMsg}");
+            // Still try to show something — replace splash with error
+            await XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
+            {
+                rootPanel.Children.Remove(splash);
+                rootPanel.Children.Add(new TextBlock
+                {
+                    Text = $"Android init failed:\n{fullMsg}",
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                    Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Colors.Red),
+                    FontSize = 12,
+                    Margin = new Thickness(16),
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+            });
+        }
     }
 }

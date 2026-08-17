@@ -1,0 +1,233 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:XBVault.ViewModels"
+             x:Class="XBVault.Views.MobileMainWindow"
+             x:DataType="vm:MainViewModel"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="Button.TabBtn">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <Style Selector="Button.TabBtn:pointerover">
+      <Setter Property="Background" Value="#229ACA3C"/>
+    </Style>
+
+    <Style Selector="Button.HamburgerItem">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Padding" Value="12,10"/>
+      <Setter Property="HorizontalContentAlignment" Value="Left"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+
+    <Style Selector="Button.HamburgerItem:pointerover">
+      <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto" x:Name="RootGrid">
+
+    <!-- Top Bar: gradient fills full height (behind status bar) -->
+    <Grid Grid.Row="0" ClipToBounds="True" x:Name="TopBar">
+      <Grid.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+          <GradientStop Color="#447F3E" Offset="0"/>
+          <GradientStop Color="#9ACA3C" Offset="1"/>
+        </LinearGradientBrush>
+      </Grid.Background>
+      <Border x:Name="TopBarContent">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+          <!-- Logo -->
+          <Image Grid.Column="0"
+                 Source="avares://XBVault/Assets/Views/SplashWindow/splash-appicon-80.png"
+                 Width="28" Height="28"
+                 Stretch="Uniform"
+                 Margin="14,0,10,0"
+                 VerticalAlignment="Center"/>
+          <!-- Title -->
+          <TextBlock Grid.Column="1"
+                     Text="XB Homebrew Vault"
+                     FontFamily="{StaticResource TitleFont}"
+                     FontSize="16" FontWeight="Bold"
+                     Foreground="#1A1A1A"
+                     VerticalAlignment="Center"/>
+          <!-- Connection Icon -->
+          <Button Grid.Column="2"
+                  Classes="TabBtn"
+                  Width="44" Height="44"
+                  ToolTip.Tip="Connection"
+                  Click="OnConnectionClick">
+            <Image x:Name="ConnectionIcon"
+                   Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-status-notconfigured-16.png"
+                   Width="18" Height="18"
+                   Stretch="Uniform"/>
+          </Button>
+          <!-- Hamburger Menu -->
+          <Button Grid.Column="3"
+                  Classes="TabBtn"
+                  Width="44" Height="44"
+                  Click="OnHamburgerClick">
+            <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-hamburger-20.png"
+                   Width="22" Height="22"
+                   Stretch="Uniform"/>
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedRight">
+                <StackPanel Width="200" Spacing="2" Margin="4" Background="{StaticResource SurfaceAltBrush}">
+                  <Button Classes="HamburgerItem" Click="OnMenuNotifications">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-bell-20.png"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                      <TextBlock Text="Notifications" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
+                  <Button Classes="HamburgerItem" Click="OnMenuJobs">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-tasks-20.png"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                      <TextBlock Text="Jobs" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
+                  <Border Height="1" Background="{StaticResource BorderBrush}" Margin="8,4"/>
+                  <Button Classes="HamburgerItem" Click="OnMenuLogs">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-logs-32.png"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                      <TextBlock Text="Logs" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
+                  <Button Classes="HamburgerItem" Click="OnMenuSettings">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-settings-32.png"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                      <TextBlock Text="Settings" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
+                  <Border Height="1" Background="{StaticResource BorderBrush}" Margin="8,4"/>
+                  <Button Classes="HamburgerItem" Click="OnMenuAbout">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-about-32.png"
+                             Width="20" Height="20" Stretch="Uniform"/>
+                      <TextBlock Text="About" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- Content Area -->
+    <Carousel Grid.Row="1"
+              SelectedIndex="{Binding SelectedTab}"
+              Background="{StaticResource BgBrush}">
+
+      <!-- Tab 0: Browse (placeholder) -->
+      <Border Background="{StaticResource BgBrush}">
+        <TextBlock Text="Browse"
+                   FontFamily="{StaticResource TitleFont}"
+                   FontSize="24" FontWeight="Bold"
+                   Foreground="{StaticResource TextBrush}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"/>
+      </Border>
+
+      <!-- Tab 1: Catalog (placeholder) -->
+      <Border Background="{StaticResource BgBrush}">
+        <TextBlock Text="Catalog"
+                   FontFamily="{StaticResource TitleFont}"
+                   FontSize="24" FontWeight="Bold"
+                   Foreground="{StaticResource TextBrush}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"/>
+      </Border>
+
+      <!-- Tab 2: Explorer (placeholder) -->
+      <Border Background="{StaticResource BgBrush}">
+        <TextBlock Text="Explorer"
+                   FontFamily="{StaticResource TitleFont}"
+                   FontSize="24" FontWeight="Bold"
+                   Foreground="{StaticResource TextBrush}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"/>
+      </Border>
+
+      <!-- Tab 3: Tools (placeholder) -->
+      <Border Background="{StaticResource BgBrush}">
+        <TextBlock Text="Tools"
+                   FontFamily="{StaticResource TitleFont}"
+                   FontSize="24" FontWeight="Bold"
+                   Foreground="{StaticResource TextBrush}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"/>
+      </Border>
+    </Carousel>
+
+    <!-- Bottom Tab Bar: surface fills full height (behind nav bar) -->
+    <Grid Grid.Row="2" Background="{StaticResource SurfaceBrush}" x:Name="BottomBar">
+      <Border x:Name="BottomBarContent">
+        <Grid ColumnDefinitions="*,*,*,*">
+          <!-- Browse -->
+          <Button Grid.Column="0" Classes="TabBtn" Click="OnTabBrowse" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+            <StackPanel Spacing="2" Margin="0,8,0,6">
+              <Image x:Name="TabBrowseIcon"
+                     Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-browse-32.png"
+                     Width="28" Height="28" Stretch="Uniform"/>
+              <TextBlock x:Name="TabBrowseLabel" Text="Browse"
+                         FontSize="11" FontWeight="SemiBold"
+                         FontFamily="{StaticResource BodyFont}"
+                         HorizontalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <!-- Catalog -->
+          <Button Grid.Column="1" Classes="TabBtn" Click="OnTabInstalled" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+            <StackPanel Spacing="2" Margin="0,8,0,6">
+              <Image x:Name="TabInstalledIcon"
+                     Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-installed-32.png"
+                     Width="28" Height="28" Stretch="Uniform"/>
+              <TextBlock x:Name="TabInstalledLabel" Text="Catalog"
+                         FontSize="11" FontWeight="SemiBold"
+                         FontFamily="{StaticResource BodyFont}"
+                         HorizontalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <!-- Explorer -->
+          <Button Grid.Column="2" Classes="TabBtn" Click="OnTabFiles" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+            <StackPanel Spacing="2" Margin="0,8,0,6">
+              <Image x:Name="TabFilesIcon"
+                     Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-fileexplorer-32.png"
+                     Width="28" Height="28" Stretch="Uniform"/>
+              <TextBlock x:Name="TabFilesLabel" Text="Explorer"
+                         FontSize="11" FontWeight="SemiBold"
+                         FontFamily="{StaticResource BodyFont}"
+                         HorizontalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <!-- Tools -->
+          <Button Grid.Column="3" Classes="TabBtn" Click="OnTabTools" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+            <StackPanel Spacing="2" Margin="0,8,0,6">
+              <Image x:Name="TabToolsIcon"
+                     Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-tools-32.png"
+                     Width="28" Height="28" Stretch="Uniform"/>
+              <TextBlock x:Name="TabToolsLabel" Text="Tools"
+                         FontSize="11" FontWeight="SemiBold"
+                         FontFamily="{StaticResource BodyFont}"
+                         HorizontalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+
+</UserControl>
