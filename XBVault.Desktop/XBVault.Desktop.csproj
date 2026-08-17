@@ -9,10 +9,8 @@
     <BuiltInComInteropSupport Condition="$([MSBuild]::IsOSPlatform('windows'))">true</BuiltInComInteropSupport>
     <ApplicationIcon>../XBVault/Assets/Icons/app.ico</ApplicationIcon>
     <RootNamespace>XBVault</RootNamespace>
-    <Authors>Marcelo Frau</Authors>
     <Description>XB Homebrew Vault — Desktop manager for Xbox Dev Mode homebrew</Description>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
-    <Copyright>Copyright (c) 2026 Marcelo Frau</Copyright>
     <PublishReadyToRun Condition="$([MSBuild]::IsOSPlatform('windows'))">true</PublishReadyToRun>
     <DefineConstants Condition="$([MSBuild]::IsOSPlatform('windows'))">$(DefineConstants);WINDOWS_BUILD</DefineConstants>
   </PropertyGroup>

@@ -6,11 +6,8 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-Recommended</AnalysisLevel>
     <RootNamespace>XBVault</RootNamespace>
-    <Version>2.0.0</Version>
-    <Authors>Marcelo Frau</Authors>
     <Description>XB Homebrew Vault — Desktop manager for Xbox Dev Mode homebrew</Description>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
-    <Copyright>Copyright (c) 2026 Marcelo Frau</Copyright>
     <DefineConstants Condition="$([MSBuild]::IsOSPlatform('windows'))">$(DefineConstants);WINDOWS_BUILD</DefineConstants>
   </PropertyGroup>
 

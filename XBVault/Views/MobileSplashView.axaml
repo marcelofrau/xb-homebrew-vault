@@ -1,7 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="XBVault.Views.MobileSplashView"
-             Background="#284325">
+             x:Class="XBVault.Views.MobileSplashView">
+
+  <UserControl.Background>
+    <ImageBrush Source="avares://XBVault/Assets/Views/SplashWindow/android-splash-bg.jpg"
+                Stretch="UniformToFill"/>
+  </UserControl.Background>
 
   <Grid RowDefinitions="*,Auto">
       <StackPanel VerticalAlignment="Center"
@@ -13,14 +17,14 @@
                HorizontalAlignment="Center"
                Margin="0,0,0,8"/>
         <TextBlock Text="XB HOMEBREW"
-                   FontFamily="Oxanium"
+                   FontFamily="avares://XBVault/Assets/Fonts/Oxanium-700.ttf#Oxanium"
                    FontSize="18"
                    FontWeight="Bold"
                    Foreground="#9ACA3C"
                    HorizontalAlignment="Center"
                    LetterSpacing="2"/>
         <TextBlock Text="VAULT"
-                   FontFamily="Oxanium"
+                   FontFamily="avares://XBVault/Assets/Fonts/Oxanium-700.ttf#Oxanium"
                    FontSize="36"
                    FontWeight="Bold"
                    Foreground="White"
@@ -28,7 +32,7 @@
                    LetterSpacing="4"
                    Margin="0,-4,0,0"/>
         <TextBlock Text="Companion for Xbox Dev Mode"
-                   FontFamily="Oxanium"
+                   FontFamily="avares://XBVault/Assets/Fonts/Oxanium-400.ttf#Oxanium"
                    FontSize="13"
                    Foreground="#B0B0B0"
                    HorizontalAlignment="Center"
@@ -39,18 +43,18 @@
                    HorizontalAlignment="Center"/>
         <StackPanel Spacing="3" Margin="0,4,0,0">
           <TextBlock x:Name="VersionText"
-                     FontFamily="Oxanium"
+                     FontFamily="avares://XBVault/Assets/Fonts/Oxanium-700.ttf#Oxanium"
                      FontSize="15"
                      FontWeight="Bold"
                      Foreground="#9ACA3C"
                      HorizontalAlignment="Center"/>
           <TextBlock Text="Marcelo Frau"
-                     FontFamily="Oxanium"
+                     FontFamily="avares://XBVault/Assets/Fonts/Oxanium-400.ttf#Oxanium"
                      FontSize="11"
                      Foreground="#888"
                      HorizontalAlignment="Center"/>
           <TextBlock Text="GPL-3.0-only"
-                     FontFamily="Oxanium"
+                     FontFamily="avares://XBVault/Assets/Fonts/Oxanium-700.ttf#Oxanium"
                      FontSize="12"
                      FontWeight="SemiBold"
                      Foreground="#FFD700"

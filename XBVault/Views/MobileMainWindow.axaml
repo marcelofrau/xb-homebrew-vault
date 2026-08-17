@@ -32,6 +32,10 @@
     <Style Selector="Button.HamburgerItem:pointerover">
       <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}"/>
     </Style>
+
+    <Style Selector="FlyoutPresenter">
+      <Setter Property="Padding" Value="0"/>
+    </Style>
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,*,Auto" x:Name="RootGrid">
@@ -128,57 +132,58 @@
     </Grid>
 
     <!-- Content Area -->
-    <Carousel Grid.Row="1"
-              SelectedIndex="{Binding SelectedTab}"
-              Background="{StaticResource BgBrush}">
+    <Grid Grid.Row="1" Background="{StaticResource BgBrush}">
+      <Carousel x:Name="TabCarousel"
+                SelectedIndex="{Binding SelectedTab}"
+                Background="{StaticResource BgBrush}">
+        <!-- Tab 0: Browse (placeholder) -->
+        <Border Background="{StaticResource BgBrush}">
+          <TextBlock Text="Browse"
+                     FontFamily="{StaticResource TitleFont}"
+                     FontSize="24" FontWeight="Bold"
+                     Foreground="{StaticResource TextBrush}"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"/>
+        </Border>
+        <!-- Tab 1: Catalog (placeholder) -->
+        <Border Background="{StaticResource BgBrush}">
+          <TextBlock Text="Catalog"
+                     FontFamily="{StaticResource TitleFont}"
+                     FontSize="24" FontWeight="Bold"
+                     Foreground="{StaticResource TextBrush}"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"/>
+        </Border>
+        <!-- Tab 2: Explorer (placeholder) -->
+        <Border Background="{StaticResource BgBrush}">
+          <TextBlock Text="Explorer"
+                     FontFamily="{StaticResource TitleFont}"
+                     FontSize="24" FontWeight="Bold"
+                     Foreground="{StaticResource TextBrush}"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"/>
+        </Border>
+        <!-- Tab 3: Tools (placeholder) -->
+        <Border Background="{StaticResource BgBrush}">
+          <TextBlock Text="Tools"
+                     FontFamily="{StaticResource TitleFont}"
+                     FontSize="24" FontWeight="Bold"
+                     Foreground="{StaticResource TextBrush}"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"/>
+        </Border>
+      </Carousel>
 
-      <!-- Tab 0: Browse (placeholder) -->
-      <Border Background="{StaticResource BgBrush}">
-        <TextBlock Text="Browse"
-                   FontFamily="{StaticResource TitleFont}"
-                   FontSize="24" FontWeight="Bold"
-                   Foreground="{StaticResource TextBrush}"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"/>
-      </Border>
-
-      <!-- Tab 1: Catalog (placeholder) -->
-      <Border Background="{StaticResource BgBrush}">
-        <TextBlock Text="Catalog"
-                   FontFamily="{StaticResource TitleFont}"
-                   FontSize="24" FontWeight="Bold"
-                   Foreground="{StaticResource TextBrush}"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"/>
-      </Border>
-
-      <!-- Tab 2: Explorer (placeholder) -->
-      <Border Background="{StaticResource BgBrush}">
-        <TextBlock Text="Explorer"
-                   FontFamily="{StaticResource TitleFont}"
-                   FontSize="24" FontWeight="Bold"
-                   Foreground="{StaticResource TextBrush}"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"/>
-      </Border>
-
-      <!-- Tab 3: Tools (placeholder) -->
-      <Border Background="{StaticResource BgBrush}">
-        <TextBlock Text="Tools"
-                   FontFamily="{StaticResource TitleFont}"
-                   FontSize="24" FontWeight="Bold"
-                   Foreground="{StaticResource TextBrush}"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"/>
-      </Border>
-    </Carousel>
+      <!-- Navigation overlay for fullscreen pages -->
+      <Panel x:Name="NavigationPanel" IsVisible="False" Background="{StaticResource BgBrush}"/>
+    </Grid>
 
     <!-- Bottom Tab Bar: surface fills full height (behind nav bar) -->
     <Grid Grid.Row="2" Background="{StaticResource SurfaceBrush}" x:Name="BottomBar">
       <Border x:Name="BottomBarContent">
         <Grid ColumnDefinitions="*,*,*,*">
           <!-- Browse -->
-          <Button Grid.Column="0" Classes="TabBtn" Click="OnTabBrowse" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+          <Button Grid.Column="0" x:Name="TabBrowseBtn" Classes="TabBtn" Click="OnTabBrowse" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
             <StackPanel Spacing="2" Margin="0,8,0,6">
               <Image x:Name="TabBrowseIcon"
                      Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-browse-32.png"
@@ -190,7 +195,7 @@
             </StackPanel>
           </Button>
           <!-- Catalog -->
-          <Button Grid.Column="1" Classes="TabBtn" Click="OnTabInstalled" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+          <Button Grid.Column="1" x:Name="TabInstalledBtn" Classes="TabBtn" Click="OnTabInstalled" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
             <StackPanel Spacing="2" Margin="0,8,0,6">
               <Image x:Name="TabInstalledIcon"
                      Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-installed-32.png"
@@ -202,7 +207,7 @@
             </StackPanel>
           </Button>
           <!-- Explorer -->
-          <Button Grid.Column="2" Classes="TabBtn" Click="OnTabFiles" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+          <Button Grid.Column="2" x:Name="TabFilesBtn" Classes="TabBtn" Click="OnTabFiles" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
             <StackPanel Spacing="2" Margin="0,8,0,6">
               <Image x:Name="TabFilesIcon"
                      Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-fileexplorer-32.png"
@@ -214,7 +219,7 @@
             </StackPanel>
           </Button>
           <!-- Tools -->
-          <Button Grid.Column="3" Classes="TabBtn" Click="OnTabTools" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+          <Button Grid.Column="3" x:Name="TabToolsBtn" Classes="TabBtn" Click="OnTabTools" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
             <StackPanel Spacing="2" Margin="0,8,0,6">
               <Image x:Name="TabToolsIcon"
                      Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-tools-32.png"

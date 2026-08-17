@@ -19,7 +19,10 @@ if (Test-Path $scoopJdk) {
     }
 }
 
-$emulator = "$env:LOCALAPPDATA\Android\Sdk\emulator\emulator.exe"
+$sdkRoot = "$env:LOCALAPPDATA\Android\Sdk"
+$env:ANDROID_SDK_ROOT = $sdkRoot
+
+$emulator = "$sdkRoot\emulator\emulator.exe"
 $adb = "$env:USERPROFILE\scoop\apps\android-clt\current\platform-tools\adb.exe"
 
 # Auto-start emulator if not running
