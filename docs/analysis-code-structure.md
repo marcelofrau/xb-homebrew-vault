@@ -8,7 +8,7 @@ title: Code Structure Analysis (Internal)
 
 > **Note:** This is an internal analysis document for comprehensive documentation. Not published on the site.
 
-> **⚠️ Superseded (June 2026 → Aug 2026):** Metrics below reflect the codebase as of the Phase 1 analysis. **The `XboxDeviceService` god class has since been split into 6 domain services and deleted**, and the project migrated to .NET 10. `FileExplorerViewModel` remains large (~1,736 lines). See the current [Tech Debt](tech-debt) and [Architecture](architecture).
+> **⚠️ Superseded (June 2026 → Aug 2026):** Metrics below reflect the codebase as of the Phase 1 analysis. **The `XboxDeviceService` god class has since been split into 6 domain services and deleted**, and the project migrated to .NET 10. `FileExplorerViewModel` remains large (~1,750 lines as of 2026-08-17). See the current [Tech Debt](tech-debt) and [Architecture](architecture).
 
 ---
 

@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,6 +25,7 @@ public class XrayAgentService : IDisposable
     private Task? _receiveTask;
     private CancellationTokenSource? _cts;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
+    private readonly int _scanConcurrency = 5;
 
     public event Action<XrayLogMessage>? LogReceived;
     public event Action<XrayReplResult>? ReplResultReceived;
@@ -34,14 +36,14 @@ public class XrayAgentService : IDisposable
 
     public async Task<List<XrayAgentInfo>> ScanAsync(string host, int timeoutMs = ScanTimeoutMs)
     {
-        var semaphore = new SemaphoreSlim(5);
+        var semaphore = new SemaphoreSlim(_scanConcurrency);
         var tasks = Enumerable.Range(MinPort, MaxPort - MinPort + 1)
             .Select(port => ProbePortAsync(host, port, timeoutMs, semaphore));
         var results = await Task.WhenAll(tasks);
         return results.Where(r => r is not null).ToList()!;
     }
 
-    private async Task<XrayAgentInfo?> ProbePortAsync(string host, int port, int timeoutMs, SemaphoreSlim semaphore)
+    private static async Task<XrayAgentInfo?> ProbePortAsync(string host, int port, int timeoutMs, SemaphoreSlim semaphore)
     {
         await semaphore.WaitAsync();
         try

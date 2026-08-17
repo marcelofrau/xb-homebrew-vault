@@ -1,3 +1,4 @@
+#nullable enable
 using Avalonia;
 using Avalonia.Controls;
 using System;
@@ -53,8 +54,8 @@ public static class DialogFadeBehavior
         e.Cancel = true;
         window.Closing -= OnClosing;
         window.Opacity = 0;
-        // run delay without capturing synchronization context
-        await Task.Delay(FadeOutDelay).ConfigureAwait(false);
+        // resume on UI thread so clearing visual state runs on dispatcher
+        await Task.Delay(FadeOutDelay);
 
         ClearDim(window);
         window.Close();

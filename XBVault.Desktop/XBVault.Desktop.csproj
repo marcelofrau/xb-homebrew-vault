@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType Condition="$([MSBuild]::IsOSPlatform('windows'))">WinExe</OutputType>
+    <OutputType Condition="!$([MSBuild]::IsOSPlatform('windows'))">Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BuiltInComInteropSupport Condition="$([MSBuild]::IsOSPlatform('windows'))">true</BuiltInComInteropSupport>
+    <ApplicationIcon>../XBVault/Assets/Icons/app.ico</ApplicationIcon>
+    <RootNamespace>XBVault</RootNamespace>
+    <Version>1.4.0</Version>
+    <Authors>Marcelo Frau</Authors>
+    <Description>XB Homebrew Vault — Desktop manager for Xbox Dev Mode homebrew</Description>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2026 Marcelo Frau</Copyright>
+    <PublishReadyToRun Condition="$([MSBuild]::IsOSPlatform('windows'))">true</PublishReadyToRun>
+    <DefineConstants Condition="$([MSBuild]::IsOSPlatform('windows'))">$(DefineConstants);WINDOWS_BUILD</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="12.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XBVault\XBVault.csproj" />
+  </ItemGroup>
+</Project>

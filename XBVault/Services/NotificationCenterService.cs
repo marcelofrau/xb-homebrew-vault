@@ -1,9 +1,11 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using Avalonia.Threading;
+using XBVault.Helpers;
 using XBVault.Models;
 
 namespace XBVault.Services;
@@ -231,10 +233,7 @@ public class NotificationCenterService
     {
         try
         {
-            if (Dispatcher.UIThread.CheckAccess())
-                action();
-            else
-                Dispatcher.UIThread.Post(action, DispatcherPriority.Normal);
+            UIHelpers.RunOnUI(action, DispatcherPriority.Normal);
         }
         catch (Exception ex)
         {

@@ -8,7 +8,7 @@ if [ ! -d "$PUBLISH_DIR" ]; then
     exit 1
 fi
 
-EXE="XBVault"
+EXE="XBVault.Desktop"
 
 gen() {
     local name="$1" flag="$2"

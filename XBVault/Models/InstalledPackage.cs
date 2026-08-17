@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -80,7 +81,7 @@ public class InstalledPackage : INotifyPropertyChanged
             var idx = p.LastIndexOf("CN=", StringComparison.OrdinalIgnoreCase);
             if (idx >= 0)
                 p = p[(idx + 3)..];
-            idx = p.IndexOf(",", StringComparison.Ordinal);
+            idx = p.IndexOf(',', StringComparison.Ordinal);
             if (idx >= 0)
                 p = p[..idx];
             return p.Trim();

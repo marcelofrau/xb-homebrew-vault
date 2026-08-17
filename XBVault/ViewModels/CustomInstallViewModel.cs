@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -62,10 +63,10 @@ public partial class CustomInstallViewModel : ObservableObject
     private AnalyzeResult? _analysis;
     private string? _downloadedFile;
 
-    public Func<Task<string?>>? PickFileAsync;
-    public Func<Task<string[]?>>? PickDependencyFilesAsync;
-    public Action? CloseAction;
-    public Action? OnInstallComplete;
+    public Func<Task<string?>>? PickFileAsync { get; set; }
+    public Func<Task<string[]?>>? PickDependencyFilesAsync { get; set; }
+    public Action? CloseAction { get; set; }
+    public Action? OnInstallComplete { get; set; }
 
     public CustomInstallViewModel(IXboxPackageService packageService, PackageInstallService installService)
     {
@@ -308,41 +309,55 @@ public partial class CustomInstallViewModel : ObservableObject
             {
                 Logger.Info($"AnalyzeAsync: success — main={Path.GetFileName(_analysis.MainPackage)}, deps={_analysis.Dependencies?.Length ?? 0}, total={_analysis.AllFiles.Length}");
 
-                FileList.Clear();
-                foreach (var f in _analysis.AllFiles)
-                    FileList.Add($"  {Path.GetFileName(f)}");
+                // UI updates must run on UI thread
+                await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
+                {
+                    FileList.Clear();
+                    foreach (var f in _analysis.AllFiles)
+                        FileList.Add($"  {Path.GetFileName(f)}");
 
-                DepItems.Clear();
-                foreach (var d in _analysis.Dependencies ?? [])
-                    DepItems.Add(new SelectableDep { FilePath = d, BaseDirectory = _analysis.WorkingDirectory, IsSelected = true });
+                    DepItems.Clear();
+                    foreach (var d in _analysis.Dependencies ?? [])
+                        DepItems.Add(new SelectableDep { FilePath = d, BaseDirectory = _analysis.WorkingDirectory, IsSelected = true });
 
-                DisambiguateDepNames();
+                    DisambiguateDepNames();
 
-                var main = _analysis.MainPackage is not null ? Path.GetFileName(_analysis.MainPackage) : "None";
-                var depCount = _analysis.Dependencies?.Length ?? 0;
-                AnalysisResultText = $"Main: {main}\nDependencies: {depCount}";
-                OnPropertyChanged(nameof(MainPackageName));
-                OnPropertyChanged(nameof(DependencyCount));
-                OnPropertyChanged(nameof(DependencyText));
-                OnPropertyChanged(nameof(CanGoNext));
+                    var main = _analysis.MainPackage is not null ? Path.GetFileName(_analysis.MainPackage) : "None";
+                    var depCount = _analysis.Dependencies?.Length ?? 0;
+                    AnalysisResultText = $"Main: {main}\nDependencies: {depCount}";
+                    OnPropertyChanged(nameof(MainPackageName));
+                    OnPropertyChanged(nameof(DependencyCount));
+                    OnPropertyChanged(nameof(DependencyText));
+                    OnPropertyChanged(nameof(CanGoNext));
 
-                Logger.Debug($"AnalyzeAsync: step 1 → 2 (review)");
-                CurrentStep = 2;
+                    Logger.Debug($"AnalyzeAsync: step 1 → 2 (review)");
+                    CurrentStep = 2;
+                    return Task.CompletedTask;
+                });
             }
             else
             {
                 Logger.Warn("AnalyzeAsync: no installable packages found after analysis");
-                AnalysisResultText = "Analysis failed — no installable packages found.";
-                Logger.Debug($"AnalyzeAsync: step 1 → 2 (analysis failed)");
-                CurrentStep = 2;
+                await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
+                {
+                    AnalysisResultText = "Analysis failed — no installable packages found.";
+                    OnPropertyChanged(nameof(CanGoNext));
+                    Logger.Debug($"AnalyzeAsync: step 1 → 2 (analysis failed)");
+                    CurrentStep = 2;
+                    return Task.CompletedTask;
+                });
             }
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "AnalyzeAsync: analysis failed with exception");
-            AnalysisResultText = $"Error: {ex.Message}";
-            Logger.Debug($"AnalyzeAsync: step 1 → 2 (exception)");
-            CurrentStep = 2;
+            await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
+            {
+                AnalysisResultText = $"Error: {ex.Message}";
+                Logger.Debug($"AnalyzeAsync: step 1 → 2 (exception)");
+                CurrentStep = 2;
+                return Task.CompletedTask;
+            });
         }
         finally
         {

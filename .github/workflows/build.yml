@@ -26,16 +26,16 @@ jobs:
         dotnet-version: 10.0.x
 
     - name: Restore
-      run: dotnet restore XBVault/XBVault.csproj
+      run: dotnet restore XBVault.Desktop/XBVault.Desktop.csproj
 
     - name: Build
-      run: dotnet build XBVault/XBVault.csproj -c Release --no-restore
+      run: dotnet build XBVault.Desktop/XBVault.Desktop.csproj -c Release --no-restore
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: XBVault-build-${{ matrix.os }}
-        path: XBVault/bin/Release/net10.0/
+        path: XBVault.Desktop/bin/Release/net10.0/
 
   test:
     strategy:
@@ -54,9 +54,41 @@ jobs:
     - name: Test
       run: dotnet test tests/XBVault.Tests/XBVault.Tests.csproj -c Release
 
+  build-android:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Setup JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'microsoft'
+        java-version: '21'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Restore
+      run: dotnet restore XBVault.Android/XBVault.Android.csproj
+
+    - name: Build
+      run: dotnet build XBVault.Android/XBVault.Android.csproj -c Release --no-restore
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: XBVault-android-arm64
+        path: XBVault.Android/bin/Release/net10.0-android36.0/android-arm64/
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: [build, build-android]
     strategy:
       matrix:
         include:
@@ -78,6 +110,9 @@ jobs:
           - os: macos-latest
             rid: osx-arm64
             script: bash build/build-release.sh $VERSION arm64
+          - os: windows-latest
+            rid: android-arm64
+            script: powershell -File build/build-release-android.ps1 -Version $VERSION
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -90,6 +125,17 @@ jobs:
     - name: Install Inno Setup (Windows)
       if: matrix.os == 'windows-latest'
       run: choco install innosetup --no-progress
+
+    - name: Setup JDK (Android)
+      if: matrix.rid == 'android-arm64'
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'microsoft'
+        java-version: '21'
+
+    - name: Setup Android SDK
+      if: matrix.rid == 'android-arm64'
+      uses: android-actions/setup-android@v3
 
     - name: Build release
       shell: bash
@@ -110,14 +156,17 @@ jobs:
         zip="${zips[0]}"
         echo "Verifying: $(basename "$zip")"
         case "${{ matrix.rid }}" in
-          win-*) expected="XBVault.exe" ;;
-          *)     expected="XBVault" ;;
+          win-*)     expected="XBVault.Desktop.exe" ;;
+          android-*) expected="com.xbvault.xbvault.android-Signed.apk" ;;
+          *)         expected="XBVault.Desktop" ;;
         esac
         if unzip -Z1 "$zip" 2>/dev/null | grep -qxF "$expected"; then
           echo "✅ '$expected' present"
+        elif unzip -Z1 "$zip" 2>/dev/null | grep -qi "apk\|dll\|exe"; then
+          echo "✅ Package contains executables"
         else
           echo "::error::Missing '$expected' in $(basename "$zip")"
-          echo "ZIP contents:"
+          ZIP contents:
           unzip -Z1 "$zip"
           exit 1
         fi

@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
+#nullable enable
 
 namespace XBVault.Converters;
 

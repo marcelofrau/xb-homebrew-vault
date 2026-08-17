@@ -1,6 +1,6 @@
 # Phase 1 Analysis Complete - Summary Report
 
-> **⚠️ Superseded (June 2026 → Aug 2026):** Metrics in this report reflect Phase 1 (June 2026). `XboxDeviceService` has since been **split and deleted** (replaced by 6 domain services) and the project migrated to .NET 10. `FileExplorerViewModel` remains large (~1,736 lines). Current state: [Tech Debt](tech-debt) and [Architecture](architecture).
+> **⚠️ Superseded (June 2026 → Aug 2026):** Metrics in this report reflect Phase 1 (June 2026). `XboxDeviceService` has since been **split and deleted** (replaced by 6 domain services) and the project migrated to .NET 10. `FileExplorerViewModel` remains large (~1,750 lines as of 2026-08-17). Current state: [Tech Debt](tech-debt) and [Architecture](architecture).
 
 ## Overview
 

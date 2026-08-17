@@ -1,3 +1,4 @@
+#nullable enable
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
@@ -16,12 +17,20 @@ namespace XBVault.ViewModels;
 
 public enum ToolbarStatusSeverity { None, Info, Success, Warning, Error }
 
+/// <summary>
+/// Coordinates SFTP navigation, file operations, transfers, and Portal app file workflows.
+/// </summary>
+/// <remarks>
+/// This ViewModel intentionally depends on services and callback delegates rather than Avalonia storage APIs.
+/// Desktop Views handle picker and drag/drop details; Android should provide equivalent platform adapters.
+/// </remarks>
 public partial class FileExplorerViewModel : ObservableObject, IDisposable
 {
     private readonly IXboxAuthService _authService;
     private readonly SftpService _sftpService;
     private readonly SftpTransferService _transfer;
     private readonly PortalAppFilesService _portal;
+    private readonly bool _isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
     internal SftpService SftpService => _sftpService;
     private string? _sftpPassword;
     private CancellationTokenSource? _deleteCts;
@@ -64,7 +73,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     private void OnBoxConnectionChanged(bool connected)
     {
         Logger.Trace($"OnBoxConnectionChanged: connected={connected}");
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             IsConnected = connected;
             if (!connected)
@@ -76,7 +85,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     private void OnSftpConnectionChanged(object? sender, bool connected)
     {
         Logger.Trace($"OnSftpConnectionChanged: connected={connected}");
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             if (!connected)
             {
@@ -352,7 +361,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     public bool CanCreateFolder => _sftpService.IsConnected && TreeRoots.Count > 0 && !ShowActivity
         && (!PortalAppFilesService.IsPortalPath(CurrentPath) || PortalAppFilesService.HasPackageContext(CurrentPath));
     public bool CanRefreshLocation => _sftpService.IsConnected && TreeRoots.Count > 0 && !ShowActivity;
-    public bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    public bool IsWindows => _isWindows;
 
     public string[] BreadcrumbSegments => BuildBreadcrumbSegments(CurrentPath);
 
@@ -465,7 +474,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             Children = { new SftpEntry { Name = "" } }
         });
         SetIsLastChild(drives);
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             TreeRoots.Clear();
             foreach (var d in drives)
@@ -789,7 +798,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             // Reload current file list
             var entries = await ListDirectoryForAsync(CurrentPath);
 
-            Dispatcher.UIThread.Post(() =>
+            XBVault.Helpers.UIHelpers.RunOnUI(() =>
             {
                 CurrentEntries.Clear();
                 var parentDir = GetParentPath(CurrentPath);
@@ -1027,7 +1036,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         Logger.Trace($"AddToCurrentAndTree: '{newEntry.FullPath}' inserted");
     }
 
-    private Progress<TransferUpdate> TransferProgress(Action<TransferUpdate> apply) =>
+    private static Progress<TransferUpdate> TransferProgress(Action<TransferUpdate> apply) =>
         new(apply);
 
     private void ApplyUploadResult(TransferResult result)
@@ -1528,9 +1537,8 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
                 InsertSorted(parentNode.Children, entry);
             }
 
-            if (CurrentEntries.Contains(entry))
+            if (CurrentEntries.Remove(entry))
             {
-                CurrentEntries.Remove(entry);
                 InsertSorted(CurrentEntries, entry);
             }
 

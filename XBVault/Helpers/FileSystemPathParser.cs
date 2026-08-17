@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using XBVault.Models;
 
+#nullable enable
+
 namespace XBVault.Helpers;
 
 public static class FileSystemPathParser
@@ -118,7 +120,7 @@ public static class FileSystemPathParser
         for (int i = 0; i < parts.Length; i++)
         {
             var joined = string.Join("\\", parts, 0, i + 1);
-            if (joined.EndsWith(":"))
+            if (joined.EndsWith(':'))
                 joined += "\\";
             segments[i] = joined;
         }

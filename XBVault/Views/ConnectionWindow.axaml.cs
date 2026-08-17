@@ -1,3 +1,4 @@
+#nullable enable
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -68,7 +69,8 @@ public partial class ConnectionWindow : Window
                     await Task.Delay(SuccessCloseDelayMs).ConfigureAwait(false);
                 else
                     await Task.Delay(FailureCloseDelayMs).ConfigureAwait(false);
-                Close();
+                // Close must run on UI thread
+                XBVault.Helpers.UIHelpers.RunOnUI(() => Close());
             }
             catch (Exception ex)
             {

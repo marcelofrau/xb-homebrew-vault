@@ -6,6 +6,7 @@
         Classes="dialogWindow"
         x:DataType="vm:ProcessesViewModel"
         Title="XBVault - Processes"
+        Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         WindowStartupLocation="CenterOwner"
         Width="720" Height="540"
         CanResize="False"

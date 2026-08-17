@@ -1,3 +1,4 @@
+#nullable enable
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -13,9 +14,17 @@ public class CacheService
         "XBVault", "cache");
 
     private readonly string _cacheRoot;
+    private readonly IAppLogger _log;
 
+    // Back-compat ctor for tests and direct instantiation
     public CacheService(string? cacheRoot = null)
+        : this(ServiceLocator.Resolve<IAppLogger>(), cacheRoot)
     {
+    }
+
+    public CacheService(IAppLogger log, string? cacheRoot = null)
+    {
+        _log = log ?? throw new ArgumentNullException(nameof(log));
         _cacheRoot = cacheRoot ?? DefaultCacheRoot;
     }
 
@@ -25,7 +34,7 @@ public class CacheService
         if (!Directory.Exists(dir))
         {
             Directory.CreateDirectory(dir);
-            Logger.Trace($"Created cache dir for appId={appId}: {dir}");
+            _log.Trace($"Created cache dir for appId={appId}: {dir}");
         }
         return dir;
     }
@@ -39,7 +48,7 @@ public class CacheService
     {
         var path = GetDownloadPath(appId, fileName);
         var cached = File.Exists(path);
-        Logger.Trace($"Cache check: appId={appId} file={fileName} → {cached}");
+        _log.Trace($"Cache check: appId={appId} file={fileName} → {cached}");
         return cached;
     }
 
@@ -47,13 +56,13 @@ public class CacheService
     {
         if (!Directory.Exists(_cacheRoot))
         {
-            Logger.Trace("Cache root does not exist, size=0");
+            _log.Trace("Cache root does not exist, size=0");
             return 0;
         }
 
         var size = Directory.GetFiles(_cacheRoot, "*", SearchOption.AllDirectories)
             .Sum(f => new FileInfo(f).Length);
-        Logger.Debug($"Cache total size: {size} bytes");
+        _log.Debug($"Cache total size: {size} bytes");
         return size;
     }
 
@@ -61,13 +70,13 @@ public class CacheService
     {
         if (!Directory.Exists(_cacheRoot))
         {
-            Logger.Debug("Cache root does not exist, nothing to clear");
+            _log.Debug("Cache root does not exist, nothing to clear");
             return;
         }
         var before = GetCacheSizeBytes();
         Directory.Delete(_cacheRoot, true);
         Directory.CreateDirectory(_cacheRoot);
-        Logger.Info($"Cache cleared (was {before} bytes)");
+        _log.Info($"Cache cleared (was {before} bytes)");
     }
 
     public void ClearAppCache(string appId)
@@ -76,11 +85,11 @@ public class CacheService
         if (Directory.Exists(dir))
         {
             Directory.Delete(dir, true);
-            Logger.Debug($"Cache cleared for appId={appId}");
+            _log.Debug($"Cache cleared for appId={appId}");
         }
         else
         {
-            Logger.Trace($"No cache to clear for appId={appId}");
+            _log.Trace($"No cache to clear for appId={appId}");
         }
     }
 
@@ -102,7 +111,7 @@ public class CacheService
     {
         var path = GetThumbnailPath(url);
         await File.WriteAllBytesAsync(path, data);
-        Logger.Trace($"Thumbnail cached: {path}");
+        _log.Trace($"Thumbnail cached: {path}");
     }
 
     public async Task<byte[]?> TryLoadThumbnailDataAsync(string url)
@@ -110,7 +119,7 @@ public class CacheService
         var path = GetThumbnailPath(url);
         if (!File.Exists(path))
             return null;
-        Logger.Trace($"Thumbnail cache hit: {path}");
+        _log.Trace($"Thumbnail cache hit: {path}");
         return await File.ReadAllBytesAsync(path);
     }
 }

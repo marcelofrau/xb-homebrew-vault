@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -43,7 +44,7 @@ public partial class RefreshViewModel : ObservableObject
         Logger.Info(text);
     }
 
-    private async Task Delay(int ms) => await Task.Delay(ms);
+    private static async Task Delay(int ms) => await Task.Delay(ms);
 
     [RelayCommand]
     private async Task RefreshAsync()

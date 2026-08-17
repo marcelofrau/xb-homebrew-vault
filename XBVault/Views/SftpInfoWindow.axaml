@@ -3,6 +3,7 @@
         x:Class="XBVault.Views.SftpInfoWindow"
         Classes="dialogWindow"
         Title="XBVault - SFTP Connection"
+        Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         Width="400"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"

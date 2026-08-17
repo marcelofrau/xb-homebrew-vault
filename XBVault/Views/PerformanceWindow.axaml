@@ -5,6 +5,7 @@
         Classes="dialogWindow"
         x:DataType="vm:PerformanceViewModel"
         Title="XBVault - Xbox Performance"
+        Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         WindowStartupLocation="CenterOwner"
         Width="960" Height="640"
         CanResize="False"

@@ -4,7 +4,7 @@
 #define MyAppName "XB Homebrew Vault"
 #define MyAppPublisher "Marcelo Frau"
 #define MyAppURL "https://marcelofrau.github.io/xb-homebrew-vault"
-#define MyAppExeName "XBVault.exe"
+#define MyAppExeName "XBVault.Desktop.exe"
 #define MyAppIco "..\XBVault\Assets\Icons\app.ico"
 
 [Setup]

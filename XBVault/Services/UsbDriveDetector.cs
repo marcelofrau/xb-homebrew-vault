@@ -1,3 +1,4 @@
+#nullable enable
 #if WINDOWS_BUILD
 using System.Management;
 #pragma warning disable CA1416

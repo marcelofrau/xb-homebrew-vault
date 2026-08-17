@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -17,6 +18,13 @@ using XBVault.Services;
 
 namespace XBVault.ViewModels;
 
+/// <summary>
+/// Coordinates catalog browsing, filtering, thumbnail loading, install checks, and package installation.
+/// </summary>
+/// <remarks>
+/// The ViewModel is frontend-neutral: desktop and Android shells should provide dialogs, file pickers,
+/// and navigation through delegate properties instead of moving catalog or install logic into Views.
+/// </remarks>
 public partial class BrowseViewModel : ObservableObject, IDisposable
 {
     private const int SlowThumbnailDelayMs = 3000;
@@ -28,13 +36,14 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     private readonly IXboxPackageService _packageService;
     private readonly PackageOverrideService _overrideService;
     private readonly VersionCheckerService _versionChecker;
+    private readonly Action<string> _openUrlAction = OpenUrl;
     private List<CatalogItem> _allItems = [];
 
-    public Action<CatalogItem>? ShowDetailAction;
-    public Action? CloseDetailAction;
-    public Action? ShowCustomInstallAction;
-    public Func<string, Task>? OpenCustomInstallWithFileAction;
-    public Action? OnCatalogLoaded;
+    public Action<CatalogItem>? ShowDetailAction { get; set; }
+    public Action? CloseDetailAction { get; set; }
+    public Action? ShowCustomInstallAction { get; set; }
+    public Func<string, Task>? OpenCustomInstallWithFileAction { get; set; }
+    public Action? OnCatalogLoaded { get; set; }
 
     [RelayCommand]
     private void CloseDetail() => CloseDetailAction?.Invoke();
@@ -42,7 +51,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenCustomInstall() => ShowCustomInstallAction?.Invoke();
 
-    public Func<Task>? ShowRefreshDialogAsync;
+    public Func<Task>? ShowRefreshDialogAsync { get; set; }
 
     private static readonly HttpClient ImageHttp = new();
     private readonly ConcurrentDictionary<string, Task<Bitmap?>> _overrideImageCache = new();
@@ -442,7 +451,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             Logger.Warn("VisitSite called but no URL");
             return;
         }
-        OpenUrl(url);
+        _openUrlAction(url);
     }
 
     [RelayCommand]
@@ -453,7 +462,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             Logger.Warn("OpenLink called with empty URL");
             return;
         }
-        OpenUrl(url);
+        _openUrlAction(url);
     }
 
     private static void OpenUrl(string url)
@@ -614,11 +623,10 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
 
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
-            var q = SearchText.ToLowerInvariant();
             filtered = filtered.Where(i =>
-                i.Name.ToLowerInvariant().Contains(q) ||
-                i.Description.ToLowerInvariant().Contains(q) ||
-                (i.Developer?.ToLowerInvariant().Contains(q) ?? false));
+                i.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                i.Description.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                (i.Developer?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ?? false));
         }
 
         if (SelectedCategory != "All")
@@ -707,10 +715,11 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         for (var i = 0; i < items.Length; i += 5)
         {
             var batch = items.Skip(i).Take(5).ToList();
-            await Dispatcher.UIThread.InvokeAsync(() =>
+            await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
             {
                 foreach (var (item, bitmap) in batch)
                     item.Thumbnail = bitmap;
+                return Task.CompletedTask;
             });
         }
 

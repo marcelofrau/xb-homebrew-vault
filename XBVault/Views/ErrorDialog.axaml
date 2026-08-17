@@ -3,6 +3,7 @@
         x:Class="XBVault.Views.ErrorDialog"
         Classes="dialogWindow"
         Title="Error"
+        Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         Width="540" Height="420"
         WindowStartupLocation="CenterOwner"
         CanResize="False"

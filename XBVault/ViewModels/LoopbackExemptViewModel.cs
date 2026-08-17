@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -20,6 +21,8 @@ public partial class LoopbackExemptViewModel : ObservableObject
     private readonly ISftpService _sftpService;
     private readonly IXboxPackageService _packageService;
     private readonly bool _quickMode;
+    private readonly string _step1Label = "Overview";
+    private readonly string _step4Label = "Run";
     private InstalledPackage? _xFilesPackage;
 
     public LoopbackExemptViewModel(IXboxAuthService authService, ISftpService sftpService, IXboxPackageService packageService, bool quickMode = false)
@@ -71,10 +74,10 @@ public partial class LoopbackExemptViewModel : ObservableObject
     public bool ShowStep3Quick => IsStep3 && IsQuickMode;
     public bool ShowStep3Full => IsStep3 && !IsQuickMode;
 
-    public string Step1Label => "Overview";
+    public string Step1Label => _step1Label;
     public string Step2Label => _quickMode ? "X-Files" : "App";
     public string Step3Label => _quickMode ? "Confirm" : "Action";
-    public string Step4Label => "Run";
+    public string Step4Label => _step4Label;
 
     // ---------- App / action state ----------
 

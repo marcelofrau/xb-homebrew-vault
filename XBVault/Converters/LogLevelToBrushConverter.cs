@@ -1,6 +1,8 @@
 using System;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
+
+#nullable enable
 using System.Globalization;
 using XBVault.Services;
 

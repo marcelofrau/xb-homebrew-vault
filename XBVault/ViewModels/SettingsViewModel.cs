@@ -1,3 +1,4 @@
+#nullable enable
 using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -13,12 +14,20 @@ using XBVault.Services;
 
 namespace XBVault.ViewModels;
 
+/// <summary>
+/// Owns editable application settings, dirty-state tracking, cache actions, and settings-related commands.
+/// </summary>
+/// <remarks>
+/// This ViewModel should remain platform-neutral. UI actions such as confirmation dialogs or navigation to logs
+/// are injected as delegates by the active frontend.
+/// </remarks>
 public partial class SettingsViewModel : ObservableObject
 {
     private const int AutoHideNotificationDelayMs = 3000;
 
     private readonly IXboxAuthService _authService;
     private readonly CacheService _cacheService;
+    private readonly string _appDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "XBVault");
 
     // Called to show the full ConnectionWindow dialog for testing
     public Func<Task<bool>>? ShowConnectDialogAsync { get; set; }
@@ -219,7 +228,7 @@ public partial class SettingsViewModel : ObservableObject
         var conn = settings.XboxConnection;
 
         Address = conn.Address;
-        Port = conn.Port.ToString();
+        Port = conn.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
         Username = conn.Username;
         UseHttps = conn.UseHttps;
         SelectedLogLevel = settings.MinLogLevel;
@@ -520,9 +529,7 @@ public partial class SettingsViewModel : ObservableObject
     private void OpenSettingsFolder()
     {
         Logger.Debug("OpenSettingsFolder called");
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "XBVault");
+        var dir = _appDataDir;
         if (Directory.Exists(dir))
             Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
     }
@@ -534,9 +541,7 @@ public partial class SettingsViewModel : ObservableObject
     private void OpenLogsFolder()
     {
         Logger.Debug("OpenLogsFolder called");
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "XBVault", "logs");
+        var dir = Path.Combine(_appDataDir, "logs");
         if (Directory.Exists(dir))
             Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
         else

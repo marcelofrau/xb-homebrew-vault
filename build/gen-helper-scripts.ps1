@@ -8,7 +8,7 @@ if (-not (Test-Path $PublishDir)) {
     exit 1
 }
 
-$exeName = "XBVault.exe"
+$exeName = "XBVault.Desktop.exe"
 
 function New-Script {
     param($Name, $Body)

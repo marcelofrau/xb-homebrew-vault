@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -81,7 +82,7 @@ public partial class SystemInfoViewModel : ObservableObject
         void Add(string label, string? val)
         {
             if (val is not null)
-                sb.AppendLine($"{label,-22}{val}");
+                sb.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"{label,-22}{val}");
         }
 
         Add("Console Type:",         info.ConsoleType);

@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Threading.Tasks;
 using XBVault.Services;
@@ -14,11 +15,22 @@ public static class TaskExtensions
     {
         if (task is null) return;
 
+        // Observe exceptions and log on UI dispatcher to avoid finalizer-thread rethrows
         task.ContinueWith(t =>
         {
             var ex = t.Exception?.Flatten().InnerException;
             if (ex is not null)
-                Logger.Error(ex, context ?? "FireAndForget");
+            {
+                    // Use centralized UI helper to post to UI thread safely
+                    try
+                    {
+                        XBVault.Helpers.UIHelpers.RunOnUI(() => Logger.Error(ex, context ?? "FireAndForget"));
+                    }
+                    catch
+                    {
+                        Logger.Error(ex, context ?? "FireAndForget");
+                    }
+            }
         }, TaskContinuationOptions.OnlyOnFaulted);
     }
 }

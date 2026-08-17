@@ -5,6 +5,7 @@
         Classes="dialogWindow"
         x:DataType="vm:ConfirmViewModel"
         Title="{Binding Title}"
+        Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         WindowStartupLocation="CenterOwner"
         Width="380"
         SizeToContent="Height"
