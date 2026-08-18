@@ -1,8 +1,9 @@
 using System;
-using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using XBVault.Helpers;
+using XBVault.Services;
 
 namespace XBVault.Views;
 
@@ -18,6 +19,12 @@ public partial class MobileAboutView : UserControl
     {
         InitializeComponent();
         VersionText.Text = BuildInfo.DisplayVersion;
+        AttachedToVisualTree += OnAttached;
+    }
+
+    private void OnAttached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        // Commented out — device handles insets automatically
     }
 
     public void SetOnBack(Action onBack) => _onBack = onBack;
@@ -26,7 +33,7 @@ public partial class MobileAboutView : UserControl
 
     private void OnChangelogClick(object? sender, RoutedEventArgs e)
     {
-        Process.Start(new ProcessStartInfo("https://github.com/marcelofrau/xb-homebrew-vault/releases") { UseShellExecute = true });
+        PlatformHelper.OpenUrl("https://github.com/marcelofrau/xb-homebrew-vault/releases");
     }
 
     private void OnDiscordClick(object? sender, RoutedEventArgs e)
@@ -36,27 +43,27 @@ public partial class MobileAboutView : UserControl
 
     private void OnDiscordRevives(object? sender, RoutedEventArgs e)
     {
-        Process.Start(new ProcessStartInfo(RevivesUrl) { UseShellExecute = true });
+        PlatformHelper.OpenUrl(RevivesUrl);
     }
 
     private void OnDiscordXboxHub(object? sender, RoutedEventArgs e)
     {
-        Process.Start(new ProcessStartInfo(XboxHubUrl) { UseShellExecute = true });
+        PlatformHelper.OpenUrl(XboxHubUrl);
     }
 
     private void OnDiscordEr(object? sender, RoutedEventArgs e)
     {
-        Process.Start(new ProcessStartInfo(ErUrl) { UseShellExecute = true });
+        PlatformHelper.OpenUrl(ErUrl);
     }
 
     private void OnErLinkClick(object? sender, RoutedEventArgs e)
     {
-        Process.Start(new ProcessStartInfo("https://emulationrevival.github.io") { UseShellExecute = true });
+        PlatformHelper.OpenUrl("https://emulationrevival.github.io");
     }
 
     private void OnProjectLinkClick(object? sender, RoutedEventArgs e)
     {
-        Process.Start(new ProcessStartInfo("https://github.com/marcelofrau/xb-homebrew-vault") { UseShellExecute = true });
+        PlatformHelper.OpenUrl("https://github.com/marcelofrau/xb-homebrew-vault");
     }
 }
 

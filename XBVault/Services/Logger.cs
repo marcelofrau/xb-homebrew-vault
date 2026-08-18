@@ -300,6 +300,12 @@ public static class Logger
                 OnLog?.Invoke(entry);
             }
             catch { }
+
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[XBVault] {entry}");
+            }
+            catch { }
         }
     }
 
