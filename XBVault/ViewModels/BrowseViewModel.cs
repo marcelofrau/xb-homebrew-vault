@@ -660,11 +660,10 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     {
         var pending = _allItems.Where(i => !string.IsNullOrEmpty(i.ImageUrl) && i.Thumbnail is null).ToList();
         var total = pending.Count;
-        Logger.Debug($"Loading {total} thumbnails");
+        Logger.Debug($"Loading {total} thumbnails (immediate apply)");
 
         var loaded = 0;
         var cache = new CacheService();
-        var results = new ConcurrentBag<(CatalogItem Item, Bitmap Bitmap)>();
         var options = new ParallelOptions
         {
             MaxDegreeOfParallelism = 4,
@@ -697,7 +696,15 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
                     _ = cache.SaveThumbnailAsync(url, bytes);
                 }
 
-                results.Add((item, bitmap));
+                // Apply immediately on UI thread so cards show images as they load
+                var capturedItem = item;
+                var capturedBitmap = bitmap;
+                await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
+                {
+                    capturedItem.Thumbnail = capturedBitmap;
+                    return Task.CompletedTask;
+                });
+
                 Interlocked.Increment(ref loaded);
             }
             catch (OperationCanceledException)
@@ -709,19 +716,6 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
                 Logger.Trace($"Thumbnail failed for {item.Name}: {ex.Message}");
             }
         });
-
-        // Batch-apply on UI thread (5 per frame) to avoid storm
-        var items = results.ToArray();
-        for (var i = 0; i < items.Length; i += 5)
-        {
-            var batch = items.Skip(i).Take(5).ToList();
-            await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
-            {
-                foreach (var (item, bitmap) in batch)
-                    item.Thumbnail = bitmap;
-                return Task.CompletedTask;
-            });
-        }
 
         Logger.Debug($"Thumbnails loaded: {loaded}/{total}");
     }

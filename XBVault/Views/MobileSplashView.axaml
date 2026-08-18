@@ -1,13 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="XBVault.Views.MobileSplashView">
-
-  <UserControl.Background>
-    <ImageBrush Source="avares://XBVault/Assets/Views/SplashWindow/android-splash-bg.jpg"
-                Stretch="UniformToFill"/>
-  </UserControl.Background>
+             x:Class="XBVault.Views.MobileSplashView"
+             Background="#284325">
 
   <Grid RowDefinitions="*,Auto">
+    <Grid.Background>
+      <ImageBrush Source="avares://XBVault/Assets/Views/SplashWindow/android-splash-bg.jpg"
+                  Stretch="UniformToFill"/>
+    </Grid.Background>
       <StackPanel VerticalAlignment="Center"
                   HorizontalAlignment="Center"
                   Spacing="4">

@@ -201,7 +201,7 @@ public partial class ItemDetailWindow : Window
     {
         try
         {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            PlatformHelper.OpenUrl(url);
         }
         catch (Exception ex)
         {

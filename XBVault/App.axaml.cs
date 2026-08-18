@@ -17,7 +17,7 @@ namespace XBVault;
 
 public partial class App : Application
 {
-    private const int SplashMinDelayMs = 5000;
+    private const int SplashMinDelayMs = 2000;
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -58,6 +58,9 @@ public partial class App : Application
         };
         Logger.Debug($"Log level initialized to {savedLevel}");
 
+        if (ApplicationLifetime is IActivityApplicationLifetime)
+            Logger.MinLevel = LogLevel.Trace;
+
         LogGpuInfo();
 
         Logger.Info("Application initialized");
@@ -65,12 +68,17 @@ public partial class App : Application
         if (ApplicationLifetime is IActivityApplicationLifetime activity)
         {
             // Android: root panel holds splash initially, swaps to main after init
-            Logger.Info("Android: IActivityApplicationLifetime detected");
+            Logger.Info($"Android: IActivityApplicationLifetime detected @ {DateTime.Now:HH:mm:ss.fff}");
             var rootPanel = new Panel();
             var splash = new Views.MobileSplashView();
             rootPanel.Children.Add(splash);
-            activity.MainViewFactory = () => rootPanel;
-            Logger.Info("Android: MainViewFactory set, launching init");
+            Logger.Info($"Android: splash added to rootPanel @ {DateTime.Now:HH:mm:ss.fff}");
+            activity.MainViewFactory = () =>
+            {
+                Logger.Info($"Android: MainViewFactory called @ {DateTime.Now:HH:mm:ss.fff}");
+                return rootPanel;
+            };
+            Logger.Info($"Android: MainViewFactory set, launching init @ {DateTime.Now:HH:mm:ss.fff}");
 
             _ = InitAndroidAfterSplashAsync(rootPanel, splash);
         }
@@ -168,6 +176,11 @@ public partial class App : Application
 
     private static void ShowErrorDialogSafe(string title, string description, string details, ErrorDialogType type)
     {
+        Logger.Error($"{title}: {description}\n{details}");
+
+        if (Application.Current?.ApplicationLifetime is IActivityApplicationLifetime)
+            return;
+
         try
         {
             _ = XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
@@ -864,9 +877,13 @@ public partial class App : Application
     {
         try
         {
-            Logger.Debug("Android splash delay starting (2s)");
+            // Wait for splash to actually render before starting countdown
+            var splashRendered = new TaskCompletionSource();
+            splash.Loaded += (_, _) => splashRendered.TrySetResult();
+            await splashRendered.Task;
+            Logger.Debug($"Android splash delay starting ({SplashMinDelayMs}ms) @ {DateTime.Now:HH:mm:ss.fff}");
             await Task.Delay(SplashMinDelayMs);
-            Logger.Debug("Android splash delay complete, initializing services");
+            Logger.Debug($"Android splash delay complete @ {DateTime.Now:HH:mm:ss.fff}");
 
         // Initialize all services (same as desktop)
         var authService = new XboxAuthService();
@@ -896,34 +913,54 @@ public partial class App : Application
         var toolsViewModel = new ToolsViewModel(authService, systemService);
         var settingsViewModel = new SettingsViewModel(authService, cacheService);
 
-        Logger.Debug("Android services initialized, switching to MobileMainWindow");
+        Logger.Debug($"Android services initialized, switching to MobileMainWindow @ {DateTime.Now:HH:mm:ss.fff}");
 
         await XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
         {
             var main = new Views.MobileMainWindow();
             main.SetDataContext(mainViewModel);
+            main.BrowseContent.DataContext = browseViewModel;
+            main.ToolsContent.DataContext = toolsViewModel;
+            main.SettingsViewModel = settingsViewModel;
 
             rootPanel.Children.Remove(splash);
             rootPanel.Children.Add(main);
 
             mainViewModel.ShowConnectAction = async () =>
             {
-                Logger.Info("Android: ShowConnectAction placeholder");
+                Logger.Info("Android: ShowConnectAction invoked");
                 return false;
             };
 
             mainViewModel.ShowAboutAction = () =>
             {
-                Logger.Info("Android: ShowAboutAction placeholder");
+                Logger.Info("Android: ShowAboutAction invoked");
             };
 
             settingsViewModel.ShowLogsAction = () =>
             {
-                Logger.Info("Android: ShowLogsAction placeholder");
+                Logger.Info("Android: ShowLogsAction invoked");
+            };
+
+            browseViewModel.ShowDetailAction = item =>
+            {
+                Logger.Info($"Android: ShowDetailAction for {item.Name}");
+                var detail = new Views.MobileDetailView { DataContext = browseViewModel };
+                detail.SetOnBack(() =>
+                {
+                    main.CloseOverlay();
+                    if (browseViewModel.IsUpdateComplete)
+                        _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
+                    browseViewModel.IsUpdateMode = false;
+                    browseViewModel.SelectedItem = null;
+                });
+                browseViewModel.CloseDetailAction = () => main.CloseOverlay();
+                main.ShowOverlay(detail);
             };
 
             mainViewModel.OnTabChanged = tab =>
             {
+                Logger.Info($"Android: OnTabChanged → tab {tab}");
                 if (tab == 1)
                 {
                     installedViewModel.StartPolling();
@@ -936,7 +973,10 @@ public partial class App : Application
                 }
             };
 
-            Logger.Info("Android: MobileMainWindow loaded");
+            Logger.Info($"Android: MobileMainWindow loaded @ {DateTime.Now:HH:mm:ss.fff}");
+
+            // Auto-load catalog on startup (same as desktop)
+            _ = browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
         });
         }
         catch (Exception ex)
