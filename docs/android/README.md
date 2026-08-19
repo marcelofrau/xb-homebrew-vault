@@ -5,7 +5,7 @@ title: Android Port
 
 # XBVault Android Port
 
-> **Status: Phase 0 complete, Phase 1B in progress.** Buildable Android project skeleton with 3-project structure. Pre-splash placeholder verified on emulator. Now implementing: pre-splash native, Avalonia splash, MobileMainWindow shell with top bar, 4-tab bottom bar, and hamburger menu.
+> **Status: Phase 1B complete, Phase 2 in progress.** Splash, main shell, and 6 mobile views deployed and working on physical device. Catalog browse with item detail functional. Next: Installed, Settings, Tools content, connection, dialogs.
 
 ## Objective
 
@@ -31,27 +31,27 @@ XBVault already uses Avalonia 12 for its desktop UI. Avalonia natively supports 
 | [06-views-matrix](06-views-matrix.md) | View-by-view adaptation matrix with priority and complexity |
 | [07-testing-strategy](07-testing-strategy.md) | Emulator setup, device testing, connection validation |
 | [08-build-and-release](08-build-and-release.md) | Build configuration, CI pipeline, APK generation |
-| [09-mobile-ux-design](09-mobile-ux-design.md) | **NEW** — Complete Android UX spec: screens, tabs, dialogs, icons, colors |
+| [09-mobile-ux-design](09-mobile-ux-design.md) | Complete Android UX spec: screens, tabs, dialogs, icons, colors |
 | [Developer Architecture Guide](../developer-architecture.md) | Shared contracts, layer boundaries, threading rules, and cross-frontend guidance |
 
 ## Quick Summary
 
 | Metric | Value |
 |--------|-------|
-| Views (AXAML) | 33 total — 9 UserControls (main tabs + panels), 21 Windows (dialogs), 3 root (App, MainWindow, SplashWindow) |
+| Mobile views created | 7 — Splash, MainWindow, BrowseView, DetailView, AboutView, SettingsView, ToolsView |
 | ViewModels | 24 — all cross-platform, no changes needed |
 | Services | 33 implementations — 18 fully compatible, 12 need minor changes, 1 needs major changes (PlatformDialog), 2 not applicable on mobile |
 | Platform-specific code | P/Invoke (3 files), WMI (1 file) — all guarded or not-applicable |
-| Blocking issues | None in project build; local environment must select JDK 21 for Android (`JAVA_HOME=%LOCALAPPDATA%/Android/Sdk/jdk-21`) |
+| Blocking issues | Launcher icon showing generic (needs adaptive icon fix), native splash logo missing |
 
 ## Estimated Timeline
 
-| Phase | Duration | Deliverable |
-|-------|----------|-------------|
+| Phase | Duration | Status |
+|-------|----------|--------|
 | Phase 0: Project setup | ✅ Done | Buildable Android project skeleton |
 | Phase 1A: Placeholder | ✅ Done | Pre-splash placeholder on emulator |
-| Phase 1B: Shell + Splash | In progress | Pre-splash, Avalonia splash, MobileMainWindow shell |
-| Phase 2: Core views | 5–8 days | Browse, Installed, Connection working on Android |
-| Phase 3: Extended features | 5–8 days | File Explorer, Tools, Settings, Logs |
+| Phase 1B: Shell + Splash | ✅ Done | Pre-splash, Avalonia splash, MobileMainWindow shell |
+| Phase 1C: Mobile views | ✅ Done | Browse, Detail, About, Settings, Tools views created |
+| Phase 2: Core views | In progress | Browse functional, need Installed + Connection |
+| Phase 3: Extended features | 5–8 days | File Explorer, full Tools, full Settings, Logs |
 | Phase 4: Polish | 3–5 days | Dialogs, notifications, back button, edge cases |
-| **Total** | **17–28 days** | Feature-complete Android release |
