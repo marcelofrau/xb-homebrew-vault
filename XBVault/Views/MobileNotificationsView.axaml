@@ -1,0 +1,218 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:services="using:XBVault.Services"
+             xmlns:models="using:XBVault.Models"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileNotificationsView"
+             x:DataType="services:NotificationCenterService"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*">
+
+    <!-- Title bar -->
+    <views:MobileTitleBar Grid.Row="0"
+                          x:Name="TitleBar"
+                          Title="Notifications"
+                          ShowBackButton="True"
+                          ShowAppIcon="False"/>
+
+    <!-- Clear all button -->
+    <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}" Padding="16,8">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Border Background="{StaticResource DangerBrush}"
+                  CornerRadius="8"
+                  MinWidth="22"
+                  Height="18"
+                  Padding="4,0"
+                  IsVisible="{Binding UnacknowledgedCount, Converter={StaticResource IntToBool}}">
+            <TextBlock Text="{Binding UnacknowledgedCount}"
+                       FontSize="11"
+                       FontWeight="Bold"
+                       Foreground="White"
+                       TextAlignment="Center"
+                       VerticalAlignment="Center"/>
+          </Border>
+        </StackPanel>
+        <Button Grid.Column="1"
+                Content="Clear all"
+                FontSize="12"
+                Padding="8,4"
+                Background="Transparent"
+                Foreground="{StaticResource TextMutedBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Click="OnClearAllClick"/>
+      </Grid>
+    </Border>
+
+    <!-- Content -->
+    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="16,8">
+      <StackPanel Spacing="12">
+
+        <!-- Empty state -->
+        <TextBlock IsVisible="{Binding Active.Count, Converter={StaticResource IntToBoolInverse}}"
+                   Text="No notifications yet."
+                   FontSize="14"
+                   Foreground="{StaticResource TextMutedBrush}"
+                   TextAlignment="Center"
+                   Margin="0,20"/>
+
+        <!-- Active -->
+        <StackPanel Spacing="6" IsVisible="{Binding Active.Count, Converter={StaticResource IntToBool}}">
+          <TextBlock Text="ACTIVE"
+                     FontSize="11"
+                     FontWeight="Bold"
+                     Foreground="{StaticResource AccentBrush}"
+                     LetterSpacing="1"
+                     Margin="4,0"/>
+          <ItemsControl ItemsSource="{Binding Active}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:NotificationItem">
+                <Border Padding="12,10"
+                        CornerRadius="6"
+                        Background="{StaticResource CardBgBrush}"
+                        BorderBrush="{StaticResource CardBorderBrush}"
+                        BorderThickness="1">
+                  <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                      <TextBlock Text="{Binding Title}"
+                                 FontSize="14"
+                                 FontWeight="SemiBold"
+                                 Foreground="{StaticResource TextBrush}"
+                                 TextTrimming="CharacterEllipsis"
+                                 VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding CreatedAt, StringFormat={}{0:HH:mm:ss} UTC}"
+                                 FontSize="11"
+                                 Foreground="{StaticResource TextDimBrush}"
+                                 VerticalAlignment="Center"/>
+                      <Button Grid.Column="2"
+                              Content="✕"
+                              FontSize="11"
+                              Padding="4,0"
+                              Background="Transparent"
+                              Foreground="{StaticResource TextMutedBrush}"
+                              BorderThickness="0"
+                              VerticalAlignment="Center"
+                              Click="OnDismissClick"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                      <Image Source="{Binding IconUri}"
+                             Width="16" Height="16" Stretch="Uniform"
+                             VerticalAlignment="Top"
+                             Margin="0,2,0,0"
+                             IsVisible="{Binding IconUri, Converter={StaticResource StringNotEmpty}}"/>
+                      <StackPanel Grid.Column="1" Spacing="4">
+                        <TextBlock Text="{Binding Message}"
+                                   FontSize="13"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   TextWrapping="Wrap"/>
+                        <ItemsControl ItemsSource="{Binding Actions}"
+                                      IsVisible="{Binding IsGrouped}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:NotificationAction">
+                              <Button Content="{Binding Label}"
+                                      FontSize="12"
+                                      Padding="8,4"
+                                      Margin="0,1"
+                                      HorizontalContentAlignment="Left"
+                                      Background="Transparent"
+                                      Foreground="{StaticResource AccentBrush}"
+                                      BorderBrush="{StaticResource BorderBrush}"
+                                      CornerRadius="3"
+                                      Click="OnActionClick"/>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <!-- History -->
+        <StackPanel Spacing="6">
+          <TextBlock Text="HISTORY"
+                     FontSize="11"
+                     FontWeight="Bold"
+                     Foreground="{StaticResource TextDimBrush}"
+                     LetterSpacing="1"
+                     Margin="4,0"/>
+          <ItemsControl ItemsSource="{Binding History}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:NotificationItem">
+                <Border Padding="12,10"
+                        CornerRadius="6"
+                        Background="{StaticResource CardBgBrush}"
+                        BorderBrush="{StaticResource CardBorderBrush}"
+                        BorderThickness="1">
+                  <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                      <TextBlock Text="{Binding Title}"
+                                 FontSize="13"
+                                 FontWeight="SemiBold"
+                                 Foreground="{StaticResource TextMutedBrush}"
+                                 TextTrimming="CharacterEllipsis"
+                                 VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding CreatedAt, StringFormat={}{0:HH:mm:ss} UTC}"
+                                 FontSize="11"
+                                 Foreground="{StaticResource TextDimBrush}"
+                                 VerticalAlignment="Center"/>
+                      <Button Grid.Column="2"
+                              Content="✕"
+                              FontSize="11"
+                              Padding="4,0"
+                              Background="Transparent"
+                              Foreground="{StaticResource TextMutedBrush}"
+                              BorderThickness="0"
+                              VerticalAlignment="Center"
+                              Click="OnHistoryClearClick"/>
+                    </Grid>
+                    <TextBlock Text="{Binding Message}"
+                               FontSize="12"
+                               Foreground="{StaticResource TextDimBrush}"
+                               TextTrimming="CharacterEllipsis"/>
+                    <ItemsControl ItemsSource="{Binding Actions}"
+                                  IsVisible="{Binding IsGrouped}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:NotificationAction">
+                          <Button Content="{Binding Label}"
+                                  FontSize="12"
+                                  Padding="8,3"
+                                  Margin="0,1"
+                                  HorizontalContentAlignment="Left"
+                                  Background="Transparent"
+                                  Foreground="{StaticResource AccentBrush}"
+                                  BorderBrush="{StaticResource BorderBrush}"
+                                  CornerRadius="3"
+                                  Click="OnActionClick"/>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+
+</UserControl>

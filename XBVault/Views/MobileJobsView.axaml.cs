@@ -1,22 +1,17 @@
 using System;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
-using XBVault.Services;
-using XBVault.ViewModels;
 
 namespace XBVault.Views;
 
-public partial class MobileDetailView : UserControl
+public partial class MobileJobsView : UserControl
 {
     private Action? _onBack;
 
-    public MobileDetailView()
+    public MobileJobsView()
     {
         InitializeComponent();
         TitleBar.BackClicked += (_, _) => _onBack?.Invoke();
     }
 
     public void SetOnBack(Action onBack) => _onBack = onBack;
-
-    private void OnBackClick(object? sender, RoutedEventArgs e) => _onBack?.Invoke();
 }

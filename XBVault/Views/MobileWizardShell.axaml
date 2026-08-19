@@ -1,0 +1,124 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileWizardShell"
+             x:Name="Self"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+    <!-- Row 0: Title bar with back arrow -->
+    <views:MobileTitleBar Grid.Row="0"
+                           x:Name="TitleBar"
+                           ShowAppIcon="False"
+                           ShowBackButton="True"/>
+
+    <!-- Row 1: Wizard title + step indicators -->
+    <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}">
+      <StackPanel Spacing="0">
+
+        <!-- Step title area -->
+        <Border Background="{StaticResource SurfaceAltBrush}" Padding="0,16,0,12">
+          <StackPanel HorizontalAlignment="Center" Spacing="8">
+            <Image x:Name="WizardStepIcon"
+                   Width="64" Height="64"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center"/>
+            <TextBlock x:Name="WizardStepTitle"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{StaticResource TextBrush}"
+                       HorizontalAlignment="Center"/>
+            <TextBlock x:Name="WizardStepSubtitle"
+                       FontSize="13"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       MaxWidth="320"
+                       TextAlignment="Center"/>
+          </StackPanel>
+        </Border>
+
+        <!-- Step indicator pills -->
+        <Border Padding="16,10">
+          <StackPanel x:Name="StepIndicatorPanel"
+                      Orientation="Horizontal"
+                      Spacing="0"
+                      HorizontalAlignment="Center"/>
+        </Border>
+
+        <!-- Progress bar -->
+        <Border x:Name="ProgressBorder" Padding="16,0,16,10">
+          <Grid x:Name="ProgressBarRow" RowDefinitions="4">
+            <Border Background="{StaticResource BorderBrush}" CornerRadius="2" Height="4"/>
+            <Border x:Name="ProgressFill"
+                    Background="{StaticResource AccentBrush}"
+                    CornerRadius="2" Height="4"
+                    HorizontalAlignment="Left"
+                    Width="0"/>
+          </Grid>
+        </Border>
+
+      </StackPanel>
+    </Border>
+
+    <!-- Row 2: Step content -->
+    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+      <TransitioningContentControl x:Name="StepContent" Margin="16,12">
+        <TransitioningContentControl.PageTransition>
+          <CompositePageTransition>
+            <CrossFade Duration="0:0:0.2"/>
+            <PageSlide Duration="0:0:0.25" Orientation="Horizontal"/>
+          </CompositePageTransition>
+        </TransitioningContentControl.PageTransition>
+      </TransitioningContentControl>
+    </ScrollViewer>
+
+    <!-- Row 3: Footer navigation -->
+    <Border Grid.Row="3"
+            Background="{StaticResource SurfaceBrush}"
+            Padding="16,12"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+
+        <!-- Previous / Cancel (left) -->
+        <Button x:Name="PrevBtn"
+                Grid.Column="0"
+                Classes="Danger"
+                Click="OnPrevClick"
+                Padding="14,10"
+                CornerRadius="8">
+          <TextBlock x:Name="PrevBtnLabel" Text="Cancel" FontSize="13" FontWeight="SemiBold"
+                     VerticalAlignment="Center"/>
+        </Button>
+
+        <!-- spacer -->
+        <Border Grid.Column="1"/>
+
+        <!-- Next / Finish (right) -->
+        <Button x:Name="NextBtn"
+                Grid.Column="2"
+                Classes="Accent"
+                Click="OnNavNextClick"
+                Padding="20,10"
+                CornerRadius="8">
+          <TextBlock x:Name="NextBtnLabel"
+                     Text="Next"
+                     FontSize="13" FontWeight="SemiBold"
+                     VerticalAlignment="Center"/>
+        </Button>
+
+      </Grid>
+    </Border>
+  </Grid>
+
+</UserControl>

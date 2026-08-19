@@ -19,6 +19,7 @@ public partial class MobileAboutView : UserControl
     {
         InitializeComponent();
         VersionText.Text = BuildInfo.DisplayVersion;
+        TitleBar.BackClicked += (_, _) => _onBack?.Invoke();
         AttachedToVisualTree += OnAttached;
     }
 

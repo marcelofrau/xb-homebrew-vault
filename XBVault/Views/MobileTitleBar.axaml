@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="XBVault.Views.MobileTitleBar"
+             x:Name="Self">
+
+  <UserControl.Styles>
+    <Style Selector="Button.TabBtn">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid ClipToBounds="True">
+    <Grid.Background>
+      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Color="#447F3E" Offset="0"/>
+        <GradientStop Color="#9ACA3C" Offset="1"/>
+      </LinearGradientBrush>
+    </Grid.Background>
+    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+
+      <!-- Col 0: Back arrow (toggle via ShowBackButton) -->
+      <Button Grid.Column="0"
+              x:Name="BackBtn"
+              Classes="TabBtn"
+              Width="48" Height="48"
+              IsVisible="{Binding #Self.ShowBackButton}"
+              Click="OnBackClick">
+        <Image Source="avares://XBVault/Assets/Views/MobileTitleBar/mobiletitlebar-back-32.png"
+               Width="28" Height="28"
+               Stretch="Uniform"/>
+      </Button>
+
+      <!-- Col 1: App icon -->
+      <Image Grid.Column="1"
+             Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
+             Width="36" Height="36"
+             Stretch="Uniform"
+             Margin="12,0,10,0"
+             VerticalAlignment="Center"
+             IsVisible="{Binding #Self.ShowAppIcon}"/>
+
+      <!-- Col 2: Title text -->
+      <TextBlock Grid.Column="2"
+                 Text="{Binding #Self.Title}"
+                 FontFamily="{StaticResource TitleFont}"
+                 FontSize="18" FontWeight="Bold"
+                 Foreground="#1A1A1A"
+                 VerticalAlignment="Center"
+                 Margin="4,0,0,0"/>
+
+      <!-- Col 3: Optional content slot (e.g. connect button) -->
+      <ContentControl Grid.Column="3"
+                      Content="{Binding #Self.RightContent}"
+                      x:Name="RightContentSlot"
+                      VerticalAlignment="Center"/>
+
+      <!-- Col 4: Optional content slot (e.g. hamburger) -->
+      <ContentControl Grid.Column="4"
+                      Content="{Binding #Self.FarRightContent}"
+                      x:Name="FarRightContentSlot"
+                      VerticalAlignment="Center"/>
+
+    </Grid>
+  </Grid>
+
+</UserControl>

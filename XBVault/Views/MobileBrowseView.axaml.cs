@@ -27,4 +27,20 @@ public partial class MobileBrowseView : UserControl
             listBox.SelectedItem = null;
         }
     }
+
+    private void OnBottomSearchFocus(object? sender, RoutedEventArgs e)
+    {
+        SearchOverlay.IsVisible = true;
+        BottomSearchBox.IsVisible = false;
+        OverlaySearchBox.Focus();
+    }
+
+    private void OnOverlaySearchLostFocus(object? sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(OverlaySearchBox.Text))
+        {
+            SearchOverlay.IsVisible = false;
+            BottomSearchBox.IsVisible = true;
+        }
+    }
 }

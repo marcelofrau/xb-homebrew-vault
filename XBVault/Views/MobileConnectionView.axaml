@@ -1,0 +1,159 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:XBVault.Views"
+             xmlns:vm="using:XBVault.ViewModels"
+             xmlns:sys="using:System"
+             x:Class="XBVault.Views.MobileConnectionView"
+             x:DataType="vm:ConnectionViewModel"
+             x:Name="Self"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto">
+
+    <!-- Title bar -->
+    <views:MobileTitleBar Grid.Row="0"
+                          x:Name="TitleBar"
+                          Title="Xbox Connection"
+                          ShowBackButton="True"
+                          ShowAppIcon="False"/>
+
+    <!-- Content area: stretches to fill, scrollable -->
+    <Border Grid.Row="1" Background="{StaticResource BgBrush}">
+      <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Top: Banner + info -->
+        <StackPanel Grid.Row="0" Spacing="4" Margin="16,16,16,0">
+          <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-banner.png"
+                 Stretch="Uniform"
+                 MaxWidth="280"
+                 HorizontalAlignment="Center"/>
+          <TextBlock Text="Establish Xbox Connection"
+                     FontSize="16"
+                     FontWeight="Bold"
+                     Foreground="{StaticResource AccentBrush}"
+                     HorizontalAlignment="Center"
+                     Margin="0,4,0,0"/>
+          <TextBlock Text="Connect to Xbox Developer Mode via Device Portal"
+                     FontSize="12"
+                     Foreground="{StaticResource TextMutedBrush}"
+                     HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Middle: Terminal output (fills remaining space) -->
+        <Border Grid.Row="1"
+                Background="{StaticResource SurfaceAltBrush}"
+                CornerRadius="8"
+                Padding="10,8"
+                Margin="16,12,16,0">
+          <Grid RowDefinitions="Auto,*">
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+              <TextBlock Text="OUTPUT"
+                         FontSize="10"
+                         FontWeight="Bold"
+                         Foreground="{StaticResource TextDimBrush}"
+                         Opacity="0.6"
+                         LetterSpacing="1.2"/>
+              <TextBlock Grid.Column="1"
+                         Text="{Binding Progress, StringFormat={}{0:P0}}"
+                         FontSize="11"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         IsVisible="{Binding IsRunning}"/>
+            </Grid>
+            <Border Grid.Row="1"
+                    Background="#0D0D14"
+                    CornerRadius="4"
+                    Padding="8,6">
+              <ScrollViewer x:Name="OutputScroll"
+                            VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding OutputLines}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="sys:String">
+                      <TextBlock Text="{Binding}"
+                                 FontFamily="{StaticResource MonoFont}"
+                                 FontSize="12"
+                                 Foreground="{StaticResource AccentGlowBrush}"
+                                 TextWrapping="Wrap"/>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Border>
+          </Grid>
+        </Border>
+
+        <!-- Bottom: Progress bar (when running) -->
+        <ProgressBar Grid.Row="2"
+                     IsIndeterminate="True"
+                     Height="3"
+                     Margin="16,8,16,0"
+                     IsVisible="{Binding IsRunning}"
+                     Foreground="{StaticResource AccentBrush}"/>
+
+      </Grid>
+    </Border>
+
+    <!-- Footer: Buttons anchored at bottom -->
+    <Border Grid.Row="2"
+            Background="{StaticResource SurfaceBrush}"
+            Padding="16,12"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="Auto,*">
+        <Button x:Name="CancelBtn"
+                Classes="Danger"
+                Command="{Binding CancelCommand}"
+                IsEnabled="{Binding IsActive}"
+                Padding="16,12"
+                HorizontalAlignment="Left"
+                CornerRadius="8">
+          <Grid ColumnDefinitions="Auto,8,Auto" VerticalAlignment="Center">
+            <Grid>
+              <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-cancel-20.png"
+                     IsVisible="{Binding #CancelBtn.IsEnabled}"
+                     Width="18" Height="18" Stretch="Uniform"/>
+              <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-cancel-20-disabled.png"
+                     IsVisible="{Binding #CancelBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                     Width="18" Height="18" Stretch="Uniform"/>
+            </Grid>
+            <TextBlock Grid.Column="2" Text="Cancel"
+                       FontSize="14" FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+          </Grid>
+        </Button>
+        <Button x:Name="ConnectBtn"
+                Grid.Column="1"
+                Classes="Accent"
+                Command="{Binding ConnectCommand}"
+                IsEnabled="{Binding IsActive}"
+                Padding="20,12"
+                HorizontalAlignment="Right"
+                CornerRadius="8">
+          <Grid ColumnDefinitions="Auto,8,Auto" VerticalAlignment="Center">
+            <Grid>
+              <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                     IsVisible="{Binding #ConnectBtn.IsEnabled}"
+                     Width="18" Height="18" Stretch="Uniform"/>
+              <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20-disabled.png"
+                     IsVisible="{Binding #ConnectBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                     Width="18" Height="18" Stretch="Uniform"/>
+            </Grid>
+            <TextBlock Grid.Column="2" Text="Connect"
+                       FontSize="14" FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+          </Grid>
+        </Button>
+      </Grid>
+    </Border>
+
+  </Grid>
+
+</UserControl>

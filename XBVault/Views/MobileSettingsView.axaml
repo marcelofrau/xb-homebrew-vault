@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:XBVault.ViewModels"
+             xmlns:views="using:XBVault.Views"
              x:Class="XBVault.Views.MobileSettingsView"
              x:DataType="vm:SettingsViewModel"
              Background="{StaticResource BgBrush}">
@@ -14,61 +15,27 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="Auto,Auto,*">
+  <Grid RowDefinitions="Auto,*">
 
-    <!-- Top Bar: gradient with app icon + title -->
-    <Grid Grid.Row="0" ClipToBounds="True">
-      <Grid.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-          <GradientStop Color="#447F3E" Offset="0"/>
-          <GradientStop Color="#9ACA3C" Offset="1"/>
-        </LinearGradientBrush>
-      </Grid.Background>
-      <Border x:Name="TopBarContent">
-        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-        <Image Grid.Column="0"
-               Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
-               Width="44" Height="44"
-               Stretch="Uniform"
-               Margin="16,0,16,0"
-               VerticalAlignment="Center"/>
-          <TextBlock Grid.Column="1"
-                     Text="XB Homebrew Vault"
-                     FontFamily="{StaticResource TitleFont}"
-                     FontSize="18" FontWeight="Bold"
-                     Foreground="#1A1A1A"
-                     VerticalAlignment="Center"/>
-        </Grid>
-      </Border>
-    </Grid>
-
-    <!-- Back header: back button + page title + save -->
-    <Grid Grid.Row="1" Height="52" Background="{StaticResource SurfaceBrush}">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="52"/>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="Auto"/>
-      </Grid.ColumnDefinitions>
-      <Button Grid.Column="0" Width="52" Height="52" Classes="TabBtn" Click="OnBackClick" HorizontalAlignment="Left">
-        <Image Source="avares://XBVault/Assets/Views/MobileSettingsView/mobilesettings-back-20.png"
-               Width="20" Height="20" Stretch="Uniform"/>
-      </Button>
-      <TextBlock Grid.Column="1" Text="SETTINGS"
-                 FontFamily="{StaticResource TitleFont}"
-                 FontSize="18" FontWeight="Bold"
-                 Foreground="{StaticResource TextBrush}"
-                 VerticalAlignment="Center"/>
-      <Button Grid.Column="2" Classes="TabBtn" Command="{Binding SaveSettingsCommand}"
-              Padding="16,8" VerticalAlignment="Center">
-        <TextBlock Text="Save" FontSize="15" FontWeight="Bold"
-                   Foreground="{StaticResource AccentBrush}"/>
-      </Button>
-    </Grid>
+    <!-- Title Bar with back button + save -->
+    <views:MobileTitleBar Grid.Row="0"
+                          x:Name="TitleBar"
+                          Title="SETTINGS"
+                          ShowBackButton="True"
+                          ShowAppIcon="False">
+      <views:MobileTitleBar.RightContent>
+        <Button Classes="TabBtn" Command="{Binding SaveSettingsCommand}"
+                Padding="16,8" VerticalAlignment="Center">
+          <TextBlock Text="Save" FontSize="15" FontWeight="Bold"
+                     Foreground="{StaticResource AccentBrush}"/>
+        </Button>
+      </views:MobileTitleBar.RightContent>
+    </views:MobileTitleBar>
 
     <!-- Saved notification -->
     <Border Grid.Row="0"
             IsVisible="{Binding ShowSavedNotification}"
-            Background="#1A3A1E"
+            Background="{StaticResource SurfaceBrush}"
             BorderBrush="{StaticResource AccentBrush}"
             BorderThickness="1" CornerRadius="8"
             Padding="16,12" Margin="16,4"
@@ -86,7 +53,7 @@
     </Border>
 
     <!-- Content -->
-    <ScrollViewer Grid.Row="2">
+    <ScrollViewer Grid.Row="1">
       <StackPanel Spacing="12" Margin="16,12" MaxWidth="600" HorizontalAlignment="Center">
 
         <!-- Xbox Connection -->

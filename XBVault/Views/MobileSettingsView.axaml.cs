@@ -11,6 +11,7 @@ public partial class MobileSettingsView : UserControl
     public MobileSettingsView()
     {
         InitializeComponent();
+        TitleBar.BackClicked += (_, _) => _onBack?.Invoke();
         AttachedToVisualTree += OnAttached;
     }
 
