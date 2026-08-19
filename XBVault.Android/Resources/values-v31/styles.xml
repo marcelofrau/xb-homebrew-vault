@@ -7,5 +7,6 @@
     <item name="android:windowSplashScreenBackground">#284325</item>
     <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
     <item name="android:windowSplashScreenIconBackgroundColor">#284325</item>
+    <item name="android:windowSplashScreenBehavior">icon_preferred</item>
   </style>
 </resources>
