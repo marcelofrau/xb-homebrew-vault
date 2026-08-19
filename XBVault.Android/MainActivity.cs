@@ -4,6 +4,7 @@ using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.Util;
+using Android.Views;
 using Avalonia.Android;
 using XBVault.Services;
 
@@ -82,6 +83,53 @@ public class MainActivity : AvaloniaMainActivity
     {
         return ex is NullReferenceException &&
                ex.StackTrace?.Contains("TopLevelImpl") == true;
+    }
+
+    protected override void OnResume()
+    {
+        base.OnResume();
+        Log.Info(TAG, $"OnResume: Content type={Content?.GetType().FullName ?? "null"}");
+
+        try
+        {
+            if (Content is AvaloniaView avaloniaView)
+            {
+                Log.Info(TAG, $"OnResume: AvaloniaView found, Width={avaloniaView.Width}, Height={avaloniaView.Height}, IsAttached={avaloniaView.IsAttachedToWindow}");
+
+                // Phase 1: immediate cancel — reset any pending pointer/gesture state
+                var now = Java.Lang.JavaSystem.CurrentTimeMillis();
+                var cancel = MotionEvent.Obtain(now, now, MotionEventActions.Cancel, 0, 0, 0);
+                var dispatched = avaloniaView.DispatchTouchEvent(cancel);
+                cancel.Recycle();
+                Log.Info(TAG, $"OnResume: DispatchTouchEvent(Cancel) result={dispatched}");
+
+                // Phase 2: delayed invalidation — surface may not be fully ready immediately
+                avaloniaView.PostDelayed(() =>
+                {
+                    Log.Info(TAG, $"OnResume[+300ms]: requesting layout + invalidate, W={avaloniaView.Width}, H={avaloniaView.Height}");
+                    avaloniaView.RequestLayout();
+                    avaloniaView.Invalidate();
+
+                    // Phase 3: second cancel after layout pass — belt and suspenders
+                    avaloniaView.PostDelayed(() =>
+                    {
+                        var now2 = Java.Lang.JavaSystem.CurrentTimeMillis();
+                        var cancel2 = MotionEvent.Obtain(now2, now2, MotionEventActions.Cancel, 0, 0, 0);
+                        avaloniaView.DispatchTouchEvent(cancel2);
+                        cancel2.Recycle();
+                        Log.Info(TAG, $"OnResume[+600ms]: second DispatchTouchEvent(Cancel) dispatched");
+                    }, 300);
+                }, 300);
+            }
+            else
+            {
+                Log.Warn(TAG, $"OnResume: Content is not AvaloniaView — type={Content?.GetType().FullName ?? "null"}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(TAG, $"OnResume gesture reset FAILED: {ex}");
+        }
     }
 
 #pragma warning disable CA1422

@@ -922,14 +922,34 @@ public partial class App : Application
             main.BrowseContent.DataContext = browseViewModel;
             main.ToolsContent.DataContext = toolsViewModel;
             main.SettingsViewModel = settingsViewModel;
+            main.NotificationCenter = notificationCenter;
+            main.BackgroundTasks = backgroundTaskService;
+            main.AuthService = authService;
 
             rootPanel.Children.Remove(splash);
             rootPanel.Children.Add(main);
 
             mainViewModel.ShowConnectAction = async () =>
             {
-                Logger.Info("Android: ShowConnectAction invoked");
-                return false;
+                Logger.Info("Android: ShowConnectAction invoked — opening MobileConnectionView");
+                var tcs = new TaskCompletionSource<bool>();
+                var connVm = new ConnectionViewModel(authService, networkService);
+                var connView = new Views.MobileConnectionView { DataContext = connVm };
+                connVm.Completed += success =>
+                {
+                    Logger.Info($"Android: Connection completed: success={success}");
+                    tcs.SetResult(success);
+                };
+                connView.SetOnBack(() =>
+                {
+                    if (connVm.IsRunning)
+                        connVm.CancelCommand.Execute(null);
+                    main.CloseOverlay();
+                    if (!tcs.Task.IsCompleted)
+                        tcs.SetResult(false);
+                });
+                main.ShowOverlay(connView);
+                return await tcs.Task;
             };
 
             mainViewModel.ShowAboutAction = () =>
@@ -977,6 +997,37 @@ public partial class App : Application
 
             // Auto-load catalog on startup (same as desktop)
             _ = browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
+
+            // First-run wizard on Android
+            if (!SettingsService.Current.XboxConnection.IsConfigured)
+            {
+                Logger.Info("Android: Settings not configured, showing setup wizard");
+                var wizardVm = new SetupWizardViewModel(authService);
+                var wizardView = new Views.MobileSetupWizardView();
+                wizardView.SetViewModel(wizardVm);
+                wizardVm.CloseAction = () => main.CloseOverlay();
+                wizardView.CloseRequested += async (_, _) =>
+                {
+                    main.CloseOverlay();
+                    if (wizardVm.WasCompleted)
+                    {
+                        Logger.Info("Android: Setup wizard completed");
+                        if (wizardVm.OpenConnectionAfter && mainViewModel.ShowConnectAction is not null)
+                        {
+                            var connected = await mainViewModel.ShowConnectAction();
+                            if (connected)
+                            {
+                                await authService.FetchSmbPasswordAsync();
+                                mainViewModel.IsXboxConnected = true;
+                                authService.MarkConnected();
+                                mainViewModel.ConnectionStatusText = "Connected";
+                            }
+                        }
+                        mainViewModel.UpdateConnectionStatus();
+                    }
+                };
+                main.ShowOverlay(wizardView);
+            }
         });
         }
         catch (Exception ex)

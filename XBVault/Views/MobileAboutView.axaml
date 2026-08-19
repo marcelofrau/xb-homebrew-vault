@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:XBVault.Views"
              x:Class="XBVault.Views.MobileAboutView">
 
   <UserControl.Styles>
@@ -10,6 +11,22 @@
       <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
     </Style>
     <Style Selector="Button.ActionBtn">
+      <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+      <Setter Property="Foreground" Value="{StaticResource BgBrush}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="16,14"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button.ActionBtn:pointerover">
+      <Setter Property="Background" Value="{StaticResource AccentDimBrush}"/>
+    </Style>
+
+    <Style Selector="Button.DiscordBtn">
       <Setter Property="Background" Value="#4E56D0"/>
       <Setter Property="Foreground" Value="White"/>
       <Setter Property="BorderThickness" Value="0"/>
@@ -21,8 +38,11 @@
       <Setter Property="HorizontalAlignment" Value="Stretch"/>
       <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
     </Style>
-    <Style Selector="Button.ActionBtn:pointerover">
+    <Style Selector="Button.DiscordBtn:pointerover">
       <Setter Property="Background" Value="#5B63E0"/>
+    </Style>
+    <Style Selector="Button.DiscordBtn:pressed">
+      <Setter Property="Background" Value="#3D44B8"/>
     </Style>
 
     <Style Selector="Button.LinkBtn">
@@ -35,8 +55,8 @@
     </Style>
 
     <Style Selector="FlyoutPresenter">
-      <Setter Property="Background" Value="#1E2028"/>
-      <Setter Property="BorderBrush" Value="#333640"/>
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="0"/>
       <Setter Property="CornerRadius" Value="10"/>
@@ -47,54 +67,18 @@
   <Panel>
     <Image Source="avares://XBVault/Assets/Views/SplashWindow/android-splash-bg.jpg"
            Stretch="UniformToFill" Opacity="0.35"/>
-    <Border Background="#CC1A1E24"/>
+    <Border Background="{StaticResource SurfaceBrush}" Opacity="0.8"/>
 
-    <Grid RowDefinitions="Auto,Auto,*">
-      <!-- Top Bar: gradient with app icon + title (matches MobileMainWindow) -->
-      <Grid Grid.Row="0" ClipToBounds="True">
-        <Grid.Background>
-          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-            <GradientStop Color="#447F3E" Offset="0"/>
-            <GradientStop Color="#9ACA3C" Offset="1"/>
-          </LinearGradientBrush>
-        </Grid.Background>
-        <Border x:Name="TopBarContent">
-          <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-            <Image Grid.Column="0"
-                   Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
-                   Width="44" Height="44"
-                   Stretch="Uniform"
-                   Margin="16,0,16,0"
-                   VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="1"
-                       Text="XB Homebrew Vault"
-                       FontFamily="{StaticResource TitleFont}"
-                       FontSize="18" FontWeight="Bold"
-                       Foreground="#1A1A1A"
-                       VerticalAlignment="Center"/>
-          </Grid>
-        </Border>
-      </Grid>
-
-      <!-- Back header: back button + page title -->
-      <Grid Grid.Row="1" Height="52">
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="52"/>
-          <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-        <Button Grid.Column="0" Width="52" Height="52" Classes="TabBtn" Click="OnBackClick" HorizontalAlignment="Left">
-          <Image Source="avares://XBVault/Assets/Views/MobileAboutView/mobileabout-back-20.png"
-                 Width="22" Height="22" Stretch="Uniform"/>
-        </Button>
-        <TextBlock Grid.Column="1" Text="About"
-                   FontFamily="{StaticResource TitleFont}"
-                   FontSize="18" FontWeight="Bold"
-                   Foreground="{StaticResource TextBrush}"
-                   VerticalAlignment="Center"/>
-      </Grid>
+    <Grid RowDefinitions="Auto,*">
+      <!-- Title Bar with back button -->
+      <views:MobileTitleBar Grid.Row="0"
+                            x:Name="TitleBar"
+                            Title="About"
+                            ShowBackButton="True"
+                            ShowAppIcon="False"/>
 
       <!-- Content: centered vertically in available space -->
-      <ScrollViewer Grid.Row="2">
+      <ScrollViewer Grid.Row="1">
         <StackPanel Spacing="0" HorizontalAlignment="Center" VerticalAlignment="Center"
                     Margin="24,0" MaxWidth="380">
 
@@ -152,20 +136,20 @@
               </Button>
             </StackPanel>
             <TextBlock Text="Marcelo Frau" FontSize="12"
-                       Foreground="#888" HorizontalAlignment="Center"
+                       Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"
                        FontFamily="{StaticResource BodyFont}"/>
             <TextBlock Text="GPL-3.0-only" FontSize="13" FontWeight="SemiBold"
                        Foreground="{StaticResource YellowBrush}" HorizontalAlignment="Center"
                        FontFamily="{StaticResource BodyFont}"/>
           </StackPanel>
 
-          <Separator Width="120" Height="1" Background="#444" Margin="0,16" HorizontalAlignment="Center"/>
+          <Separator Width="120" Height="1"            Background="{StaticResource TextMutedBrush}" Margin="0,16" HorizontalAlignment="Center"/>
 
           <!-- Discord -->
           <TextBlock Text="Community" FontSize="12" FontWeight="Bold"
                      Foreground="{StaticResource TextMutedBrush}"
                      HorizontalAlignment="Center" Margin="0,0,0,8"/>
-          <Button Classes="ActionBtn" Click="OnDiscordClick">
+          <Button Classes="DiscordBtn" Click="OnDiscordClick">
             <Button.Flyout>
               <Flyout Placement="Bottom">
                 <StackPanel Width="260" Spacing="4" Margin="10"
@@ -205,7 +189,7 @@
             </Grid>
           </Button>
 
-          <Separator Width="120" Height="1" Background="#444" Margin="0,16" HorizontalAlignment="Center"/>
+          <Separator Width="120" Height="1"            Background="{StaticResource TextMutedBrush}" Margin="0,16" HorizontalAlignment="Center"/>
 
           <!-- Links -->
           <Button Classes="LinkBtn" Click="OnErLinkClick" HorizontalAlignment="Center">

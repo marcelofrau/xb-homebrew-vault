@@ -42,6 +42,33 @@
 
   <Grid RowDefinitions="Auto,Auto,*,Auto">
 
+    <!-- Floating search overlay (shown when keyboard is open) -->
+    <Border Grid.Row="0" x:Name="SearchOverlay"
+            IsVisible="False"
+            Background="{StaticResource SurfaceBrush}"
+            Padding="16,10"
+            ZIndex="100">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox Grid.Column="0"
+                 x:Name="OverlaySearchBox"
+                 PlaceholderText="Search catalog..."
+                 Text="{Binding SearchText}"
+                 FontSize="15" Padding="12,10"
+                 LostFocus="OnOverlaySearchLostFocus"/>
+        <Button Grid.Column="1"
+                Command="{Binding OpenCustomInstallCommand}"
+                Padding="14,10"
+                ToolTip.Tip="Install a custom package from file">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-install-20.png"
+                   Width="20" Height="20" Stretch="Uniform"/>
+            <TextBlock Grid.Column="1" Text="Sideload" FontSize="14" FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+          </Grid>
+        </Button>
+      </Grid>
+    </Border>
+
     <!-- Header -->
     <StackPanel Grid.Row="0" Margin="16,12,16,8">
       <TextBlock Text="BROWSE"
@@ -131,7 +158,7 @@
                 </Grid>
 
                 <!-- Row 1: Text content -->
-                <Border Grid.Row="1" Background="#1E2024" Padding="14,12,14,14">
+                <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}" Padding="14,12,14,14">
                   <StackPanel Spacing="5">
                     <TextBlock Text="{Binding Name}"
                                FontSize="16" FontWeight="SemiBold"
@@ -163,9 +190,11 @@
             Padding="16,10" CornerRadius="0">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
         <TextBox Grid.Column="0"
+                 x:Name="BottomSearchBox"
                  PlaceholderText="Search catalog..."
                  Text="{Binding SearchText}"
-                 FontSize="15" Padding="12,10"/>
+                 FontSize="15" Padding="12,10"
+                 GotFocus="OnBottomSearchFocus"/>
         <Button Grid.Column="1"
                 Command="{Binding OpenCustomInstallCommand}"
                 Padding="14,10"

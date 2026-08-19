@@ -43,8 +43,8 @@
     </Style>
 
     <Style Selector="FlyoutPresenter">
-      <Setter Property="Background" Value="#1E2028"/>
-      <Setter Property="BorderBrush" Value="#333640"/>
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="CornerRadius" Value="12"/>
       <Setter Property="Padding" Value="0"/>
@@ -53,97 +53,70 @@
 
   <Grid RowDefinitions="Auto,*,Auto" x:Name="RootGrid">
 
-    <!-- Top Bar: gradient fills full height (behind status bar) -->
-    <Grid Grid.Row="0" ClipToBounds="True" x:Name="TopBar">
-      <Grid.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-          <GradientStop Color="#447F3E" Offset="0"/>
-          <GradientStop Color="#9ACA3C" Offset="1"/>
-        </LinearGradientBrush>
-      </Grid.Background>
-      <Border x:Name="TopBarContent">
-        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-          <!-- Logo -->
-          <Image Grid.Column="0"
-                 Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
-                 Width="36" Height="36"
-                 Stretch="Uniform"
-                 Margin="16,0,12,0"
-                 VerticalAlignment="Center"/>
-          <!-- Title -->
-          <TextBlock Grid.Column="1"
-                     Text="XB Homebrew Vault"
-                     FontFamily="{StaticResource TitleFont}"
-                     FontSize="18" FontWeight="Bold"
-                     Foreground="#1A1A1A"
-                     VerticalAlignment="Center"/>
-          <!-- Connection Icon -->
-          <Button Grid.Column="2"
-                  Classes="TabBtn"
-                  Width="52" Height="52"
-                  ToolTip.Tip="Connection"
-                  Click="OnConnectionClick">
-            <Image x:Name="ConnectionIcon"
-                   Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-status-notconfigured-16.png"
-                   Width="22" Height="22"
-                   Stretch="Uniform"/>
-          </Button>
-          <!-- Hamburger Menu -->
-          <Button Grid.Column="3"
-                  x:Name="HamburgerBtn"
-                  Classes="TabBtn"
-                  Width="52" Height="52"
-                  Click="OnHamburgerClick">
-            <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-hamburger-20.png"
-                   Width="26" Height="26"
-                   Stretch="Uniform"/>
-            <Button.Flyout>
-              <Flyout Placement="BottomEdgeAlignedRight">
-                <StackPanel Width="280" Spacing="2" Margin="6" Background="{StaticResource SurfaceAltBrush}">
-                  <Button Classes="HamburgerItem" Click="OnMenuNotifications">
-                    <StackPanel Orientation="Horizontal" Spacing="14">
-                      <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-bell-20.png"
-                             Width="24" Height="24" Stretch="Uniform"/>
-                      <TextBlock Text="Notifications" VerticalAlignment="Center" FontSize="15"/>
-                    </StackPanel>
-                  </Button>
-                  <Button Classes="HamburgerItem" Click="OnMenuJobs">
-                    <StackPanel Orientation="Horizontal" Spacing="14">
-                      <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-tasks-20.png"
-                             Width="24" Height="24" Stretch="Uniform"/>
-                      <TextBlock Text="Jobs" VerticalAlignment="Center" FontSize="15"/>
-                    </StackPanel>
-                  </Button>
-                  <Border Height="1" Background="{StaticResource BorderBrush}" Margin="10,6"/>
-                  <Button Classes="HamburgerItem" Click="OnMenuLogs">
-                    <StackPanel Orientation="Horizontal" Spacing="14">
-                      <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-logs-32.png"
-                             Width="24" Height="24" Stretch="Uniform"/>
-                      <TextBlock Text="Logs" VerticalAlignment="Center" FontSize="15"/>
-                    </StackPanel>
-                  </Button>
-                  <Button Classes="HamburgerItem" Click="OnMenuSettings">
-                    <StackPanel Orientation="Horizontal" Spacing="14">
-                      <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-settings-32.png"
-                             Width="24" Height="24" Stretch="Uniform"/>
-                      <TextBlock Text="Settings" VerticalAlignment="Center" FontSize="15"/>
-                    </StackPanel>
-                  </Button>
-                  <Border Height="1" Background="{StaticResource BorderBrush}" Margin="10,6"/>
-                  <Button Classes="HamburgerItem" Click="OnMenuAbout">
-                    <StackPanel Orientation="Horizontal" Spacing="14">
-                      <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-about-32.png"
-                             Width="24" Height="24" Stretch="Uniform"/>
-                      <TextBlock Text="About" VerticalAlignment="Center" FontSize="15"/>
-                    </StackPanel>
-                  </Button>
-                </StackPanel>
-              </Flyout>
-            </Button.Flyout>
-          </Button>
-        </Grid>
-      </Border>
-    </Grid>
+    <!-- Title Bar: gradient with logo, title, connect, hamburger -->
+    <views:MobileTitleBar Grid.Row="0"
+                          x:Name="TitleBar"
+                          Title="XB Homebrew Vault"
+                          ShowBackButton="False">
+      <views:MobileTitleBar.RightContent>
+        <Button Classes="TabBtn" Width="52" Height="52"
+                ToolTip.Tip="Connection" Click="OnConnectionClick">
+          <Image x:Name="ConnectionIcon"
+                 Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-connect-32.png"
+                 Width="26" Height="26" Stretch="Uniform"/>
+        </Button>
+      </views:MobileTitleBar.RightContent>
+      <views:MobileTitleBar.FarRightContent>
+        <Button x:Name="HamburgerBtn" Classes="TabBtn"
+                Width="52" Height="52" Click="OnHamburgerClick">
+          <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-hamburger-20.png"
+                 Width="26" Height="26" Stretch="Uniform"/>
+          <Button.Flyout>
+            <Flyout Placement="BottomEdgeAlignedRight">
+              <StackPanel Width="280" Spacing="2" Margin="6" Background="{StaticResource SurfaceAltBrush}">
+                <Button Classes="HamburgerItem" Click="OnMenuNotifications">
+                  <StackPanel Orientation="Horizontal" Spacing="14">
+                    <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-bell-20.png"
+                           Width="24" Height="24" Stretch="Uniform"/>
+                    <TextBlock Text="Notifications" VerticalAlignment="Center" FontSize="15"/>
+                  </StackPanel>
+                </Button>
+                <Button Classes="HamburgerItem" Click="OnMenuJobs">
+                  <StackPanel Orientation="Horizontal" Spacing="14">
+                    <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-tasks-20.png"
+                           Width="24" Height="24" Stretch="Uniform"/>
+                    <TextBlock Text="Jobs" VerticalAlignment="Center" FontSize="15"/>
+                  </StackPanel>
+                </Button>
+                <Border Height="1" Background="{StaticResource BorderBrush}" Margin="10,6"/>
+                <Button Classes="HamburgerItem" Click="OnMenuLogs">
+                  <StackPanel Orientation="Horizontal" Spacing="14">
+                    <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-logs-32.png"
+                           Width="24" Height="24" Stretch="Uniform"/>
+                    <TextBlock Text="Logs" VerticalAlignment="Center" FontSize="15"/>
+                  </StackPanel>
+                </Button>
+                <Button Classes="HamburgerItem" Click="OnMenuSettings">
+                  <StackPanel Orientation="Horizontal" Spacing="14">
+                    <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-settings-32.png"
+                           Width="24" Height="24" Stretch="Uniform"/>
+                    <TextBlock Text="Settings" VerticalAlignment="Center" FontSize="15"/>
+                  </StackPanel>
+                </Button>
+                <Border Height="1" Background="{StaticResource BorderBrush}" Margin="10,6"/>
+                <Button Classes="HamburgerItem" Click="OnMenuAbout">
+                  <StackPanel Orientation="Horizontal" Spacing="14">
+                    <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-about-32.png"
+                           Width="24" Height="24" Stretch="Uniform"/>
+                    <TextBlock Text="About" VerticalAlignment="Center" FontSize="15"/>
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+      </views:MobileTitleBar.FarRightContent>
+    </views:MobileTitleBar>
 
     <!-- Content Area -->
     <Grid Grid.Row="1" Background="{StaticResource BgBrush}">

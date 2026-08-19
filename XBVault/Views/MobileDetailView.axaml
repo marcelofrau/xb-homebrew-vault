@@ -4,6 +4,7 @@
              xmlns:models="using:XBVault.Models"
              xmlns:sys="using:System"
              xmlns:controls="using:XBVault.Controls"
+             xmlns:views="using:XBVault.Views"
              x:Class="XBVault.Views.MobileDetailView"
              x:DataType="vm:BrowseViewModel"
              Background="{StaticResource BgBrush}">
@@ -17,58 +18,17 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="Auto,Auto,*,Auto">
+  <Grid RowDefinitions="Auto,*,Auto">
 
-    <!-- Top Bar: gradient with app icon + title (same as About/Settings) -->
-    <Grid Grid.Row="0" ClipToBounds="True">
-      <Grid.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-          <GradientStop Color="#447F3E" Offset="0"/>
-          <GradientStop Color="#9ACA3C" Offset="1"/>
-        </LinearGradientBrush>
-      </Grid.Background>
-      <Border x:Name="TopBarContent">
-        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-          <Image Grid.Column="0"
-                 Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
-                 Width="44" Height="44"
-                 Stretch="Uniform"
-                 Margin="16,0,16,0"
-                 VerticalAlignment="Center"/>
-          <TextBlock Grid.Column="1"
-                     Text="XB Homebrew Vault"
-                     FontFamily="{StaticResource TitleFont}"
-                     FontSize="18" FontWeight="Bold"
-                     Foreground="#1A1A1A"
-                     VerticalAlignment="Center"/>
-        </Grid>
-      </Border>
-    </Grid>
-
-    <!-- Back header: back button + page title -->
-    <Grid Grid.Row="1" Height="52">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="52"/>
-        <ColumnDefinition Width="*"/>
-      </Grid.ColumnDefinitions>
-      <Button Grid.Column="0" Click="OnBackClick"
-              Background="Transparent" BorderThickness="0"
-              Cursor="Hand" Padding="0">
-        <Image Source="avares://XBVault/Assets/Views/MobileAboutView/mobileabout-back-20.png"
-               Width="22" Height="22" Stretch="Uniform"
-               VerticalAlignment="Center" HorizontalAlignment="Center"/>
-      </Button>
-      <TextBlock Grid.Column="1"
-                 Text="Item Details"
-                 FontFamily="{StaticResource TitleFont}"
-                 FontSize="16" FontWeight="Bold"
-                 Foreground="{StaticResource TextBrush}"
-                 VerticalAlignment="Center"
-                 Margin="0,0,0,0"/>
-    </Grid>
+    <!-- Title Bar with back button -->
+    <views:MobileTitleBar Grid.Row="0"
+                          x:Name="TitleBar"
+                          Title="Item Details"
+                          ShowBackButton="True"
+                          ShowAppIcon="False"/>
 
     <!-- Content -->
-    <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
       <StackPanel Margin="16,0,16,16" Spacing="0">
 
         <!-- Thumbnail with CdSpinner -->
@@ -241,7 +201,7 @@
     </ScrollViewer>
 
     <!-- Bottom action bar: Install button -->
-    <Border Grid.Row="3" Background="{StaticResource SurfaceBrush}" Padding="16,12">
+    <Border Grid.Row="2" Background="{StaticResource SurfaceBrush}" Padding="16,12">
       <Button x:Name="InstallBtn"
               Classes="Accent"
               HorizontalAlignment="Stretch"

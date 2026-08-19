@@ -5,17 +5,25 @@ using Avalonia.Interactivity;
 using Avalonia.Platform;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using XBVault.Services;
 using XBVault.ViewModels;
 
 namespace XBVault.Views;
 
 public partial class MobileMainWindow : UserControl
 {
-    private static readonly IBrush ActiveTabBrush = new SolidColorBrush(Color.Parse("#9ACA3C"));
-    private static readonly IBrush InactiveTabBrush = new SolidColorBrush(Color.Parse("#888888"));
+    private static IBrush? _activeTabBrush;
+    private static IBrush? _inactiveTabBrush;
     private static readonly IBrush ActiveTabBgBrush = new SolidColorBrush(Color.Parse("#229ACA3C"));
 
+    private static IBrush ActiveTabBrush => _activeTabBrush ??= (IBrush)Application.Current!.FindResource("AccentBrush")!;
+    private static IBrush InactiveTabBrush => _inactiveTabBrush ??= (IBrush)Application.Current!.FindResource("TextMutedBrush")!;
+
     public ViewModels.SettingsViewModel? SettingsViewModel { get; set; }
+    public NotificationCenterService? NotificationCenter { get; set; }
+    public BackgroundTaskService? BackgroundTasks { get; set; }
+    public IXboxAuthService? AuthService { get; set; }
+    private Action? _currentOverlayBackAction;
 
     public MobileMainWindow()
     {
@@ -33,12 +41,14 @@ public partial class MobileMainWindow : UserControl
         {
             if (NavigationPanel.IsVisible)
             {
-                XBVault.Services.Logger.Info("Android: Back button → close overlay");
+                XBVault.Services.Logger.Info("Android: Back button → run overlay back action + close");
+                _currentOverlayBackAction?.Invoke();
+                _currentOverlayBackAction = null;
                 NavigationPanel.Children.Clear();
                 NavigationPanel.IsVisible = false;
-                return true; // handled, don't close Activity
+                return true;
             }
-            return false; // not handled, minimize app
+            return false;
         };
     }
 
@@ -60,8 +70,9 @@ public partial class MobileMainWindow : UserControl
         // }
     }
 
-    public void ShowOverlay(UserControl view)
+    public void ShowOverlay(UserControl view, Action? onBack = null)
     {
+        _currentOverlayBackAction = onBack;
         NavigationPanel.Children.Clear();
         NavigationPanel.Children.Add(view);
         NavigationPanel.IsVisible = true;
@@ -69,6 +80,8 @@ public partial class MobileMainWindow : UserControl
 
     public void CloseOverlay()
     {
+        _currentOverlayBackAction?.Invoke();
+        _currentOverlayBackAction = null;
         NavigationPanel.Children.Clear();
         NavigationPanel.IsVisible = false;
     }
@@ -88,10 +101,8 @@ public partial class MobileMainWindow : UserControl
     {
         if (DataContext is not MainViewModel vm) return;
         var uri = vm.IsXboxConnected
-            ? new Uri("avares://XBVault/Assets/Views/MainWindow/mainwindow-status-connected-16.png")
-            : vm.IsNotConfigured
-                ? new Uri("avares://XBVault/Assets/Views/MainWindow/mainwindow-status-notconfigured-16.png")
-                : new Uri("avares://XBVault/Assets/Views/MainWindow/mainwindow-status-disconnected-16.png");
+            ? new Uri("avares://XBVault/Assets/Views/MainWindow/mainwindow-disconnect-32.png")
+            : new Uri("avares://XBVault/Assets/Views/MainWindow/mainwindow-connect-32.png");
         try
         {
             ConnectionIcon.Source = new Bitmap(AssetLoader.Open(uri));
@@ -147,7 +158,31 @@ public partial class MobileMainWindow : UserControl
     {
         XBVault.Services.Logger.Info("Android: Connection icon clicked");
         if (DataContext is MainViewModel vm)
-            vm.ConnectCommand.Execute(null);
+        {
+            if (!SettingsService.Current.XboxConnection.IsConfigured)
+            {
+                XBVault.Services.Logger.Info("Android: Not configured, opening setup wizard");
+                ShowSetupWizard();
+            }
+            else
+            {
+                vm.ConnectCommand.Execute(null);
+            }
+        }
+    }
+
+    private void ShowSetupWizard()
+    {
+        if (AuthService == null) return;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            var wizardVm = new SetupWizardViewModel(AuthService);
+            var wizardView = new MobileSetupWizardView();
+            wizardView.SetViewModel(wizardVm);
+            wizardVm.CloseAction = () => CloseOverlay();
+            wizardView.CloseRequested += (_, _) => CloseOverlay();
+            ShowOverlay(wizardView);
+        });
     }
 
     private void OnHamburgerClick(object? sender, RoutedEventArgs e)
@@ -164,14 +199,28 @@ public partial class MobileMainWindow : UserControl
     {
         CloseHamburgerFlyout();
         XBVault.Services.Logger.Info("Android: Menu → Notifications clicked");
-        // TODO: Fase 2 - Notifications page
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            var view = new MobileNotificationsView();
+            if (NotificationCenter != null)
+                view.DataContext = NotificationCenter;
+            view.SetOnBack(() => CloseOverlay());
+            ShowOverlay(view);
+        });
     }
 
     private void OnMenuJobs(object? sender, RoutedEventArgs e)
     {
         CloseHamburgerFlyout();
         XBVault.Services.Logger.Info("Android: Menu → Jobs clicked");
-        // TODO: Fase 2 - Jobs page
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            var view = new MobileJobsView();
+            if (BackgroundTasks != null)
+                view.DataContext = BackgroundTasks;
+            view.SetOnBack(() => CloseOverlay());
+            ShowOverlay(view);
+        });
     }
 
     private void OnMenuLogs(object? sender, RoutedEventArgs e)
@@ -190,15 +239,8 @@ public partial class MobileMainWindow : UserControl
             var settings = new MobileSettingsView();
             if (SettingsViewModel != null)
                 settings.DataContext = SettingsViewModel;
-            settings.SetOnBack(() =>
-            {
-                XBVault.Services.Logger.Info("Android: Settings → back");
-                NavigationPanel.Children.Clear();
-                NavigationPanel.IsVisible = false;
-            });
-            NavigationPanel.Children.Clear();
-            NavigationPanel.Children.Add(settings);
-            NavigationPanel.IsVisible = true;
+            settings.SetOnBack(() => CloseOverlay());
+            ShowOverlay(settings);
             XBVault.Services.Logger.Info("Android: Settings overlay opened");
         });
     }
@@ -210,15 +252,8 @@ public partial class MobileMainWindow : UserControl
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             var about = new MobileAboutView();
-            about.SetOnBack(() =>
-            {
-                XBVault.Services.Logger.Info("Android: About → back");
-                NavigationPanel.Children.Clear();
-                NavigationPanel.IsVisible = false;
-            });
-            NavigationPanel.Children.Clear();
-            NavigationPanel.Children.Add(about);
-            NavigationPanel.IsVisible = true;
+            about.SetOnBack(() => CloseOverlay());
+            ShowOverlay(about);
             XBVault.Services.Logger.Info("Android: About overlay opened");
         });
     }
