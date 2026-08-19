@@ -81,6 +81,9 @@ $rid = "android-$Arch"
 Write-Host "Uninstalling previous build..." -ForegroundColor DarkGray
 & $adb -s $deviceSerial uninstall XBVault.Android 2>&1 | Out-Null
 
+Write-Host "Cleaning previous build..." -ForegroundColor DarkGray
+& "C:\Program Files\dotnet\dotnet.exe" clean $project -c Release -r $rid -f net10.0-android36.0 2>&1 | Out-Null
+
 Write-Host "Publishing XBVault.Android ($rid)..." -ForegroundColor Green
 & "C:\Program Files\dotnet\dotnet.exe" publish $project -c Release -r $rid -f net10.0-android36.0
 if ($LASTEXITCODE -ne 0) { Write-Host "Build failed!" -ForegroundColor Red; exit $LASTEXITCODE }
