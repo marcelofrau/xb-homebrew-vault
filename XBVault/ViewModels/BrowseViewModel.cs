@@ -79,6 +79,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Cursor))]
+    [NotifyPropertyChangedFor(nameof(ShowNoItems))]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -110,7 +111,10 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     private bool _showExperimental = true;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowNoItems))]
     private bool _hasItems;
+
+    public bool ShowNoItems => !IsLoading && !HasItems;
 
     [ObservableProperty]
     private CatalogItem? _selectedItem;
@@ -154,6 +158,9 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     public bool CanRecheckXboxItem => CanRecheck && !ShowWindowsToolBanner;
     public bool ShowInstallFinishButton => !IsUpdateMode && InstallComplete && InstallSuccess;
     public bool ShowInstallActionButton => !IsUpdateMode && !ShowInstallFinishButton;
+    public bool ShowInstallSuccessResult => InstallComplete && InstallSuccess;
+    public bool ShowInstallFailureResult => InstallComplete && !InstallSuccess;
+    public bool IsBusy => IsCheckingInstalled || IsInstalling;
     public bool ShowDescriptionPanel => !IsInstalling && !InstallComplete && !IsCheckingInstalled && !CheckComplete;
     public bool ShowInstallOverlay => IsInstalling || InstallComplete;
     public bool ShowCheckOverlay => IsCheckingInstalled || CheckComplete;
@@ -172,6 +179,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanRecheckXboxItem));
         OnPropertyChanged(nameof(ShowDescriptionPanel));
         OnPropertyChanged(nameof(ShowInstallOverlay));
+        OnPropertyChanged(nameof(IsBusy));
     }
 
     partial void OnInstallCompleteChanged(bool value)
@@ -182,6 +190,8 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowUpdateButton));
         OnPropertyChanged(nameof(ShowInstallFinishButton));
         OnPropertyChanged(nameof(ShowInstallActionButton));
+        OnPropertyChanged(nameof(ShowInstallSuccessResult));
+        OnPropertyChanged(nameof(ShowInstallFailureResult));
     }
 
     partial void OnInstallSuccessChanged(bool value)
@@ -192,6 +202,8 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowUpdateButton));
         OnPropertyChanged(nameof(ShowInstallFinishButton));
         OnPropertyChanged(nameof(ShowInstallActionButton));
+        OnPropertyChanged(nameof(ShowInstallSuccessResult));
+        OnPropertyChanged(nameof(ShowInstallFailureResult));
     }
 
     partial void OnCheckCompleteChanged(bool value)
@@ -224,6 +236,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowCheckNotInstalled));
         OnPropertyChanged(nameof(ShowCheckNotDetectedHint));
         OnPropertyChanged(nameof(ShowCheckNotConnectedHint));
+        OnPropertyChanged(nameof(IsBusy));
     }
 
     partial void OnIsUpdateModeChanged(bool value)

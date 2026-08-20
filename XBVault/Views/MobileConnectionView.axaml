@@ -53,7 +53,7 @@
                 Background="{StaticResource SurfaceAltBrush}"
                 CornerRadius="8"
                 Padding="10,8"
-                Margin="16,12,16,0">
+                Margin="16,12,16,12">
           <Grid RowDefinitions="Auto,*">
             <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
               <TextBlock Text="OUTPUT"
@@ -111,7 +111,7 @@
         <Button x:Name="CancelBtn"
                 Classes="Danger"
                 Command="{Binding CancelCommand}"
-                IsEnabled="{Binding IsActive}"
+                IsEnabled="{Binding IsActive, Converter={StaticResource BoolInverse}}"
                 Padding="16,12"
                 HorizontalAlignment="Left"
                 CornerRadius="8">

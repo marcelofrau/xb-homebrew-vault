@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileToolResultView"
+             x:DataType="views:MobileToolResultViewModel"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+    <!-- Loading indicator -->
+    <StackPanel Grid.Row="0"
+                IsVisible="{Binding IsLoading}"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+      <ProgressBar IsIndeterminate="True" Width="200"/>
+      <TextBlock Text="Loading..." FontSize="14"
+                 Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+    </StackPanel>
+
+    <!-- Status message (error/info) -->
+    <Border Grid.Row="0"
+            IsVisible="{Binding HasStatusMessage}"
+            Background="#1AE74C3C" BorderBrush="{StaticResource DangerBrush}"
+            BorderThickness="1" CornerRadius="8" Padding="16,12"
+            HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+      <TextBlock Text="{Binding StatusMessage}"
+                 Foreground="{StaticResource DangerBrush}"
+                 FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/>
+    </Border>
+
+    <!-- Content -->
+    <Border Grid.Row="0"
+            IsVisible="{Binding HasContent}"
+            Background="{StaticResource SurfaceBrush}" CornerRadius="10"
+            Margin="12" Padding="16,14">
+      <ScrollViewer>
+        <TextBlock Text="{Binding ContentText}"
+                   FontSize="13" Foreground="{StaticResource TextDimBrush}"
+                   TextWrapping="Wrap" FontFamily="Consolas"/>
+      </ScrollViewer>
+    </Border>
+  </Grid>
+
+</UserControl>

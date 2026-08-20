@@ -7,6 +7,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using System.Diagnostics;
+using System.IO;
 using XBVault.Helpers;
 using XBVault.Models;
 using XBVault.Services;
@@ -921,6 +922,218 @@ public partial class App : Application
             main.SetDataContext(mainViewModel);
             main.BrowseContent.DataContext = browseViewModel;
             main.ToolsContent.DataContext = toolsViewModel;
+
+            // ── Mobile tools: wire action delegates ──
+
+            // Helper: open a text-based tool overlay, fetch data on background thread
+            void ShowToolOverlay(string title, Func<Task<string?>> loadData)
+            {
+                var vm = new Views.MobileToolResultViewModel { IsLoading = true };
+                var view = new Views.MobileToolResultView { DataContext = vm };
+                var overlay = new Views.MobileToolOverlayView();
+                overlay.SetTitle(title);
+                overlay.SetContent(view);
+                overlay.SetOnBack(() => main.CloseOverlay());
+                main.ShowOverlay(overlay);
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var text = await loadData();
+                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            vm.ContentText = text ?? "(no data)";
+                            vm.IsLoading = false;
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            vm.StatusMessage = $"Failed to load: {ex.Message}";
+                            vm.IsLoading = false;
+                        });
+                    }
+                });
+            }
+
+            toolsViewModel.ShowScreenshotAction = () =>
+            {
+                var vm = new Views.MobileScreenshotViewModel(systemService);
+                vm.SaveScreenshotDialog = async stream =>
+                {
+                    var result = new TaskCompletionSource<string?>();
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+                    {
+                        var topLevel = TopLevel.GetTopLevel(main)!;
+                        var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+                        {
+                            Title = "Save Screenshot",
+                            SuggestedFileName = $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png",
+                            FileTypeChoices = new List<FilePickerFileType> { new FilePickerFileType("PNG") { Patterns = new[] { "*.png" } } }
+                        });
+                        result.SetResult(file?.TryGetLocalPath());
+                    });
+                    var path = await result.Task;
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        using var fs = File.Create(path);
+                        stream.Position = 0;
+                        await stream.CopyToAsync(fs);
+                    }
+                    return path;
+                };
+                var sView = new Views.MobileScreenshotView { DataContext = vm };
+                var overlay = new Views.MobileToolOverlayView();
+                overlay.SetTitle("Screenshot");
+                overlay.SetContent(sView);
+                overlay.SetOnBack(() => { vm.Dispose(); main.CloseOverlay(); });
+                main.ShowOverlay(overlay);
+            };
+
+            toolsViewModel.ShowSystemInfoAction = () =>
+                ShowToolOverlay("System Info", () => systemService.GetSystemInfoAsync());
+
+            toolsViewModel.ShowCrashDataAction = () =>
+                ShowToolOverlay("Crash Data", () => systemService.GetCrashDumpsAsync());
+
+            toolsViewModel.ShowProcessesAction = () =>
+                ShowToolOverlay("Processes", () => processService.GetProcessesAsync());
+
+            toolsViewModel.ShowNetworkInfoAction = () =>
+                ShowToolOverlay("Network Info", () => networkService.GetNetworkConfigAsync());
+
+            toolsViewModel.ShowPerformanceAction = async () =>
+            {
+                var vm = new Views.MobileToolResultViewModel { IsLoading = true };
+                var view = new Views.MobileToolResultView { DataContext = vm };
+                var overlay = new Views.MobileToolOverlayView();
+                overlay.SetTitle("Performance");
+                overlay.SetContent(view);
+                overlay.SetOnBack(() => main.CloseOverlay());
+                main.ShowOverlay(overlay);
+
+                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                try
+                {
+                    await performanceService.ConnectPerformanceWsAsync(
+                        snap =>
+                        {
+                            var b = new System.Text.StringBuilder();
+                            b.AppendLine($"CPU: {snap.CpuLoad}%");
+                            b.AppendLine($"GPU: {snap.GpuUsage}%");
+                            b.AppendLine($"Memory Used: {snap.MemoryUsedMB:F1} MB");
+                            b.AppendLine($"Memory Total: {snap.MemoryTotalMB:F1} MB");
+                            b.AppendLine($"Committed: {snap.MemoryCommittedBytes / 1024 / 1024} MB");
+                            b.AppendLine($"IO Read: {snap.IOReadSpeed / 1024} KB/s  Write: {snap.IOWriteSpeed / 1024} KB/s");
+                            b.AppendLine($"Net In: {snap.NetworkInBytes / 1024} KB  Out: {snap.NetworkOutBytes / 1024} KB");
+                            _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                            {
+                                vm.ContentText = b.ToString();
+                                vm.IsLoading = false;
+                            });
+                        }, cts.Token);
+
+                    // If WS ended without data
+                    if (vm.IsLoading)
+                    {
+                        vm.StatusMessage = "Performance data not available — WebSocket may not be supported";
+                        vm.IsLoading = false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    vm.StatusMessage = $"Performance failed: {ex.Message}";
+                    vm.IsLoading = false;
+                }
+            };
+
+            toolsViewModel.ShowUsbPermissionAction = async () =>
+            {
+                if (toolsViewModel.ShowInfoAsync is not null)
+                {
+                    await toolsViewModel.ShowInfoAsync(
+                        "Windows Only",
+                        "USB Media Drive activation is currently only available on Windows.",
+                        "We're evaluating support for Android. Stay tuned for future updates!");
+                }
+            };
+
+            toolsViewModel.OpenLoopbackExemptAction = () =>
+            {
+                var vm = new LoopbackExemptViewModel(authService, sftpService, packageService);
+                vm.ShowConfirmAsync = toolsViewModel.ShowConfirmAsync;
+                vm.CloseAction = () => main.CloseOverlay();
+                vm.OpenProjectLinkAction = () =>
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(LoopbackExemptViewModel.XFilesProjectUrl) { UseShellExecute = true });
+                var lView = new Views.MobileLoopbackView();
+                lView.SetViewModel(vm);
+                var overlay = new Views.MobileToolOverlayView();
+                overlay.SetTitle("Loopback Exempt");
+                overlay.SetContent(lView);
+                overlay.SetOnBack(() => main.CloseOverlay());
+                main.ShowOverlay(overlay);
+                _ = vm.LoadCommand.ExecuteAsync(null);
+            };
+
+            toolsViewModel.OpenLoopbackExemptQuickAction = () =>
+            {
+                var vm = new LoopbackExemptViewModel(authService, sftpService, packageService, quickMode: true);
+                vm.ShowConfirmAsync = toolsViewModel.ShowConfirmAsync;
+                vm.CloseAction = () => main.CloseOverlay();
+                vm.OpenProjectLinkAction = () =>
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(LoopbackExemptViewModel.XFilesProjectUrl) { UseShellExecute = true });
+                var lView = new Views.MobileLoopbackView();
+                lView.SetViewModel(vm);
+                var overlay = new Views.MobileToolOverlayView();
+                overlay.SetTitle("X-Files Enablement");
+                overlay.SetContent(lView);
+                overlay.SetOnBack(() => main.CloseOverlay());
+                main.ShowOverlay(overlay);
+                _ = vm.LoadCommand.ExecuteAsync(null);
+            };
+
+            toolsViewModel.ShowCustomInstallAction = () => ShowMobileCustomInstall(main, packageService, installService);
+            browseViewModel.ShowCustomInstallAction = () => ShowMobileCustomInstall(main, packageService, installService);
+
+            // OpenDevPortalCommand is auto-generated by [RelayCommand] — uses Process.Start,
+            // which works on Android (opens in default browser).
+
+            // Confirm / Info dialogs (from ToolsViewModel delegates)
+            toolsViewModel.ShowConfirmAsync = async (title, message, confirmText, cancelText, iconSource, messageIconSource) =>
+            {
+                var vm = new Views.MobileConfirmDialogViewModel
+                {
+                    Title = title,
+                    Message = message,
+                    ConfirmText = confirmText ?? "OK",
+                    CancelText = cancelText ?? "Cancel"
+                };
+                var dlg = new Views.MobileConfirmDialogView { DataContext = vm };
+                var tcs = vm.WaitForResult();
+                main.ShowOverlay(dlg);
+                dlg.SetOnBack(() => { vm.CancelCommand.Execute(null); main.CloseOverlay(); });
+                var result = await tcs;
+                main.CloseOverlay();
+                return result;
+            };
+
+            toolsViewModel.ShowInfoAsync = async (title, description, details) =>
+            {
+                var vm = new Views.MobileInfoDialogViewModel
+                {
+                    Title = title,
+                    Description = description ?? "",
+                    Details = details
+                };
+                var dlg = new Views.MobileInfoDialogView { DataContext = vm };
+                var tcs = vm.WaitForResult();
+                main.ShowOverlay(dlg);
+                dlg.SetOnBack(() => { vm.OkCommand.Execute(null); main.CloseOverlay(); });
+                await tcs;
+                main.CloseOverlay();
+            };
+
             main.SettingsViewModel = settingsViewModel;
             main.NotificationCenter = notificationCenter;
             main.BackgroundTasks = backgroundTaskService;
@@ -949,6 +1162,7 @@ public partial class App : Application
                         tcs.SetResult(false);
                 });
                 main.ShowOverlay(connView);
+                _ = connVm.ConnectCommand.ExecuteAsync(null);
                 return await tcs.Task;
             };
 
@@ -999,7 +1213,7 @@ public partial class App : Application
             _ = browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
 
             // First-run wizard on Android
-            if (!SettingsService.Current.XboxConnection.IsConfigured)
+            if (!SettingsService.Current.WizardCompleted && !SettingsService.Current.XboxConnection.IsConfigured)
             {
                 Logger.Info("Android: Settings not configured, showing setup wizard");
                 var wizardVm = new SetupWizardViewModel(authService);
@@ -1052,5 +1266,58 @@ public partial class App : Application
                 });
             });
         }
+    }
+
+    private static void ShowMobileCustomInstall(
+        Views.MobileMainWindow main,
+        IXboxPackageService packageService,
+        PackageInstallService installService)
+    {
+        var vm = new CustomInstallViewModel(packageService, installService);
+        var pickFileFilter = new List<FilePickerFileType>
+        {
+            new FilePickerFileType("Package files")
+            {
+                Patterns = new[] { "*.appx", "*.msix", "*.appxbundle", "*.msixbundle", "*.zip" }
+            }
+        };
+        vm.PickFileAsync = async () =>
+        {
+            try
+            {
+                var topLevel = TopLevel.GetTopLevel(main)!;
+                var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                {
+                    Title = "Select Package",
+                    AllowMultiple = false,
+                    FileTypeFilter = pickFileFilter
+                });
+                return files is { Count: > 0 } ? files[0].TryGetLocalPath() : null;
+            }
+            catch { return null; }
+        };
+        vm.PickDependencyFilesAsync = async () =>
+        {
+            try
+            {
+                var topLevel = TopLevel.GetTopLevel(main)!;
+                var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                {
+                    Title = "Select Dependencies",
+                    AllowMultiple = true,
+                    FileTypeFilter = pickFileFilter
+                });
+                return files?.Select(f => f.TryGetLocalPath())
+                             .Where(p => p is not null)
+                             .Cast<string>()
+                             .ToArray();
+            }
+            catch { return null; }
+        };
+        vm.CloseAction = () => main.CloseOverlay();
+        var ciView = new Views.MobileCustomInstallView();
+        ciView.SetViewModel(vm);
+        ciView.CloseRequested += (_, _) => main.CloseOverlay();
+        main.ShowOverlay(ciView);
     }
 }

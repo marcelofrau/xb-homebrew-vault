@@ -1,0 +1,85 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:XBVault.ViewModels"
+             x:Class="XBVault.Views.MobileLoopbackView"
+             x:DataType="vm:LoopbackExemptViewModel"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+    <!-- Loading -->
+    <StackPanel Grid.Row="0"
+                IsVisible="{Binding IsBusy}"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+      <ProgressBar IsIndeterminate="True" Width="200"/>
+      <TextBlock Text="Loading packages..." FontSize="14"
+                 Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+    </StackPanel>
+
+    <!-- Status message -->
+    <Border Grid.Row="0"
+            IsVisible="{Binding HasStatus}"
+            Background="{Binding StatusBackground}"
+            BorderBrush="{Binding StatusBorderBrush}"
+            BorderThickness="1" CornerRadius="8" Padding="16,12"
+            HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+      <TextBlock Text="{Binding StatusMessage}"
+                 Foreground="{Binding StatusForeground}"
+                 FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/>
+    </Border>
+
+    <!-- Quick mode content -->
+    <ScrollViewer Grid.Row="0"
+                  IsVisible="{Binding ShowXFilesDetected}">
+      <StackPanel Spacing="12" Margin="16,12" MaxWidth="600" HorizontalAlignment="Center">
+        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="16,14">
+          <StackPanel Spacing="10">
+            <TextBlock Text="X-Files Detected" FontSize="16" FontWeight="Bold"
+                       Foreground="{StaticResource AccentBrush}"/>
+            <TextBlock Text="{Binding XFilesDisplayName}" FontSize="14"
+                       Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding CommandPreview}" FontSize="12"
+                       Foreground="{StaticResource TextDimBrush}" FontFamily="Consolas"
+                       TextWrapping="Wrap"/>
+          </StackPanel>
+        </Border>
+        <Button Command="{Binding RunCommand}"
+                Padding="20,14" HorizontalAlignment="Stretch"
+                IsVisible="{Binding ShowRun}">
+          <TextBlock Text="{Binding RunLabel}" FontSize="15" FontWeight="Bold"
+                     HorizontalAlignment="Center"/>
+        </Button>
+        <Border IsVisible="{Binding RunComplete}" CornerRadius="10" Padding="16,14"
+                Background="{StaticResource SurfaceBrush}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{Binding RunResultMessage}" FontSize="14" TextWrapping="Wrap"
+                       Foreground="{StaticResource TextMutedBrush}"/>
+            <TextBlock Text="{Binding RunVerificationText}" FontSize="12"
+                       Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap"
+                       IsVisible="{Binding RunVerificationText, Converter={StaticResource StringNotEmpty}}"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- X-Files missing -->
+    <StackPanel Grid.Row="0"
+                IsVisible="{Binding ShowXFilesMissing}"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" Margin="24">
+      <TextBlock Text="X-Files Not Found" FontSize="16" FontWeight="Bold"
+                 Foreground="{StaticResource DangerBrush}" HorizontalAlignment="Center"/>
+      <TextBlock Text="Install X-Files from the Store first" FontSize="14"
+                 Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"
+                 TextWrapping="Wrap"/>
+    </StackPanel>
+  </Grid>
+
+</UserControl>

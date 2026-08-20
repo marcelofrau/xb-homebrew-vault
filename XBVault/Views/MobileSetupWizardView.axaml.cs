@@ -20,6 +20,15 @@ public partial class MobileSetupWizardView : UserControl
     private readonly TextBox _usernameBox;
     private readonly TextBox _passwordBox;
 
+    private readonly StackPanel _step0Content;
+    private readonly StackPanel _step1Content;
+    private readonly StackPanel _step2Content;
+    private readonly StackPanel _step3Content;
+    private TextBlock _sumAddress = null!;
+    private TextBlock _sumPort = null!;
+    private TextBlock _sumHttps = null!;
+    private TextBlock _sumUsername = null!;
+
     private static readonly FontFamily TitleFont = FontFamily.Parse("avares://XBVault/Assets/Fonts/Oxanium-700.ttf#Oxanium");
     private static readonly FontFamily BodyFont = FontFamily.Parse("avares://XBVault/Assets/Fonts/Oxanium-400.ttf#Oxanium");
     private static readonly Uri AssetsBase = new("avares://XBVault/Assets/Views/SetupWizardWindow/");
@@ -50,6 +59,11 @@ public partial class MobileSetupWizardView : UserControl
             PasswordChar = '*',
             Margin = new Thickness(0, 4, 0, 0)
         };
+
+        _step0Content = BuildStep0();
+        _step1Content = BuildStep1();
+        _step2Content = BuildStep2();
+        _step3Content = BuildStep3();
     }
 
     public void SetViewModel(SetupWizardViewModel vm)
@@ -69,7 +83,6 @@ public partial class MobileSetupWizardView : UserControl
 
         Wizard.InitSteps("Setup Wizard", ["Welcome", "Console", "Auth", "Ready"]);
         Wizard.SetWizardTitle("Setup Wizard");
-        Wizard.SetBackButtonVisible(false);
 
         _addressBox.TextChanged += (_, _) => UpdateNextEnabled();
         _portBox.TextChanged += (_, _) => UpdateNextEnabled();
@@ -77,14 +90,12 @@ public partial class MobileSetupWizardView : UserControl
         _passwordBox.TextChanged += (_, _) => UpdateNextEnabled();
         _httpsCheck.PropertyChanged += (_, _) => UpdateNextEnabled();
 
-        ShowWelcome();
+        NavigateToStep(0);
     }
 
-    // ── Step 0: Welcome ──────────────────────────────────────────────
-    private void ShowWelcome()
+    // ── Build step content once ──────────────────────────────────────
+    private StackPanel BuildStep0()
     {
-        Wizard.SetStepHero("setupwizard-wizard-100.png", "Welcome", "Xbox Developer Mode Setup");
-
         var content = new StackPanel
         {
             Spacing = 16,
@@ -93,7 +104,6 @@ public partial class MobileSetupWizardView : UserControl
             Margin = new Thickness(0, 8, 0, 0)
         };
 
-        // Welcome icon
         content.Children.Add(new Image
         {
             Source = LoadImage("setupwizard-welcome-48.png"),
@@ -102,7 +112,6 @@ public partial class MobileSetupWizardView : UserControl
             HorizontalAlignment = HorizontalAlignment.Center
         });
 
-        // Title
         content.Children.Add(new TextBlock
         {
             Text = "Welcome to XB Homebrew Vault",
@@ -114,21 +123,15 @@ public partial class MobileSetupWizardView : UserControl
             TextAlignment = TextAlignment.Center
         });
 
-        // Description card
         var descCard = MakeCard();
         var descStack = new StackPanel { Spacing = 8 };
         descStack.Children.Add(MakeRichText(
-            "This wizard will help you set up the connection to your ",
-            ("Xbox in Developer Mode", true),
-            ". Before you begin, make sure your Xbox is in "));
-        descStack.Children.Add(MakeRichText(
-            "Developer Mode",
+            "This wizard will help you connect to your Xbox in ",
             ("Developer Mode", true),
-            " and turned on."));
+            ". Make sure your Xbox is powered on and in Developer Mode before continuing."));
         descCard.Child = descStack;
         content.Children.Add(descCard);
 
-        // Learn more link
         var learnMoreBtn = new Button
         {
             Background = Brushes.Transparent,
@@ -147,10 +150,8 @@ public partial class MobileSetupWizardView : UserControl
         learnMoreBtn.Click += OnDevModeLinkClick;
         content.Children.Add(learnMoreBtn);
 
-        // Separator
         content.Children.Add(MakeSeparator());
 
-        // Hint
         content.Children.Add(new TextBlock
         {
             Text = "Tap Next to begin.",
@@ -161,17 +162,11 @@ public partial class MobileSetupWizardView : UserControl
             HorizontalAlignment = HorizontalAlignment.Center
         });
 
-        Wizard.SetStepContent(0, content);
-        Wizard.SetBackButtonVisible(false);
-        Wizard.SetFinishMode(false);
-        Wizard.SetNextButtonEnabled(true);
+        return content;
     }
 
-    // ── Step 1: Console ──────────────────────────────────────────────
-    private void ShowConsole()
+    private StackPanel BuildStep1()
     {
-        Wizard.SetStepHero("setupwizard-wizard-100.png", "Xbox Console", "Enter your Xbox's network address");
-
         var content = new StackPanel { Spacing = 12, Margin = new Thickness(0, 4, 0, 0) };
 
         var card = MakeCard();
@@ -184,7 +179,6 @@ public partial class MobileSetupWizardView : UserControl
         card.Child = cardContent;
         content.Children.Add(card);
 
-        // Info tip
         var tipCard = MakeCard();
         tipCard.Background = new SolidColorBrush(Color.FromArgb(30, 0x22, 0x9A, 0x3C));
         tipCard.Child = new TextBlock
@@ -197,17 +191,11 @@ public partial class MobileSetupWizardView : UserControl
         };
         content.Children.Add(tipCard);
 
-        Wizard.SetStepContent(1, content);
-        Wizard.SetBackButtonVisible(false);
-        Wizard.SetFinishMode(false);
-        UpdateNextEnabled();
+        return content;
     }
 
-    // ── Step 2: Authentication ───────────────────────────────────────
-    private void ShowAuth()
+    private StackPanel BuildStep2()
     {
-        Wizard.SetStepHero("setupwizard-wizard-100.png", "Authentication", "Enter your Device Portal credentials");
-
         var content = new StackPanel { Spacing = 12, Margin = new Thickness(0, 4, 0, 0) };
 
         var card = MakeCard();
@@ -219,7 +207,6 @@ public partial class MobileSetupWizardView : UserControl
         card.Child = cardContent;
         content.Children.Add(card);
 
-        // Info tip
         var tipCard = MakeCard();
         tipCard.Background = new SolidColorBrush(Color.FromArgb(30, 0x22, 0x9A, 0x3C));
         tipCard.Child = new TextBlock
@@ -232,33 +219,82 @@ public partial class MobileSetupWizardView : UserControl
         };
         content.Children.Add(tipCard);
 
-        Wizard.SetStepContent(2, content);
-        Wizard.SetBackButtonVisible(true);
-        Wizard.SetFinishMode(false);
-        UpdateNextEnabled();
+        return content;
     }
 
-    // ── Step 3: Ready ────────────────────────────────────────────────
-    private void ShowReady()
+    private StackPanel BuildStep3()
     {
-        Wizard.SetStepHero("setupwizard-wizard-100.png", "Ready to Connect", "Review your settings");
-
         var content = new StackPanel { Spacing = 12, Margin = new Thickness(0, 4, 0, 0) };
 
-        // Summary card
         var card = MakeCard();
         var cardStack = new StackPanel { Spacing = 10 };
-        cardStack.Children.Add(MakeSummaryRow("Address", _addressBox.Text ?? ""));
-        cardStack.Children.Add(MakeSummaryRow("Port", _portBox.Text ?? ""));
-        cardStack.Children.Add(MakeSummaryRow("HTTPS", _httpsCheck.IsChecked == true ? "Yes" : "No"));
-        cardStack.Children.Add(MakeSummaryRow("Username", _usernameBox.Text ?? ""));
+        (_sumAddress, var row0) = MakeSummaryRow("Address");
+        cardStack.Children.Add(row0);
+        (_sumPort, var row1) = MakeSummaryRow("Port");
+        cardStack.Children.Add(row1);
+        (_sumHttps, var row2) = MakeSummaryRow("HTTPS");
+        cardStack.Children.Add(row2);
+        (_sumUsername, var row3) = MakeSummaryRow("Username");
+        cardStack.Children.Add(row3);
         card.Child = cardStack;
         content.Children.Add(card);
 
-        Wizard.SetStepContent(3, content);
-        Wizard.SetBackButtonVisible(true);
-        Wizard.SetFinishMode(true, "Finish");
-        Wizard.SetNextButtonEnabled(true);
+        var openCheck = new CheckBox
+        {
+            Content = "Open connection window after setup",
+            FontSize = 13,
+            FontFamily = BodyFont,
+            Foreground = FindBrush("TextBrush"),
+            IsChecked = true,
+            Margin = new Thickness(0, 4, 0, 0)
+        };
+        openCheck.PropertyChanged += (_, _) => { if (_vm is not null) _vm.OpenConnectionAfter = openCheck.IsChecked ?? true; };
+        content.Children.Add(openCheck);
+
+        return content;
+    }
+
+    // ── Navigate ─────────────────────────────────────────────────────
+    private void NavigateToStep(int step)
+    {
+        if (_vm is null) return;
+        _vm.CurrentStep = step;
+        SyncToVm();
+
+        switch (step)
+        {
+            case 0:
+                Wizard.SetStepHero("setupwizard-wizard-100.png", "Welcome", "Xbox Developer Mode Setup");
+                Wizard.SetStepContent(0, _step0Content);
+                Wizard.SetFinishMode(false);
+                Wizard.SetNextButtonEnabled(true);
+                break;
+            case 1:
+                Wizard.SetStepHero("setupwizard-wizard-100.png", "Xbox Console",
+                    "Enter the IP address of your Xbox in Developer Mode");
+                Wizard.SetStepContent(1, _step1Content);
+                Wizard.SetFinishMode(false);
+                UpdateNextEnabled();
+                break;
+            case 2:
+                Wizard.SetStepHero("setupwizard-wizard-100.png", "Authentication",
+                    "Enter the credentials for your Xbox Device Portal");
+                Wizard.SetStepContent(2, _step2Content);
+                Wizard.SetFinishMode(false);
+                UpdateNextEnabled();
+                break;
+            case 3:
+                _sumAddress.Text = _addressBox.Text ?? "";
+                _sumPort.Text = _portBox.Text ?? "";
+                _sumHttps.Text = _httpsCheck.IsChecked == true ? "Yes" : "No";
+                _sumUsername.Text = _usernameBox.Text ?? "";
+                Wizard.SetStepHero("setupwizard-wizard-100.png", "Ready to Connect",
+                    "Review your settings before saving");
+                Wizard.SetStepContent(3, _step3Content);
+                Wizard.SetFinishMode(true, "Finish");
+                Wizard.SetNextButtonEnabled(true);
+                break;
+        }
     }
 
     // ── Navigation handlers ──────────────────────────────────────────
@@ -283,13 +319,7 @@ public partial class MobileSetupWizardView : UserControl
     {
         if (_vm is null) return;
         _vm.CurrentStep = step;
-        switch (step)
-        {
-            case 0: ShowWelcome(); break;
-            case 1: ShowConsole(); break;
-            case 2: ShowAuth(); break;
-            case 3: ShowReady(); break;
-        }
+        NavigateToStep(step);
     }
 
     private void OnWizardCancel(object? sender, EventArgs e)
@@ -305,13 +335,7 @@ public partial class MobileSetupWizardView : UserControl
         if (_vm.CurrentStep > 0)
         {
             _vm.CurrentStep--;
-            switch (_vm.CurrentStep)
-            {
-                case 0: ShowWelcome(); break;
-                case 1: ShowConsole(); break;
-                case 2: ShowAuth(); break;
-                case 3: ShowReady(); break;
-            }
+            NavigateToStep(_vm.CurrentStep);
         }
         else
         {
@@ -378,9 +402,17 @@ public partial class MobileSetupWizardView : UserControl
         Margin = new Thickness(0, 4, 0, 4)
     };
 
-    private static StackPanel MakeSummaryRow(string label, string value)
+    private static (TextBlock Value, StackPanel Row) MakeSummaryRow(string label)
     {
-        return new StackPanel
+        var valueBlock = new TextBlock
+        {
+            Text = "",
+            FontFamily = TitleFont,
+            FontSize = 13,
+            FontWeight = FontWeight.Bold,
+            Foreground = FindBrush("TextBrush")
+        };
+        var row = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             Spacing = 12,
@@ -403,17 +435,11 @@ public partial class MobileSetupWizardView : UserControl
                     Background = FindBrush("SurfaceBrush"),
                     CornerRadius = new CornerRadius(6),
                     Padding = new Thickness(12, 6),
-                    Child = new TextBlock
-                    {
-                        Text = value,
-                        FontFamily = TitleFont,
-                        FontSize = 13,
-                        FontWeight = FontWeight.Bold,
-                        Foreground = FindBrush("TextBrush")
-                    }
+                    Child = valueBlock
                 }
             }
         };
+        return (valueBlock, row);
     }
 
     private static TextBlock MakeRichText(string before, (string text, bool bold) highlight, string after)
