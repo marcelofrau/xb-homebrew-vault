@@ -1,0 +1,407 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:XBVault.ViewModels"
+             xmlns:models="using:XBVault.Models"
+             xmlns:controls="using:XBVault.Controls"
+             x:Class="XBVault.Views.MobileInstalledView"
+             x:DataType="vm:InstalledViewModel"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="Border.InstalledCard">
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+      <Setter Property="CornerRadius" Value="14"/>
+      <Setter Property="ClipToBounds" Value="True"/>
+      <Setter Property="Margin" Value="0,0,0,10"/>
+    </Style>
+    <Style Selector="ListBox">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="Margin" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button.CardAction">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="8,6"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="Button.CardAction:pointerover">
+      <Setter Property="Background" Value="#229ACA3C"/>
+    </Style>
+    <Style Selector="Button.CardDanger">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="8,6"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="Button.CardDanger:pointerover">
+      <Setter Property="Background" Value="#22E74C3C"/>
+    </Style>
+    <Style Selector="FlyoutPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="Padding" Value="0"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*">
+
+    <!-- Header -->
+    <StackPanel Grid.Row="0" Margin="16,12,16,8">
+      <TextBlock Text="INSTALLED"
+                 FontFamily="{StaticResource TitleFont}"
+                 FontSize="18" FontWeight="Bold"
+                 Foreground="{StaticResource TextBrush}"/>
+      <TextBlock Text="Manage apps and emulators on your Xbox"
+                 FontSize="13" Foreground="{StaticResource TextMutedBrush}"
+                 Margin="0,2,0,0"/>
+    </StackPanel>
+
+    <!-- Search bar + Custom Install -->
+    <Border Grid.Row="1"
+            Background="{StaticResource SurfaceBrush}"
+            Padding="16,8"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox Grid.Column="0"
+                 x:Name="SearchBox"
+                 PlaceholderText="Search installed..."
+                 Text="{Binding SearchText}"
+                 FontSize="15" Padding="12,10"/>
+        <Button Grid.Column="1"
+                Command="{Binding OpenCustomInstallCommand}"
+                Padding="14,10"
+                ToolTip.Tip="Install a custom package from file">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-install-20.png"
+                   Width="20" Height="20" Stretch="Uniform"/>
+            <TextBlock Grid.Column="1" Text="Sideload" FontSize="14" FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+          </Grid>
+        </Button>
+      </Grid>
+    </Border>
+
+    <!-- Content area with overlapping states -->
+    <Panel Grid.Row="2">
+
+      <!-- Loading state -->
+      <Border IsVisible="{Binding IsLoading}"
+              Background="{StaticResource BgBrush}">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+          <controls:CdSpinner/>
+          <ProgressBar IsIndeterminate="True" Width="200"
+                       Foreground="{StaticResource AccentBrush}"/>
+          <TextBlock Text="Loading packages..."
+                     Foreground="{StaticResource TextMutedBrush}"
+                     FontSize="13" HorizontalAlignment="Center"/>
+        </StackPanel>
+      </Border>
+
+      <!-- Disconnected state -->
+      <Border IsVisible="{Binding ShowDisconnected}"
+              Background="{StaticResource BgBrush}">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-disconnected-64.png"
+                 Width="64" Height="64" Stretch="Uniform"
+                 HorizontalAlignment="Center" Opacity="0.6"/>
+          <TextBlock Text="Not connected" FontSize="16" FontWeight="SemiBold"
+                     Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+          <TextBlock Text="Connect to access installed packages"
+                     FontSize="13" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
+          <Button Command="{Binding ConnectCommand}"
+                  Padding="20,12" FontSize="15"
+                  HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                     Width="22" Height="22" Stretch="Uniform"/>
+              <TextBlock Text="Connect" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <!-- Status/Error state -->
+      <Border IsVisible="{Binding ShowStatus}"
+              Background="{StaticResource BgBrush}">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-empty-64.png"
+                 Width="64" Height="64" Stretch="Uniform"
+                 HorizontalAlignment="Center" Opacity="0.6"/>
+          <TextBlock Text="{Binding StatusMessage}"
+                     FontSize="15" Foreground="{StaticResource TextMutedBrush}"
+                     HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="280"
+                     TextAlignment="Center"/>
+          <Button Command="{Binding RefreshPackagesCommand}"
+                  Padding="20,12" FontSize="14"
+                  HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-refresh-20.png"
+                     Width="18" Height="18" Stretch="Uniform"/>
+              <TextBlock Text="Refresh" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <!-- Refresh prompt (no packages loaded yet) -->
+      <Border IsVisible="{Binding ShowRefreshPrompt}"
+              Background="{StaticResource BgBrush}">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+          <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-package-32.png"
+                 Width="48" Height="48" Stretch="Uniform"
+                 HorizontalAlignment="Center" Opacity="0.5"/>
+          <TextBlock Text="No packages loaded"
+                     FontSize="16" FontWeight="SemiBold"
+                     Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+          <TextBlock Text="Refresh to fetch installed packages from your Xbox"
+                     FontSize="13" Foreground="{StaticResource TextDimBrush}"
+                     HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="260"
+                     TextAlignment="Center"/>
+          <Button Command="{Binding RefreshPackagesCommand}"
+                  Padding="20,12" FontSize="14"
+                  HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-refresh-20.png"
+                     Width="18" Height="18" Stretch="Uniform"/>
+              <TextBlock Text="Refresh" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <!-- Package list -->
+      <ListBox x:Name="PackageListBox"
+               ItemsSource="{Binding Packages}"
+               IsVisible="{Binding ShowGrid}"
+               Background="Transparent"
+               BorderThickness="0"
+               Padding="0"
+               Margin="0"
+               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+               SelectionMode="Single"
+               SelectionChanged="OnSelectionChanged">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="models:InstalledPackage">
+            <Border Classes="InstalledCard">
+              <Grid RowDefinitions="90,Auto">
+                <!-- Row 0: Banner area -->
+                <Grid Grid.Row="0" ClipToBounds="True">
+                  <Border Background="{StaticResource SurfaceAltBrush}">
+                    <Panel>
+                      <Image Source="{Binding BannerImage}"
+                             Stretch="UniformToFill"
+                             HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                             RenderOptions.BitmapInterpolationMode="MediumQuality"/>
+                      <!-- Running tint overlay -->
+                      <Border Background="#1A3A1A" IsVisible="{Binding IsRunning}"/>
+                    </Panel>
+                  </Border>
+                  <!-- Autostart badge: top-left -->
+                  <Border CornerRadius="6" Padding="8,3"
+                          HorizontalAlignment="Left" VerticalAlignment="Top"
+                          Margin="10,8,0,0"
+                          Background="{StaticResource AccentBrush}"
+                          IsVisible="{Binding IsAutostart}">
+                    <TextBlock Text="AUTOSTART" FontSize="9" FontWeight="Bold" Foreground="White"/>
+                  </Border>
+                  <!-- Outdated badge: top-right -->
+                  <Border CornerRadius="6" Padding="8,3"
+                          HorizontalAlignment="Right" VerticalAlignment="Top"
+                          Margin="0,8,10,0"
+                          Background="#FF6B35"
+                          IsVisible="{Binding IsOutdated}">
+                    <TextBlock Text="OUTDATED" FontSize="9" FontWeight="Bold" Foreground="White"/>
+                  </Border>
+                  <!-- Running indicator: bottom-right -->
+                  <Border CornerRadius="6" Padding="8,3"
+                          HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                          Margin="0,0,10,8"
+                          Background="#339ACA3C"
+                          IsVisible="{Binding IsRunning}">
+                    <TextBlock Text="RUNNING" FontSize="9" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                  </Border>
+                </Grid>
+
+                <!-- Row 1: Content area -->
+                <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}" Padding="14,10,14,8">
+                  <StackPanel Spacing="4">
+                    <!-- Name -->
+                    <TextBlock Text="{Binding DisplayName}"
+                               FontSize="15" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextBrush}"
+                               TextTrimming="CharacterEllipsis"/>
+                    <!-- Version + Publisher -->
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+                      <TextBlock Grid.Column="0"
+                                 Text="{Binding Version}"
+                                 FontSize="12"
+                                 Foreground="{StaticResource TextMutedBrush}"/>
+                      <TextBlock Grid.Column="2"
+                                 Text="{Binding DisplayPublisher}"
+                                 FontSize="12"
+                                 Foreground="{StaticResource TextDimBrush}"
+                                 TextTrimming="CharacterEllipsis"/>
+                    </Grid>
+                    <!-- Action row -->
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="4" Margin="0,4,0,0">
+                      <!-- Play button -->
+                      <Button Grid.Column="0"
+                              Classes="CardAction"
+                              Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).LaunchPackageCommand}"
+                              CommandParameter="{Binding}"
+                              IsVisible="{Binding IsRunning, Converter={StaticResource BoolInverse}}"
+                              ToolTip.Tip="Launch">
+                        <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-20.png"
+                               Width="18" Height="18" Stretch="Uniform"/>
+                      </Button>
+                      <!-- Suspend button (visible when running) -->
+                      <Button Grid.Column="1"
+                              Classes="CardAction"
+                              Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).SuspendPackageCommand}"
+                              CommandParameter="{Binding}"
+                              IsVisible="{Binding IsRunning}"
+                              ToolTip.Tip="Suspend">
+                        <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-suspend-20.png"
+                               Width="18" Height="18" Stretch="Uniform"/>
+                      </Button>
+                      <!-- Terminate button (visible when running) -->
+                      <Button Grid.Column="2"
+                              Classes="CardDanger"
+                              Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).TerminatePackageCommand}"
+                              CommandParameter="{Binding}"
+                              IsVisible="{Binding IsRunning}"
+                              ToolTip.Tip="Terminate">
+                        <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-terminate-20.png"
+                               Width="18" Height="18" Stretch="Uniform"/>
+                      </Button>
+                      <!-- Flyout menu button -->
+                      <Button Grid.Column="4"
+                              Classes="CardAction"
+                              ToolTip.Tip="More actions">
+                        <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-menu-16.png"
+                               Width="18" Height="18" Stretch="Uniform"/>
+                        <Button.Flyout>
+                          <Flyout Placement="BottomEdgeAlignedRight">
+                            <StackPanel Width="240" Spacing="2" Margin="6"
+                                        Background="{StaticResource SurfaceAltBrush}">
+                              <!-- Launch -->
+                              <Button Classes="HamburgerItem"
+                                      Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).LaunchPackageCommand}"
+                                      CommandParameter="{Binding}">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-20.png"
+                                         Width="20" Height="20" Stretch="Uniform"/>
+                                  <TextBlock Text="Launch" VerticalAlignment="Center" FontSize="14"/>
+                                </StackPanel>
+                              </Button>
+                              <!-- Suspend -->
+                              <Button Classes="HamburgerItem"
+                                      Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).SuspendPackageCommand}"
+                                      CommandParameter="{Binding}"
+                                      IsVisible="{Binding IsRunning}">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-suspend-20.png"
+                                         Width="20" Height="20" Stretch="Uniform"/>
+                                  <TextBlock Text="Suspend" VerticalAlignment="Center" FontSize="14"/>
+                                </StackPanel>
+                              </Button>
+                              <!-- Terminate -->
+                              <Button Classes="HamburgerItem"
+                                      Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).TerminatePackageCommand}"
+                                      CommandParameter="{Binding}"
+                                      IsVisible="{Binding IsRunning}">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-terminate-20.png"
+                                         Width="20" Height="20" Stretch="Uniform"/>
+                                  <TextBlock Text="Terminate" VerticalAlignment="Center" FontSize="14"/>
+                                </StackPanel>
+                              </Button>
+                              <Border Height="1" Background="{StaticResource BorderBrush}" Margin="8,4"/>
+                              <!-- Autostart on connect -->
+                              <Button Classes="HamburgerItem"
+                                      Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).ToggleAutostartCommand}"
+                                      CommandParameter="{Binding}"
+                                      IsVisible="{Binding IsAutostart, Converter={StaticResource BoolInverse}}">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-autostart-20.png"
+                                         Width="20" Height="20" Stretch="Uniform"/>
+                                  <TextBlock Text="Autostart on connect" VerticalAlignment="Center" FontSize="14"/>
+                                </StackPanel>
+                              </Button>
+                              <!-- Remove autostart -->
+                              <Button Classes="HamburgerItem"
+                                      Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).ToggleAutostartCommand}"
+                                      CommandParameter="{Binding}"
+                                      IsVisible="{Binding IsAutostart}">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-autostart-20.png"
+                                         Width="20" Height="20" Stretch="Uniform"/>
+                                  <TextBlock Text="Remove autostart" VerticalAlignment="Center" FontSize="14"
+                                             Foreground="{StaticResource DangerBrush}"/>
+                                </StackPanel>
+                              </Button>
+                              <Border Height="1" Background="{StaticResource BorderBrush}" Margin="8,4"/>
+                              <!-- Ignore update alerts -->
+                              <Button Classes="HamburgerItem"
+                                      Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).ToggleIgnoreUpdateCommand}"
+                                      CommandParameter="{Binding}">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-ignore-update-16.png"
+                                         Width="20" Height="20" Stretch="Uniform"/>
+                                  <TextBlock Text="Ignore update alerts" VerticalAlignment="Center" FontSize="14"/>
+                                </StackPanel>
+                              </Button>
+                              <Border Height="1" Background="{StaticResource BorderBrush}" Margin="8,4"/>
+                              <!-- Uninstall -->
+                              <Button Classes="HamburgerItem"
+                                      Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).UninstallSelectedCommand}"
+                                      IsVisible="{Binding CanUninstall}">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                  <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
+                                         Width="20" Height="20" Stretch="Uniform"/>
+                                  <TextBlock Text="Uninstall" VerticalAlignment="Center" FontSize="14"
+                                             Foreground="{StaticResource DangerBrush}"/>
+                                </StackPanel>
+                              </Button>
+                            </StackPanel>
+                          </Flyout>
+                        </Button.Flyout>
+                      </Button>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+    </Panel>
+
+  </Grid>
+
+</UserControl>

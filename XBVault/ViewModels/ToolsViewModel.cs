@@ -53,6 +53,8 @@ public partial class ToolsViewModel : ObservableObject
     public bool ShowContent => IsConnected;
     public bool IsWindows => _isWindows;
 
+    public Action<string>? OpenUrlAction { get; set; }
+
     partial void OnIsConnectedChanged(bool value)
     {
         OnPropertyChanged(nameof(ShowDisconnected));
@@ -176,7 +178,10 @@ public partial class ToolsViewModel : ObservableObject
         }
         try
         {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            if (OpenUrlAction is not null)
+                OpenUrlAction(url);
+            else
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
         catch (Exception ex)
         {
