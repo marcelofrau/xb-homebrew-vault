@@ -52,6 +52,17 @@ public class XboxAuthService : IXboxAuthService
         _username = username;
         _password = password;
 
+        Uri baseUri;
+        try
+        {
+            baseUri = new Uri(baseUrl);
+        }
+        catch (UriFormatException ex)
+        {
+            Logger.Error(ex, $"XboxAuthService: invalid baseUrl '{baseUrl}' — skipping configure");
+            return;
+        }
+
         // Fresh client each call — BaseAddress freezes after first request
         var handler = new HttpClientHandler
         {
@@ -61,7 +72,7 @@ public class XboxAuthService : IXboxAuthService
         var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
         http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", auth);
-        http.BaseAddress = new Uri(baseUrl);
+        http.BaseAddress = baseUri;
 
         var oldHttp = _http;
         var oldHandler = _handler;

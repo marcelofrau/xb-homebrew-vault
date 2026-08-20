@@ -116,15 +116,16 @@ public partial class SetupWizardViewModel : ObservableObject
 
     private void SaveToSettings()
     {
-        var settings = SettingsService.Current.XboxConnection;
-        settings.Address = Address ?? "";
-        settings.Port = int.TryParse(Port, out var p) ? p : 11443;
-        settings.UseHttps = UseHttps;
-        settings.Username = Username ?? "";
-        settings.EncryptedPassword = CryptoService.Obfuscate(Password ?? "");
+        var settings = SettingsService.Current;
+        settings.XboxConnection.Address = Address ?? "";
+        settings.XboxConnection.Port = int.TryParse(Port, out var p) ? p : 11443;
+        settings.XboxConnection.UseHttps = UseHttps;
+        settings.XboxConnection.Username = Username ?? "";
+        settings.XboxConnection.EncryptedPassword = CryptoService.Obfuscate(Password ?? "");
+        settings.WizardCompleted = true;
         SettingsService.Save();
 
-        var baseUrl = settings.BaseUrl;
-        _authService.Configure(baseUrl, settings.Username, Password ?? "");
+        var baseUrl = settings.XboxConnection.BaseUrl;
+        _authService.Configure(baseUrl, settings.XboxConnection.Username, Password ?? "");
     }
 }

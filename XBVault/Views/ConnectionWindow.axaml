@@ -110,7 +110,7 @@
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
             <Button x:Name="CancelBtn"
                     Command="{Binding CancelCommand}" Padding="10,6" MaxWidth="100"
-                    IsEnabled="{Binding IsActive}">
+                    IsEnabled="{Binding IsActive, Converter={StaticResource BoolInverse}}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                 <Grid>
                   <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-cancel-20.png"

@@ -40,21 +40,31 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="Auto,Auto,*,Auto">
+  <Grid RowDefinitions="Auto,Auto,Auto,*">
 
-    <!-- Floating search overlay (shown when keyboard is open) -->
-    <Border Grid.Row="0" x:Name="SearchOverlay"
-            IsVisible="False"
+    <!-- Header -->
+    <StackPanel Grid.Row="0" Margin="16,12,16,8">
+      <TextBlock Text="BROWSE"
+                 FontFamily="{StaticResource TitleFont}"
+                 FontSize="18" FontWeight="Bold"
+                 Foreground="{StaticResource TextBrush}"/>
+      <TextBlock Text="Discover homebrew apps and emulators"
+                 FontSize="13" Foreground="{StaticResource TextMutedBrush}"
+                 Margin="0,2,0,0"/>
+    </StackPanel>
+
+    <!-- Search bar + Sideload -->
+    <Border Grid.Row="1"
             Background="{StaticResource SurfaceBrush}"
-            Padding="16,10"
-            ZIndex="100">
+            Padding="16,8"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="0,0,0,1">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
         <TextBox Grid.Column="0"
-                 x:Name="OverlaySearchBox"
+                 x:Name="SearchBox"
                  PlaceholderText="Search catalog..."
                  Text="{Binding SearchText}"
-                 FontSize="15" Padding="12,10"
-                 LostFocus="OnOverlaySearchLostFocus"/>
+                 FontSize="15" Padding="12,10"/>
         <Button Grid.Column="1"
                 Command="{Binding OpenCustomInstallCommand}"
                 Padding="14,10"
@@ -69,27 +79,16 @@
       </Grid>
     </Border>
 
-    <!-- Header -->
-    <StackPanel Grid.Row="0" Margin="16,12,16,8">
-      <TextBlock Text="BROWSE"
-                 FontFamily="{StaticResource TitleFont}"
-                 FontSize="18" FontWeight="Bold"
-                 Foreground="{StaticResource TextBrush}"/>
-      <TextBlock Text="Discover homebrew apps and emulators"
-                 FontSize="13" Foreground="{StaticResource TextMutedBrush}"
-                 Margin="0,2,0,0"/>
-    </StackPanel>
-
     <!-- Category filter -->
-    <ComboBox Grid.Row="1"
+    <ComboBox Grid.Row="2"
               ItemsSource="{Binding Categories}"
               SelectedItem="{Binding SelectedCategory}"
-              Margin="16,0,16,8"
+              Margin="16,8,16,8"
               HorizontalAlignment="Stretch"
               FontSize="14" Padding="12,8"/>
 
     <!-- Loading overlay -->
-    <Border Grid.Row="2" IsVisible="{Binding IsLoading}"
+    <Border Grid.Row="3" IsVisible="{Binding IsLoading}"
             Background="{StaticResource BgBrush}">
       <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
         <controls:CdSpinner/>
@@ -102,7 +101,7 @@
     </Border>
 
     <!-- Empty state -->
-    <Border Grid.Row="2" IsVisible="{Binding HasItems, Converter={StaticResource BoolInverse}}"
+    <Border Grid.Row="3" IsVisible="{Binding ShowNoItems}"
             IsHitTestVisible="False"
             Background="{StaticResource BgBrush}">
       <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
@@ -116,7 +115,7 @@
     </Border>
 
     <!-- Catalog list -->
-    <ListBox Grid.Row="2"
+    <ListBox Grid.Row="3"
              x:Name="BrowseListBox"
              ItemsSource="{Binding Items}"
              IsVisible="{Binding HasItems}"
@@ -184,30 +183,7 @@
       </ListBox.ItemTemplate>
     </ListBox>
 
-    <!-- Bottom toolbar: Search + Sideload -->
-    <Border Grid.Row="3"
-            Background="{StaticResource SurfaceBrush}"
-            Padding="16,10" CornerRadius="0">
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-        <TextBox Grid.Column="0"
-                 x:Name="BottomSearchBox"
-                 PlaceholderText="Search catalog..."
-                 Text="{Binding SearchText}"
-                 FontSize="15" Padding="12,10"
-                 GotFocus="OnBottomSearchFocus"/>
-        <Button Grid.Column="1"
-                Command="{Binding OpenCustomInstallCommand}"
-                Padding="14,10"
-                ToolTip.Tip="Install a custom package from file">
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-            <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-install-20.png"
-                   Width="20" Height="20" Stretch="Uniform"/>
-            <TextBlock Grid.Column="1" Text="Sideload" FontSize="14" FontWeight="SemiBold"
-                       VerticalAlignment="Center"/>
-          </Grid>
-        </Button>
-      </Grid>
-    </Border>
+
 
   </Grid>
 

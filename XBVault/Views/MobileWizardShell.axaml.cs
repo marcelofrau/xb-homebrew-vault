@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -16,9 +17,10 @@ public partial class MobileWizardShell : UserControl
     public event EventHandler<int>? StepChanged;
     public event EventHandler? FinishClicked;
 
-    private readonly List<(Image ActiveImg, Image InactiveImg, TextBlock Label)> _stepIndicators = [];
+    private readonly List<(StackPanel Container, Image ActiveImg, Image InactiveImg, TextBlock Label)> _stepIndicators = [];
     private int _currentStep;
     private int _totalSteps;
+    private int _maxVisitedStep;
     private bool _isFinishMode;
 
     private static readonly FontFamily BodyFont = FontFamily.Parse("avares://XBVault/Assets/Fonts/Oxanium-400.ttf#Oxanium");
@@ -47,6 +49,7 @@ public partial class MobileWizardShell : UserControl
     {
         TitleBar.Title = title;
         _totalSteps = stepLabels.Count;
+        _maxVisitedStep = 0;
         _stepIndicators.Clear();
         StepIndicatorPanel.Children.Clear();
 
@@ -102,13 +105,17 @@ public partial class MobileWizardShell : UserControl
             {
                 Orientation = Orientation.Horizontal,
                 Spacing = 0,
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                Cursor = new Cursor(StandardCursorType.Hand)
             };
             stack.Children.Add(grid);
             stack.Children.Add(label);
 
+            var stepIndex = i;
+            stack.Tapped += (_, _) => OnStepIndicatorTapped(stepIndex);
+
             StepIndicatorPanel.Children.Add(stack);
-            _stepIndicators.Add((activeImg, inactiveImg, label));
+            _stepIndicators.Add((stack, activeImg, inactiveImg, label));
         }
 
         SetActiveStep(0);
@@ -149,17 +156,26 @@ public partial class MobileWizardShell : UserControl
         ProgressFill.Width = maxWidth * progress;
     }
 
+    private void OnStepIndicatorTapped(int stepIndex)
+    {
+        if (stepIndex <= _maxVisitedStep && stepIndex != _currentStep)
+            StepChanged?.Invoke(this, stepIndex);
+    }
+
     private void SetActiveStep(int stepIndex)
     {
         _currentStep = stepIndex;
+        if (stepIndex > _maxVisitedStep) _maxVisitedStep = stepIndex;
 
         PrevBtnLabel.Text = stepIndex == 0 ? "Cancel" : "Previous";
         PrevBtn.Classes.Clear();
         PrevBtn.Classes.Add("Danger");
+        TitleBar.ShowBackButton = stepIndex > 0;
 
         for (var i = 0; i < _stepIndicators.Count; i++)
         {
-            var (activeImg, inactiveImg, label) = _stepIndicators[i];
+            var (_, activeImg, inactiveImg, label) = _stepIndicators[i];
+            var container = _stepIndicators[i].Container;
             var isActive = i == stepIndex;
             var isPast = i < stepIndex;
 
@@ -168,6 +184,10 @@ public partial class MobileWizardShell : UserControl
             label.Foreground = (IBrush)Application.Current!.FindResource(
                 isActive ? "AccentBrush" : isPast ? "TextMutedBrush" : "TextDimBrush")!;
             label.Opacity = isActive ? 1.0 : isPast ? 0.7 : 0.5;
+            container.Cursor = i <= _maxVisitedStep
+                ? new Cursor(StandardCursorType.Hand)
+                : new Cursor(StandardCursorType.Arrow);
+            container.Opacity = i <= _maxVisitedStep ? 1.0 : 0.6;
         }
 
         UpdateProgress();

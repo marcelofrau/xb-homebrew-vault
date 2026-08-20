@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileInfoDialogView"
+             x:DataType="views:MobileInfoDialogViewModel"
+             Background="#AA000000">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="32">
+    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12"
+            Padding="24,20" MaxWidth="380" HorizontalAlignment="Stretch">
+      <StackPanel Spacing="16">
+        <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="Bold"
+                   Foreground="White" TextWrapping="Wrap"/>
+        <TextBlock Text="{Binding Description}" FontSize="14"
+                   Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+        <TextBlock Text="{Binding Details}" FontSize="12"
+                   Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap"
+                   IsVisible="{Binding HasDetails}"/>
+        <Button Command="{Binding OkCommand}"
+                Padding="20,12" FontSize="14" FontWeight="Bold"
+                Background="{StaticResource AccentBrush}" Foreground="White"
+                HorizontalAlignment="Center" MinWidth="120">
+          <TextBlock Text="OK"/>
+        </Button>
+      </StackPanel>
+    </Border>
+  </Grid>
+
+</UserControl>

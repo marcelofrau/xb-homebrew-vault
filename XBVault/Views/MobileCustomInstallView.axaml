@@ -1,0 +1,9 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileCustomInstallView"
+             Background="{StaticResource BgBrush}">
+
+  <views:MobileWizardShell x:Name="Wizard"/>
+
+</UserControl>

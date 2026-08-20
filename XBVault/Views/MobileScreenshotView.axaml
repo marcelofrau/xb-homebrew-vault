@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileScreenshotView"
+             x:DataType="views:MobileScreenshotViewModel"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+    <!-- Loading -->
+    <StackPanel Grid.Row="0"
+                IsVisible="{Binding IsCapturing}"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+      <ProgressBar IsIndeterminate="True" Width="200"/>
+      <TextBlock Text="Capturing..." FontSize="14"
+                 Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+    </StackPanel>
+
+    <!-- Status message -->
+    <Border Grid.Row="0"
+            IsVisible="{Binding HasStatus}"
+            Background="#2A3A50"
+            BorderBrush="#4A6A80"
+            BorderThickness="1" CornerRadius="8" Padding="16,12"
+            HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+      <TextBlock Text="{Binding StatusMessage}"
+                 Foreground="#E0E0E0"
+                 FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/>
+    </Border>
+
+    <!-- Screenshot image + buttons -->
+    <ScrollViewer Grid.Row="0" IsVisible="{Binding HasScreenshot}">
+      <StackPanel Spacing="12" Margin="12" HorizontalAlignment="Center">
+        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="8">
+          <Image Source="{Binding ScreenshotImage}"
+                 Stretch="Uniform" HorizontalAlignment="Center" MaxHeight="600"/>
+        </Border>
+        <Button Command="{Binding SaveScreenshotCommand}"
+                Padding="16,14" HorizontalAlignment="Stretch">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <TextBlock Text="Save Screenshot" FontSize="15" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Capture button (when no screenshot yet) -->
+    <Button Grid.Row="0"
+            IsVisible="{Binding ShowCaptureButton}"
+            Command="{Binding CaptureScreenshotCommand}"
+            Padding="24,16" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-screenshot-20.png"
+               Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
+        <TextBlock Text="Capture Screenshot" FontSize="15" VerticalAlignment="Center"/>
+      </StackPanel>
+    </Button>
+  </Grid>
+
+</UserControl>

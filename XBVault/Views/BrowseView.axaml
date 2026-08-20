@@ -117,7 +117,7 @@
       </Border>
 
       <!-- Empty state -->
-      <Border IsVisible="{Binding HasItems, Converter={StaticResource BoolInverse}}"
+      <Border IsVisible="{Binding ShowNoItems}"
               Background="{StaticResource SurfaceBrush}">
       <StackPanel HorizontalAlignment="Center"
                   VerticalAlignment="Center"

@@ -22,15 +22,25 @@
                           x:Name="TitleBar"
                           Title="SETTINGS"
                           ShowBackButton="True"
-                          ShowAppIcon="False">
-      <views:MobileTitleBar.RightContent>
-        <Button Classes="TabBtn" Command="{Binding SaveSettingsCommand}"
-                Padding="16,8" VerticalAlignment="Center">
-          <TextBlock Text="Save" FontSize="15" FontWeight="Bold"
-                     Foreground="{StaticResource AccentBrush}"/>
-        </Button>
-      </views:MobileTitleBar.RightContent>
-    </views:MobileTitleBar>
+                          ShowAppIcon="False"/>
+
+    <!-- Save button as floating action in top-right -->
+    <Button x:Name="SaveBtn"
+            Grid.Row="0"
+            HorizontalAlignment="Right" VerticalAlignment="Center"
+            Margin="0,0,12,0"
+            Background="{StaticResource AccentBrush}"
+            CornerRadius="8"
+            Padding="18,10"
+            ZIndex="10">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-save-20.png"
+               Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+        <TextBlock Text="SAVE" FontSize="13" FontWeight="Bold"
+                   FontFamily="{StaticResource TitleFont}"
+                   Foreground="#1A1A1A" VerticalAlignment="Center"/>
+      </StackPanel>
+    </Button>
 
     <!-- Saved notification -->
     <Border Grid.Row="0"
@@ -93,7 +103,6 @@
             <Separator Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>
 
             <Button x:Name="TestConnBtn"
-                    Command="{Binding TestConnectionCommand}"
                     IsEnabled="{Binding IsTestingConnection, Converter={StaticResource BoolInverse}}"
                     Padding="16,14" HorizontalAlignment="Stretch">
               <Grid ColumnDefinitions="24,*,Auto" ColumnSpacing="10">
@@ -108,6 +117,12 @@
                 <TextBlock Grid.Column="1" Text="Test Connection" FontSize="15" VerticalAlignment="Center"/>
               </Grid>
             </Button>
+
+            <TextBlock x:Name="ConnectionStatusText"
+                       Text="{Binding ConnectionStatus}"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       FontSize="13" TextWrapping="Wrap"
+                       IsVisible="{Binding ConnectionStatus, Converter={StaticResource StringNotEmpty}}"/>
           </StackPanel>
         </Border>
 

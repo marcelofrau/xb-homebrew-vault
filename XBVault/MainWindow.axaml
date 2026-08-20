@@ -125,6 +125,7 @@
     </Style>
 
     <Style Selector="Border.toast-card">
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
       <Setter Property="Transitions">
         <Setter.Value>
           <Transitions>
@@ -644,72 +645,74 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="models:ToastHost">
                 <Border Classes="toast-card"
-                        Background="#284325"
                         BorderBrush="Black"
                         BorderThickness="1"
                         CornerRadius="8"
                         BoxShadow="0 4 16 0 #66000000"
-                        Padding="12,10"
+                        Padding="0"
                         MinWidth="260"
                         MaxWidth="360"
                         Cursor="Hand"
                         PointerPressed="OnToastPointerPressed">
-                  <StackPanel Spacing="6">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                      <Image Source="{Binding Item.IconUri}"
-                             Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center"/>
-                      <TextBlock Grid.Column="1"
-                                 Text="{Binding Item.Title}"
-                                 FontSize="12"
-                                 FontWeight="Bold"
-                                 Foreground="{StaticResource TextBrush}"
+                  <Grid ColumnDefinitions="4,*">
+                    <Border Background="{StaticResource AccentBrush}" CornerRadius="8,0,0,8"/>
+                    <StackPanel Grid.Column="1" Spacing="6" Margin="12,10,12,10">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <Image Source="{Binding Item.IconUri}"
+                               Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Item.Title}"
+                                   FontSize="12"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextBrush}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center"/>
+                      </Grid>
+                      <TextBlock Text="{Binding Item.Message}"
+                                 FontSize="11"
+                                 Foreground="{StaticResource TextMutedBrush}"
                                  TextWrapping="Wrap"
-                                 VerticalAlignment="Center"/>
-                    </Grid>
-                    <TextBlock Text="{Binding Item.Message}"
+                                 Margin="30,0,0,0"/>
+                       <ItemsControl ItemsSource="{Binding Item.ToastVisibleActions}"
+                                     IsVisible="{Binding Item.IsGrouped}"
+                                     Margin="30,0,0,0">
+                         <ItemsControl.ItemsPanel>
+                           <ItemsPanelTemplate>
+                             <StackPanel Spacing="4"/>
+                           </ItemsPanelTemplate>
+                         </ItemsControl.ItemsPanel>
+                         <ItemsControl.ItemTemplate>
+                           <DataTemplate x:DataType="models:NotificationAction">
+                             <Button Content="{Binding Label}"
+                                     FontSize="11"
+                                     FontWeight="SemiBold"
+                                     Padding="8,3"
+                                     HorizontalContentAlignment="Left"
+                                     Background="{StaticResource AccentBrush}"
+                                     Foreground="#1A1A1A"
+                                     BorderThickness="0"
+                                     CornerRadius="4"
+                                     Cursor="Hand"
+                                     Click="OnToastActionClick"/>
+                           </DataTemplate>
+                         </ItemsControl.ItemTemplate>
+                       </ItemsControl>
+                       <Button Content="{Binding Item.ToastMoreCount, StringFormat=+{0} more}"
+                               IsVisible="{Binding Item.HasMore}"
+                               Margin="30,0,0,0"
+                               Padding="8,3"
+                               HorizontalContentAlignment="Left"
                                FontSize="11"
-                               Foreground="{StaticResource TextMutedBrush}"
-                               TextWrapping="Wrap"
-                               Margin="28,0,0,0"/>
-                     <ItemsControl ItemsSource="{Binding Item.ToastVisibleActions}"
-                                   IsVisible="{Binding Item.IsGrouped}"
-                                   Margin="28,0,0,0">
-                       <ItemsControl.ItemsPanel>
-                         <ItemsPanelTemplate>
-                           <StackPanel Spacing="4"/>
-                         </ItemsPanelTemplate>
-                       </ItemsControl.ItemsPanel>
-                       <ItemsControl.ItemTemplate>
-                         <DataTemplate x:DataType="models:NotificationAction">
-                           <Button Content="{Binding Label}"
-                                   FontSize="11"
-                                   FontWeight="SemiBold"
-                                   Padding="8,3"
-                                   HorizontalContentAlignment="Left"
-                                   Background="{StaticResource AccentBrush}"
-                                   Foreground="#1A1A1A"
-                                   BorderThickness="0"
-                                   CornerRadius="4"
-                                   Cursor="Hand"
-                                   Click="OnToastActionClick"/>
-                         </DataTemplate>
-                       </ItemsControl.ItemTemplate>
-                     </ItemsControl>
-                     <Button Content="{Binding Item.ToastMoreCount, StringFormat=+{0} more}"
-                             IsVisible="{Binding Item.HasMore}"
-                             Margin="28,0,0,0"
-                             Padding="8,3"
-                             HorizontalContentAlignment="Left"
-                             FontSize="11"
-                             FontWeight="SemiBold"
-                             Background="Transparent"
-                             Foreground="{StaticResource AccentBrush}"
-                             BorderBrush="{StaticResource AccentBrush}"
-                             BorderThickness="1"
-                             CornerRadius="4"
-                             Cursor="Hand"
-                             Click="OnToastMoreClick"/>
-                  </StackPanel>
+                               FontWeight="SemiBold"
+                               Background="Transparent"
+                               Foreground="{StaticResource AccentBrush}"
+                               BorderBrush="{StaticResource AccentBrush}"
+                               BorderThickness="1"
+                               CornerRadius="4"
+                               Cursor="Hand"
+                               Click="OnToastMoreClick"/>
+                    </StackPanel>
+                  </Grid>
                 </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>

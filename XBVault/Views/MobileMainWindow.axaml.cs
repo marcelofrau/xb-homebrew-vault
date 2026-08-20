@@ -159,7 +159,7 @@ public partial class MobileMainWindow : UserControl
         XBVault.Services.Logger.Info("Android: Connection icon clicked");
         if (DataContext is MainViewModel vm)
         {
-            if (!SettingsService.Current.XboxConnection.IsConfigured)
+            if (!SettingsService.Current.WizardCompleted && !SettingsService.Current.XboxConnection.IsConfigured)
             {
                 XBVault.Services.Logger.Info("Android: Not configured, opening setup wizard");
                 ShowSetupWizard();
@@ -180,7 +180,16 @@ public partial class MobileMainWindow : UserControl
             var wizardView = new MobileSetupWizardView();
             wizardView.SetViewModel(wizardVm);
             wizardVm.CloseAction = () => CloseOverlay();
-            wizardView.CloseRequested += (_, _) => CloseOverlay();
+            wizardView.CloseRequested += async (_, _) =>
+            {
+                CloseOverlay();
+                if (wizardVm.WasCompleted && DataContext is MainViewModel vm)
+                {
+                    XBVault.Services.Logger.Info("Android: Wizard completed from connect — auto-connecting");
+                    if (vm.ShowConnectAction is not null)
+                        _ = vm.ShowConnectAction();
+                }
+            };
             ShowOverlay(wizardView);
         });
     }
