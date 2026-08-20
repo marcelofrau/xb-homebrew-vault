@@ -912,6 +912,7 @@ public partial class App : Application
         var installedViewModel = new InstalledViewModel(authService, packageService);
         var fileExplorerViewModel = new FileExplorerViewModel(authService, sftpService, sftpTransferService, portalService);
         var toolsViewModel = new ToolsViewModel(authService, systemService);
+        toolsViewModel.OpenUrlAction = url => PlatformHelper.OpenUrl(url);
         var settingsViewModel = new SettingsViewModel(authService, cacheService);
 
         Logger.Debug($"Android services initialized, switching to MobileMainWindow @ {DateTime.Now:HH:mm:ss.fff}");
@@ -921,6 +922,7 @@ public partial class App : Application
             var main = new Views.MobileMainWindow();
             main.SetDataContext(mainViewModel);
             main.BrowseContent.DataContext = browseViewModel;
+            main.InstalledContent.DataContext = installedViewModel;
             main.ToolsContent.DataContext = toolsViewModel;
 
             // ── Mobile tools: wire action delegates ──
@@ -1207,6 +1209,112 @@ public partial class App : Application
                 }
             };
 
+            // ── Mobile installed: wire action delegates ──
+            installedViewModel.ShowConnectAction = async () =>
+            {
+                Logger.Info("Android: InstalledView ShowConnectAction — opening MobileConnectionView");
+                var tcs = new TaskCompletionSource<bool>();
+                var connVm = new ConnectionViewModel(authService, networkService);
+                var connView = new Views.MobileConnectionView { DataContext = connVm };
+                connVm.Completed += success =>
+                {
+                    Logger.Info($"Android: Connection completed: success={success}");
+                    tcs.SetResult(success);
+                };
+                connView.SetOnBack(() =>
+                {
+                    if (connVm.IsRunning)
+                        connVm.CancelCommand.Execute(null);
+                    main.CloseOverlay();
+                    if (!tcs.Task.IsCompleted)
+                        tcs.SetResult(false);
+                });
+                main.ShowOverlay(connView);
+                _ = connVm.ConnectCommand.ExecuteAsync(null);
+                return await tcs.Task;
+            };
+
+            installedViewModel.ShowErrorAction = async (title, description, details) =>
+            {
+                var vm = new Views.MobileInfoDialogViewModel
+                {
+                    Title = title,
+                    Description = description ?? "",
+                    Details = details
+                };
+                var dlg = new Views.MobileInfoDialogView { DataContext = vm };
+                var tcs = vm.WaitForResult();
+                main.ShowOverlay(dlg);
+                dlg.SetOnBack(() => { vm.OkCommand.Execute(null); main.CloseOverlay(); });
+                await tcs;
+                main.CloseOverlay();
+            };
+
+            installedViewModel.ShowErrorWithConnectAction = async (title, description, details, connectAction) =>
+            {
+                var vm = new Views.MobileInfoDialogViewModel
+                {
+                    Title = title,
+                    Description = description ?? "",
+                    Details = details
+                };
+                var dlg = new Views.MobileInfoDialogView { DataContext = vm };
+                var tcs = vm.WaitForResult();
+                main.ShowOverlay(dlg);
+                dlg.SetOnBack(() => { vm.OkCommand.Execute(null); main.CloseOverlay(); });
+                await tcs;
+                main.CloseOverlay();
+                if (connectAction is not null)
+                    await connectAction();
+            };
+
+            installedViewModel.ConfirmAutostartAction = async (pkg, previousName) =>
+            {
+                var message = string.IsNullOrEmpty(previousName)
+                    ? $"Launch {pkg.Name} automatically when XBVault connects to the Xbox?"
+                    : $"Replace {previousName} with {pkg.Name} as the app that launches automatically on connect?";
+                var vm = new Views.MobileConfirmDialogViewModel
+                {
+                    Title = "Autostart on Connect",
+                    Message = message,
+                    ConfirmText = "Enable",
+                    CancelText = "Cancel"
+                };
+                var dlg = new Views.MobileConfirmDialogView { DataContext = vm };
+                var tcs = vm.WaitForResult();
+                main.ShowOverlay(dlg);
+                dlg.SetOnBack(() => { vm.CancelCommand.Execute(null); main.CloseOverlay(); });
+                var result = await tcs;
+                main.CloseOverlay();
+                return result;
+            };
+
+            installedViewModel.NotifyAutostartAction = message =>
+            {
+                notificationCenter.Notify(
+                    "Autostart",
+                    message,
+                    "avares://XBVault/Assets/Views/InstalledView/installed-autostart-16.png");
+            };
+
+            installedViewModel.ResolveBannerAsync = pkg => browseViewModel.FindThumbnailByPackageAsync(pkg);
+            installedViewModel.CheckOutdatedAsync = async pkg =>
+            {
+                var result = browseViewModel.FindCatalogMatch(pkg);
+                return result;
+            };
+            installedViewModel.ShowCatalogDetailAction = catalogItem =>
+            {
+                browseViewModel.IsUpdateMode = true;
+                browseViewModel.SelectedItem = catalogItem;
+            };
+            installedViewModel.ShowCustomInstallAction = () => ShowMobileCustomInstall(main, packageService, installService);
+            installedViewModel.OpenCustomInstallWithFileAction = filePath =>
+            {
+                ShowMobileCustomInstallWithFile(main, packageService, installService, filePath);
+                return Task.CompletedTask;
+            };
+
             Logger.Info($"Android: MobileMainWindow loaded @ {DateTime.Now:HH:mm:ss.fff}");
 
             // Auto-load catalog on startup (same as desktop)
@@ -1314,6 +1422,22 @@ public partial class App : Application
             }
             catch { return null; }
         };
+        vm.CloseAction = () => main.CloseOverlay();
+        var ciView = new Views.MobileCustomInstallView();
+        ciView.SetViewModel(vm);
+        ciView.CloseRequested += (_, _) => main.CloseOverlay();
+        main.ShowOverlay(ciView);
+    }
+
+    private static void ShowMobileCustomInstallWithFile(
+        Views.MobileMainWindow main,
+        IXboxPackageService packageService,
+        PackageInstallService installService,
+        string filePath)
+    {
+        var vm = new CustomInstallViewModel(packageService, installService);
+        vm.PickFileAsync = () => Task.FromResult<string?>(filePath);
+        vm.PickDependencyFilesAsync = () => Task.FromResult<string[]?>(null);
         vm.CloseAction = () => main.CloseOverlay();
         var ciView = new Views.MobileCustomInstallView();
         ciView.SetViewModel(vm);

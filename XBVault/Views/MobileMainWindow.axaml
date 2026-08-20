@@ -125,15 +125,8 @@
                 Background="{StaticResource BgBrush}">
         <!-- Tab 0: Browse -->
         <views:MobileBrowseView x:Name="BrowseContent"/>
-        <!-- Tab 1: Catalog (placeholder) -->
-        <Border Background="{StaticResource BgBrush}">
-          <TextBlock Text="Catalog"
-                     FontFamily="{StaticResource TitleFont}"
-                     FontSize="24" FontWeight="Bold"
-                     Foreground="{StaticResource TextBrush}"
-                     HorizontalAlignment="Center"
-                     VerticalAlignment="Center"/>
-        </Border>
+        <!-- Tab 1: Installed -->
+        <views:MobileInstalledView x:Name="InstalledContent"/>
         <!-- Tab 2: Explorer (placeholder) -->
         <Border Background="{StaticResource BgBrush}">
           <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
@@ -181,7 +174,7 @@
               <Image x:Name="TabInstalledIcon"
                      Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-installed-32.png"
                      Width="32" Height="32" Stretch="Uniform"/>
-              <TextBlock x:Name="TabInstalledLabel" Text="Catalog"
+              <TextBlock x:Name="TabInstalledLabel" Text="Installed"
                          FontSize="12" FontWeight="SemiBold"
                          FontFamily="{StaticResource BodyFont}"
                          HorizontalAlignment="Center"/>

@@ -51,30 +51,16 @@
                      FontSize="14" FontWeight="SemiBold"/>
         </Border>
 
-        <!-- Diagnostics -->
+        <!-- Quick Actions -->
         <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="16,14">
           <StackPanel Spacing="10">
-            <TextBlock Text="DIAGNOSTICS" FontSize="12" FontWeight="Bold"
+            <TextBlock Text="QUICK ACTIONS" FontSize="12" FontWeight="Bold"
                        Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
             <Button Command="{Binding OpenScreenshotCommand}" Padding="16,14" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
               <Grid ColumnDefinitions="28,*,Auto" ColumnSpacing="12">
                 <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-screenshot-20.png"
                        Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="1" Text="Screenshot" FontSize="15" VerticalAlignment="Center"/>
-              </Grid>
-            </Button>
-            <Button Command="{Binding OpenSystemInfoCommand}" Padding="16,14" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
-              <Grid ColumnDefinitions="28,*,Auto" ColumnSpacing="12">
-                <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-systeminfo-20.png"
-                       Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="System Info" FontSize="15" VerticalAlignment="Center"/>
-              </Grid>
-            </Button>
-            <Button Command="{Binding OpenCrashDataCommand}" Padding="16,14" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
-              <Grid ColumnDefinitions="28,*,Auto" ColumnSpacing="12">
-                <Image Source="avares://XBVault/Assets/Views/ConfirmWindow/fluentui-collision-20.png"
-                       Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="Crash Data" FontSize="15" VerticalAlignment="Center"/>
               </Grid>
             </Button>
             <Button Command="{Binding OpenDevPortalCommand}" Padding="16,14" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
@@ -84,55 +70,11 @@
                 <TextBlock Grid.Column="1" Text="Dev Portal" FontSize="15" VerticalAlignment="Center"/>
               </Grid>
             </Button>
-          </StackPanel>
-        </Border>
-
-        <!-- Management -->
-        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="16,14">
-          <StackPanel Spacing="10">
-            <TextBlock Text="MANAGEMENT" FontSize="12" FontWeight="Bold"
-                       Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
-            <Button Command="{Binding OpenProcessesCommand}" Padding="16,14" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
-              <Grid ColumnDefinitions="28,*,Auto" ColumnSpacing="12">
-                <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-processes-20.png"
-                       Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="Processes" FontSize="15" VerticalAlignment="Center"/>
-              </Grid>
-            </Button>
-            <Button Command="{Binding OpenNetworkInfoCommand}" Padding="16,14" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
-              <Grid ColumnDefinitions="28,*,Auto" ColumnSpacing="12">
-                <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-network-20.png"
-                       Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="Network Info" FontSize="15" VerticalAlignment="Center"/>
-              </Grid>
-            </Button>
-            <Button Command="{Binding OpenPerformanceCommand}" Padding="16,14" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
-              <Grid ColumnDefinitions="28,*,Auto" ColumnSpacing="12">
-                <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-performance-20.png"
-                       Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="Performance" FontSize="15" VerticalAlignment="Center"/>
-              </Grid>
-            </Button>
             <Button Command="{Binding OpenCustomInstallCommand}" Padding="16,14" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
               <Grid ColumnDefinitions="28,*,Auto" ColumnSpacing="12">
                 <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-install-20.png"
                        Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="1" Text="Custom Install" FontSize="15" VerticalAlignment="Center"/>
-              </Grid>
-            </Button>
-          </StackPanel>
-        </Border>
-
-        <!-- External Media -->
-        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="16,14">
-          <StackPanel Spacing="10">
-            <TextBlock Text="EXTERNAL MEDIA" FontSize="12" FontWeight="Bold"
-                       Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
-            <Button Command="{Binding OpenUsbPermissionCommand}" Padding="16,14" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
-              <Grid ColumnDefinitions="28,*,Auto" ColumnSpacing="12">
-                <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-usb-20.png"
-                       Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="Activate USB Media Drive" FontSize="15" VerticalAlignment="Center"/>
               </Grid>
             </Button>
           </StackPanel>
@@ -157,20 +99,54 @@
                 <TextBlock Grid.Column="1" Text="Shutdown Xbox" FontSize="15" Foreground="{StaticResource DangerBrush}" VerticalAlignment="Center"/>
               </Grid>
             </Button>
-            <Button Command="{Binding OpenLoopbackExemptQuickCommand}" Padding="16,14" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
-              <Grid ColumnDefinitions="28,*,Auto" ColumnSpacing="12">
-                <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-xfiles-20.png"
-                       Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="X-Files Enablement" FontSize="15" VerticalAlignment="Center"/>
-              </Grid>
-            </Button>
-            <Button Command="{Binding OpenLoopbackExemptCommand}" Padding="16,14" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
-              <Grid ColumnDefinitions="28,*,Auto" ColumnSpacing="12">
-                <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-loopback-20.png"
-                       Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="Loopback Exempt" FontSize="15" VerticalAlignment="Center"/>
-              </Grid>
-            </Button>
+          </StackPanel>
+        </Border>
+
+        <!-- Coming Soon -->
+        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="16,14" Opacity="0.5">
+          <StackPanel Spacing="10">
+            <TextBlock Text="COMING SOON" FontSize="12" FontWeight="Bold"
+                       Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
+            <Grid ColumnDefinitions="28,*" ColumnSpacing="12" Margin="0,2">
+              <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-systeminfo-20.png"
+                     Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" Opacity="0.5"/>
+              <TextBlock Grid.Column="1" Text="System Info" FontSize="15" VerticalAlignment="Center" Opacity="0.5"/>
+            </Grid>
+            <Grid ColumnDefinitions="28,*" ColumnSpacing="12" Margin="0,2">
+              <Image Source="avares://XBVault/Assets/Views/ConfirmWindow/fluentui-collision-20.png"
+                     Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" Opacity="0.5"/>
+              <TextBlock Grid.Column="1" Text="Crash Data" FontSize="15" VerticalAlignment="Center" Opacity="0.5"/>
+            </Grid>
+            <Grid ColumnDefinitions="28,*" ColumnSpacing="12" Margin="0,2">
+              <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-processes-20.png"
+                     Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" Opacity="0.5"/>
+              <TextBlock Grid.Column="1" Text="Processes" FontSize="15" VerticalAlignment="Center" Opacity="0.5"/>
+            </Grid>
+            <Grid ColumnDefinitions="28,*" ColumnSpacing="12" Margin="0,2">
+              <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-network-20.png"
+                     Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" Opacity="0.5"/>
+              <TextBlock Grid.Column="1" Text="Network Info" FontSize="15" VerticalAlignment="Center" Opacity="0.5"/>
+            </Grid>
+            <Grid ColumnDefinitions="28,*" ColumnSpacing="12" Margin="0,2">
+              <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-performance-20.png"
+                     Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" Opacity="0.5"/>
+              <TextBlock Grid.Column="1" Text="Performance" FontSize="15" VerticalAlignment="Center" Opacity="0.5"/>
+            </Grid>
+            <Grid ColumnDefinitions="28,*" ColumnSpacing="12" Margin="0,2">
+              <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-usb-20.png"
+                     Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" Opacity="0.5"/>
+              <TextBlock Grid.Column="1" Text="USB Media Drive" FontSize="15" VerticalAlignment="Center" Opacity="0.5"/>
+            </Grid>
+            <Grid ColumnDefinitions="28,*" ColumnSpacing="12" Margin="0,2">
+              <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-xfiles-20.png"
+                     Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" Opacity="0.5"/>
+              <TextBlock Grid.Column="1" Text="X-Files Enablement" FontSize="15" VerticalAlignment="Center" Opacity="0.5"/>
+            </Grid>
+            <Grid ColumnDefinitions="28,*" ColumnSpacing="12" Margin="0,2">
+              <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-loopback-20.png"
+                     Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center" Opacity="0.5"/>
+              <TextBlock Grid.Column="1" Text="Loopback Exempt" FontSize="15" VerticalAlignment="Center" Opacity="0.5"/>
+            </Grid>
           </StackPanel>
         </Border>
 
