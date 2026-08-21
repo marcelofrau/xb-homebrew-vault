@@ -34,7 +34,22 @@ public partial class MobileInstalledView : UserControl
 
     private void OnSideloadClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is InstalledViewModel vm)
-            vm.OpenCustomInstallCommand.Execute(null);
+        XBVault.Services.Logger.Info("MobileInstalledView: Sideload button clicked");
+        try
+        {
+            if (DataContext is InstalledViewModel vm)
+            {
+                XBVault.Services.Logger.Info($"MobileInstalledView: DataContext OK, ShowCustomInstallAction is {(vm.ShowCustomInstallAction != null ? "wired" : "NULL")}");
+                vm.OpenCustomInstallCommand.Execute(null);
+            }
+            else
+            {
+                XBVault.Services.Logger.Error($"MobileInstalledView: DataContext is not InstalledViewModel, it is {DataContext?.GetType().Name ?? "null"}");
+            }
+        }
+        catch (Exception ex)
+        {
+            XBVault.Services.Logger.Error(ex, "MobileInstalledView: Sideload click failed");
+        }
     }
 }

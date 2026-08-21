@@ -1381,6 +1381,8 @@ public partial class App : Application
         IXboxPackageService packageService,
         PackageInstallService installService)
     {
+        try
+        {
         var vm = new CustomInstallViewModel(packageService, installService);
         var pickFileFilter = new List<FilePickerFileType>
         {
@@ -1427,6 +1429,11 @@ public partial class App : Application
         ciView.SetViewModel(vm);
         ciView.CloseRequested += (_, _) => main.CloseOverlay();
         main.ShowOverlay(ciView);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "ShowMobileCustomInstall failed");
+        }
     }
 
     private static void ShowMobileCustomInstallWithFile(
