@@ -690,6 +690,57 @@ public partial class InstalledViewModel : ObservableObject
     public Func<InstalledPackage, Task<bool>>? ConfirmUninstallAsync { get; set; }
 
     [RelayCommand]
+    private async Task UninstallPackageAsync(InstalledPackage? pkg)
+    {
+        if (pkg is null) return;
+
+        if (ConfirmUninstallAsync is not null)
+        {
+            var ok = await ConfirmUninstallAsync(pkg);
+            if (!ok) return;
+        }
+
+        IsUninstalling = true;
+        pkg.IsUninstalling = true;
+        Logger.Info($"Uninstalling: {pkg.Name}");
+
+        try
+        {
+            var result = await _packageService.UninstallPackageAsync(pkg.FullName);
+            Logger.Info(result ? $"Uninstall complete: {pkg.Name}" : $"Uninstall failed: {pkg.Name}");
+            await RefreshPackagesAsync();
+        }
+        catch (Exception ex)
+        {
+            pkg.IsUninstalling = false;
+            StatusMessage = "Uninstall failed";
+            Logger.Error(ex, $"Uninstall error: {pkg.Name}");
+        }
+        finally
+        {
+            IsUninstalling = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task UpdatePackageAsync(InstalledPackage? pkg)
+    {
+        if (pkg is null || CheckOutdatedAsync is null || ShowCatalogDetailAction is null)
+            return;
+
+        try
+        {
+            var (match, _) = await CheckOutdatedAsync(pkg);
+            if (match is not null)
+                ShowCatalogDetailAction(match);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"UpdatePackage failed for {pkg.Name}");
+        }
+    }
+
+    [RelayCommand]
     private async Task UninstallSelectedAsync()
     {
         if (SelectedPackage is null) return;
