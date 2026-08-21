@@ -394,8 +394,9 @@
         </StackPanel>
 
         <!-- Buttons: always visible, disabled during operations -->
-        <StackPanel Orientation="Horizontal" Spacing="10">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
           <Button x:Name="CloseBtn"
+                  Grid.Column="0"
                   Classes="Danger"
                   Padding="16,12"
                   HorizontalAlignment="Stretch"
@@ -407,13 +408,14 @@
                        FontSize="14" FontWeight="SemiBold"
                        VerticalAlignment="Center"/>
           </Button>
-          <Button x:Name="CheckBtn"
-                  Padding="16,12"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Command="{Binding CheckInstalledCommand}"
-                  IsEnabled="{Binding CanCheckXboxItem}"
-                  IsVisible="{Binding ShowCheckButton}">
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+            <Button x:Name="CheckBtn"
+                    Padding="16,12"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Command="{Binding CheckInstalledCommand}"
+                    IsEnabled="{Binding CanCheckXboxItem}"
+                    IsVisible="{Binding ShowCheckButton}">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
               <Grid>
                 <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
@@ -493,6 +495,7 @@
             </Grid>
           </Button>
         </StackPanel>
+        </Grid>
 
       </StackPanel>
     </Border>

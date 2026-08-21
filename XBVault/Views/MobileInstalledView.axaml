@@ -272,26 +272,26 @@
                             Margin="0,8,12,8">
                   <!-- Play / Suspend -->
                   <Button Classes="CardAction"
-                          Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).LaunchPackageCommand}"
+                          Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).LaunchPackageCommand}"
                           CommandParameter="{Binding}"
                           IsVisible="{Binding IsRunning, Converter={StaticResource BoolInverse}}"
-                          IsEnabled="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).IsConnected}"
+                          IsEnabled="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).IsConnected}"
                           ToolTip.Tip="Launch">
                     <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-20.png"
                            Width="22" Height="22" Stretch="Uniform"/>
                   </Button>
                   <Button Classes="CardAction"
-                          Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).SuspendPackageCommand}"
+                          Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).SuspendPackageCommand}"
                           CommandParameter="{Binding}"
                           IsVisible="{Binding IsRunning}"
-                          IsEnabled="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).IsConnected}"
+                          IsEnabled="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).IsConnected}"
                           ToolTip.Tip="Suspend">
                     <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-suspend-20.png"
                            Width="22" Height="22" Stretch="Uniform"/>
                   </Button>
                   <!-- Terminate (always visible, enabled only when running) -->
                   <Button Classes="CardDanger"
-                          Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).TerminatePackageCommand}"
+                          Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).TerminatePackageCommand}"
                           CommandParameter="{Binding}"
                           IsEnabled="{Binding IsRunning}"
                           ToolTip.Tip="Terminate">
@@ -308,7 +308,7 @@
                           <StackPanel Width="240" Spacing="1" Margin="0"
                                       Background="Transparent">
                           <Button Classes="HamburgerItem"
-                                  Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).LaunchPackageCommand}"
+                                  Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).LaunchPackageCommand}"
                                   CommandParameter="{Binding}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
                               <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-20.png"
@@ -317,7 +317,7 @@
                             </StackPanel>
                           </Button>
                           <Button Classes="HamburgerItem"
-                                  Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).SuspendPackageCommand}"
+                                  Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).SuspendPackageCommand}"
                                   CommandParameter="{Binding}"
                                   IsVisible="{Binding IsRunning}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -327,7 +327,7 @@
                             </StackPanel>
                           </Button>
                           <Button Classes="HamburgerItem"
-                                  Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).TerminatePackageCommand}"
+                                  Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).TerminatePackageCommand}"
                                   CommandParameter="{Binding}"
                                   IsVisible="{Binding IsRunning}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -338,7 +338,7 @@
                           </Button>
                           <Border Height="1" Background="{StaticResource BorderBrush}" Margin="8,4"/>
                           <Button Classes="HamburgerItem"
-                                  Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).ToggleAutostartCommand}"
+                                  Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).ToggleAutostartCommand}"
                                   CommandParameter="{Binding}"
                                   IsVisible="{Binding IsAutostart, Converter={StaticResource BoolInverse}}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -348,7 +348,7 @@
                             </StackPanel>
                           </Button>
                           <Button Classes="HamburgerItem"
-                                  Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).ToggleAutostartCommand}"
+                                  Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).ToggleAutostartCommand}"
                                   CommandParameter="{Binding}"
                                   IsVisible="{Binding IsAutostart}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -360,7 +360,7 @@
                           </Button>
                           <Border Height="1" Background="{StaticResource BorderBrush}" Margin="8,4"/>
                           <Button Classes="HamburgerItem"
-                                  Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).ToggleIgnoreUpdateCommand}"
+                                  Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).ToggleIgnoreUpdateCommand}"
                                   CommandParameter="{Binding}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
                               <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-ignore-update-16.png"
@@ -370,7 +370,19 @@
                           </Button>
                           <Border Height="1" Background="{StaticResource BorderBrush}" Margin="8,4"/>
                           <Button Classes="HamburgerItem"
-                                  Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).UninstallSelectedCommand}"
+                                  Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).UpdatePackageCommand}"
+                                  CommandParameter="{Binding}"
+                                  IsVisible="{Binding IsOutdated}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                              <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
+                                     Width="20" Height="20" Stretch="Uniform"/>
+                              <TextBlock Text="Update" VerticalAlignment="Center" FontSize="14"
+                                         Foreground="{StaticResource AccentBrush}"/>
+                            </StackPanel>
+                          </Button>
+                          <Button Classes="HamburgerItem"
+                                  Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).UninstallPackageCommand}"
+                                  CommandParameter="{Binding}"
                                   IsVisible="{Binding CanUninstall}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
                               <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
