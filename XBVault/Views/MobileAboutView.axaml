@@ -26,6 +26,24 @@
       <Setter Property="Background" Value="{StaticResource AccentDimBrush}"/>
     </Style>
 
+    <Style Selector="Button.DiscordServerBtn">
+      <Setter Property="Background" Value="#4E56D0"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="14,12"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button.DiscordServerBtn:pointerover">
+      <Setter Property="Background" Value="#5B63E0"/>
+    </Style>
+    <Style Selector="Button.DiscordServerBtn:pressed">
+      <Setter Property="Background" Value="#3D44B8"/>
+    </Style>
+
     <Style Selector="Button.DiscordBtn">
       <Setter Property="Background" Value="#4E56D0"/>
       <Setter Property="Foreground" Value="White"/>
@@ -157,21 +175,21 @@
                   <TextBlock Text="Choose a server to join:"
                              FontSize="12" Foreground="{StaticResource TextMutedBrush}"
                              Margin="6,6,6,0"/>
-                  <Button Classes="ActionBtn" Click="OnDiscordRevives">
+                  <Button Classes="DiscordServerBtn" Click="OnDiscordRevives">
                     <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
                       <Image Source="avares://XBVault/Assets/Views/DiscordPopup/discordpopup-discord-48.png"
                              Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
                       <TextBlock Grid.Column="1" Text="REVIVES COMMUNITY" FontSize="12" VerticalAlignment="Center"/>
                     </Grid>
                   </Button>
-                  <Button Classes="ActionBtn" Click="OnDiscordXboxHub">
+                  <Button Classes="DiscordServerBtn" Click="OnDiscordXboxHub">
                     <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
                       <Image Source="avares://XBVault/Assets/Views/DiscordPopup/discordpopup-discord-48.png"
                              Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
                       <TextBlock Grid.Column="1" Text="XBOX EMULATION HUB" FontSize="12" VerticalAlignment="Center"/>
                     </Grid>
                   </Button>
-                  <Button Classes="ActionBtn" Click="OnDiscordEr">
+                  <Button Classes="DiscordServerBtn" Click="OnDiscordEr">
                     <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
                       <Image Source="avares://XBVault/Assets/Views/DiscordPopup/discordpopup-discord-48.png"
                              Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>

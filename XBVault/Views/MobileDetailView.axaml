@@ -58,12 +58,13 @@
         <!-- Thumbnail with CdSpinner -->
         <Border CornerRadius="12"
                 Background="{StaticResource SurfaceAltBrush}"
-                Height="240"
+                MaxHeight="240"
                 ClipToBounds="True"
                 Margin="0,0,0,16">
           <Grid>
             <Image Source="{Binding SelectedItem.Thumbnail}"
-                   Stretch="UniformToFill"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center"
                    RenderOptions.BitmapInterpolationMode="HighQuality"
                    IsVisible="{Binding SelectedItem.IsThumbnailLoading, Converter={StaticResource BoolInverse}}"/>
             <Border Background="{StaticResource SurfaceAltBrush}"

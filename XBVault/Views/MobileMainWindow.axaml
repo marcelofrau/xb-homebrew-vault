@@ -89,13 +89,6 @@
                   </StackPanel>
                 </Button>
                 <Border Height="1" Background="{StaticResource BorderBrush}" Margin="10,6"/>
-                <Button Classes="HamburgerItem" Click="OnMenuLogs">
-                  <StackPanel Orientation="Horizontal" Spacing="14">
-                    <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-logs-32.png"
-                           Width="24" Height="24" Stretch="Uniform"/>
-                    <TextBlock Text="Logs" VerticalAlignment="Center" FontSize="15"/>
-                  </StackPanel>
-                </Button>
                 <Button Classes="HamburgerItem" Click="OnMenuSettings">
                   <StackPanel Orientation="Horizontal" Spacing="14">
                     <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-settings-32.png"
