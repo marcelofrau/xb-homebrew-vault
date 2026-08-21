@@ -31,4 +31,10 @@ public partial class MobileInstalledView : UserControl
             listBox.SelectedItem = null;
         }
     }
+
+    private void OnSideloadClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is InstalledViewModel vm)
+            vm.OpenCustomInstallCommand.Execute(null);
+    }
 }
