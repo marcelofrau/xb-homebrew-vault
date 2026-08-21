@@ -40,7 +40,7 @@
 
     <!-- Content -->
     <ScrollViewer Grid.Row="0" IsVisible="{Binding ShowContent}">
-      <StackPanel Spacing="12" Margin="16,12" MaxWidth="600" HorizontalAlignment="Center">
+      <StackPanel Spacing="12" Margin="16,12" HorizontalAlignment="Stretch">
 
         <!-- Status banner -->
         <Border IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"

@@ -129,14 +129,14 @@
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="models:CatalogItem">
           <Border Classes="CatalogCard">
-              <Grid RowDefinitions="180,Auto">
+              <Grid RowDefinitions="Auto,Auto">
                 <!-- Row 0: Image with badge overlay -->
                 <Grid Grid.Row="0" ClipToBounds="True">
                   <Border Background="{StaticResource SurfaceAltBrush}">
                     <Panel>
                       <Image Source="{Binding Thumbnail}"
-                             Stretch="UniformToFill"
-                             HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                             Stretch="Uniform"
+                             HorizontalAlignment="Center"
                              RenderOptions.BitmapInterpolationMode="MediumQuality"
                              IsVisible="{Binding IsThumbnailLoading, Converter={StaticResource BoolInverse}}"/>
                       <Border Background="{StaticResource SurfaceAltBrush}"

@@ -198,7 +198,7 @@
       <ListBox x:Name="PackageListBox"
                ItemsSource="{Binding Packages}"
                IsVisible="{Binding ShowGrid}"
-               Background="Transparent"
+               Background="{StaticResource BgBrush}"
                BorderThickness="0"
                Padding="0"
                Margin="0"
@@ -216,7 +216,7 @@
                   <Panel>
                     <Border Background="{StaticResource SurfaceAltBrush}" Width="120" Height="120">
                       <Image Source="{Binding BannerImage}"
-                             Stretch="UniformToFill"
+                             Stretch="Uniform"
                              Width="120" Height="120"
                              RenderOptions.BitmapInterpolationMode="MediumQuality"/>
                     </Border>
@@ -304,9 +304,9 @@
                     <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-menu-16.png"
                            Width="22" Height="22" Stretch="Uniform"/>
                     <Button.Flyout>
-                      <Flyout Placement="BottomEdgeAlignedRight">
-                        <StackPanel Width="240" Spacing="2" Margin="6"
-                                    Background="{StaticResource SurfaceAltBrush}">
+                        <Flyout Placement="BottomEdgeAlignedRight">
+                          <StackPanel Width="240" Spacing="1" Margin="0"
+                                      Background="Transparent">
                           <Button Classes="HamburgerItem"
                                   Command="{Binding $parent[ListBoxItem].((vm:InstalledViewModel)DataContext).LaunchPackageCommand}"
                                   CommandParameter="{Binding}">

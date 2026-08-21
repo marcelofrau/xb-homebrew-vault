@@ -159,7 +159,12 @@ public partial class MobileMainWindow : UserControl
         XBVault.Services.Logger.Info("Android: Connection icon clicked");
         if (DataContext is MainViewModel vm)
         {
-            if (!SettingsService.Current.WizardCompleted && !SettingsService.Current.XboxConnection.IsConfigured)
+            if (vm.IsXboxConnected)
+            {
+                XBVault.Services.Logger.Info("Android: Connected, disconnecting");
+                vm.DisconnectCommand.Execute(null);
+            }
+            else if (!SettingsService.Current.WizardCompleted && !SettingsService.Current.XboxConnection.IsConfigured)
             {
                 XBVault.Services.Logger.Info("Android: Not configured, opening setup wizard");
                 ShowSetupWizard();
