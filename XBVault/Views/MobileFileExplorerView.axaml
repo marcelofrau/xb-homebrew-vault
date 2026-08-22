@@ -26,6 +26,23 @@
     <Style Selector="Button.ToolBtn:pointerover">
       <Setter Property="Background" Value="#229ACA3C"/>
     </Style>
+    <Style Selector="Button.ToolBtn:disabled">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="MenuFlyoutPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="Padding" Value="4"/>
+    </Style>
+    <Style Selector="MenuItem">
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+      <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+      <Setter Property="Padding" Value="12,10"/>
+      <Setter Property="MinHeight" Value="44"/>
+    </Style>
 
     <Style Selector="ListBoxItem">
       <Setter Property="Padding" Value="12,10"/>
@@ -145,13 +162,13 @@
               <MenuItem Header="Show All Drives">
                 <MenuItem.Template>
                   <ControlTemplate>
-                    <Border Padding="12,10" Background="Transparent">
+                    <Border Padding="4,2" Background="Transparent">
                       <StackPanel Orientation="Horizontal" Spacing="10">
+                        <CheckBox IsChecked="{Binding ShowAllDrives}" VerticalAlignment="Center"/>
                         <Image Width="24" Height="24" Stretch="Uniform"
                                Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-drives-40.png"/>
                         <TextBlock Text="Show All Drives" FontSize="15" VerticalAlignment="Center"
                                    Foreground="{StaticResource TextBrush}"/>
-                        <CheckBox IsChecked="{Binding ShowAllDrives}" Margin="8,0,0,0" VerticalAlignment="Center"/>
                       </StackPanel>
                     </Border>
                   </ControlTemplate>

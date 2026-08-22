@@ -305,6 +305,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     {
         Logger.Trace($"OnSelectedEntryChanged: '{value?.FullPath ?? "null"}'");
         OnPropertyChanged(nameof(HasSelectedEntry));
+        OnPropertyChanged(nameof(CanDownloadMultiple));
     }
 
     partial void OnCurrentPathChanged(string value)
