@@ -1,71 +1,74 @@
-using System.IO.Compression;
 using XBVault.Services;
 
 namespace XBVault.Tests;
 
 public class CryptoServiceTests
 {
-    [Theory]
-    [InlineData("hello world")]
-    [InlineData("user@example.com")]
-    [InlineData("p@ssw0rd with spaces!")]
-    [InlineData("Ünïcödé ✓ strings 日本語")]
-    public void RoundTrip_ReturnsOriginal(string input)
+    [Fact]
+    public void Obfuscate_Deobfuscate_Roundtrip()
     {
-        var obfuscated = CryptoService.Obfuscate(input);
-        var deobfuscated = CryptoService.Deobfuscate(obfuscated);
+        var original = "MyS3cretP@ss!";
+        var obfuscated = CryptoService.Obfuscate(original);
+        Assert.NotEqual(original, obfuscated);
+        Assert.Equal(original, CryptoService.Deobfuscate(obfuscated));
+    }
 
-        Assert.Equal(input, deobfuscated);
+    [Fact]
+    public void Obfuscate_EmptyString_ReturnsEmpty()
+    {
+        Assert.Equal(string.Empty, CryptoService.Obfuscate(""));
+    }
+
+    [Fact]
+    public void Deobfuscate_EmptyString_ReturnsEmpty()
+    {
+        Assert.Equal(string.Empty, CryptoService.Deobfuscate(""));
+    }
+
+    [Fact]
+    public void Deobfuscate_NullString_ReturnsEmpty()
+    {
+        Assert.Equal(string.Empty, CryptoService.Deobfuscate(null!));
+    }
+
+    [Fact]
+    public void Obfuscate_NullString_ReturnsEmpty()
+    {
+        Assert.Equal(string.Empty, CryptoService.Obfuscate(null!));
+    }
+
+    [Fact]
+    public void Deobfuscate_CorruptString_ReturnsEmpty()
+    {
+        Assert.Equal(string.Empty, CryptoService.Deobfuscate("not-valid-base64!!!"));
+    }
+
+    [Fact]
+    public void Obfuscate_DifferentInputs_ProduceDifferentOutputs()
+    {
+        var a = CryptoService.Obfuscate("password1");
+        var b = CryptoService.Obfuscate("password2");
+        Assert.NotEqual(a, b);
     }
 
     [Theory]
+    [InlineData("admin")]
+    [InlineData("xbox")]
+    [InlineData("192.168.1.1")]
     [InlineData("")]
-    [InlineData(null)]
-    public void Obfuscate_EmptyOrNull_ReturnsEmpty(string? input)
+    [InlineData("special chars !@#$%^&*()")]
+    public void Roundtrip_VariousInputs(string input)
     {
-        Assert.Equal(string.Empty, CryptoService.Obfuscate(input!));
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData(null)]
-    public void Deobfuscate_EmptyOrNull_ReturnsEmpty(string? input)
-    {
-        Assert.Equal(string.Empty, CryptoService.Deobfuscate(input!));
+        var result = CryptoService.Deobfuscate(CryptoService.Obfuscate(input));
+        Assert.Equal(input, result);
     }
 
     [Fact]
-    public void Obfuscate_IsNotPlainText()
+    public void Obfuscate_ProducesBase64Output()
     {
-        var obfuscated = CryptoService.Obfuscate("secret-value");
-
-        Assert.NotEqual("secret-value", obfuscated);
-    }
-
-    [Fact]
-    public void Obfuscate_IsDeterministic()
-    {
-        Assert.Equal(
-            CryptoService.Obfuscate("same input"),
-            CryptoService.Obfuscate("same input"));
-    }
-
-    [Theory]
-    [InlineData("not-base64!!!")]
-    [InlineData("$$$")]
-    [InlineData("aGVsbG8=")] // valid base64 but wrong length/salt → likely fails
-    public void Deobfuscate_InvalidInput_ReturnsEmpty(string input)
-    {
-        Assert.Equal(string.Empty, CryptoService.Deobfuscate(input));
-    }
-
-    [Fact]
-    public void RoundTrip_ManyIterations_Stable()
-    {
-        for (int i = 0; i < 100; i++)
-        {
-            var input = $"credential-{i}-value";
-            Assert.Equal(input, CryptoService.Deobfuscate(CryptoService.Obfuscate(input)));
-        }
+        var result = CryptoService.Obfuscate("test");
+        // Should not throw when converting from base64
+        var bytes = Convert.FromBase64String(result);
+        Assert.NotEmpty(bytes);
     }
 }

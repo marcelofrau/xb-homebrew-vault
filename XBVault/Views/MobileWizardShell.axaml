@@ -16,35 +16,40 @@
 
   <Grid RowDefinitions="Auto,Auto,*,Auto">
 
-    <!-- Row 0: Title bar with back arrow -->
+    <!-- Row 0: Title bar — icon on step 0, back button on steps 1+ -->
     <views:MobileTitleBar Grid.Row="0"
                            x:Name="TitleBar"
-                           ShowAppIcon="False"
-                           ShowBackButton="True"/>
+                           ShowAppIcon="True"
+                           ShowBackButton="False"
+                           MinHeight="48"/>
 
     <!-- Row 1: Wizard title + step indicators -->
     <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}">
       <StackPanel Spacing="0">
 
-        <!-- Step title area -->
-        <Border Background="{StaticResource SurfaceAltBrush}" Padding="0,16,0,12">
-          <StackPanel HorizontalAlignment="Center" Spacing="8">
-            <Image x:Name="WizardStepIcon"
-                   Width="64" Height="64"
-                   Stretch="Uniform"
-                   HorizontalAlignment="Center"/>
-            <TextBlock x:Name="WizardStepTitle"
-                       FontSize="18" FontWeight="Bold"
-                       Foreground="{StaticResource TextBrush}"
-                       HorizontalAlignment="Center"/>
-            <TextBlock x:Name="WizardStepSubtitle"
-                       FontSize="13"
-                       Foreground="{StaticResource TextMutedBrush}"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap"
-                       MaxWidth="320"
-                       TextAlignment="Center"/>
-          </StackPanel>
+        <!-- Step title area with bokeh hero background -->
+        <Border Padding="0,16,0,12">
+          <Panel>
+            <Image Source="avares://XBVault/Assets/Themes/wizard-hero-bg.png"
+                   Stretch="UniformToFill" Opacity="0.9"/>
+            <StackPanel HorizontalAlignment="Center" Spacing="8" Margin="0,4">
+              <Image x:Name="WizardStepIcon"
+                     Width="64" Height="64"
+                     Stretch="Uniform"
+                     HorizontalAlignment="Center"/>
+              <TextBlock x:Name="WizardStepTitle"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{StaticResource TextBrush}"
+                         HorizontalAlignment="Center"/>
+              <TextBlock x:Name="WizardStepSubtitle"
+                         FontSize="13"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap"
+                         MaxWidth="320"
+                         TextAlignment="Center"/>
+            </StackPanel>
+          </Panel>
         </Border>
 
         <!-- Step indicator pills -->

@@ -121,12 +121,17 @@
                            Foreground="{StaticResource TextMutedBrush}"/>
                 <TextBox PlaceholderText="192.168.1.100"
                          Text="{Binding Address}"/>
+                <TextBlock Text="{Binding AddressError}"
+                           Foreground="{StaticResource DangerBrush}"
+                           FontSize="11"
+                           IsVisible="{Binding AddressError, Converter={StaticResource StringNotEmpty}}"/>
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="4">
                 <TextBlock Text="Port"
                            FontSize="12"
                            Foreground="{StaticResource TextMutedBrush}"/>
-                <TextBox PlaceholderText="11443"
+                <TextBox x:Name="PortTextBox"
+                         PlaceholderText="11443"
                          Text="{Binding Port}"/>
                 <TextBlock Text="{Binding PortError}"
                            Foreground="{StaticResource DangerBrush}"

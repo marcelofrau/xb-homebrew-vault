@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using XBVault.Helpers;
 using XBVault.Models;
 using XBVault.Services;
 
@@ -101,6 +102,14 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private string _address = string.Empty;
+
+    partial void OnAddressChanged(string value)
+    {
+        ValidateAddress();
+    }
+
+    [ObservableProperty]
+    private string _addressError = string.Empty;
 
     [ObservableProperty]
     private string _port = "11443";
@@ -256,6 +265,11 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
+    private void ValidateAddress()
+    {
+        AddressError = XBVault.Helpers.NetworkValidationHelper.ValidateAddress(Address);
+    }
+
     private void ValidatePort()
     {
         if (string.IsNullOrWhiteSpace(Port))
@@ -324,10 +338,11 @@ public partial class SettingsViewModel : ObservableObject
 
         if (wantsConnection)
         {
-            if (string.IsNullOrWhiteSpace(Address))
+            var addressError = XBVault.Helpers.NetworkValidationHelper.ValidateAddress(Address);
+            if (!string.IsNullOrEmpty(addressError))
             {
-                ConnectionStatus = "Address is required";
-                Logger.Warn("Save aborted: address empty");
+                ConnectionStatus = addressError;
+                Logger.Warn($"Save aborted: {addressError}");
                 return;
             }
 
@@ -343,6 +358,13 @@ public partial class SettingsViewModel : ObservableObject
                 if (string.IsNullOrWhiteSpace(PortError))
                     ConnectionStatus = "Port must be 1-65535";
                 Logger.Warn("Save aborted: invalid port");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Password))
+            {
+                ConnectionStatus = "Password is required";
+                Logger.Warn("Save aborted: password empty");
                 return;
             }
 

@@ -120,26 +120,8 @@
         <views:MobileBrowseView x:Name="BrowseContent"/>
         <!-- Tab 1: Installed -->
         <views:MobileInstalledView x:Name="InstalledContent"/>
-        <!-- Tab 2: Explorer (placeholder) -->
-        <Border Background="{StaticResource BgBrush}">
-          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
-            <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-xfiles-20.png"
-                   Width="48" Height="48" Stretch="Uniform" Opacity="0.4"
-                   HorizontalAlignment="Center"/>
-            <TextBlock Text="File Explorer"
-                       FontFamily="{StaticResource TitleFont}"
-                       FontSize="20" FontWeight="Bold"
-                       Foreground="{StaticResource TextBrush}"
-                       HorizontalAlignment="Center"/>
-            <TextBlock Text="Coming soon — browse and manage files on your Xbox"
-                       FontSize="13"
-                       Foreground="{StaticResource TextMutedBrush}"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap"
-                       MaxWidth="260"
-                       TextAlignment="Center"/>
-          </StackPanel>
-        </Border>
+        <!-- Tab 2: Explorer -->
+        <views:MobileFileExplorerView x:Name="ExplorerContent"/>
         <!-- Tab 3: Tools -->
         <views:MobileToolsView x:Name="ToolsContent"/>
       </Carousel>

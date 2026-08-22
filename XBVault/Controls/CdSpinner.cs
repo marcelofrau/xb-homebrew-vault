@@ -14,11 +14,21 @@ public class CdSpinner : Grid
     private static readonly List<CdSpinner> _activeSpinners = [];
     private static readonly DispatcherTimer _sharedTimer = new()
     {
-        Interval = TimeSpan.FromMilliseconds(16)
+        Interval = TimeSpan.FromMilliseconds(12)
     };
 
     private readonly RotateTransform _rotate = new();
+    private readonly TextBlock _loadingText;
     private double _angle;
+
+    public static readonly StyledProperty<string> StatusTextProperty =
+        AvaloniaProperty.Register<CdSpinner, string>(nameof(StatusText), "Loading...");
+
+    public string StatusText
+    {
+        get => GetValue(StatusTextProperty);
+        set => SetValue(StatusTextProperty, value);
+    }
 
     public CdSpinner()
     {
@@ -41,7 +51,7 @@ public class CdSpinner : Grid
             RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
         };
 
-        var loadingText = new TextBlock
+        _loadingText = new TextBlock
         {
             Text = "Loading...",
             FontSize = 11,
@@ -52,9 +62,15 @@ public class CdSpinner : Grid
         };
 
         Grid.SetRow(cd, 0);
-        Grid.SetRow(loadingText, 1);
+        Grid.SetRow(_loadingText, 1);
         Children.Add(cd);
-        Children.Add(loadingText);
+        Children.Add(_loadingText);
+
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == StatusTextProperty)
+                _loadingText.Text = StatusText;
+        };
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)

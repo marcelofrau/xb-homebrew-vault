@@ -1,5 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using XBVault.Services;
 using XBVault.ViewModels;
 
@@ -50,6 +53,23 @@ public partial class MobileInstalledView : UserControl
         catch (Exception ex)
         {
             XBVault.Services.Logger.Error(ex, "MobileInstalledView: Sideload click failed");
+        }
+    }
+
+    private void OnHamburgerItemClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Visual visual)
+        {
+            var current = visual.GetVisualParent();
+            while (current != null)
+            {
+                if (current is Popup popup)
+                {
+                    popup.IsOpen = false;
+                    return;
+                }
+                current = (current as Visual)?.GetVisualParent();
+            }
         }
     }
 }

@@ -69,7 +69,7 @@
                          IsVisible="{Binding IsRunning}"/>
             </Grid>
             <Border Grid.Row="1"
-                    Background="#0D0D14"
+                    Background="{StaticResource BgBrush}"
                     CornerRadius="4"
                     Padding="8,6">
               <ScrollViewer x:Name="OutputScroll"

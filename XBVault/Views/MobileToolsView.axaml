@@ -17,26 +17,28 @@
   <Grid RowDefinitions="*">
 
     <!-- Disconnected state -->
-    <StackPanel Grid.Row="0"
-                IsVisible="{Binding ShowDisconnected}"
-                HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-      <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-disconnected-64.png"
-             Width="64" Height="64" Stretch="Uniform"
-             HorizontalAlignment="Center" Opacity="0.6"/>
-      <TextBlock Text="Not connected" FontSize="16" FontWeight="SemiBold"
-                 Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-      <TextBlock Text="Connect to access Xbox tools"
-                 FontSize="13" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
-      <Button Command="{Binding ConnectCommand}"
-              Padding="20,12" FontSize="15"
-              HorizontalAlignment="Center">
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
-                 Width="22" Height="22" Stretch="Uniform"/>
-          <TextBlock Text="Connect" VerticalAlignment="Center"/>
-        </StackPanel>
-      </Button>
-    </StackPanel>
+    <Border Grid.Row="0"
+            IsVisible="{Binding ShowDisconnected}"
+            Background="{StaticResource BgBrush}">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+        <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-disconnected-64.png"
+               Width="64" Height="64" Stretch="Uniform"
+               HorizontalAlignment="Center" Opacity="0.6"/>
+        <TextBlock Text="Not connected" FontSize="16" FontWeight="SemiBold"
+                   Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+        <TextBlock Text="Connect to access Xbox tools"
+                   FontSize="13" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
+        <Button Command="{Binding ConnectCommand}"
+                Padding="20,12" FontSize="15"
+                HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                   Width="22" Height="22" Stretch="Uniform"/>
+            <TextBlock Text="Connect" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Border>
 
     <!-- Content -->
     <ScrollViewer Grid.Row="0" IsVisible="{Binding ShowContent}">

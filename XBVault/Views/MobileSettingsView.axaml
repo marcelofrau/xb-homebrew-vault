@@ -74,14 +74,20 @@
 
             <StackPanel Spacing="4">
               <TextBlock Text="Address" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-              <TextBox PlaceholderText="192.168.1.100" Text="{Binding Address}" FontSize="15"/>
+              <TextBox x:Name="AddressBox" PlaceholderText="192.168.1.100" Text="{Binding Address}" FontSize="15"
+                       BorderBrush="{StaticResource AccentBrush}"/>
+              <TextBlock x:Name="AddressError" Text="" Foreground="{StaticResource DangerBrush}"
+                         FontSize="12" IsVisible="False" Margin="0,-4,0,0"/>
             </StackPanel>
 
             <StackPanel Spacing="4">
               <TextBlock Text="Port" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-              <TextBox PlaceholderText="11443" Text="{Binding Port}" FontSize="15"/>
-              <TextBlock Text="{Binding PortError}" Foreground="{StaticResource DangerBrush}"
-                         FontSize="12" IsVisible="{Binding PortError, Converter={StaticResource StringNotEmpty}}"/>
+              <TextBox x:Name="PortBox" PlaceholderText="11443" Text="{Binding Port}" FontSize="15"
+                       BorderBrush="{StaticResource AccentBrush}" AcceptsReturn="False"
+                       IsTabStop="True"/>
+              <TextBlock x:Name="PortError" Text="{Binding PortError}" Foreground="{StaticResource DangerBrush}"
+                         FontSize="12" IsVisible="{Binding PortError, Converter={StaticResource StringNotEmpty}}"
+                         Margin="0,-4,0,0"/>
             </StackPanel>
 
             <CheckBox IsChecked="{Binding UseHttps}"
@@ -91,13 +97,19 @@
 
             <StackPanel Spacing="4">
               <TextBlock Text="Username" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-              <TextBox PlaceholderText="Dev Mode username" Text="{Binding Username}" FontSize="15"/>
+              <TextBox x:Name="UsernameBox" PlaceholderText="Dev Mode username" Text="{Binding Username}" FontSize="15"
+                       BorderBrush="{StaticResource AccentBrush}"/>
+              <TextBlock x:Name="UsernameError" Text="" Foreground="{StaticResource DangerBrush}"
+                         FontSize="12" IsVisible="False" Margin="0,-4,0,0"/>
             </StackPanel>
 
             <StackPanel Spacing="4">
               <TextBlock Text="Password" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-              <TextBox PlaceholderText="Dev Mode password" Text="{Binding Password}"
-                       PasswordChar="●" FontSize="15"/>
+              <TextBox x:Name="PasswordBox" PlaceholderText="Dev Mode password" Text="{Binding Password}"
+                       PasswordChar="●" FontSize="15"
+                       BorderBrush="{StaticResource AccentBrush}"/>
+              <TextBlock x:Name="PasswordError" Text="" Foreground="{StaticResource DangerBrush}"
+                         FontSize="12" IsVisible="False" Margin="0,-4,0,0"/>
             </StackPanel>
 
             <Separator Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>

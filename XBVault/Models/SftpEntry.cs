@@ -47,6 +47,10 @@ public class SftpEntry : INotifyPropertyChanged
 
     private static readonly Dictionary<string, Bitmap> _iconCache = [];
 
+    public static string IconViewFolder { get; set; } = "FileExplorerView";
+    public static string IconSizeSuffix { get; set; } = "24";
+    public static string IconFilePrefix { get; set; } = "fileexplorer";
+
     private Bitmap? _iconPath;
     private Bitmap? _treeIconPath;
 
@@ -68,7 +72,7 @@ public class SftpEntry : INotifyPropertyChanged
     {
         get
         {
-            _iconPath ??= LoadIcon(IsDirectory ? "folder" : GetFileIconName());
+            _iconPath ??= LoadIcon(IconName ?? (IsDrive ? "drive" : IsDirectory ? "folder" : GetFileIconName()));
             return _iconPath;
         }
     }
@@ -133,14 +137,15 @@ public class SftpEntry : INotifyPropertyChanged
 
     private static Bitmap LoadIcon(string name)
     {
-        if (_iconCache.TryGetValue(name, out var cached))
+        var cacheKey = $"{IconViewFolder}/{IconFilePrefix}-{name}-{IconSizeSuffix}";
+        if (_iconCache.TryGetValue(cacheKey, out var cached))
         {
             return cached;
         }
 
-        var uri = $"avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-{name}-24.png";
+        var uri = $"avares://XBVault/Assets/Views/{IconViewFolder}/{IconFilePrefix}-{name}-{IconSizeSuffix}.png";
         var bitmap = new Bitmap(AssetLoader.Open(new Uri(uri)));
-        _iconCache[name] = bitmap;
+        _iconCache[cacheKey] = bitmap;
         return bitmap;
     }
 

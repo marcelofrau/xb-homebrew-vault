@@ -67,6 +67,10 @@ public class MainActivity : AvaloniaMainActivity
             {
                 Log.Warn(TAG, "Suppressed TopLevelImpl NRE from AppDomain.UnhandledException");
             }
+            else
+            {
+                Log.Error(TAG, $"AppDomain unhandled exception: {e.ExceptionObject}");
+            }
         };
 
         TaskScheduler.UnobservedTaskException += (_, e) =>
@@ -74,8 +78,12 @@ public class MainActivity : AvaloniaMainActivity
             if (IsTopLevelNre(e.Exception))
             {
                 Log.Warn(TAG, "Suppressed TopLevelImpl NRE from UnobservedTaskException");
-                e.SetObserved();
             }
+            else
+            {
+                Log.Error(TAG, $"Unobserved task exception: {e.Exception}");
+            }
+            e.SetObserved();
         };
     }
 

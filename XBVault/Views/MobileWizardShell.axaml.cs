@@ -31,10 +31,8 @@ public partial class MobileWizardShell : UserControl
         InitializeComponent();
         TitleBar.BackClicked += (_, _) =>
         {
-            if (_currentStep > 0)
-                BackRequested?.Invoke(this, EventArgs.Empty);
-            else
-                CancelRequested?.Invoke(this, EventArgs.Empty);
+            // Back button in title bar always closes the wizard
+            CancelRequested?.Invoke(this, EventArgs.Empty);
         };
     }
 
@@ -139,9 +137,12 @@ public partial class MobileWizardShell : UserControl
 
     public void SetWizardTitle(string title) => TitleBar.Title = title;
 
-    public void SetStepHero(string iconName, string title, string subtitle)
+    public void SetStepHero(string iconName, string title, string subtitle, string? folderOverride = null)
     {
-        var stream = AssetLoader.Open(new Uri($"{AssetsBase}{iconName}"));
+        var baseUri = folderOverride is not null
+            ? $"avares://XBVault/Assets/Views/{folderOverride}/"
+            : AssetsBase.ToString();
+        var stream = AssetLoader.Open(new Uri($"{baseUri}{iconName}"));
         WizardStepIcon.Source = new Avalonia.Media.Imaging.Bitmap(stream);
         WizardStepIcon.IsVisible = true;
         WizardStepTitle.Text = title;
@@ -170,6 +171,10 @@ public partial class MobileWizardShell : UserControl
         PrevBtnLabel.Text = stepIndex == 0 ? "Cancel" : "Previous";
         PrevBtn.Classes.Clear();
         PrevBtn.Classes.Add("Danger");
+
+        // Step 0: show app icon, hide back button
+        // Steps 1+: hide app icon, show back button
+        TitleBar.ShowAppIcon = stepIndex == 0;
         TitleBar.ShowBackButton = stepIndex > 0;
 
         for (var i = 0; i < _stepIndicators.Count; i++)

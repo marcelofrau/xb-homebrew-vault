@@ -36,7 +36,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     private readonly IXboxPackageService _packageService;
     private readonly PackageOverrideService _overrideService;
     private readonly VersionCheckerService _versionChecker;
-    private readonly Action<string> _openUrlAction = OpenUrl;
+    public Action<string> OpenUrlAction { get; set; } = OpenUrl;
     private List<CatalogItem> _allItems = [];
 
     public Action<CatalogItem>? ShowDetailAction { get; set; }
@@ -464,7 +464,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             Logger.Warn("VisitSite called but no URL");
             return;
         }
-        _openUrlAction(url);
+        OpenUrlAction(url);
     }
 
     [RelayCommand]
@@ -475,7 +475,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             Logger.Warn("OpenLink called with empty URL");
             return;
         }
-        _openUrlAction(url);
+        OpenUrlAction(url);
     }
 
     private static void OpenUrl(string url)
@@ -556,7 +556,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         InstallResultMessage = null;
         InstallProgress = 0;
         PackageProgress = 0;
-        InstallStatus = "";
+        InstallStatus = "Preparing download...";
         PackageStatus = "";
         CurrentFile = "";
         Logger.Info($"Install starting: {itemName} from {itemUrl}");

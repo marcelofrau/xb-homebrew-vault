@@ -14,10 +14,7 @@
 
   <Grid ClipToBounds="True">
     <Grid.Background>
-      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-        <GradientStop Color="#447F3E" Offset="0"/>
-        <GradientStop Color="#9ACA3C" Offset="1"/>
-      </LinearGradientBrush>
+      <StaticResource ResourceKey="TitleGradient"/>
     </Grid.Background>
     <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
 

@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -19,6 +21,10 @@ public partial class MobileSetupWizardView : UserControl
     private readonly CheckBox _httpsCheck;
     private readonly TextBox _usernameBox;
     private readonly TextBox _passwordBox;
+    private TextBlock _addressError = null!;
+    private TextBlock _portError = null!;
+    private TextBlock _usernameError = null!;
+    private TextBlock _passwordError = null!;
 
     private readonly StackPanel _step0Content;
     private readonly StackPanel _step1Content;
@@ -40,7 +46,15 @@ public partial class MobileSetupWizardView : UserControl
         InitializeComponent();
 
         _addressBox = MakeTextBox("e.g. 192.168.1.100");
+        _addressBox.TextChanged += (_, _) => UpdateNextEnabled();
+        _addressBox.TextChanged += (_, _) => ValidateAddress();
+
         _portBox = MakeTextBox("11443");
+        _portBox.TextChanged += (_, _) => UpdateNextEnabled();
+        _portBox.TextChanged += (_, _) => ValidatePort();
+        _portBox.TextChanged += OnPortTextChanged;
+        _portBox.KeyDown += OnPortKeyDown;
+
         _httpsCheck = new CheckBox
         {
             Content = "Use HTTPS (recommended)",
@@ -50,7 +64,11 @@ public partial class MobileSetupWizardView : UserControl
             IsChecked = true,
             Margin = new Thickness(0, 4, 0, 0)
         };
+
         _usernameBox = MakeTextBox("e.g. DevPortalUser");
+        _usernameBox.TextChanged += (_, _) => UpdateNextEnabled();
+        _usernameBox.TextChanged += (_, _) => ValidateUsername();
+
         _passwordBox = new TextBox
         {
             PlaceholderText = "Password",
@@ -59,6 +77,8 @@ public partial class MobileSetupWizardView : UserControl
             PasswordChar = '*',
             Margin = new Thickness(0, 4, 0, 0)
         };
+        _passwordBox.TextChanged += (_, _) => UpdateNextEnabled();
+        _passwordBox.TextChanged += (_, _) => ValidatePassword();
 
         _step0Content = BuildStep0();
         _step1Content = BuildStep1();
@@ -84,13 +104,98 @@ public partial class MobileSetupWizardView : UserControl
         Wizard.InitSteps("Setup Wizard", ["Welcome", "Console", "Auth", "Ready"]);
         Wizard.SetWizardTitle("Setup Wizard");
 
-        _addressBox.TextChanged += (_, _) => UpdateNextEnabled();
-        _portBox.TextChanged += (_, _) => UpdateNextEnabled();
-        _usernameBox.TextChanged += (_, _) => UpdateNextEnabled();
-        _passwordBox.TextChanged += (_, _) => UpdateNextEnabled();
         _httpsCheck.PropertyChanged += (_, _) => UpdateNextEnabled();
 
         NavigateToStep(0);
+    }
+
+    // ── Field validation ──────────────────────────────────────────────
+    private void ValidateAddress()
+    {
+        var error = XBVault.Helpers.NetworkValidationHelper.ValidateAddress(_addressBox.Text);
+        SetFieldInvalid(_addressBox, _addressError, error);
+    }
+
+    private void ValidatePort()
+    {
+        var text = _portBox.Text ?? "";
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            SetFieldInvalid(_portBox, _portError, "Port is required");
+            return;
+        }
+        if (!int.TryParse(text, out var portVal) || portVal < 1 || portVal > 65535)
+        {
+            SetFieldInvalid(_portBox, _portError, "Must be 1-65535");
+            return;
+        }
+        SetFieldInvalid(_portBox, _portError, "");
+    }
+
+    private void ValidateUsername()
+    {
+        var valid = !string.IsNullOrWhiteSpace(_usernameBox.Text);
+        SetFieldInvalid(_usernameBox, _usernameError, valid ? "" : "Username is required");
+    }
+
+    private void ValidatePassword()
+    {
+        var valid = !string.IsNullOrWhiteSpace(_passwordBox.Text);
+        SetFieldInvalid(_passwordBox, _passwordError, valid ? "" : "Password is required");
+    }
+
+    private static void SetFieldInvalid(TextBox box, TextBlock errorBlock, string error)
+    {
+        var hasError = !string.IsNullOrEmpty(error);
+        errorBlock.Text = error;
+        errorBlock.IsVisible = hasError;
+        box.BorderBrush = hasError
+            ? new SolidColorBrush(Color.Parse("#E74C3C"))
+            : (IBrush)Application.Current!.FindResource("AccentBrush")!;
+    }
+
+    private static void OnPortKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox tb) return;
+        var key = e.Key;
+        if (key is Key.D0 or Key.D1 or Key.D2 or Key.D3 or Key.D4
+            or Key.D5 or Key.D6 or Key.D7 or Key.D8 or Key.D9
+            or Key.NumPad0 or Key.NumPad1 or Key.NumPad2 or Key.NumPad3 or Key.NumPad4
+            or Key.NumPad5 or Key.NumPad6 or Key.NumPad7 or Key.NumPad8 or Key.NumPad9
+            or Key.Back or Key.Delete or Key.Left or Key.Right or Key.Tab
+            or Key.Home or Key.End)
+            return;
+
+        if (key is Key.A && (e.KeyModifiers & KeyModifiers.Control) != 0) return;
+        if (key is Key.C && (e.KeyModifiers & KeyModifiers.Control) != 0) return;
+        if (key is Key.V && (e.KeyModifiers & KeyModifiers.Control) != 0) return;
+        if (key is Key.X && (e.KeyModifiers & KeyModifiers.Control) != 0) return;
+
+        e.Handled = true;
+    }
+
+    private static void OnPortTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox tb) return;
+        var text = tb.Text ?? "";
+        var cleaned = new string(text.Where(char.IsDigit).ToArray());
+        if (text != cleaned)
+        {
+            tb.Text = cleaned;
+            tb.CaretIndex = cleaned.Length;
+        }
+    }
+
+    private bool AreCurrentFieldsValid()
+    {
+        var step = _vm?.CurrentStep ?? 0;
+        if (step == 1)
+            return NetworkValidationHelper.ValidateAddress(_addressBox.Text) == string.Empty
+                && int.TryParse(_portBox.Text, out var p) && p >= 1 && p <= 65535;
+        if (step == 2)
+            return !string.IsNullOrWhiteSpace(_usernameBox.Text)
+                && !string.IsNullOrWhiteSpace(_passwordBox.Text);
+        return true;
     }
 
     // ── Build step content once ──────────────────────────────────────
@@ -173,8 +278,12 @@ public partial class MobileSetupWizardView : UserControl
         var cardContent = new StackPanel { Spacing = 12 };
         cardContent.Children.Add(MakeFieldLabel("IP Address"));
         cardContent.Children.Add(_addressBox);
+        _addressError = MakeErrorText();
+        cardContent.Children.Add(_addressError);
         cardContent.Children.Add(MakeFieldLabel("Port"));
         cardContent.Children.Add(_portBox);
+        _portError = MakeErrorText();
+        cardContent.Children.Add(_portError);
         cardContent.Children.Add(_httpsCheck);
         card.Child = cardContent;
         content.Children.Add(card);
@@ -202,8 +311,12 @@ public partial class MobileSetupWizardView : UserControl
         var cardContent = new StackPanel { Spacing = 12 };
         cardContent.Children.Add(MakeFieldLabel("Username"));
         cardContent.Children.Add(_usernameBox);
+        _usernameError = MakeErrorText();
+        cardContent.Children.Add(_usernameError);
         cardContent.Children.Add(MakeFieldLabel("Password"));
         cardContent.Children.Add(_passwordBox);
+        _passwordError = MakeErrorText();
+        cardContent.Children.Add(_passwordError);
         card.Child = cardContent;
         content.Children.Add(card);
 
@@ -312,7 +425,7 @@ public partial class MobileSetupWizardView : UserControl
     {
         if (_vm is null) return;
         SyncToVm();
-        Wizard.SetNextButtonEnabled(_vm.CanGoNext);
+        Wizard.SetNextButtonEnabled(AreCurrentFieldsValid());
     }
 
     private void OnWizardStepChanged(object? sender, int step)
@@ -441,6 +554,15 @@ public partial class MobileSetupWizardView : UserControl
         };
         return (valueBlock, row);
     }
+
+    private static TextBlock MakeErrorText() => new()
+    {
+        FontFamily = BodyFont,
+        FontSize = 12,
+        Foreground = new SolidColorBrush(Color.Parse("#E74C3C")),
+        IsVisible = false,
+        Margin = new Thickness(0, -8, 0, 0)
+    };
 
     private static TextBlock MakeRichText(string before, (string text, bool bold) highlight, string after)
     {
