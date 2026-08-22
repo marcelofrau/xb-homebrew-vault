@@ -152,7 +152,7 @@ public partial class CustomInstallViewModel : ObservableObject
 
     public bool CanGoNext => CurrentStep switch
     {
-        0 => UseFileSource ? !string.IsNullOrEmpty(SourcePath) : !string.IsNullOrEmpty(SourceUrl),
+        0 => !string.IsNullOrEmpty(SourcePath) || !string.IsNullOrEmpty(SourceUrl),
         1 => _analysis is not null,
         2 => _analysis?.MainPackage is not null,
         _ => false
@@ -267,7 +267,8 @@ public partial class CustomInstallViewModel : ObservableObject
 
         try
         {
-            if (UseFileSource)
+            var useFile = !string.IsNullOrWhiteSpace(SourcePath);
+            if (useFile)
             {
                 if (string.IsNullOrWhiteSpace(SourcePath))
                 {

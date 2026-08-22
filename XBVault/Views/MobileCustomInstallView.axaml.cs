@@ -255,25 +255,19 @@ public partial class MobileCustomInstallView : UserControl
     {
         var content = new StackPanel { Spacing = 12, Margin = new Thickness(0, 8, 0, 0) };
 
-        _useFileCheck = new CheckBox
-        {
-            Content = "Local file",
-            FontSize = 14,
-            FontFamily = BodyFont,
-            Foreground = FindBrush("TextBrush"),
-            IsChecked = true,
-            Margin = new Thickness(0, 4, 0, 0)
-        };
-        _useFileCheck.PropertyChanged += (_, _) =>
-        {
-            if (_vm is not null) _vm.UseFileSource = _useFileCheck.IsChecked ?? true;
-            UpdateSourceVisibility();
-        };
-        content.Children.Add(_useFileCheck);
-
         // File source card
         var fileCard = MakeCard();
+        var fileHeader = new TextBlock
+        {
+            Text = "LOCAL FILE",
+            FontFamily = TitleFont,
+            FontSize = 11,
+            FontWeight = FontWeight.Bold,
+            Foreground = FindBrush("TextDimBrush"),
+            Margin = new Thickness(0, 0, 0, 4)
+        };
         var fileContent = new StackPanel { Spacing = 10 };
+        fileContent.Children.Add(fileHeader);
         _sourcePathBox = MakeTextBox("Path to .appx, .msix, .appxbundle...");
         fileContent.Children.Add(_sourcePathBox);
         var browseBtn = new Button
@@ -318,7 +312,6 @@ public partial class MobileCustomInstallView : UserControl
         // Analyze button
         var analyzeBtn = new Button
         {
-            Classes = { "Accent" },
             Padding = new Thickness(20, 14),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Center
