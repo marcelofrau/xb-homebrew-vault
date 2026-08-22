@@ -1,0 +1,384 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="using:XBVault.Models"
+             xmlns:controls="using:XBVault.Controls"
+             xmlns:vm="using:XBVault.ViewModels"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileFileExplorerView"
+             x:DataType="vm:FileExplorerViewModel"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button.ToolBtn">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="8"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="MinWidth" Value="52"/>
+      <Setter Property="MinHeight" Value="52"/>
+    </Style>
+    <Style Selector="Button.ToolBtn:pointerover">
+      <Setter Property="Background" Value="#229ACA3C"/>
+    </Style>
+
+    <Style Selector="ListBoxItem">
+      <Setter Property="Padding" Value="12,10"/>
+      <Setter Property="MinHeight" Value="52"/>
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="#339ACA3C"/>
+      <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+      <Setter Property="BorderThickness" Value="2"/>
+      <Setter Property="CornerRadius" Value="6"/>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#119ACA3C"/>
+    </Style>
+    <Style Selector="MenuFlyoutPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="4"/>
+    </Style>
+    <Style Selector="MenuItem">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+      <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+      <Setter Property="Padding" Value="12,10"/>
+      <Setter Property="FontSize" Value="13"/>
+    </Style>
+    <Style Selector="MenuItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="#229ACA3C"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+
+    <!-- Disconnected state -->
+    <Border Grid.Row="0" Grid.RowSpan="6"
+            IsVisible="{Binding ShowDisconnectedContent}"
+            Background="{StaticResource BgBrush}">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+        <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-disconnected-64.png"
+               Width="64" Height="64" Stretch="Uniform"
+               HorizontalAlignment="Center" Opacity="0.6"/>
+        <TextBlock Text="Not connected" FontSize="16" FontWeight="SemiBold"
+                   Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+        <TextBlock Text="Connect to browse Xbox files" FontSize="13"
+                   Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
+        <Button Command="{Binding ConnectCommand}"
+                Padding="20,12" FontSize="15"
+                HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                   Width="22" Height="22" Stretch="Uniform"/>
+            <TextBlock Text="Connect" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Border>
+
+    <!-- Prompt state (connected but SFTP not started) -->
+    <StackPanel Grid.Row="0" Grid.RowSpan="6"
+                IsVisible="{Binding ShowPromptContent}"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+      <Image Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-empty-64.png"
+             Width="64" Height="64" Stretch="Uniform" Opacity="0.6" HorizontalAlignment="Center"/>
+      <TextBlock Text="Ready to browse" FontSize="16" FontWeight="SemiBold"
+                 Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+      <TextBlock Text="Tap below to explore Xbox file system" FontSize="13"
+                 Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
+      <Button Command="{Binding InitializeCommand}" Padding="20,12" FontSize="15" HorizontalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Image Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-folder-20.png"
+                 Width="22" Height="22" Stretch="Uniform"/>
+          <TextBlock Text="Browse Files" VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
+    </StackPanel>
+
+    <!-- Loading state -->
+    <StackPanel Grid.Row="0" Grid.RowSpan="6"
+                IsVisible="{Binding IsLoading}"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+      <controls:CdSpinner HorizontalAlignment="Center"
+                          StatusText="{Binding InitStepText}"/>
+    </StackPanel>
+
+    <!-- Ready state: toolbar + path + file list + activity + status -->
+    <Grid Grid.Row="0" Grid.RowSpan="6"
+          IsVisible="{Binding ShowReadyContent}"
+          RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+
+      <!-- Row 0: Toolbar -->
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*" Margin="8,2">
+
+        <!-- Column 0: Folder operations (Browse/Refresh/NewFolder/Drives) -->
+        <Button Classes="ToolBtn" x:Name="BrowseToolbarBtn" Command="{Binding InitializeCommand}"
+                IsEnabled="{Binding CanBrowse}">
+          <Button.Flyout>
+            <MenuFlyout>
+              <MenuItem Header="Browse Drives" Click="OnBrowseDrivesClick">
+                <MenuItem.Icon>
+                  <Image Width="24" Height="24" Stretch="Uniform" Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-browse-drives-32.png"/>
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="Refresh" Click="OnRefreshClick">
+                <MenuItem.Icon>
+                  <Image Width="24" Height="24" Stretch="Uniform" Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-refresh-32.png"/>
+                </MenuItem.Icon>
+              </MenuItem>
+              <Separator/>
+              <MenuItem Header="New Folder" Click="OnNewFolderClick">
+                <MenuItem.Icon>
+                  <Image Width="24" Height="24" Stretch="Uniform" Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-newfolder-32.png"/>
+                </MenuItem.Icon>
+              </MenuItem>
+              <Separator/>
+              <MenuItem Header="Show All Drives">
+                <MenuItem.Template>
+                  <ControlTemplate>
+                    <Border Padding="12,10" Background="Transparent">
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Image Width="24" Height="24" Stretch="Uniform"
+                               Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-drives-40.png"/>
+                        <TextBlock Text="Show All Drives" FontSize="15" VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextBrush}"/>
+                        <CheckBox IsChecked="{Binding ShowAllDrives}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                      </StackPanel>
+                    </Border>
+                  </ControlTemplate>
+                </MenuItem.Template>
+              </MenuItem>
+            </MenuFlyout>
+          </Button.Flyout>
+          <StackPanel HorizontalAlignment="Center" Spacing="1">
+            <Grid>
+              <Image Width="35" Height="35" Stretch="Uniform"
+                     Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-browse-40.png"
+                     IsVisible="{Binding #BrowseToolbarBtn.IsEnabled}"/>
+              <Image Width="35" Height="35" Stretch="Uniform"
+                     Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-browse-disabled-40.png"
+                     IsVisible="{Binding #BrowseToolbarBtn.IsEnabled, Converter={StaticResource BoolInverse}}"/>
+            </Grid>
+            <TextBlock Text="Folders" FontSize="11" HorizontalAlignment="Center"
+                       Foreground="{StaticResource TextMutedBrush}"/>
+          </StackPanel>
+        </Button>
+
+        <!-- Column 1: File operations (Rename/Delete) -->
+        <Button Classes="ToolBtn" Grid.Column="1" x:Name="ModifyBtn"
+                IsEnabled="{Binding CanModifyFiles}">
+          <Button.Flyout>
+            <MenuFlyout>
+              <MenuItem Header="Rename" Click="OnRenameClick">
+                <MenuItem.Icon>
+                  <Image Width="24" Height="24" Stretch="Uniform" Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-rename-32.png"/>
+                </MenuItem.Icon>
+              </MenuItem>
+              <Separator/>
+              <MenuItem Header="Delete" Click="OnDeleteClick" Foreground="{StaticResource DangerBrush}">
+                <MenuItem.Icon>
+                  <Image Width="24" Height="24" Stretch="Uniform" Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-delete-32.png"/>
+                </MenuItem.Icon>
+              </MenuItem>
+            </MenuFlyout>
+          </Button.Flyout>
+          <StackPanel HorizontalAlignment="Center" Spacing="1">
+            <Grid>
+              <Image Width="35" Height="35" Stretch="Uniform"
+                     Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-file-40.png"
+                     IsVisible="{Binding #ModifyBtn.IsEnabled}"/>
+              <Image Width="35" Height="35" Stretch="Uniform"
+                     Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-file-disabled-40.png"
+                     IsVisible="{Binding #ModifyBtn.IsEnabled, Converter={StaticResource BoolInverse}}"/>
+            </Grid>
+            <TextBlock Text="Files" FontSize="11" HorizontalAlignment="Center"
+                       Foreground="{StaticResource TextMutedBrush}"/>
+          </StackPanel>
+        </Button>
+
+        <!-- Column 2: Upload (Files/Folder/ZIP) -->
+        <Button Classes="ToolBtn" Grid.Column="2" x:Name="UploadBtn"
+                IsEnabled="{Binding CanModifyFiles}">
+          <Button.Flyout>
+            <MenuFlyout>
+              <MenuItem Header="Upload Files" Click="OnUploadFilesClick">
+                <MenuItem.Icon>
+                  <Image Width="24" Height="24" Stretch="Uniform" Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-upload-40.png"/>
+                </MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="Upload Folder" Click="OnUploadFolderClick">
+                <MenuItem.Icon>
+                  <Image Width="24" Height="24" Stretch="Uniform" Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-folder-upload-40.png"/>
+                </MenuItem.Icon>
+              </MenuItem>
+              <Separator/>
+              <MenuItem Header="Upload ZIP &amp; Extract" Click="OnUploadZipClick">
+                <MenuItem.Icon>
+                  <Image Width="24" Height="24" Stretch="Uniform" Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-archive-32.png"/>
+                </MenuItem.Icon>
+              </MenuItem>
+            </MenuFlyout>
+          </Button.Flyout>
+          <StackPanel HorizontalAlignment="Center" Spacing="1">
+            <Grid>
+              <Image Width="35" Height="35" Stretch="Uniform"
+                     Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-upload-40.png"
+                     IsVisible="{Binding #UploadBtn.IsEnabled}"/>
+              <Image Width="35" Height="35" Stretch="Uniform"
+                     Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-upload-disabled-40.png"
+                     IsVisible="{Binding #UploadBtn.IsEnabled, Converter={StaticResource BoolInverse}}"/>
+            </Grid>
+            <TextBlock Text="Upload" FontSize="11" HorizontalAlignment="Center"
+                       Foreground="{StaticResource TextMutedBrush}"/>
+          </StackPanel>
+        </Button>
+
+        <!-- Column 3: Download -->
+        <Button Classes="ToolBtn" Grid.Column="3" x:Name="DownloadBtn"
+                Click="OnDownloadConfirmClick"
+                IsEnabled="{Binding CanDownloadMultiple}">
+          <StackPanel HorizontalAlignment="Center" Spacing="1">
+            <Grid>
+              <Image Width="35" Height="35" Stretch="Uniform"
+                     Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-download-40.png"
+                     IsVisible="{Binding #DownloadBtn.IsEnabled}"/>
+              <Image Width="35" Height="35" Stretch="Uniform"
+                     Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-download-disabled-40.png"
+                     IsVisible="{Binding #DownloadBtn.IsEnabled, Converter={StaticResource BoolInverse}}"/>
+            </Grid>
+            <TextBlock Text="Download" FontSize="11" HorizontalAlignment="Center"
+                       Foreground="{StaticResource TextMutedBrush}"/>
+          </StackPanel>
+        </Button>
+
+        <!-- Column 4: FTP/SFTP credentials -->
+        <Button Classes="ToolBtn" Grid.Column="4" x:Name="SftpInfoBtn"
+                Command="{Binding OpenConnectionInfoCommand}"
+                IsEnabled="{Binding IsConnected}">
+          <StackPanel HorizontalAlignment="Center" Spacing="1">
+            <Grid>
+              <Image Width="35" Height="35" Stretch="Uniform"
+                     Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-nas-40.png"
+                     IsVisible="{Binding #SftpInfoBtn.IsEnabled}"/>
+              <Image Width="35" Height="35" Stretch="Uniform"
+                     Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-nas-disabled-40.png"
+                     IsVisible="{Binding #SftpInfoBtn.IsEnabled, Converter={StaticResource BoolInverse}}"/>
+            </Grid>
+            <TextBlock Text="FTP" FontSize="11" HorizontalAlignment="Center"
+                       Foreground="{StaticResource TextMutedBrush}"/>
+          </StackPanel>
+        </Button>
+
+      </Grid>
+
+      <!-- Row 1: Path bar -->
+      <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="8,4,8,4">
+        <TextBox Text="{Binding CurrentPath}" FontSize="13" Padding="10,8"
+                 Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextBrush}"
+                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6"/>
+        <Button Grid.Column="1" Command="{Binding NavigateToPathCommand}"
+                CommandParameter="{Binding CurrentPath}" Margin="4,0,0,0"
+                Padding="12,8" Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextBrush}">
+          <Image Width="20" Height="20" Stretch="Uniform"
+                 Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-go-24.png"/>
+        </Button>
+      </Grid>
+
+      <!-- Row 2: Status banner -->
+      <Border Grid.Row="2" IsVisible="{Binding HasStatus}" Margin="8,0,8,4"
+              CornerRadius="6" Padding="10,6"
+              BorderThickness="1"
+              BorderBrush="{Binding StatusBorderBrush}"
+              Background="{Binding StatusBackground}">
+        <TextBlock Text="{Binding StatusMessage}" FontSize="13"
+                   Foreground="{Binding StatusForeground}"
+                   TextWrapping="Wrap"/>
+      </Border>
+
+      <!-- Row 3: File list -->
+      <Border Grid.Row="3" Margin="8,0,8,4"
+              BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6"
+              Background="{StaticResource BgBrush}">
+        <Grid>
+          <ListBox x:Name="FileListBox"
+                   ItemsSource="{Binding CurrentEntries}"
+                   SelectionMode="Multiple"
+                   Background="Transparent" Foreground="White"
+                   BorderThickness="0">
+            <ListBox.DataTemplates>
+              <DataTemplate DataType="models:SftpEntry">
+                <Grid ColumnDefinitions="40,*" Margin="0,4" MinHeight="44">
+                  <Image Width="32" Height="32" Stretch="Uniform"
+                         Source="{Binding IconPath}"
+                         VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                  <StackPanel Grid.Column="1" Margin="10,0,8,0" VerticalAlignment="Center"
+                              Spacing="1">
+                    <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextBrush}"/>
+                    <TextBlock Text="{Binding FormattedSize}" FontSize="11"
+                               Foreground="{StaticResource TextDimBrush}"
+                               IsVisible="{Binding FormattedSize, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListBox.DataTemplates>
+          </ListBox>
+          <!-- Navigation loading overlay -->
+          <Border IsVisible="{Binding IsNavigating}" Background="#CC0D1117" CornerRadius="6">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+              <controls:CdSpinner HorizontalAlignment="Center"/>
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Border>
+
+      <!-- Row 4: Activity bar (tall) -->
+      <Border Grid.Row="4" IsVisible="{Binding ShowActivity}" Margin="8,0,8,4"
+              Padding="16,20" CornerRadius="8"
+              Background="{StaticResource SurfaceBrush}"
+              BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+        <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+          <controls:CdSpinner Width="44" Height="44" VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="1" Grid.Row="0" Text="{Binding ActivityText}" FontSize="15" FontWeight="SemiBold"
+                     Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" Margin="12,0,0,6"/>
+          <ProgressBar Grid.Column="1" Grid.Row="1" Value="{Binding ActivityProgress}" Minimum="0" Maximum="1"
+                       Height="8" CornerRadius="4" Foreground="{StaticResource AccentBrush}" Margin="12,0,0,0"/>
+          <Button Grid.Column="2" Grid.RowSpan="2" Command="{Binding CancelTransferCommand}"
+                  Width="35" Height="35" Padding="0" VerticalAlignment="Center"
+                  Background="Transparent" BorderThickness="0">
+            <Image Width="20" Height="20" Stretch="Uniform"
+                   Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-cancel-16.png"/>
+          </Button>
+        </Grid>
+      </Border>
+
+      <!-- Row 5: Portal banner -->
+      <Border Grid.Row="5" IsVisible="{Binding ShowPortalBanner}" Margin="8,0,8,4"
+              Padding="10,8" CornerRadius="6"
+              BorderBrush="#55F39C12" BorderThickness="1" Background="#1AF39C12">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+          <Image Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-warning-20.png"
+                 Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Top" Margin="0,2,0,0"/>
+          <StackPanel Grid.Column="1" Spacing="2">
+            <TextBlock Text="Web Portal mode" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource WarningBrush}"/>
+            <TextBlock Text="Navigation uses Xbox Web Portal (REST)." FontSize="11"
+                       Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+    </Grid>
+
+  </Grid>
+
+</UserControl>
+

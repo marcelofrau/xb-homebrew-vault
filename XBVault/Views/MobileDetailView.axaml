@@ -273,17 +273,8 @@
         <StackPanel IsVisible="{Binding ShowInstallOverlay}"
                     VerticalAlignment="Center"
                     Spacing="8">
-          <Image x:Name="InstallSpinner"
-                 Source="avares://XBVault/Assets/Views/InstalledView/installed-spinner-48.png"
-                 Width="40" Height="40"
-                 Stretch="Uniform"
-                 HorizontalAlignment="Center"
-                 RenderTransformOrigin="50% 50%"
-                 IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}">
-            <Image.RenderTransform>
-              <RotateTransform Angle="0"/>
-            </Image.RenderTransform>
-          </Image>
+          <controls:CdSpinner HorizontalAlignment="Center"
+                              IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
           <!-- Success -->
           <StackPanel Spacing="6"
                       VerticalAlignment="Center"
@@ -322,12 +313,18 @@
                        Height="6"
                        Foreground="{StaticResource AccentBrush}"
                        IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
+          <TextBlock Text="{Binding InstallStatus}"
+                     FontSize="13"
+                     Foreground="{StaticResource TextMutedBrush}"
+                     TextAlignment="Center"
+                     TextWrapping="Wrap"
+                     IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
           <TextBlock Text="{Binding CurrentFile}"
                      FontSize="11"
                      Foreground="{StaticResource TextDimBrush}"
                      TextAlignment="Center"
                      TextWrapping="Wrap"
-                     IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
+                     IsVisible="{Binding CurrentFile, Converter={StaticResource StringNotEmpty}}"/>
         </StackPanel>
 
         <!-- Check overlay: spinner + results (only when active or complete) -->
@@ -489,6 +486,24 @@
               <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-success-16.png"
                      Width="20" Height="20" Stretch="Uniform"/>
               <TextBlock Grid.Column="1" Text="Finish"
+                         FontFamily="{StaticResource TitleFont}"
+                         FontSize="14" FontWeight="SemiBold"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <!-- Update button (update mode) -->
+          <Button x:Name="UpdateDetailBtn"
+                  Classes="Accent"
+                  Padding="16,12"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Click="OnInstallClick"
+                  IsEnabled="{Binding CanInstallXboxItem}"
+                  IsVisible="{Binding ShowUpdateButton}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
+                     Width="20" Height="20" Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Update"
                          FontFamily="{StaticResource TitleFont}"
                          FontSize="14" FontWeight="SemiBold"
                          VerticalAlignment="Center"/>

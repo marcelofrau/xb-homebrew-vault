@@ -50,11 +50,23 @@ public partial class InstalledViewModel : ObservableObject
 
     private void OnConnectionChanged(bool connected)
     {
-        IsConnected = connected;
+        Logger.Info($"InstalledViewModel: ConnectionChanged → {connected} (current IsConnected={IsConnected})");
         if (connected)
-            StatusMessage = null;
-        if (connected)
-            _ = LaunchAutostartAsync();
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                IsConnected = true;
+                StatusMessage = null;
+                _ = LaunchAutostartAsync();
+            });
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                IsConnected = false;
+            });
+        }
     }
 
     private DispatcherTimer? _pollTimer;

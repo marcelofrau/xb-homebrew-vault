@@ -1,5 +1,6 @@
 param(
-    [string]$Arch = ""
+    [string]$Arch = "",
+    [switch]$Uninstall
 )
 
 $root = Split-Path -Parent $PSScriptRoot
@@ -77,12 +78,12 @@ if (-not $Arch) {
 
 $rid = "android-$Arch"
 
-# Full uninstall first — adb install -r corrupts assemblies on emulator
-Write-Host "Uninstalling previous build..." -ForegroundColor DarkGray
-& $adb -s $deviceSerial uninstall XBVault.Android 2>&1 | Out-Null
-
-Write-Host "Cleaning previous build..." -ForegroundColor DarkGray
-& "C:\Program Files\dotnet\dotnet.exe" clean $project -c Release -r $rid -f net10.0-android36.0 2>&1 | Out-Null
+if ($Uninstall) {
+    Write-Host "Uninstalling previous build..." -ForegroundColor DarkGray
+    & $adb -s $deviceSerial uninstall XBVault.Android 2>&1 | Out-Null
+    Write-Host "Cleaning previous build..." -ForegroundColor DarkGray
+    & "C:\Program Files\dotnet\dotnet.exe" clean $project -c Release -r $rid -f net10.0-android36.0 2>&1 | Out-Null
+}
 
 Write-Host "Publishing XBVault.Android ($rid)..." -ForegroundColor Green
 & "C:\Program Files\dotnet\dotnet.exe" publish $project -c Release -r $rid -f net10.0-android36.0
@@ -94,7 +95,7 @@ if (-not $apk) { $apkDir = Join-Path $project "bin\Release\net10.0-android36.0\$
 if (-not $apk) { Write-Host "APK not found in $apkDir" -ForegroundColor Red; exit 1 }
 
 Write-Host "Installing $($apk.Name) on $deviceSerial..." -ForegroundColor Green
-& $adb -s $deviceSerial install $apk.FullName
+& $adb -s $deviceSerial install -r $apk.FullName
 if ($LASTEXITCODE -ne 0) { Write-Host "Install failed!" -ForegroundColor Red; exit $LASTEXITCODE }
 
 Write-Host "Starting app..." -ForegroundColor Green

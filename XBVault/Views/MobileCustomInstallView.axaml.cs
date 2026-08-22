@@ -114,14 +114,14 @@ public partial class MobileCustomInstallView : UserControl
         {
             case 0:
                 Wizard.SetStepHero("custominstall-wizard-100.png", "Choose Source",
-                    "Select a local package file or enter a download URL");
+                    "Select a local package file or enter a download URL", "CustomInstallWindow");
                 Wizard.SetStepContent(0, _step0Content);
                 Wizard.SetFinishMode(false);
                 UpdateNextEnabled();
                 break;
             case 1:
                 Wizard.SetStepHero("custominstall-analyze-48.png", "Analyzing",
-                    "Examining package structure and dependencies");
+                    "Examining package structure and dependencies", "CustomInstallWindow");
                 Wizard.SetStepContent(1, _step1Content);
                 Wizard.SetFinishMode(false);
                 Wizard.SetNextButtonEnabled(false);
@@ -129,7 +129,7 @@ public partial class MobileCustomInstallView : UserControl
                 break;
             case 2:
                 Wizard.SetStepHero("custominstall-package-48.png", "Review Packages",
-                    "Review the main package and dependencies before installing");
+                    "Review the main package and dependencies before installing", "CustomInstallWindow");
                 Wizard.SetStepContent(2, _step2Content);
                 Wizard.SetFinishMode(false);
                 UpdateDependencyList();
@@ -139,7 +139,7 @@ public partial class MobileCustomInstallView : UserControl
                 Wizard.SetStepHero("custominstall-install-20.png", "Install",
                     _vm.IsInstalling ? "Installing packages..." :
                     _vm.InstallComplete ? (_vm.InstallSuccess ? "Installation successful!" : "Installation failed") :
-                    "Ready to install");
+                    "Ready to install", "CustomInstallWindow");
                 Wizard.SetStepContent(3, _step3Content);
                 UpdateInstallState();
                 UpdateInstallResult();
@@ -334,15 +334,16 @@ public partial class MobileCustomInstallView : UserControl
 
     private void UpdateSourceVisibility()
     {
+        if (_sourcePathBox is null || _urlPanel is null) return;
         if (_useFileCheck?.IsChecked == true)
         {
             _sourcePathBox.IsVisible = true;
-            if (_urlPanel is not null) _urlPanel.IsVisible = false;
+            _urlPanel.IsVisible = false;
         }
         else
         {
             _sourcePathBox.IsVisible = false;
-            if (_urlPanel is not null) _urlPanel.IsVisible = true;
+            _urlPanel.IsVisible = true;
         }
     }
 

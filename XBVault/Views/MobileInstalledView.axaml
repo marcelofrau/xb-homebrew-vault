@@ -208,27 +208,25 @@
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="models:InstalledPackage">
             <Border Classes="InstalledCard">
-              <Grid ColumnDefinitions="120,*,Auto" RowDefinitions="Auto">
-                <!-- Col 1: Image -->
+              <Grid ColumnDefinitions="0.58*,*,Auto" RowDefinitions="Auto">
+                <!-- Col 1: Image — fills ~half card width, height from aspect ratio -->
                 <Border Grid.Column="0"
-                        ClipToBounds="True"
-                        CornerRadius="0">
+                        ClipToBounds="True">
                   <Panel>
-                    <Border Background="{StaticResource SurfaceAltBrush}" Width="120" Height="120">
-                      <Image Source="{Binding BannerImage}"
-                             Stretch="Uniform"
-                             Width="120" Height="120"
-                             RenderOptions.BitmapInterpolationMode="MediumQuality"/>
-                    </Border>
-                    <Border Background="#1A3A1A" IsVisible="{Binding IsRunning}"
-                            Width="120" Height="120"/>
+                    <Image Source="{Binding BannerImage}"
+                           Stretch="Uniform"
+                           RenderOptions.BitmapInterpolationMode="MediumQuality"/>
+                    <!-- Running overlay: green tint -->
+                    <Border IsVisible="{Binding IsRunning}"
+                            Background="#449ACA3C"/>
                   </Panel>
                 </Border>
 
-                <!-- Col 2: Details -->
-                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center"
-                            Margin="12,8,8,8">
-                  <!-- Badges -->
+                <!-- Col 2: Details — stretch to match image height -->
+                <StackPanel Grid.Column="1" Spacing="3"
+                            VerticalAlignment="Stretch"
+                            Margin="12,0,8,0">
+                  <!-- Badges + Running indicator row -->
                   <StackPanel Orientation="Horizontal" Spacing="6">
                     <Border CornerRadius="5" Padding="6,2"
                             Background="{StaticResource AccentBrush}"
@@ -239,6 +237,11 @@
                             Background="#FF6B35"
                             IsVisible="{Binding IsOutdated}">
                       <TextBlock Text="OUTDATED" FontSize="8" FontWeight="Bold" Foreground="White"/>
+                    </Border>
+                    <Border CornerRadius="5" Padding="6,2"
+                            Background="#229ACA3C"
+                            IsVisible="{Binding IsRunning}">
+                      <TextBlock Text="RUNNING" FontSize="8" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
                     </Border>
                   </StackPanel>
                   <!-- Name -->
@@ -255,22 +258,14 @@
                              FontSize="12"
                              Foreground="{StaticResource TextDimBrush}"
                              TextTrimming="CharacterEllipsis"
-                             MaxWidth="160"/>
-                  <!-- Running indicator -->
-                  <StackPanel Orientation="Horizontal" Spacing="4"
-                              IsVisible="{Binding IsRunning}">
-                    <Border Width="8" Height="8" CornerRadius="4"
-                            Background="{StaticResource AccentBrush}"/>
-                    <TextBlock Text="Running" FontSize="11"
-                               Foreground="{StaticResource AccentBrush}"/>
-                  </StackPanel>
+                             MaxWidth="180"/>
                 </StackPanel>
 
-                <!-- Col 3: Action buttons (vertical) -->
+                <!-- Col 3: Action buttons (vertical) — stretch to match image height -->
                 <StackPanel Grid.Column="2" Spacing="4"
                             VerticalAlignment="Center"
-                            Margin="0,8,12,8">
-                  <!-- Play / Suspend -->
+                            Margin="0,0,12,0">
+                  <!-- Play/Stop toggle: one button, swaps icon/command by state -->
                   <Button Classes="CardAction"
                           Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).LaunchPackageCommand}"
                           CommandParameter="{Binding}"
@@ -280,22 +275,12 @@
                     <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-launch-20.png"
                            Width="22" Height="22" Stretch="Uniform"/>
                   </Button>
-                  <Button Classes="CardAction"
-                          Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).SuspendPackageCommand}"
-                          CommandParameter="{Binding}"
-                          IsVisible="{Binding IsRunning}"
-                          IsEnabled="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).IsConnected}"
-                          ToolTip.Tip="Suspend">
-                    <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-suspend-20.png"
-                           Width="22" Height="22" Stretch="Uniform"/>
-                  </Button>
-                  <!-- Terminate (always visible, enabled only when running) -->
                   <Button Classes="CardDanger"
                           Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).TerminatePackageCommand}"
                           CommandParameter="{Binding}"
-                          IsEnabled="{Binding IsRunning}"
-                          ToolTip.Tip="Terminate">
-                    <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-terminate-20.png"
+                          IsVisible="{Binding IsRunning}"
+                          ToolTip.Tip="Stop">
+                    <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-stop-20.png"
                            Width="22" Height="22" Stretch="Uniform"/>
                   </Button>
                   <!-- Menu flyout -->
@@ -308,6 +293,7 @@
                           <StackPanel Width="240" Spacing="1" Margin="0"
                                       Background="Transparent">
                           <Button Classes="HamburgerItem"
+                                  Click="OnHamburgerItemClick"
                                   Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).LaunchPackageCommand}"
                                   CommandParameter="{Binding}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -317,16 +303,18 @@
                             </StackPanel>
                           </Button>
                           <Button Classes="HamburgerItem"
+                                  Click="OnHamburgerItemClick"
                                   Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).SuspendPackageCommand}"
                                   CommandParameter="{Binding}"
                                   IsVisible="{Binding IsRunning}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
-                              <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-suspend-20.png"
+                              <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-stop-16.png"
                                      Width="20" Height="20" Stretch="Uniform"/>
-                              <TextBlock Text="Suspend" VerticalAlignment="Center" FontSize="14"/>
+                              <TextBlock Text="Stop" VerticalAlignment="Center" FontSize="14"/>
                             </StackPanel>
                           </Button>
                           <Button Classes="HamburgerItem"
+                                  Click="OnHamburgerItemClick"
                                   Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).TerminatePackageCommand}"
                                   CommandParameter="{Binding}"
                                   IsVisible="{Binding IsRunning}">
@@ -338,6 +326,7 @@
                           </Button>
                           <Border Height="1" Background="{StaticResource BorderBrush}" Margin="8,4"/>
                           <Button Classes="HamburgerItem"
+                                  Click="OnHamburgerItemClick"
                                   Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).ToggleAutostartCommand}"
                                   CommandParameter="{Binding}"
                                   IsVisible="{Binding IsAutostart, Converter={StaticResource BoolInverse}}">
@@ -348,6 +337,7 @@
                             </StackPanel>
                           </Button>
                           <Button Classes="HamburgerItem"
+                                  Click="OnHamburgerItemClick"
                                   Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).ToggleAutostartCommand}"
                                   CommandParameter="{Binding}"
                                   IsVisible="{Binding IsAutostart}">
@@ -360,6 +350,7 @@
                           </Button>
                           <Border Height="1" Background="{StaticResource BorderBrush}" Margin="8,4"/>
                           <Button Classes="HamburgerItem"
+                                  Click="OnHamburgerItemClick"
                                   Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).ToggleIgnoreUpdateCommand}"
                                   CommandParameter="{Binding}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -370,6 +361,7 @@
                           </Button>
                           <Border Height="1" Background="{StaticResource BorderBrush}" Margin="8,4"/>
                           <Button Classes="HamburgerItem"
+                                  Click="OnHamburgerItemClick"
                                   Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).UpdatePackageCommand}"
                                   CommandParameter="{Binding}"
                                   IsVisible="{Binding IsOutdated}">
@@ -381,6 +373,7 @@
                             </StackPanel>
                           </Button>
                           <Button Classes="HamburgerItem"
+                                  Click="OnHamburgerItemClick"
                                   Command="{Binding $parent[ListBox].((vm:InstalledViewModel)DataContext).UninstallPackageCommand}"
                                   CommandParameter="{Binding}"
                                   IsVisible="{Binding CanUninstall}">

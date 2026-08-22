@@ -1,6 +1,7 @@
 #nullable enable
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using XBVault.Helpers;
 using XBVault.Models;
 using XBVault.Services;
 
@@ -53,7 +54,8 @@ public partial class SetupWizardViewModel : ObservableObject
     public bool CanGoNext => CurrentStep switch
     {
         0 => true,
-        1 => !string.IsNullOrWhiteSpace(Address),
+        1 => NetworkValidationHelper.ValidateAddress(Address) == string.Empty
+             && int.TryParse(Port, out var p) && p >= 1 && p <= 65535,
         2 => !string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password),
         _ => false
     };

@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:XBVault.Views"
+             xmlns:controls="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileSftpInfoView"
+             x:DataType="views:MobileSftpInfoViewModel"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+    <controls:MobileTitleBar x:Name="TitleBar" Title="SFTP Connection" ShowAppIcon="False"/>
+
+    <Grid Grid.Row="1" Margin="16,12">
+      <StackPanel Spacing="12">
+        <Image Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-sftpinfo-banner.png"
+               Stretch="Uniform" HorizontalAlignment="Center"/>
+
+        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="14">
+          <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="70,*">
+              <TextBlock Text="Host:" FontSize="13" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="{Binding Host}" FontSize="13" FontWeight="SemiBold"
+                         TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+            </Grid>
+            <Grid ColumnDefinitions="70,*">
+              <TextBlock Text="Port:" FontSize="13" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="{Binding PortDisplay}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </Grid>
+            <Grid ColumnDefinitions="70,*">
+              <TextBlock Text="User:" FontSize="13" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="{Binding User}" FontSize="13" FontWeight="SemiBold"
+                         TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+            </Grid>
+            <Grid ColumnDefinitions="70,*">
+              <TextBlock Text="Password:" FontSize="13" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="{Binding Password}" FontSize="13" FontWeight="SemiBold"
+                         TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+          <Image Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-connect-20.png"
+                 Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="1" FontSize="11" Foreground="{StaticResource TextDimBrush}"
+                     TextWrapping="Wrap" VerticalAlignment="Center"
+                     Text="Credentials from Xbox Dev Mode SMB endpoint. Use with any SFTP client."/>
+        </Grid>
+
+        <Button Content="Close" HorizontalAlignment="Left" Padding="16,8"
+                Background="{StaticResource SurfaceAltBrush}" Foreground="{StaticResource TextMutedBrush}"
+                Click="OnCloseClick"/>
+      </StackPanel>
+    </Grid>
+  </Grid>
+
+</UserControl>
+

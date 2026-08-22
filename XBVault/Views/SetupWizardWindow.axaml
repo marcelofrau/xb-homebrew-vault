@@ -197,7 +197,8 @@
 
             <TextBlock Text="Port"
                        FontSize="13" FontWeight="SemiBold"/>
-            <TextBox Text="{Binding Port}"
+            <TextBox x:Name="PortTextBox"
+                     Text="{Binding Port}"
                      PlaceholderText="11443"
                      FontSize="13"/>
 
