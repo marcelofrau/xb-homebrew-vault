@@ -39,6 +39,18 @@ dotnet publish "$PROJ_DIR" \
     -p:Version="$VERSION" \
     -o "$PUBLISH_DIR"
 
+# Copy standalone APK to dist/
+APK_SOURCE="$PUBLISH_DIR/XBVault.Android-Signed.apk"
+APK_NAME="XBVault-v$VERSION-$RID.apk"
+APK_PATH="$DIST_DIR/$APK_NAME"
+
+if [ -f "$APK_SOURCE" ]; then
+    cp "$APK_SOURCE" "$APK_PATH"
+    echo "Standalone APK: $APK_PATH"
+else
+    echo "Warning: APK not found at $APK_SOURCE"
+fi
+
 echo "Packaging $ZIP_NAME..."
 cd "$PUBLISH_DIR" && zip -r "$ZIP_PATH" . && cd "$ROOT"
 

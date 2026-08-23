@@ -231,7 +231,7 @@ jobs:
       continue-on-error: true
       with:
         vt_api_key: ${{ secrets.VT_API_KEY }}
-        file_globs: dist/*.zip
+        file_globs: dist/*.zip,dist/*.apk
         sha256: true
         update_release: true
         release_id: ${{ steps.create_release.outputs.id }}

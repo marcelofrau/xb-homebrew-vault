@@ -51,6 +51,18 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# Copy standalone APK to dist/
+$apkSource = Join-Path $publishDir "XBVault.Android-Signed.apk"
+$apkName = "XBVault-v$Version-$rid.apk"
+$apkPath = Join-Path $dist $apkName
+
+if (Test-Path $apkSource) {
+    Copy-Item $apkSource $apkPath -Force
+    Write-Host "Standalone APK: $apkPath" -ForegroundColor Green
+} else {
+    Write-Warning "APK not found at $apkSource"
+}
+
 # Zip
 if (Test-Path $zipPath) {
     Remove-Item $zipPath -Force
