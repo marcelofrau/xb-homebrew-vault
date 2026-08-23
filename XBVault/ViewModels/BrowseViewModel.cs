@@ -265,13 +265,13 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         CheckError = false;
         CheckResultMessage = null;
         InstallComplete = false;
-        Logger.Info($"Checking install status for [{item.Category}] {item.Name}");
+        Logger.Debug($"Checking install status for [{item.Category}] {item.Name}");
 
         if (item.IsWindowsTool)
         {
             CheckComplete = true;
             CheckResultMessage = "Windows tool — not an Xbox package";
-            Logger.Info("Skipping check for Windows tool");
+            Logger.Debug("Skipping check for Windows tool");
             IsCheckingInstalled = false;
             return;
         }
@@ -281,7 +281,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             CheckComplete = true;
             CheckError = true;
             CheckResultMessage = "Not configured";
-            Logger.Info("Xbox not configured — skipping installed check");
+            Logger.Debug("Xbox not configured — skipping installed check");
             IsCheckingInstalled = false;
             return;
         }
@@ -290,7 +290,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             CheckComplete = true;
             CheckError = true;
             CheckResultMessage = "Not connected";
-            Logger.Info("Xbox not connected — skipping installed check");
+            Logger.Debug("Xbox not connected — skipping installed check");
             IsCheckingInstalled = false;
             return;
         }
@@ -308,12 +308,12 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             {
                 CheckInstalled = true;
                 CheckResultMessage = match.Version;
-                Logger.Info($"Found installed: {item.Name} v{match.Version}");
+                Logger.Trace($"Found installed: {item.Name} v{match.Version}");
             }
             else
             {
                 CheckResultMessage = "Not installed";
-                Logger.Info($"Not installed: {item.Name}");
+                Logger.Trace($"Not installed: {item.Name}");
             }
         }
         catch (Exception ex)
@@ -384,7 +384,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             for (var i = 0; i < _allItems.Count; i++)
             {
                 var item = _allItems[i];
-                Logger.Info($"Catalog item [{i + 1}/{_allItems.Count}]: [{item.Category}] {item.Name} v{item.Version}");
+                Logger.Trace($"Catalog item [{i + 1}/{_allItems.Count}]: [{item.Category}] {item.Name} v{item.Version}");
             }
 
             var byCategory = _allItems.GroupBy(i => i.Category)
@@ -436,7 +436,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
                 for (var i = 0; i < _allItems.Count; i++)
                 {
                     var item = _allItems[i];
-                    Logger.Info($"Catalog refresh item [{i + 1}/{_allItems.Count}]: [{item.Category}] {item.Name} v{item.Version}");
+                    Logger.Trace($"Catalog refresh item [{i + 1}/{_allItems.Count}]: [{item.Category}] {item.Name} v{item.Version}");
                 }
 
                 ApplyFilters();

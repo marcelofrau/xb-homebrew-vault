@@ -475,7 +475,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
     private async Task LoadTreeRootsAsync()
     {
-        Logger.Debug("LoadTreeRootsAsync: detecting drives...");
+        Logger.Info("LoadTreeRootsAsync: detecting drives...");
         var drives = await DetectDrivesAsync();
         drives.Add(new SftpEntry
         {
@@ -495,7 +495,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             TreeRoots.Clear();
             foreach (var d in drives)
                 TreeRoots.Add(d);
-            Logger.Debug($"LoadTreeRootsAsync: added {drives.Count} tree roots (incl. User Files)");
+            Logger.Info($"LoadTreeRootsAsync: added {drives.Count} tree roots (incl. User Files)");
             OnPropertyChanged(nameof(CanRefresh));
             OnPropertyChanged(nameof(CanRefreshLocation));
         });
@@ -673,7 +673,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task NavigateToPathAsync(string? path)
     {
-        Logger.Debug($"NavigateToPathAsync: '{path}'");
+        Logger.Info($"NavigateToPathAsync: '{path}'");
         if (string.IsNullOrWhiteSpace(path))
         {
             if (TreeRoots.Count > 0)
@@ -824,7 +824,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task RefreshAsync()
     {
-        Logger.Debug($"RefreshAsync: CurrentPath='{CurrentPath}'");
+        Logger.Info($"RefreshAsync: CurrentPath='{CurrentPath}'");
         if (string.IsNullOrWhiteSpace(CurrentPath)) return;
 
         try
@@ -896,7 +896,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
         Logger.Info($"UploadFilesAsync: uploading {filePaths.Length} file(s) to '{CurrentPath}'");
         for (int i = 0; i < filePaths.Length; i++)
-            Logger.Trace($"UploadFilesAsync: file[{i}] = '{filePaths[i]}'");
+            Logger.Info($"UploadFilesAsync: file[{i}] = '{filePaths[i]}'");
 
         IsUploading = true;
         UploadProgress = 0;

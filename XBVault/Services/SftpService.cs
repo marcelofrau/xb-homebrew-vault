@@ -147,7 +147,7 @@ namespace XBVault.Services;
 
     public Task<List<SftpEntry>> ListDirectoryAsync(string path, CancellationToken ct = default)
     {
-        Logger.Debug($"ListDirectoryAsync: '{path}' (via shell dir /b)");
+        Logger.Info($"ListDirectoryAsync: '{path}' (via shell dir /b)");
         return Task.Run(async () =>
         {
             if (_ssh is null || !_ssh.IsConnected)
@@ -291,7 +291,7 @@ namespace XBVault.Services;
     public Task UploadFileAsync(Stream source, string remotePath, IProgress<double>? progress, CancellationToken ct = default)
     {
         var norm = NormalizePath(remotePath);
-        Logger.Debug($"UploadFileAsync: -> '{norm}'");
+        Logger.Info($"UploadFileAsync: -> '{norm}'");
         return Task.Run(() =>
         {
             if (_sftp is null)
@@ -344,7 +344,7 @@ namespace XBVault.Services;
     public Task<long> DownloadFileAsync(string remotePath, Stream destination, IProgress<double>? progress, CancellationToken ct = default)
     {
         var norm = NormalizePath(remotePath);
-        Logger.Debug($"DownloadFileAsync: '{norm}'");
+        Logger.Info($"DownloadFileAsync: '{norm}'");
         return Task.Run<long>(() =>
         {
             if (_sftp is null)
@@ -414,7 +414,7 @@ namespace XBVault.Services;
     public Task DeleteFileAsync(string path)
     {
         var norm = NormalizePath(path);
-        Logger.Debug($"DeleteFileAsync: '{norm}'");
+        Logger.Info($"DeleteFileAsync: '{norm}'");
         return Task.Run(() =>
         {
             if (_sftp is null || !_sftp.IsConnected)
@@ -437,7 +437,7 @@ namespace XBVault.Services;
     public Task DeleteDirectoryAsync(string path)
     {
         var norm = NormalizePath(path);
-        Logger.Debug($"DeleteDirectoryAsync: '{norm}'");
+        Logger.Info($"DeleteDirectoryAsync: '{norm}'");
         return Task.Run(() =>
         {
             if (_sftp is null || !_sftp.IsConnected)
@@ -464,7 +464,7 @@ namespace XBVault.Services;
     public Task CreateDirectoryAsync(string path)
     {
         var norm = NormalizePath(path);
-        Logger.Debug($"CreateDirectoryAsync: '{norm}'");
+        Logger.Info($"CreateDirectoryAsync: '{norm}'");
         return Task.Run(() =>
         {
             if (_sftp is null || !_sftp.IsConnected)
@@ -513,7 +513,7 @@ namespace XBVault.Services;
     {
         var oldNorm = NormalizePath(oldPath);
         var newNorm = NormalizePath(newPath);
-        Logger.Debug($"RenameAsync: '{oldNorm}' -> '{newNorm}'");
+        Logger.Info($"RenameAsync: '{oldNorm}' -> '{newNorm}'");
         return Task.Run(() =>
         {
             if (_sftp is null || !_sftp.IsConnected)

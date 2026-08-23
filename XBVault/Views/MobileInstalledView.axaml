@@ -222,6 +222,18 @@
                   </Panel>
                 </Border>
 
+                <!-- Uninstalling overlay -->
+                <Border Grid.ColumnSpan="3"
+                        IsVisible="{Binding IsUninstalling}"
+                        Background="#CC0D1117"
+                        CornerRadius="12">
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+                    <controls:CdSpinner Width="20" Height="20" ShowText="False"/>
+                    <TextBlock Text="Uninstalling..." FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                  </StackPanel>
+                </Border>
+
                 <!-- Col 2: Details — stretch to match image height -->
                 <StackPanel Grid.Column="1" Spacing="3"
                             VerticalAlignment="Stretch"
@@ -289,7 +301,7 @@
                     <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-menu-16.png"
                            Width="22" Height="22" Stretch="Uniform"/>
                     <Button.Flyout>
-                        <Flyout Placement="BottomEdgeAlignedRight">
+                        <Flyout Placement="BottomEdgeAlignedRight" Opened="OnFlyoutOpened">
                           <StackPanel Width="240" Spacing="1" Margin="0"
                                       Background="Transparent">
                           <Button Classes="HamburgerItem"

@@ -135,10 +135,29 @@
           RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
 
       <!-- Row 0: Toolbar -->
-      <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*" Margin="8,2">
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*" Margin="8,2">
 
-        <!-- Column 0: Folder operations (Browse/Refresh/NewFolder/Drives) -->
-        <Button Classes="ToolBtn" x:Name="BrowseToolbarBtn" Command="{Binding InitializeCommand}"
+        <!-- Column 0: Home (navigate to drive roots) -->
+        <Button Classes="ToolBtn" Grid.Column="0" x:Name="HomeBtn"
+                Command="{Binding NavigateToPathCommand}"
+                CommandParameter=""
+                IsEnabled="{Binding CanBrowse}">
+          <StackPanel HorizontalAlignment="Center" Spacing="1">
+            <Grid>
+              <Image Width="35" Height="35" Stretch="Uniform"
+                     Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-home-40.png"
+                     IsVisible="{Binding #HomeBtn.IsEnabled}"/>
+              <Image Width="35" Height="35" Stretch="Uniform"
+                     Source="avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-home-40-disabled.png"
+                     IsVisible="{Binding #HomeBtn.IsEnabled, Converter={StaticResource BoolInverse}}"/>
+            </Grid>
+            <TextBlock Text="Home" FontSize="11" HorizontalAlignment="Center"
+                       Foreground="{StaticResource TextMutedBrush}"/>
+          </StackPanel>
+        </Button>
+
+        <!-- Column 1: Folder operations (Browse/Refresh/NewFolder/Drives) -->
+        <Button Classes="ToolBtn" Grid.Column="1" x:Name="BrowseToolbarBtn" Command="{Binding InitializeCommand}"
                 IsEnabled="{Binding CanBrowse}">
           <Button.Flyout>
             <MenuFlyout>
@@ -190,8 +209,8 @@
           </StackPanel>
         </Button>
 
-        <!-- Column 1: File operations (Rename/Delete) -->
-        <Button Classes="ToolBtn" Grid.Column="1" x:Name="ModifyBtn"
+        <!-- Column 2: File operations (Rename/Delete) -->
+        <Button Classes="ToolBtn" Grid.Column="2" x:Name="ModifyBtn"
                 IsEnabled="{Binding CanModifyFiles}">
           <Button.Flyout>
             <MenuFlyout>
@@ -222,8 +241,8 @@
           </StackPanel>
         </Button>
 
-        <!-- Column 2: Upload (Files/Folder/ZIP) -->
-        <Button Classes="ToolBtn" Grid.Column="2" x:Name="UploadBtn"
+        <!-- Column 3: Upload (Files/Folder/ZIP) -->
+        <Button Classes="ToolBtn" Grid.Column="3" x:Name="UploadBtn"
                 IsEnabled="{Binding CanModifyFiles}">
           <Button.Flyout>
             <MenuFlyout>
@@ -259,8 +278,8 @@
           </StackPanel>
         </Button>
 
-        <!-- Column 3: Download -->
-        <Button Classes="ToolBtn" Grid.Column="3" x:Name="DownloadBtn"
+        <!-- Column 4: Download -->
+        <Button Classes="ToolBtn" Grid.Column="4" x:Name="DownloadBtn"
                 Click="OnDownloadConfirmClick"
                 IsEnabled="{Binding CanDownloadMultiple}">
           <StackPanel HorizontalAlignment="Center" Spacing="1">
@@ -277,8 +296,8 @@
           </StackPanel>
         </Button>
 
-        <!-- Column 4: FTP/SFTP credentials -->
-        <Button Classes="ToolBtn" Grid.Column="4" x:Name="SftpInfoBtn"
+        <!-- Column 5: FTP/SFTP credentials -->
+        <Button Classes="ToolBtn" Grid.Column="5" x:Name="SftpInfoBtn"
                 Command="{Binding OpenConnectionInfoCommand}"
                 IsEnabled="{Binding IsConnected}">
           <StackPanel HorizontalAlignment="Center" Spacing="1">

@@ -53,7 +53,7 @@ public class XboxPackageService : IXboxPackageService
             var result = JsonSerializer.Deserialize<PackagesResponse>(json);
 
             var count = result?.InstalledPackages?.Count ?? 0;
-            Logger.Debug($"Got {count} installed packages");
+            Logger.Info($"Got {count} installed packages");
 
             if (result?.InstalledPackages is not null && arr.ValueKind == JsonValueKind.Array)
             {

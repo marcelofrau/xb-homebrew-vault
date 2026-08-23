@@ -151,7 +151,7 @@ public class PackageInstallService
         }
         else
         {
-            Logger.Debug($"Cache miss — downloading {fileName}");
+            Logger.Info($"Cache miss — downloading {fileName}");
             progress?.Report(new InstallProgressInfo { Total = 0.05, Status = $"Downloading {fileName}..." });
 
             const int maxAttempts = 3;
@@ -308,7 +308,7 @@ public class PackageInstallService
 
     public static string[] ExtractPackage(string archivePath, string extractDir)
     {
-        Logger.Debug($"Extracting {archivePath} to {extractDir}");
+        Logger.Info($"Extracting {archivePath} to {extractDir}");
 
         if (Directory.Exists(extractDir))
         {
@@ -350,10 +350,10 @@ public class PackageInstallService
         }
 
         var standalone = FindInstallablePackages(extractDir);
-        Logger.Debug($"Found {standalone.Length} standalone packages");
+        Logger.Info($"Found {standalone.Length} standalone packages");
 
         var extractedFromBundles = ExtractBundles(extractDir);
-        Logger.Debug($"Extracted {extractedFromBundles.Length} packages from bundles");
+        Logger.Info($"Extracted {extractedFromBundles.Length} packages from bundles");
 
         // Merge: bundle contents first (main app), then standalone non-deps, then deps
         var depSubPaths = DepFolderNames
@@ -365,7 +365,7 @@ public class PackageInstallService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        Logger.Debug($"Total packages: {allPackages.Length}");
+        Logger.Info($"Total packages: {allPackages.Length}");
         foreach (var p in allPackages)
             Logger.Debug($"  {Path.GetFileName(p)}");
 
@@ -465,12 +465,12 @@ public class PackageInstallService
             }
             if (IsDep(name))
             {
-                Logger.Debug($"  Dependency: {name}");
+                Logger.Info($"  Dependency: {name}");
                 deps.Add(f);
             }
             else if (IsInstallable(name))
             {
-                Logger.Debug($"  Main candidate: {name}");
+                Logger.Info($"  Main candidate: {name}");
                 candidates.Add(f);
             }
             else

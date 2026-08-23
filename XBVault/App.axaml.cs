@@ -70,17 +70,17 @@ public partial class App : Application
         if (ApplicationLifetime is IActivityApplicationLifetime activity)
         {
             // Android: root panel holds splash initially, swaps to main after init
-            Logger.Info($"Android: IActivityApplicationLifetime detected @ {DateTime.Now:HH:mm:ss.fff}");
+            Logger.Debug($"Android: IActivityApplicationLifetime detected @ {DateTime.Now:HH:mm:ss.fff}");
             var rootPanel = new Panel();
             var splash = new Views.MobileSplashView();
             rootPanel.Children.Add(splash);
-            Logger.Info($"Android: splash added to rootPanel @ {DateTime.Now:HH:mm:ss.fff}");
+            Logger.Debug($"Android: splash added to rootPanel @ {DateTime.Now:HH:mm:ss.fff}");
             activity.MainViewFactory = () =>
             {
-                Logger.Info($"Android: MainViewFactory called @ {DateTime.Now:HH:mm:ss.fff}");
+                Logger.Debug($"Android: MainViewFactory called @ {DateTime.Now:HH:mm:ss.fff}");
                 return rootPanel;
             };
-            Logger.Info($"Android: MainViewFactory set, launching init @ {DateTime.Now:HH:mm:ss.fff}");
+            Logger.Debug($"Android: MainViewFactory set, launching init @ {DateTime.Now:HH:mm:ss.fff}");
 
             _ = InitAndroidAfterSplashAsync(rootPanel, splash);
         }
@@ -284,19 +284,19 @@ public partial class App : Application
                 try
                 {
                     var detail = new Views.ItemDetailWindow { DataContext = browseViewModel };
-                    Logger.Info("ItemDetailWindow created");
+                    Logger.Debug("ItemDetailWindow created");
                     detail.Closed += (_, _) =>
                     {
-                        Logger.Info("ItemDetailWindow closed — resetting SelectedItem");
+                        Logger.Debug("ItemDetailWindow closed — resetting SelectedItem");
                         if (browseViewModel.IsUpdateComplete)
                             _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
                         browseViewModel.IsUpdateMode = false;
                         browseViewModel.SelectedItem = null;
                     };
                     browseViewModel.CloseDetailAction = () => detail.Close();
-                    Logger.Info("Calling ShowDialog on ItemDetailWindow");
+                    Logger.Debug("Calling ShowDialog on ItemDetailWindow");
                     detail.ShowDialog(main);
-                    Logger.Info("ShowDialog returned");
+                    Logger.Debug("ShowDialog returned");
                 }
                 catch (Exception ex)
                 {
@@ -371,9 +371,9 @@ public partial class App : Application
                 }
             };
 
-            Logger.Info("Creating BrowseView");
+            Logger.Debug("Creating BrowseView");
             var browseView = new Views.BrowseView { DataContext = browseViewModel };
-            Logger.Info("BrowseView created");
+            Logger.Debug("BrowseView created");
 
             installedViewModel.ConfirmUninstallAsync = async pkg =>
             {
@@ -491,9 +491,9 @@ public partial class App : Application
                 }
             };
 
-            Logger.Info("Creating InstalledView");
+            Logger.Debug("Creating InstalledView");
             var installedView = new Views.InstalledView { DataContext = installedViewModel };
-            Logger.Info("InstalledView created");
+            Logger.Debug("InstalledView created");
             settingsViewModel.ShowConnectDialogAsync = async () =>
             {
                 var connVm = new ConnectionViewModel(authService, networkService);
@@ -502,14 +502,14 @@ public partial class App : Application
                 return connVm.IsSuccess;
             };
 
-            Logger.Info("Creating FileExplorerView");
+            Logger.Debug("Creating FileExplorerView");
             var fileExplorerView = new Views.FileExplorerView();
-            Logger.Info("Setting FileExplorerView DataContext");
+            Logger.Debug("Setting FileExplorerView DataContext");
             fileExplorerView.DataContext = fileExplorerViewModel;
-            Logger.Info("FileExplorerView created");
-            Logger.Info("Creating ToolsView");
+            Logger.Debug("FileExplorerView created");
+            Logger.Debug("Creating ToolsView");
             var toolsView = new Views.ToolsView { DataContext = toolsViewModel };
-            Logger.Info("ToolsView created");
+            Logger.Debug("ToolsView created");
 
             toolsViewModel.ShowScreenshotAction = () =>
             {
@@ -751,7 +751,7 @@ public partial class App : Application
                 return vm.Confirmed;
             };
 
-            Logger.Info("Creating InspectorView");
+            Logger.Debug("Creating InspectorView");
             var agentService = new XrayAgentService();
             var inspectorViewModel = new InspectorViewModel(authService, agentService);
             inspectorViewModel.ShowConnectAction = mainViewModel.ShowConnectAction;
@@ -783,9 +783,9 @@ public partial class App : Application
             inspectorViewModel.OpenCustomInstallWithFileAction = openCustomInstallWithFile;
             var inspectorView = new Views.InspectorView { DataContext = inspectorViewModel };
 
-            Logger.Info("Creating SettingsView");
+            Logger.Debug("Creating SettingsView");
             var settingsView = new Views.SettingsView { DataContext = settingsViewModel };
-            Logger.Info("Creating LogsView");
+            Logger.Debug("Creating LogsView");
             var logsView = new Views.LogsView { DataContext = new LogsViewModel() };
 
             main.ViewCarousel.Items.Add(browseView);
@@ -802,7 +802,7 @@ public partial class App : Application
 
             // File explorer: manual init via Browse button
 
-            Logger.Info("Main window loaded, closing splash");
+            Logger.Debug("Main window loaded, closing splash");
             splash.Close();
 
             // First-run wizard (after splash to avoid z-order overlap)
@@ -890,7 +890,7 @@ public partial class App : Application
         // Can't query the active renderer at App init in Avalonia 12.
         // The configured backend is logged here; actual GPU/software
         // fallback info is available once a TopLevel window exists.
-        Logger.Info("Rendering: Skia via ANGLE (D3D11), MaxGpuResourceSizeBytes=512MB, UseRegionDirtyRectClipping=true");
+            Logger.Debug("Rendering: Skia via ANGLE (D3D11), MaxGpuResourceSizeBytes=512MB, UseRegionDirtyRectClipping=true");
     }
 
     private static async Task InitAndroidAfterSplashAsync(
@@ -1230,12 +1230,12 @@ public partial class App : Application
 
             mainViewModel.OnTabChanged = tab =>
             {
-                Logger.Info($"Android: OnTabChanged → tab {tab} authService.IsConnected={authService.IsConnected} vm.IsConnected={installedViewModel.IsConnected}");
+                Logger.Info($"Android: OnTabChanged → tab {tab}");
                 if (tab == 1)
                 {
                     if (installedViewModel.IsConnected != authService.IsConnected)
                     {
-                        Logger.Info($"Android: InstalledView IsConnected desync fix — was {installedViewModel.IsConnected}, correcting to {authService.IsConnected}");
+                        Logger.Debug($"Android: InstalledView IsConnected desync fix — was {installedViewModel.IsConnected}, correcting to {authService.IsConnected}");
                         installedViewModel.IsConnected = authService.IsConnected;
                     }
                     installedViewModel.StartPolling();
@@ -1319,6 +1319,25 @@ public partial class App : Application
                     ConfirmText = "Enable",
                     CancelText = "Cancel",
                     ImageSource = "avares://XBVault/Assets/Views/InstalledView/installed-autostart-16.png"
+                };
+                var dlg = new Views.MobileConfirmDialogView { DataContext = vm };
+                var tcs = vm.WaitForResult();
+                main.ShowOverlay(dlg);
+                dlg.SetOnBack(() => { vm.CancelCommand.Execute(null); main.CloseOverlay(); });
+                var result = await tcs;
+                main.CloseOverlay();
+                return result;
+            };
+
+            installedViewModel.ConfirmUninstallAsync = async pkg =>
+            {
+                var vm = new Views.MobileConfirmDialogViewModel
+                {
+                    Title = "Uninstall Package",
+                    Message = $"Are you sure you want to uninstall {pkg.Name}?",
+                    ConfirmText = "Uninstall",
+                    CancelText = "Cancel",
+                    ImageSource = "avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
                 };
                 var dlg = new Views.MobileConfirmDialogView { DataContext = vm };
                 var tcs = vm.WaitForResult();
@@ -1532,7 +1551,7 @@ public partial class App : Application
                 return Task.CompletedTask;
             };
 
-            Logger.Info($"Android: MobileMainWindow loaded @ {DateTime.Now:HH:mm:ss.fff}");
+            Logger.Debug($"Android: MobileMainWindow loaded @ {DateTime.Now:HH:mm:ss.fff}");
 
             // Auto-load catalog on startup (same as desktop)
             _ = browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
@@ -1598,11 +1617,11 @@ public partial class App : Application
         IXboxPackageService packageService,
         PackageInstallService installService)
     {
-        Logger.Info("ShowMobileCustomInstall: creating view and VM");
+        Logger.Debug("ShowMobileCustomInstall: creating view and VM");
         try
         {
         var vm = new CustomInstallViewModel(packageService, installService);
-        Logger.Info("ShowMobileCustomInstall: VM created, setting up delegates");
+        Logger.Debug("ShowMobileCustomInstall: VM created, setting up delegates");
         var pickFileFilter = new List<FilePickerFileType>
         {
             new FilePickerFileType("Package files")
@@ -1647,9 +1666,9 @@ public partial class App : Application
         var ciView = new Views.MobileCustomInstallView();
         ciView.SetViewModel(vm);
         ciView.CloseRequested += (_, _) => main.CloseOverlay();
-        Logger.Info("ShowMobileCustomInstall: calling ShowOverlay");
+        Logger.Debug("ShowMobileCustomInstall: calling ShowOverlay");
         main.ShowOverlay(ciView);
-        Logger.Info("ShowMobileCustomInstall: overlay shown");
+        Logger.Debug("ShowMobileCustomInstall: overlay shown");
         }
         catch (Exception ex)
         {

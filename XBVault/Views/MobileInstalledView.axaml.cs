@@ -1,8 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
-using Avalonia.VisualTree;
 using XBVault.Services;
 using XBVault.ViewModels;
 
@@ -10,6 +8,8 @@ namespace XBVault.Views;
 
 public partial class MobileInstalledView : UserControl
 {
+    private Flyout? _openFlyout;
+
     public MobileInstalledView()
     {
         InitializeComponent();
@@ -37,39 +37,38 @@ public partial class MobileInstalledView : UserControl
 
     private void OnSideloadClick(object? sender, RoutedEventArgs e)
     {
-        XBVault.Services.Logger.Info("MobileInstalledView: Sideload button clicked");
+        Logger.Info("MobileInstalledView: Sideload button clicked");
         try
         {
             if (DataContext is InstalledViewModel vm)
             {
-                XBVault.Services.Logger.Info($"MobileInstalledView: DataContext OK, ShowCustomInstallAction is {(vm.ShowCustomInstallAction != null ? "wired" : "NULL")}");
+                Logger.Debug($"MobileInstalledView: DataContext OK, ShowCustomInstallAction is {(vm.ShowCustomInstallAction != null ? "wired" : "NULL")}");
                 vm.OpenCustomInstallCommand.Execute(null);
             }
             else
             {
-                XBVault.Services.Logger.Error($"MobileInstalledView: DataContext is not InstalledViewModel, it is {DataContext?.GetType().Name ?? "null"}");
+                Logger.Error($"MobileInstalledView: DataContext is not InstalledViewModel, it is {DataContext?.GetType().Name ?? "null"}");
             }
         }
         catch (Exception ex)
         {
-            XBVault.Services.Logger.Error(ex, "MobileInstalledView: Sideload click failed");
+            Logger.Error(ex, "MobileInstalledView: Sideload click failed");
         }
+    }
+
+    private void OnFlyoutOpened(object? sender, EventArgs e)
+    {
+        _openFlyout = sender as Flyout;
+        Logger.Debug($"MobileInstalledView: Flyout opened, captured reference");
     }
 
     private void OnHamburgerItemClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is Visual visual)
+        Logger.Debug($"MobileInstalledView: HamburgerItemClick sender={sender?.GetType().Name}, flyout open={_openFlyout?.IsOpen}");
+        if (_openFlyout is not null && _openFlyout.IsOpen)
         {
-            var current = visual.GetVisualParent();
-            while (current != null)
-            {
-                if (current is Popup popup)
-                {
-                    popup.IsOpen = false;
-                    return;
-                }
-                current = (current as Visual)?.GetVisualParent();
-            }
+            var flyout = _openFlyout;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => flyout.IsOpen = false, Avalonia.Threading.DispatcherPriority.Background);
         }
     }
 }

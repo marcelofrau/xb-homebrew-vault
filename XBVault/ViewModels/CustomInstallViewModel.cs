@@ -382,7 +382,7 @@ public partial class CustomInstallViewModel : ObservableObject
 
         if (_analysis is not null)
         {
-            Logger.Info($"AnalyzeLocalFile: result — main={Path.GetFileName(_analysis.MainPackage)}, deps={_analysis.Dependencies?.Length ?? 0}, files={_analysis.AllFiles.Length}, workDir={_analysis.WorkingDirectory}");
+            Logger.Debug($"AnalyzeLocalFile: result — main={Path.GetFileName(_analysis.MainPackage)}, deps={_analysis.Dependencies?.Length ?? 0}, files={_analysis.AllFiles.Length}, workDir={_analysis.WorkingDirectory}");
             if (_analysis.AllFiles.Length > 0)
             {
                 foreach (var f in _analysis.AllFiles)
@@ -423,7 +423,7 @@ public partial class CustomInstallViewModel : ObservableObject
             response.EnsureSuccessStatusCode();
             var totalBytes = response.Content.Headers.ContentLength ?? -1;
             var contentType = response.Content.Headers.ContentType?.MediaType ?? "unknown";
-            Logger.Info($"DownloadAndAnalyzeAsync: HTTP {(int)response.StatusCode}, contentType={contentType}, contentLength={totalBytes}");
+            Logger.Debug($"DownloadAndAnalyzeAsync: HTTP {(int)response.StatusCode}, contentType={contentType}, contentLength={totalBytes}");
 
             using (var stream = await response.Content.ReadAsStreamAsync())
             using (var fs = File.Create(localPath))
@@ -438,12 +438,12 @@ public partial class CustomInstallViewModel : ObservableObject
                 }
 
                 sw.Stop();
-                Logger.Info($"DownloadAndAnalyzeAsync: download complete — {totalRead} bytes in {sw.ElapsedMilliseconds}ms ({(totalRead > 0 && sw.ElapsedMilliseconds > 0 ? $"{totalRead / 1024.0 / (sw.ElapsedMilliseconds / 1000.0):F1} KB/s" : "N/A")})");
+                Logger.Debug($"DownloadAndAnalyzeAsync: download complete — {totalRead} bytes in {sw.ElapsedMilliseconds}ms ({(totalRead > 0 && sw.ElapsedMilliseconds > 0 ? $"{totalRead / 1024.0 / (sw.ElapsedMilliseconds / 1000.0):F1} KB/s" : "N/A")})");
             }
 
             var fileInfo = new FileInfo(localPath);
             var ext = Path.GetExtension(localPath);
-            Logger.Info($"DownloadAndAnalyzeAsync: saved {fileInfo.Length} bytes to {localPath} (ext={ext})");
+            Logger.Debug($"DownloadAndAnalyzeAsync: saved {fileInfo.Length} bytes to {localPath} (ext={ext})");
 
             if (string.Equals(ext, ".html", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(ext, ".htm", StringComparison.OrdinalIgnoreCase) ||
@@ -546,7 +546,7 @@ public partial class CustomInstallViewModel : ObservableObject
         if (PerformCleanInstall)
         {
             var identityName = ExtractPackageIdentity(analysis.MainPackage);
-            Logger.Debug($"InstallAsync: cleanInstall identity={identityName ?? "null"}");
+            Logger.Info($"InstallAsync: cleanInstall identity={identityName ?? "null"}");
             if (!string.IsNullOrEmpty(identityName))
             {
                 try
@@ -589,7 +589,7 @@ public partial class CustomInstallViewModel : ObservableObject
         var selectedDeps = DepItems
             .Select(d => d.FilePath)
             .ToArray();
-        Logger.Debug($"InstallAsync: sending {selectedDeps.Length} selected deps to Xbox");
+        Logger.Info($"InstallAsync: sending {selectedDeps.Length} selected deps to Xbox");
 
         var result = await _packageService.InstallPackageAsync(
             analysis.MainPackage,

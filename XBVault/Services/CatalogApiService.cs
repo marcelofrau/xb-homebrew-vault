@@ -326,7 +326,7 @@ public partial class CatalogApiService
             // Check for stale cache missing firstReleaseDate
             if (items.Any(i => !string.IsNullOrWhiteSpace(i.ReleaseDate) && string.IsNullOrWhiteSpace(i.FirstReleaseDate)))
             {
-                Logger.Info("Cache missing firstReleaseDate — invalidating for re-fetch");
+                Logger.Debug("Cache missing firstReleaseDate — invalidating for re-fetch");
                 return null;
             }
 
@@ -393,7 +393,7 @@ public partial class CatalogApiService
             var json = JsonSerializer.Serialize(cache, _jsonOptions);
 
             File.WriteAllText(CachePath, json);
-            Logger.Info($"Cache saved: {items.Count} items to {CachePath}");
+            Logger.Debug($"Cache saved: {items.Count} items to {CachePath}");
         }
         catch (Exception ex)
         {
@@ -411,7 +411,7 @@ public partial class CatalogApiService
             if (File.Exists(CachePath))
             {
                 File.Delete(CachePath);
-                Logger.Info("Cache cleared");
+                Logger.Debug("Cache cleared");
             }
         }
         catch (Exception ex)

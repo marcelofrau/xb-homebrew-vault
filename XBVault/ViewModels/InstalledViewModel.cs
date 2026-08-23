@@ -249,7 +249,7 @@ public partial class InstalledViewModel : ObservableObject
         NotifyUpdateState();
         if (value is not null)
         {
-            Logger.Info($"Selected package raw:\n{value.RawJson}");
+            Logger.Debug($"Selected package raw:\n{value.RawJson}");
         }
     }
 
@@ -347,6 +347,7 @@ public partial class InstalledViewModel : ObservableObject
     [RelayCommand]
     private async Task ToggleIgnoreUpdateAsync(InstalledPackage pkg)
     {
+        Logger.Info($"ToggleIgnoreUpdateCommand fired, pkg={pkg?.Name ?? "null"}");
         if (pkg is null) return;
 
         pkg.IgnoreUpdateAlerts = !pkg.IgnoreUpdateAlerts;
@@ -523,6 +524,7 @@ public partial class InstalledViewModel : ObservableObject
     [RelayCommand]
     private async Task LaunchPackageAsync(InstalledPackage pkg)
     {
+        Logger.Info($"LaunchPackageCommand fired, pkg={pkg?.Name ?? "null"}, IsRunning={pkg?.IsRunning}");
         if (pkg is null || pkg.IsRunning) return;
 
         var result = await _launcher.LaunchAsync(pkg, _allPackages, status => ToolbarStatus = status);
@@ -537,6 +539,7 @@ public partial class InstalledViewModel : ObservableObject
     [RelayCommand]
     private async Task SuspendPackageAsync(InstalledPackage pkg)
     {
+        Logger.Info($"SuspendPackageCommand fired, pkg={pkg?.Name ?? "null"}, IsRunning={pkg?.IsRunning}");
         if (pkg is null || !pkg.IsRunning) return;
 
         var ok = await _packageService.SuspendPackageAsync(pkg.FullName);
@@ -704,11 +707,13 @@ public partial class InstalledViewModel : ObservableObject
     [RelayCommand]
     private async Task UninstallPackageAsync(InstalledPackage? pkg)
     {
+        Logger.Info($"UninstallPackageCommand fired, pkg={pkg?.Name ?? "null"}, ConfirmUninstallAsync={ConfirmUninstallAsync != null}");
         if (pkg is null) return;
 
         if (ConfirmUninstallAsync is not null)
         {
             var ok = await ConfirmUninstallAsync(pkg);
+            Logger.Info($"Uninstall confirm result: {ok}");
             if (!ok) return;
         }
 
@@ -737,8 +742,12 @@ public partial class InstalledViewModel : ObservableObject
     [RelayCommand]
     private async Task UpdatePackageAsync(InstalledPackage? pkg)
     {
+        Logger.Info($"UpdatePackageCommand fired, pkg={pkg?.Name ?? "null"}, CheckOutdatedAsync={CheckOutdatedAsync != null}, ShowCatalogDetailAction={ShowCatalogDetailAction != null}");
         if (pkg is null || CheckOutdatedAsync is null || ShowCatalogDetailAction is null)
+        {
+            Logger.Info($"UpdatePackage skipped — missing delegate");
             return;
+        }
 
         try
         {
