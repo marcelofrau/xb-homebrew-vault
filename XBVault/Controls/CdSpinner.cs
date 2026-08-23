@@ -24,10 +24,19 @@ public class CdSpinner : Grid
     public static readonly StyledProperty<string> StatusTextProperty =
         AvaloniaProperty.Register<CdSpinner, string>(nameof(StatusText), "Loading...");
 
+    public static readonly StyledProperty<bool> ShowTextProperty =
+        AvaloniaProperty.Register<CdSpinner, bool>(nameof(ShowText), true);
+
     public string StatusText
     {
         get => GetValue(StatusTextProperty);
         set => SetValue(StatusTextProperty, value);
+    }
+
+    public bool ShowText
+    {
+        get => GetValue(ShowTextProperty);
+        set => SetValue(ShowTextProperty, value);
     }
 
     public CdSpinner()
@@ -70,6 +79,8 @@ public class CdSpinner : Grid
         {
             if (e.Property == StatusTextProperty)
                 _loadingText.Text = StatusText;
+            if (e.Property == ShowTextProperty)
+                _loadingText.IsVisible = ShowText;
         };
     }
 

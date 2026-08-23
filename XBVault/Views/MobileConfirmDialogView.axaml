@@ -18,11 +18,19 @@
     <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12"
             Padding="24,20" MaxWidth="380" HorizontalAlignment="Stretch">
       <StackPanel Spacing="16">
+        <!-- Centered image -->
+        <Image Source="{Binding ImageSource}" Width="64" Height="64"
+               Stretch="Uniform" HorizontalAlignment="Center"
+               IsVisible="{Binding ImageSource, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        <!-- Title -->
         <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="Bold"
-                   Foreground="White" TextWrapping="Wrap"/>
+                   Foreground="White" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+        <!-- Message -->
         <TextBlock Text="{Binding Message}" FontSize="14"
-                   Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
-        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                   Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"
+                   HorizontalAlignment="Center" TextAlignment="Center"/>
+        <!-- Buttons -->
+        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
           <Button Command="{Binding CancelCommand}"
                   Padding="20,12" FontSize="14" Background="{StaticResource SurfaceAltBrush}"
                   Foreground="{StaticResource TextMutedBrush}">

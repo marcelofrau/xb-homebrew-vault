@@ -1135,7 +1135,8 @@ public partial class App : Application
                     Title = title,
                     Message = message,
                     ConfirmText = confirmText ?? "OK",
-                    CancelText = cancelText ?? "Cancel"
+                    CancelText = cancelText ?? "Cancel",
+                    ImageSource = iconSource
                 };
                 var dlg = new Views.MobileConfirmDialogView { DataContext = vm };
                 var tcs = vm.WaitForResult();
@@ -1309,7 +1310,8 @@ public partial class App : Application
                     Title = "Autostart on Connect",
                     Message = message,
                     ConfirmText = "Enable",
-                    CancelText = "Cancel"
+                    CancelText = "Cancel",
+                    ImageSource = "avares://XBVault/Assets/Views/InstalledView/installed-autostart-16.png"
                 };
                 var dlg = new Views.MobileConfirmDialogView { DataContext = vm };
                 var tcs = vm.WaitForResult();
@@ -1371,7 +1373,8 @@ public partial class App : Application
                     Title = "Confirm Delete",
                     Message = summary,
                     ConfirmText = "Delete",
-                    CancelText = "Cancel"
+                    CancelText = "Cancel",
+                    ImageSource = "avares://XBVault/Assets/Views/MobileFileExplorer/mobilefileexplorer-delete-32.png"
                 };
                 var dlg = new Views.MobileConfirmDialogView { DataContext = vm };
                 var tcs = vm.WaitForResult();

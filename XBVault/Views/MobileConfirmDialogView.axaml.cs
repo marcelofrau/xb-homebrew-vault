@@ -29,6 +29,9 @@ public partial class MobileConfirmDialogViewModel : ObservableObject
     private string _message = "";
 
     [ObservableProperty]
+    private string? _imageSource;
+
+    [ObservableProperty]
     private string _confirmText = "OK";
 
     [ObservableProperty]

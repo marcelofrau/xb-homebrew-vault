@@ -15,7 +15,8 @@
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,*">
-    <!-- Loading -->
+
+    <!-- Capturing progress -->
     <StackPanel Grid.Row="0"
                 IsVisible="{Binding IsCapturing}"
                 HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
@@ -36,12 +37,12 @@
                  FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/>
     </Border>
 
-    <!-- Screenshot image + buttons -->
-    <ScrollViewer Grid.Row="0" IsVisible="{Binding HasScreenshot}">
-      <StackPanel Spacing="12" Margin="12" HorizontalAlignment="Center">
+    <!-- Screenshot result: image + buttons -->
+    <ScrollViewer Grid.Row="1" IsVisible="{Binding HasScreenshot}">
+      <StackPanel Spacing="16" Margin="16" HorizontalAlignment="Center">
         <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="8">
           <Image Source="{Binding ScreenshotImage}"
-                 Stretch="Uniform" HorizontalAlignment="Center" MaxHeight="600"/>
+                 Stretch="Uniform" HorizontalAlignment="Center" MaxHeight="500"/>
         </Border>
         <Button Command="{Binding SaveScreenshotCommand}"
                 Padding="16,14" HorizontalAlignment="Stretch">
@@ -62,17 +63,24 @@
       </StackPanel>
     </ScrollViewer>
 
-    <!-- Capture button (when no screenshot yet) -->
-    <Button Grid.Row="0"
-            IsVisible="{Binding ShowCaptureButton}"
-            Command="{Binding CaptureScreenshotCommand}"
-            Padding="24,16" HorizontalAlignment="Center" VerticalAlignment="Center">
-      <StackPanel Orientation="Horizontal" Spacing="10">
-        <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-screenshot-20.png"
-               Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
-        <TextBlock Text="Capture Screenshot" FontSize="15" VerticalAlignment="Center"/>
-      </StackPanel>
-    </Button>
+    <!-- Placeholder: icon + capture button when no screenshot -->
+    <StackPanel Grid.Row="1"
+                IsVisible="{Binding ShowCaptureButton}"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+      <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-screenshot-20.png"
+             Width="64" Height="64" Stretch="Uniform" Opacity="0.4"/>
+      <TextBlock Text="No screenshot captured yet" FontSize="14"
+                 Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+      <Button Command="{Binding CaptureScreenshotCommand}"
+              Padding="24,16" HorizontalAlignment="Center">
+        <Grid ColumnDefinitions="22,Auto" ColumnSpacing="8">
+          <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-screenshot-20.png"
+                 Width="22" Height="22" Stretch="Uniform" VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="1" Text="Capture Screenshot" FontSize="15" VerticalAlignment="Center"/>
+        </Grid>
+      </Button>
+    </StackPanel>
+
   </Grid>
 
 </UserControl>

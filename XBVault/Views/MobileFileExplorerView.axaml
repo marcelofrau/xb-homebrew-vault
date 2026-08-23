@@ -126,7 +126,7 @@
                 IsVisible="{Binding IsLoading}"
                 HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
       <controls:CdSpinner HorizontalAlignment="Center"
-                          StatusText="{Binding InitStepText}"/>
+                          StatusText="{Binding InitStepText}" ShowText="False"/>
     </StackPanel>
 
     <!-- Ready state: toolbar + path + file list + activity + status -->

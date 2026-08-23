@@ -74,21 +74,21 @@
           <Button.Flyout>
             <Flyout Placement="BottomEdgeAlignedRight">
               <StackPanel Width="280" Spacing="2" Margin="6" Background="{StaticResource SurfaceAltBrush}">
-                <Button Classes="HamburgerItem" Click="OnMenuNotifications">
+                <Button Classes="HamburgerItem" Click="OnMenuNotifications" IsVisible="False">
                   <StackPanel Orientation="Horizontal" Spacing="14">
                     <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-bell-20.png"
                            Width="24" Height="24" Stretch="Uniform"/>
                     <TextBlock Text="Notifications" VerticalAlignment="Center" FontSize="15"/>
                   </StackPanel>
                 </Button>
-                <Button Classes="HamburgerItem" Click="OnMenuJobs">
+                <Button Classes="HamburgerItem" Click="OnMenuJobs" IsVisible="False">
                   <StackPanel Orientation="Horizontal" Spacing="14">
                     <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-tasks-20.png"
                            Width="24" Height="24" Stretch="Uniform"/>
                     <TextBlock Text="Jobs" VerticalAlignment="Center" FontSize="15"/>
                   </StackPanel>
                 </Button>
-                <Border Height="1" Background="{StaticResource BorderBrush}" Margin="10,6"/>
+                <Border Height="1" Background="{StaticResource BorderBrush}" Margin="10,6" IsVisible="False"/>
                 <Button Classes="HamburgerItem" Click="OnMenuSettings">
                   <StackPanel Orientation="Horizontal" Spacing="14">
                     <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-settings-32.png"
