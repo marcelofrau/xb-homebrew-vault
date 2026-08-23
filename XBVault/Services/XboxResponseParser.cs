@@ -93,7 +93,8 @@ public static class XboxResponseParser
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             if (!root.TryGetProperty("Code", out var el)) return false;
-            if (el.GetInt32() != unchecked((int)0x80070490)) return false;
+            var code = el.GetInt32();
+            if (code != unchecked((int)0x80070490) && code != unchecked((int)0x80073D06)) return false;
             message = root.TryGetProperty("Reason", out var r) ? r.GetString() ?? "" : "";
             return true;
         }

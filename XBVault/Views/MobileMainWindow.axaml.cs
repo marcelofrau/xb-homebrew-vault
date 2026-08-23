@@ -241,7 +241,13 @@ public partial class MobileMainWindow : UserControl
     {
         CloseHamburgerFlyout();
         XBVault.Services.Logger.Info("Android: Menu → Logs clicked");
-        // TODO: Fase 2 - Logs page
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            var vm = new ViewModels.LogsViewModel();
+            var view = new MobileLogsView { DataContext = vm };
+            view.SetOnBack(() => CloseOverlay());
+            ShowOverlay(view);
+        });
     }
 
     private void OnMenuSettings(object? sender, RoutedEventArgs e)

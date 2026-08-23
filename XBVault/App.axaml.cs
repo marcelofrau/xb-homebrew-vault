@@ -1046,14 +1046,15 @@ public partial class App : Application
                     await performanceService.ConnectPerformanceWsAsync(
                         snap =>
                         {
+                            var ica = System.Globalization.CultureInfo.InvariantCulture;
                             var b = new System.Text.StringBuilder();
-                            b.AppendLine($"CPU: {snap.CpuLoad}%");
-                            b.AppendLine($"GPU: {snap.GpuUsage}%");
-                            b.AppendLine($"Memory Used: {snap.MemoryUsedMB:F1} MB");
-                            b.AppendLine($"Memory Total: {snap.MemoryTotalMB:F1} MB");
-                            b.AppendLine($"Committed: {snap.MemoryCommittedBytes / 1024 / 1024} MB");
-                            b.AppendLine($"IO Read: {snap.IOReadSpeed / 1024} KB/s  Write: {snap.IOWriteSpeed / 1024} KB/s");
-                            b.AppendLine($"Net In: {snap.NetworkInBytes / 1024} KB  Out: {snap.NetworkOutBytes / 1024} KB");
+                            b.AppendLine(ica, $"CPU: {snap.CpuLoad}%");
+                            b.AppendLine(ica, $"GPU: {snap.GpuUsage}%");
+                            b.AppendLine(ica, $"Memory Used: {snap.MemoryUsedMB:F1} MB");
+                            b.AppendLine(ica, $"Memory Total: {snap.MemoryTotalMB:F1} MB");
+                            b.AppendLine(ica, $"Committed: {snap.MemoryCommittedBytes / 1024 / 1024} MB");
+                            b.AppendLine(ica, $"IO Read: {snap.IOReadSpeed / 1024} KB/s  Write: {snap.IOWriteSpeed / 1024} KB/s");
+                            b.AppendLine(ica, $"Net In: {snap.NetworkInBytes / 1024} KB  Out: {snap.NetworkOutBytes / 1024} KB");
                             _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                             {
                                 vm.ContentText = b.ToString();
@@ -1202,7 +1203,13 @@ public partial class App : Application
 
             settingsViewModel.ShowLogsAction = () =>
             {
-                Logger.Info("Android: ShowLogsAction invoked");
+                Dispatcher.UIThread.Post(() =>
+                {
+                    var vm = new ViewModels.LogsViewModel();
+                    var logsView = new Views.MobileLogsView { DataContext = vm };
+                    logsView.SetOnBack(() => main.CloseOverlay());
+                    main.ShowOverlay(logsView);
+                });
             };
 
             browseViewModel.ShowDetailAction = item =>

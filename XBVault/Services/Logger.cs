@@ -69,6 +69,11 @@ public static class Logger
     private static ILogger _logger = Serilog.Core.Logger.None;
     private static bool _initialized;
 
+    /// <summary>
+    /// Directory where log files are stored (%APPDATA%/XBVault/logs/).
+    /// </summary>
+    public static string LogDirectory => _logDir ?? "";
+
     public static LogLevel MinLevel
     {
         get => _minLevel;

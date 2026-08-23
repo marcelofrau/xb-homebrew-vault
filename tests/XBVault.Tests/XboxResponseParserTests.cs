@@ -143,10 +143,15 @@ public class XboxResponseParserTests : IDisposable
     [Fact]
     public void IsHigherVersionError_DetectsAndExtractsReason()
     {
-        var code = unchecked((int)0x80070490);
+        var code1 = unchecked((int)0x80070490);
         Assert.True(XboxResponseParser.IsHigherVersionError(
-            $$"""{"Code":{{code}},"Reason":"Newer version installed"}""", out var msg));
+            $$"""{"Code":{{code1}},"Reason":"Newer version installed"}""", out var msg));
         Assert.Equal("Newer version installed", msg);
+
+        var code2 = unchecked((int)0x80073D06);
+        Assert.True(XboxResponseParser.IsHigherVersionError(
+            $$"""{"Code":{{code2}},"Reason":"Uma versão superior desse pacote já está instalada."}""", out var msg2));
+        Assert.Contains("versão superior", msg2);
 
         Assert.False(XboxResponseParser.IsHigherVersionError("""{"Code":7}""", out _));
     }

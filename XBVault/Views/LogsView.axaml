@@ -4,6 +4,7 @@
              xmlns:models="using:XBVault.Models"
              xmlns:converters="using:XBVault.Converters"
              xmlns:svc="using:XBVault.Services"
+             xmlns:controls="using:XBVault.Controls"
 
              x:Class="XBVault.Views.LogsView"
              x:DataType="vm:LogsViewModel">
@@ -21,7 +22,7 @@
                  Classes="Muted" FontSize="14" Margin="0,4,0,0"/>
     </StackPanel>
     <Border Grid.Row="1" Padding="8,6" CornerRadius="6" Background="{StaticResource SurfaceAltBrush}">
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8">
         <StackPanel Orientation="Horizontal" Spacing="4">
           <CheckBox IsChecked="{Binding AutoScroll}"
                     FontSize="13" Foreground="White"/>
@@ -65,7 +66,17 @@
             <TextBlock Grid.Column="1" Text="Clear" FontSize="12" VerticalAlignment="Center"/>
           </Grid>
         </Button>
-        <Button Grid.Column="6"
+        <Button Grid.Column="6" x:Name="ShareLogsButton"
+                Click="OnShareLogsClick"
+                Padding="8,4"
+                ToolTip.Tip="Share logs via GoFile (QR code)">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+            <Image Source="avares://XBVault/Assets/Views/LogsView/logs-share-16.png"
+                   Width="16" Height="16" Stretch="Uniform"/>
+            <TextBlock Grid.Column="1" Text="Share" FontSize="12" VerticalAlignment="Center"/>
+          </Grid>
+        </Button>
+        <Button Grid.Column="7"
                 Command="{Binding ToggleFilterCommand}"
                 Padding="8,4"
                 ToolTip.Tip="Toggle filter panel">
@@ -109,6 +120,18 @@
               </ListBox.ItemTemplate>
             </ListBox>
           </ScrollViewer>
+
+          <!-- Share progress overlay -->
+          <Border x:Name="ShareOverlay" IsVisible="False"
+                  Background="#AA000000" CornerRadius="6"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <controls:CdSpinner HorizontalAlignment="Center" Width="48" Height="48"
+                                  ShowText="False"/>
+              <TextBlock x:Name="ShareStatusText" Text="Uploading logs..."
+                         FontSize="13" Foreground="White" HorizontalAlignment="Center"/>
+            </StackPanel>
+          </Border>
         </Grid>
       </Border>
 

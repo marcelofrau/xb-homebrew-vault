@@ -34,6 +34,12 @@ public partial class MobileWizardShell : UserControl
             // Back button in title bar always closes the wizard
             CancelRequested?.Invoke(this, EventArgs.Empty);
         };
+
+        StepContent.GotFocus += (_, e) =>
+        {
+            if (e.Source is Control ctrl)
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => ctrl.BringIntoView());
+        };
     }
 
     private static Avalonia.Media.Imaging.Bitmap LoadImage(string fileName)

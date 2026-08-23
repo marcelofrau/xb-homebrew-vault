@@ -1,0 +1,112 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:XBVault.ViewModels"
+xmlns:models="using:XBVault.Models"
+xmlns:logmodel="using:XBVault.Services"
+xmlns:converters="using:XBVault.Converters"
+             xmlns:controls="using:XBVault.Controls"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileLogsView"
+             x:DataType="vm:LogsViewModel"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <UserControl.Resources>
+    <converters:LogLevelToBrushConverter x:Key="LevelToBrush"/>
+    <converters:LogLevelToIconConverter x:Key="LevelToIcon"/>
+  </UserControl.Resources>
+
+  <Grid RowDefinitions="Auto,Auto,*">
+
+    <!-- Title bar -->
+    <views:MobileTitleBar Grid.Row="0" Title="LOGS" ShowAppIcon="False"/>
+
+    <!-- Toolbar: auto-scroll + share -->
+    <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}"
+            Padding="12,8" BorderThickness="0,0,0,1"
+            BorderBrush="{StaticResource CardBorderBrush}">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <CheckBox IsChecked="{Binding AutoScroll}"
+                    FontSize="13" Foreground="White"/>
+          <TextBlock Text="Auto-scroll" FontSize="13"
+                     Foreground="White" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <TextBlock Grid.Column="1"/>
+
+        <Button Grid.Column="2" x:Name="ShareButton"
+                Click="OnShareClick" Padding="10,6">
+          <Grid ColumnDefinitions="18,8,Auto" ColumnSpacing="6">
+            <Image Source="avares://XBVault/Assets/Views/LogsView/logs-send-20.png"
+                   Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Text="Share Logs" FontSize="14"
+                       VerticalAlignment="Center" Foreground="White"/>
+          </Grid>
+        </Button>
+      </Grid>
+    </Border>
+
+    <!-- Log list -->
+    <Border Grid.Row="2" Background="{StaticResource SurfaceAltBrush}" Margin="8" CornerRadius="8">
+      <Grid>
+        <ScrollViewer Name="LogScrollViewer">
+          <ListBox Name="LogListBox"
+                   ItemsSource="{Binding Logs}"
+                   Focusable="False"
+                   BorderThickness="0"
+                   Background="Transparent">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="Padding" Value="4,2"/>
+              </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="logmodel:LogEntry">
+                <Grid ColumnDefinitions="16,6,*" ColumnSpacing="4">
+                  <Image Source="{Binding Level, Converter={StaticResource LevelToIcon}}"
+                         Width="14" Height="14" Stretch="Uniform"
+                         VerticalAlignment="Center"/>
+                  <TextBlock Grid.Column="1"
+                             Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}"
+                             FontFamily="{StaticResource MonoFont}" FontSize="11"
+                             Foreground="{StaticResource TextMutedBrush}"
+                             VerticalAlignment="Center"/>
+                  <TextBlock Grid.Column="2"
+                             Text="{Binding Message}"
+                             FontFamily="{StaticResource MonoFont}" FontSize="12"
+                             TextWrapping="NoWrap"
+                             Foreground="{Binding Level, Converter={StaticResource LevelToBrush}}"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </ScrollViewer>
+
+        <!-- Upload progress overlay -->
+        <Border x:Name="UploadOverlay" IsVisible="False"
+                Background="#AA000000" CornerRadius="8"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                Padding="24,16">
+          <StackPanel Spacing="10" HorizontalAlignment="Center">
+            <controls:CdSpinner HorizontalAlignment="Center" Width="48" Height="48"
+                                ShowText="False"/>
+            <TextBlock x:Name="UploadStatusText" Text="Uploading logs..."
+                       FontSize="13" Foreground="White" HorizontalAlignment="Center"/>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Border>
+
+  </Grid>
+
+</UserControl>

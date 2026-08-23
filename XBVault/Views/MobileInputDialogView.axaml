@@ -25,7 +25,7 @@
         <TextBox Text="{Binding Value}" FontSize="14" Padding="10,8"
                  Background="{StaticResource SurfaceAltBrush}" Foreground="{StaticResource TextBrush}"
                  BorderBrush="{StaticResource AccentBrush}" BorderThickness="1"
-                 CornerRadius="6" Watermark="Enter name..."/>
+                 CornerRadius="6" PlaceholderText="Enter name..."/>
         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
           <Button Command="{Binding CancelCommand}"
                   Padding="20,12" FontSize="14" Background="{StaticResource SurfaceAltBrush}"

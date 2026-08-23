@@ -410,11 +410,13 @@
                     <!-- Banner header -->
                     <Border CornerRadius="8,8,0,0"
                             Height="115"
+                            ClipToBounds="True"
                             Background="{StaticResource SurfaceAltBrush}"
                             HorizontalAlignment="Stretch">
-                      <Panel>
+                      <Panel ClipToBounds="True">
                         <Image Source="{Binding BannerImage}"
                                Stretch="UniformToFill"
+                               MaxHeight="115"
                                RenderOptions.BitmapInterpolationMode="HighQuality"/>
                         <!-- Autostart badge -->
                         <Border Background="#1B8A5A"

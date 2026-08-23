@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="XBVault.Views.MobileQrDialogView"
+             Background="#AA000000">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="32">
+    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12"
+            Padding="24,20" MaxWidth="360" HorizontalAlignment="Stretch">
+      <StackPanel Spacing="16" HorizontalAlignment="Center">
+        <!-- QR Code image -->
+        <Image x:Name="QrImage" Width="250" Height="250"
+               Stretch="Uniform" HorizontalAlignment="Center"/>
+
+        <!-- URL text -->
+        <TextBlock x:Name="UrlText"
+                   FontSize="12" FontFamily="{StaticResource MonoFont}"
+                   Foreground="{StaticResource TextMutedBrush}"
+                   TextWrapping="Wrap" TextAlignment="Center"
+                   HorizontalAlignment="Center"/>
+
+        <!-- Hint -->
+        <TextBlock Text="Scan the QR code or copy the link above"
+                   FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                   HorizontalAlignment="Center"/>
+
+        <!-- Buttons -->
+        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+          <Button x:Name="CopyButton" Click="OnCopyClick"
+                  Padding="20,12" FontSize="14"
+                  Background="{StaticResource SurfaceAltBrush}"
+                  Foreground="{StaticResource TextMutedBrush}">
+            <TextBlock x:Name="CopyButtonText" Text="Copy Link"/>
+          </Button>
+          <Button x:Name="CloseButton" Click="OnCloseClick"
+                  Padding="20,12" FontSize="14" FontWeight="Bold"
+                  Background="{StaticResource AccentBrush}" Foreground="White">
+            <TextBlock Text="Close"/>
+          </Button>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </Grid>
+
+</UserControl>

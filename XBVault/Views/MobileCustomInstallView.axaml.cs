@@ -19,9 +19,8 @@ public partial class MobileCustomInstallView : UserControl
     private readonly StackPanel _step2Content;
     private readonly StackPanel _step3Content;
 
-    private TextBox _sourcePathBox = null!;
     private TextBox _sourceUrlBox = null!;
-    private CheckBox _useFileCheck = null!;
+    private TextBlock _selectedFileText = null!;
     private TextBlock _statusLabel = null!;
     private TextBlock _analysisText = null!;
     private TextBlock _depCountText = null!;
@@ -61,6 +60,15 @@ public partial class MobileCustomInstallView : UserControl
 
         _browseBtn.Command = vm.BrowseFileCommand;
         _analyzeBtn.Command = vm.AnalyzeCommand;
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CustomInstallViewModel.SourcePath))
+            {
+                var path = vm.SourcePath ?? "";
+                _selectedFileText.Text = path;
+                _selectedFileText.IsVisible = !string.IsNullOrWhiteSpace(path);
+            }
+        };
         _addDepBtn.Command = vm.AddDepCommand;
         _installBtn.Command = vm.InstallCommand;
 
@@ -268,8 +276,14 @@ public partial class MobileCustomInstallView : UserControl
         };
         var fileContent = new StackPanel { Spacing = 10 };
         fileContent.Children.Add(fileHeader);
-        _sourcePathBox = MakeTextBox("Path to .appx, .msix, .appxbundle...");
-        fileContent.Children.Add(_sourcePathBox);
+        _selectedFileText = new TextBlock
+        {
+            FontSize = 13,
+            Foreground = FindBrush("TextMutedBrush"),
+            TextWrapping = TextWrapping.Wrap,
+            IsVisible = false
+        };
+        fileContent.Children.Add(_selectedFileText);
         var browseBtn = new Button
         {
             Padding = new Thickness(16, 12),
@@ -327,17 +341,8 @@ public partial class MobileCustomInstallView : UserControl
 
     private void UpdateSourceVisibility()
     {
-        if (_sourcePathBox is null || _urlPanel is null) return;
-        if (_useFileCheck?.IsChecked == true)
-        {
-            _sourcePathBox.IsVisible = true;
-            _urlPanel.IsVisible = false;
-        }
-        else
-        {
-            _sourcePathBox.IsVisible = false;
-            _urlPanel.IsVisible = true;
-        }
+        if (_urlPanel is null) return;
+        _urlPanel.IsVisible = true;
     }
 
     private StackPanel BuildStep1()

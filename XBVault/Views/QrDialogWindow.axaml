@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="XBVault.Views.QrDialogWindow"
+        Title="Share Logs"
+        Width="360" Height="480"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="{StaticResource BgBrush}">
+
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="24" RowSpacing="16">
+    <!-- Header -->
+    <TextBlock Grid.Row="0" Text="Share Logs" FontSize="18" FontWeight="Bold"
+               Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center"/>
+
+    <!-- QR Code -->
+    <Border Grid.Row="1" Background="White" CornerRadius="12"
+            HorizontalAlignment="Center" Padding="16">
+      <Image x:Name="QrImage" Width="220" Height="220" Stretch="Uniform"/>
+    </Border>
+
+    <!-- URL -->
+    <Border Grid.Row="2" Background="{StaticResource SurfaceAltBrush}" CornerRadius="8"
+            Padding="12,8">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <SelectableTextBlock x:Name="UrlText" FontSize="12"
+                             FontFamily="{StaticResource MonoFont}"
+                             Foreground="{StaticResource TextMutedBrush}"
+                             TextTrimming="CharacterEllipsis"
+                             VerticalAlignment="Center"/>
+        <Button Grid.Column="1" x:Name="CopyButton"
+                Click="OnCopyClick"
+                Padding="8,4" ToolTip.Tip="Copy link to clipboard">
+          <TextBlock x:Name="CopyButtonText" Text="Copy" FontSize="12"/>
+        </Button>
+      </Grid>
+    </Border>
+
+    <!-- Status -->
+    <TextBlock Grid.Row="3" x:Name="StatusText"
+               Text="Scan the QR code or copy the link to share these logs."
+               FontSize="12" Foreground="{StaticResource TextDimBrush}"
+               TextWrapping="Wrap" HorizontalAlignment="Center"/>
+
+    <!-- Close -->
+    <Button Grid.Row="4" x:Name="CloseButton" Content="Close" Padding="24,8"
+            Click="OnCloseClick"
+            HorizontalAlignment="Center" HorizontalContentAlignment="Center"/>
+  </Grid>
+</Window>
