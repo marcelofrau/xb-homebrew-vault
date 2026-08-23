@@ -4,5 +4,7 @@
     <item name="android:windowActionBar">false</item>
     <item name="android:windowNoTitle">true</item>
     <item name="android:windowBackground">@drawable/splash_background</item>
+    <item name="android:statusBarColor">#0D1117</item>
+    <item name="android:navigationBarColor">#0D1117</item>
   </style>
 </resources>
