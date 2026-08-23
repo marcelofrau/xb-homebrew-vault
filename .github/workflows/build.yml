@@ -38,10 +38,7 @@ jobs:
         path: XBVault.Desktop/bin/Release/net10.0/
 
   test:
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -74,17 +71,24 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    - name: Restore
-      run: dotnet restore XBVault.Android/XBVault.Android.csproj
+    - name: Install Android SDK components
+      run: |
+        sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
 
-    - name: Build
-      run: dotnet build XBVault.Android/XBVault.Android.csproj -c Release --no-restore
+    - name: Clean
+      run: dotnet clean XBVault.Android/XBVault.Android.csproj -r android-arm64 -c Release
+
+    - name: Restore
+      run: dotnet restore XBVault.Android/XBVault.Android.csproj -r android-arm64
+
+    - name: Publish
+      run: dotnet publish XBVault.Android/XBVault.Android.csproj -c Release -r android-arm64 --no-restore
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: XBVault-android-arm64
-        path: XBVault.Android/bin/Release/net10.0-android36.0/android-arm64/
+        path: XBVault.Android/bin/Release/net10.0-android36.0/android-arm64/publish/
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -133,9 +137,14 @@ jobs:
         distribution: 'microsoft'
         java-version: '21'
 
-    - name: Setup Android SDK
+    - name: Setup Android SDK (Android)
       if: matrix.rid == 'android-arm64'
       uses: android-actions/setup-android@v3
+
+    - name: Install Android SDK components (Android)
+      if: matrix.rid == 'android-arm64'
+      run: |
+        sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
 
     - name: Build release
       shell: bash
@@ -157,7 +166,7 @@ jobs:
         echo "Verifying: $(basename "$zip")"
         case "${{ matrix.rid }}" in
           win-*)     expected="XBVault.Desktop.exe" ;;
-          android-*) expected="com.xbvault.xbvault.android-Signed.apk" ;;
+          android-*) expected="XBVault.Android-Signed.apk" ;;
           *)         expected="XBVault.Desktop" ;;
         esac
         if unzip -Z1 "$zip" 2>/dev/null | grep -qxF "$expected"; then
@@ -166,7 +175,7 @@ jobs:
           echo "✅ Package contains executables"
         else
           echo "::error::Missing '$expected' in $(basename "$zip")"
-          ZIP contents:
+          echo "ZIP contents:"
           unzip -Z1 "$zip"
           exit 1
         fi

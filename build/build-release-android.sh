@@ -30,10 +30,12 @@ PUBLISH_DIR="$DIST_DIR/publish-android"
 echo "Building XBVault v$VERSION for $RID..."
 mkdir -p "$PUBLISH_DIR"
 
+dotnet clean "$PROJ_DIR" -c Release -r "$RID" || true
+
 dotnet publish "$PROJ_DIR" \
     -c Release \
     -r "$RID" \
-    --self-contained false \
+    --self-contained true \
     -p:Version="$VERSION" \
     -o "$PUBLISH_DIR"
 

@@ -37,10 +37,12 @@ $dotnet = (Get-Command "dotnet" -ErrorAction SilentlyContinue).Source
 if ([string]::IsNullOrEmpty($dotnet)) { $dotnet = "C:\Program Files\dotnet\dotnet.exe" }
 
 # Publish
+& $dotnet clean $project -c Release -r $rid
+
 & $dotnet publish $project `
     -c Release `
     -r $rid `
-    --self-contained false `
+    --self-contained true `
     -p:Version=$Version `
     -o $publishDir
 
