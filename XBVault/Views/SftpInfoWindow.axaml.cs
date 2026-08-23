@@ -1,7 +1,9 @@
+#nullable enable
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Input;
+using System.Globalization;
 
 namespace XBVault.Views;
 
@@ -15,12 +17,12 @@ public partial class SftpInfoWindow : Window
     public void SetConnectionInfo(string host, string user, string password, int port)
     {
         HostText.Text = host;
-        PortText.Text = port.ToString();
+        PortText.Text = port.ToString(CultureInfo.InvariantCulture);
         UserText.Text = user;
         PasswordText.Text = password;
     }
 
-    private async void OnCopyHostClick(object? sender, RoutedEventArgs e)
+    private void OnCopyHostClick(object? sender, RoutedEventArgs e)
     {
         if (Clipboard is { } cb)
         {
@@ -28,11 +30,11 @@ public partial class SftpInfoWindow : Window
             item.Set(DataFormat.Text, HostText.Text ?? "");
             var transfer = new DataTransfer();
             transfer.Add(item);
-            await cb.SetDataAsync(transfer);
+            cb.SetDataAsync(transfer).FireAndForget();
         }
     }
 
-    private async void OnCopyPortClick(object? sender, RoutedEventArgs e)
+    private void OnCopyPortClick(object? sender, RoutedEventArgs e)
     {
         if (Clipboard is { } cb)
         {
@@ -40,11 +42,11 @@ public partial class SftpInfoWindow : Window
             item.Set(DataFormat.Text, PortText.Text ?? "");
             var transfer = new DataTransfer();
             transfer.Add(item);
-            await cb.SetDataAsync(transfer);
+            cb.SetDataAsync(transfer).FireAndForget();
         }
     }
 
-    private async void OnCopyUserClick(object? sender, RoutedEventArgs e)
+    private void OnCopyUserClick(object? sender, RoutedEventArgs e)
     {
         if (Clipboard is { } cb)
         {
@@ -52,11 +54,11 @@ public partial class SftpInfoWindow : Window
             item.Set(DataFormat.Text, UserText.Text ?? "");
             var transfer = new DataTransfer();
             transfer.Add(item);
-            await cb.SetDataAsync(transfer);
+            cb.SetDataAsync(transfer).FireAndForget();
         }
     }
 
-    private async void OnCopyPasswordClick(object? sender, RoutedEventArgs e)
+    private void OnCopyPasswordClick(object? sender, RoutedEventArgs e)
     {
         if (Clipboard is { } cb)
         {
@@ -64,7 +66,7 @@ public partial class SftpInfoWindow : Window
             item.Set(DataFormat.Text, PasswordText.Text ?? "");
             var transfer = new DataTransfer();
             transfer.Add(item);
-            await cb.SetDataAsync(transfer);
+            cb.SetDataAsync(transfer).FireAndForget();
         }
     }
 

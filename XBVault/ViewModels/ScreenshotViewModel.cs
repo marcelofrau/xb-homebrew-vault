@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -148,10 +149,11 @@ public partial class ScreenshotViewModel : ObservableObject, IDisposable
             using var ms = new MemoryStream(data);
             var bitmap = new Bitmap(ms);
 
-            await Dispatcher.UIThread.InvokeAsync(() =>
+            await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
             {
                 ScreenshotImage?.Dispose();
                 ScreenshotImage = bitmap;
+                return Task.CompletedTask;
             });
         }
         catch (Exception ex)
@@ -204,10 +206,11 @@ public partial class ScreenshotViewModel : ObservableObject, IDisposable
                         using var ms = new MemoryStream(data);
                         var bitmap = new Bitmap(ms);
 
-                        await Dispatcher.UIThread.InvokeAsync(() =>
+                        await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
                         {
                             ScreenshotImage?.Dispose();
                             ScreenshotImage = bitmap;
+                            return Task.CompletedTask;
                         });
                     }
                     catch (Exception ex)
@@ -220,9 +223,10 @@ public partial class ScreenshotViewModel : ObservableObject, IDisposable
         catch (OperationCanceledException) { }
         finally
         {
-            await Dispatcher.UIThread.InvokeAsync(() =>
+            await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
             {
                 IsLiveCapturing = false;
+                return Task.CompletedTask;
             });
         }
     }

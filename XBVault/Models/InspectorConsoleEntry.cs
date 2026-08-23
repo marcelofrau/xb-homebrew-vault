@@ -1,3 +1,4 @@
+#nullable enable
 using Avalonia.Media;
 
 namespace XBVault.Models;

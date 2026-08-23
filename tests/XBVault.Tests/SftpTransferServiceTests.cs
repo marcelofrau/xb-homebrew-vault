@@ -271,6 +271,10 @@ internal sealed class FakeSftpService : ISftpService
     public bool HoldUpload { get; set; }
     public bool HoldDownload { get; set; }
     public bool ThrowConnectionLost { get; set; }
+    // Test hook: allow overriding RunShellCommandAsync result for probe tests
+    private SftpShellResult? _overrideShellResult;
+
+    public void OverrideRunShellResult(SftpShellResult? result) => _overrideShellResult = result;
     public ManualResetEventSlim UploadStarted { get; } = new(false);
     public ManualResetEventSlim UploadRelease { get; } = new(false);
     public ManualResetEventSlim DownloadStarted { get; } = new(false);
@@ -468,7 +472,7 @@ internal sealed class FakeSftpService : ISftpService
     }
 
     public Task<SftpShellResult> RunShellCommandAsync(string command, CancellationToken ct = default) =>
-        Task.FromResult(new SftpShellResult { Success = true });
+        Task.FromResult(_overrideShellResult ?? new SftpShellResult { Success = true });
 
     public void Dispose()
     {

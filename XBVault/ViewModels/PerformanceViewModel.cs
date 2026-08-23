@@ -1,4 +1,6 @@
+#nullable enable
 using System;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media;
@@ -57,6 +59,8 @@ public partial class PerformanceViewModel : ObservableObject, IDisposable
         MemoryChart.Clear();
         IoChart.Clear();
 
+        // Start connection on background thread but ensure the websocket connect method
+        // is invoked without capturing the current synchronization context.
         _ = Task.Run(() => _performanceService.ConnectPerformanceWsAsync(OnSnapshot, _cts.Token));
     }
 
@@ -71,7 +75,7 @@ public partial class PerformanceViewModel : ObservableObject, IDisposable
 
     private void OnSnapshot(PerformanceSnapshot snap)
     {
-        Dispatcher.UIThread.Post(() =>
+        UIHelpers.RunOnUI(() =>
         {
             CpuChart.AddValue(snap.CpuLoad);
             CpuChart.CurrentValue = $"{snap.CpuLoad:F0}%";
@@ -90,7 +94,7 @@ public partial class PerformanceViewModel : ObservableObject, IDisposable
             IoChart.AddValue(io / 1_000_000.0);
             IoChart.CurrentValue = ioStr;
 
-            LastUpdate = DateTime.Now.ToString("HH:mm:ss");
+            LastUpdate = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
 
             Logger.Info($"Perf: CPU={snap.CpuLoad:F1}% GPU={snap.GpuUsage:F1}% " +
                         $"Mem={snap.MemoryPercent:F0}% IO={ioStr}");

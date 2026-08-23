@@ -1,9 +1,11 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using Avalonia.Threading;
+using XBVault.Helpers;
 using XBVault.Models;
 
 namespace XBVault.Services;
@@ -43,13 +45,13 @@ public class NotificationCenterService
         return item;
     }
 
-    public NotificationItem NotifyGrouped(string title, IReadOnlyList<NotificationAction> items, bool autoDismiss = true)
+    public NotificationItem NotifyGrouped(string title, IReadOnlyList<NotificationAction> items, bool autoDismiss = true, string? iconUri = null)
     {
         var item = new NotificationItem
         {
             Title = title,
             Message = $"{items.Count} notification{(items.Count == 1 ? string.Empty : "s")}",
-            IconUri = DefaultIconUri,
+            IconUri = iconUri ?? DefaultIconUri,
             ClickAction = null,
             Actions = items
         };
@@ -60,14 +62,14 @@ public class NotificationCenterService
         return item;
     }
 
-    public NotificationItem NotifyGroupedReplacing(string tag, string title, IReadOnlyList<NotificationAction> items, bool autoDismiss = true)
+    public NotificationItem NotifyGroupedReplacing(string tag, string title, IReadOnlyList<NotificationAction> items, bool autoDismiss = true, string? iconUri = null, string? message = null)
     {
         var item = new NotificationItem
         {
             Tag = tag,
             Title = title,
-            Message = $"{items.Count} notification{(items.Count == 1 ? string.Empty : "s")}",
-            IconUri = DefaultIconUri,
+            Message = message ?? $"{items.Count} notification{(items.Count == 1 ? string.Empty : "s")}",
+            IconUri = iconUri ?? DefaultIconUri,
             ClickAction = null,
             Actions = items
         };
@@ -231,10 +233,7 @@ public class NotificationCenterService
     {
         try
         {
-            if (Dispatcher.UIThread.CheckAccess())
-                action();
-            else
-                Dispatcher.UIThread.Post(action, DispatcherPriority.Normal);
+            UIHelpers.RunOnUI(action, DispatcherPriority.Normal);
         }
         catch (Exception ex)
         {

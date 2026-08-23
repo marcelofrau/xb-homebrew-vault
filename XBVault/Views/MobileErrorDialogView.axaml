@@ -1,0 +1,103 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileErrorDialogView"
+             x:DataType="views:MobileErrorDialogViewModel"
+             Background="#AA000000">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="24">
+
+    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="16"
+            Padding="0" MaxWidth="420" HorizontalAlignment="Center"
+            VerticalAlignment="Center" MinHeight="320">
+      <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+        <!-- Header: Icon + Title + Description -->
+        <StackPanel Grid.Row="0" Spacing="8" Margin="24,24,24,12">
+          <Grid ColumnDefinitions="48,*" ColumnSpacing="14">
+            <Image x:Name="DialogIcon"
+                   Width="48" Height="48" Stretch="Uniform"
+                   VerticalAlignment="Top"/>
+            <StackPanel Grid.Column="1" Spacing="4">
+              <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="Bold"
+                         Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding Description}" FontSize="13"
+                         Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+
+        <!-- Details console area -->
+        <Border Grid.Row="1" Margin="16,0,16,0"
+                Background="{StaticResource SurfaceAltBrush}"
+                CornerRadius="8" Padding="12,8"
+                IsVisible="{Binding HasDetails}">
+          <Grid RowDefinitions="Auto,*">
+            <TextBlock Text="DETAILS"
+                       FontSize="10" FontWeight="Bold"
+                       Foreground="{StaticResource TextDimBrush}"
+                       Opacity="0.6" LetterSpacing="1.2"
+                       Margin="0,0,0,6"/>
+            <Border Grid.Row="1"
+                    Background="{StaticResource BgBrush}" CornerRadius="4"
+                    Padding="8,6" MaxHeight="180">
+              <ScrollViewer>
+                <TextBlock Text="{Binding Details}"
+                           FontFamily="{StaticResource MonoFont}"
+                           FontSize="12"
+                           Foreground="{StaticResource AccentGlowBrush}"
+                           TextWrapping="Wrap"/>
+              </ScrollViewer>
+            </Border>
+          </Grid>
+        </Border>
+
+        <!-- Spacer -->
+        <Panel Grid.Row="2"/>
+
+        <!-- Buttons: Copy Error + OK -->
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto"
+              Margin="16,12,16,20">
+
+          <!-- Copy Error (left) -->
+          <Button x:Name="CopyBtn"
+                  Padding="12,10" CornerRadius="8"
+                  Click="OnCopyClick"
+                  ToolTip.Tip="Copy error details to clipboard"
+                  IsVisible="{Binding HasDetails}">
+            <Grid ColumnDefinitions="Auto,8,Auto" VerticalAlignment="Center">
+              <Image Source="avares://XBVault/Assets/Views/ErrorDialog/errordialog-copy-20.png"
+                     Width="18" Height="18" Stretch="Uniform"/>
+              <TextBlock Grid.Column="2" Text="Copy Error"
+                         FontSize="13" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+
+          <!-- OK (right) -->
+          <Button Grid.Column="2"
+                  Padding="24,10" CornerRadius="8"
+                  Click="OnOkClick"
+                  Background="{StaticResource AccentBrush}"
+                  MinWidth="100">
+            <TextBlock Text="OK" FontSize="14" FontWeight="Bold"
+                       Foreground="#1A1A1A" VerticalAlignment="Center"/>
+          </Button>
+        </Grid>
+
+      </Grid>
+    </Border>
+
+  </Panel>
+
+</UserControl>

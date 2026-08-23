@@ -1,3 +1,4 @@
+#nullable enable
 using System.Diagnostics;
 using Avalonia.Controls;
 using XBVault.Helpers;

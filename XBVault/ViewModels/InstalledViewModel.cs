@@ -1,6 +1,8 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,11 +17,17 @@ using XBVault.Services;
 
 namespace XBVault.ViewModels;
 
+/// <summary>
+/// Coordinates installed-package listing, running-state polling, launch/terminate actions, and update checks.
+/// </summary>
+/// <remarks>
+/// The class owns package state for the Installed screen. Platform UI concerns such as confirmation dialogs
+/// are exposed through callback delegates so other frontends can reuse the same workflow.
+/// </remarks>
 public partial class InstalledViewModel : ObservableObject
 {
     private readonly IXboxAuthService _authService;
     private readonly IXboxPackageService _packageService;
-    private readonly AutostartService _autostartService;
     private readonly PackageLauncher _launcher;
     private readonly List<InstalledPackage> _allPackages = [];
 
@@ -30,12 +38,10 @@ public partial class InstalledViewModel : ObservableObject
     public InstalledViewModel(
         IXboxAuthService authService,
         IXboxPackageService packageService,
-        AutostartService? autostartService = null,
         PackageLauncher? launcher = null)
     {
         _authService = authService;
         _packageService = packageService;
-        _autostartService = autostartService ?? new AutostartService();
         _launcher = launcher ?? new PackageLauncher(packageService);
         _authService.ConnectionChanged += OnConnectionChanged;
         IsConnected = _authService.IsConnected;
@@ -44,11 +50,23 @@ public partial class InstalledViewModel : ObservableObject
 
     private void OnConnectionChanged(bool connected)
     {
-        IsConnected = connected;
+        Logger.Info($"InstalledViewModel: ConnectionChanged → {connected} (current IsConnected={IsConnected})");
         if (connected)
-            StatusMessage = null;
-        if (connected)
-            _ = LaunchAutostartAsync();
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                IsConnected = true;
+                StatusMessage = null;
+                _ = LaunchAutostartAsync();
+            });
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                IsConnected = false;
+            });
+        }
     }
 
     private DispatcherTimer? _pollTimer;
@@ -63,7 +81,7 @@ public partial class InstalledViewModel : ObservableObject
             if (_allPackages.Count == 0) return;
             Logger.Debug("Polling running state...");
             await RefreshRunningStateAsync();
-            LastUpdated = "Updated: " + DateTime.Now.ToString("HH:mm:ss");
+            LastUpdated = "Updated: " + DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
         };
         _pollTimer.Start();
         Logger.Info("Running-state polling started (8s interval)");
@@ -306,9 +324,9 @@ public partial class InstalledViewModel : ObservableObject
         }
     }
 
-    public bool IsAutostartApp(InstalledPackage pkg)
+    private static bool IsAutostartApp(InstalledPackage pkg)
     {
-        var fullName = _autostartService.GetAutostartFullName();
+        var fullName = AutostartService.GetAutostartFullName();
         return !string.IsNullOrEmpty(fullName) && pkg.FullName == fullName;
     }
 
@@ -378,10 +396,10 @@ public partial class InstalledViewModel : ObservableObject
     {
         if (pkg is null) return;
 
-        var current = _autostartService.GetAutostartFullName();
+        var current = AutostartService.GetAutostartFullName();
         if (!string.IsNullOrEmpty(current) && current == pkg.FullName)
         {
-            _autostartService.ClearAutostart();
+            AutostartService.ClearAutostart();
             pkg.IsAutostart = false;
             ToolbarStatus = $"Autostart removed: {pkg.Name}";
             return;
@@ -394,7 +412,7 @@ public partial class InstalledViewModel : ObservableObject
             if (!ok) return;
         }
 
-        _autostartService.SetAutostart(pkg.FullName);
+        AutostartService.SetAutostart(pkg.FullName);
         foreach (var p in _allPackages)
             p.IsAutostart = p.FullName == pkg.FullName;
         ToolbarStatus = $"Autostart on connect: {pkg.Name}";
@@ -403,7 +421,7 @@ public partial class InstalledViewModel : ObservableObject
 
     private async Task LaunchAutostartAsync()
     {
-        var fullName = _autostartService.GetAutostartFullName();
+        var fullName = AutostartService.GetAutostartFullName();
         if (string.IsNullOrEmpty(fullName))
             return;
 
@@ -426,7 +444,7 @@ public partial class InstalledViewModel : ObservableObject
         var pkg = candidates.FirstOrDefault(p => p.FullName == fullName);
         if (pkg is null)
         {
-            _autostartService.ClearAutostart();
+            AutostartService.ClearAutostart();
             SyncAutostartFlags();
             Logger.Warn($"Autostart app {fullName} no longer installed — selection cleared");
             NotifyAutostartAction?.Invoke($"Autostart app no longer installed — cleared. Re-enable from the Installed tab.");
@@ -664,7 +682,7 @@ public partial class InstalledViewModel : ObservableObject
                 }
             }
 
-            LastUpdated = "Updated: " + DateTime.Now.ToString("HH:mm:ss");
+            LastUpdated = "Updated: " + DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
             Logger.Info($"User-installed packages shown: {Packages.Count}, running: {_allPackages.Count(p => p.IsRunning)}");
 
             if (!HasPackages)
@@ -682,6 +700,57 @@ public partial class InstalledViewModel : ObservableObject
     }
 
     public Func<InstalledPackage, Task<bool>>? ConfirmUninstallAsync { get; set; }
+
+    [RelayCommand]
+    private async Task UninstallPackageAsync(InstalledPackage? pkg)
+    {
+        if (pkg is null) return;
+
+        if (ConfirmUninstallAsync is not null)
+        {
+            var ok = await ConfirmUninstallAsync(pkg);
+            if (!ok) return;
+        }
+
+        IsUninstalling = true;
+        pkg.IsUninstalling = true;
+        Logger.Info($"Uninstalling: {pkg.Name}");
+
+        try
+        {
+            var result = await _packageService.UninstallPackageAsync(pkg.FullName);
+            Logger.Info(result ? $"Uninstall complete: {pkg.Name}" : $"Uninstall failed: {pkg.Name}");
+            await RefreshPackagesAsync();
+        }
+        catch (Exception ex)
+        {
+            pkg.IsUninstalling = false;
+            StatusMessage = "Uninstall failed";
+            Logger.Error(ex, $"Uninstall error: {pkg.Name}");
+        }
+        finally
+        {
+            IsUninstalling = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task UpdatePackageAsync(InstalledPackage? pkg)
+    {
+        if (pkg is null || CheckOutdatedAsync is null || ShowCatalogDetailAction is null)
+            return;
+
+        try
+        {
+            var (match, _) = await CheckOutdatedAsync(pkg);
+            if (match is not null)
+                ShowCatalogDetailAction(match);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"UpdatePackage failed for {pkg.Name}");
+        }
+    }
 
     [RelayCommand]
     private async Task UninstallSelectedAsync()

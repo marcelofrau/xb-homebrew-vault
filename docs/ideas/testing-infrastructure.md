@@ -6,7 +6,7 @@
 
 Zero tests in the project. All 110+ code files ship without automated coverage. Critical logic — `PackageInstallService` (514 lines), `XboxDeviceService` (1,433 lines, complexity 205), `FileExplorerViewModel` (1,880 lines, complexity 254) — operates unverified. The planned god-class splits ([Tech Debt #1/#2](tech-debt)) are unsafe without a test net to catch regressions. (Status Aug 2026: Phase 1a + 1b + 1c shipped — 147 tests green on pure services + god-class helpers. God-class instance logic still uncovered.)
 
-> **Update (Aug 2026):** God-class split landed — `XboxDeviceService` is deleted, replaced by 6 domain services (`XboxAuthService`, `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService`) with interfaces, and the project migrated to .NET 10. Suite now **172 tests green**. Phase 2/3 below is unblocked.
+> **Update (2026-08-17):** God-class split landed — `XboxDeviceService` is deleted, replaced by 6 domain services (`XboxAuthService`, `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService`) with interfaces, and the project migrated to .NET 10. Suite now **240 tests green**. Phase 2/3 below is unblocked.
 
 ## Testability Assessment (verified v1.2.0, Aug 2026)
 

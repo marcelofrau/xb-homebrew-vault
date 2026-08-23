@@ -6,9 +6,9 @@ title: Tech Debt Verification (Internal)
 # Tech Debt Verification & Analysis
 ## Internal Document
 
-> **Re-verified against v1.2.0 source — August 2026.** This supersedes the June 2026 verification. All line counts, method counts, and locations were re-measured against the current tree; the summary table reflects the live status of every item.
+> **Historical verification note:** This document was originally re-verified against v1.2.0 source in August 2026. It is kept for traceability. Current live status is tracked in [Tech Debt](tech-debt), re-verified on 2026-08-17 against source version 1.4.0.
 >
-> **⚠️ Post-verification update (Aug 2026):** The `XboxDeviceService` god class item in this report is **RESOLVED** — it was split into 6 domain services and deleted after this verification ran. `FileExplorerViewModel` remains large (~1,736 lines). See current [Tech Debt](tech-debt).
+> **Post-verification update (2026-08-17):** `XboxDeviceService` is resolved and deleted. `FileExplorerViewModel` remains large (~1,750 lines). Desktop app build is 0 warnings / 0 errors; tests are 240 passing. Android skeleton builds in Release when `JAVA_HOME` points to JDK 21.
 
 ---
 
@@ -100,7 +100,7 @@ Removed from tracking, gitignored, deleted. Confirmed no `Assets/_Backup/` in tr
 
 ---
 
-#### 🟡 VERIFIED #7: async void — 22 instances (11 → 22)
+#### 🟡 VERIFIED #7: async void — historical 22 instances, currently 10 handlers
 
 | Aspect | June 2026 | **Aug 2026 (v1.2.0)** |
 |--------|-----------|------------------------|
@@ -227,16 +227,16 @@ Services 2%, ViewModels 0%.
 
 | # | Issue | Severity | Status (Aug 2026) | Effort |
 |---|-------|----------|-------------------|--------|
-| 1 | God class (XboxDeviceService) | 🔴 High | ⚠️ WORSE — 1,433 lines, cplx 205 | 6–8h |
-| 2 | God class (FileExplorerViewModel) | 🔴 High | ❌ NEW — 1,880 lines, cplx 254 | 6–8h |
+| 1 | God class (XboxDeviceService) | 🔴 High | ✅ Resolved — split into domain services, facade deleted | — |
+| 2 | God class (FileExplorerViewModel) | 🔴 High | ⚠️ Regressed after split — ~1,750 lines | 8–40h iterative |
 | 3 | _Backup directory | 🔴 High | ✅ Resolved | — |
 | 4 | App.axaml.cs bloat | 🟡 Med | ⚠️ Partial (catches fixed, root open) | 3–5h |
-| 5 | No ConfigureAwait | 🟡 Med | ⚠️ WORSE — 404 awaits, 0 configured | 1–2h |
-| 6 | Silent exceptions | 🟡 Med | ⚠️ Partial — 26 sites, ~7 to audit | 1h |
-| 7 | async void (11→22) | 🟡 Med | ⚠️ WORSE — 22 instances | 3–5h |
-| 8 | No IDisposable | 🟡 Med | ⚠️ Partial — only XboxDeviceService left | 1h |
+| 5 | ConfigureAwait policy | 🟡 Med | ⚠️ Partial — 9 uses, service-layer policy incomplete | 2–8h |
+| 6 | Silent exceptions | 🟡 Med | ⚠️ Mostly intentional — 15 bare catches remain | 1–2h |
+| 7 | async void | 🟡 Med | ⚠️ Open — 10 actual event handlers remain | 2–6h |
+| 8 | No IDisposable | 🟡 Med | ✅ Resolved for deleted XboxDeviceService; continue disposal audits | — |
 | 9 | Border clipping | 🟡 Med | ❌ Open | 2–3h |
-| 10 | Large ViewModels | 🟡 Med | ❌ NEW — 5 files > 500 lines | 4–8h |
+| 10 | Large ViewModels | 🟡 Med | ❌ Open — 5 files > 500 lines, top is FileExplorerViewModel | 8–40h iterative |
 | 11 | Gradient duplication | 🟡 Med | ✅ Resolved | — |
 | 12 | Button duplication | 🟡 Med | ✅ Resolved | — |
 | 13 | Magic delays | 🟢 Low | ✅ Mostly resolved (2 stragglers) | 15m |
@@ -244,26 +244,26 @@ Services 2%, ViewModels 0%.
 | 15 | CTS disposal | 🟢 Low | ✅ Resolved | — |
 | 16 | DllImport/Windows deps | 🟢 Low | ✅ Resolved | — |
 | 17 | PerformanceSnapshot | 🟢 Low | ✅ Resolved | — |
-| 18 | BrowseViewModel size | 🟢 Low | ⚠️ WORSE — 899 lines | (see #10) |
+| 18 | BrowseViewModel size | 🟢 Low | ⚠️ Open — ~776 lines | (see #10) |
 | 19 | Orphaned icons | 🟢 Low | ✅ Resolved | — |
 | 20 | Drive list hardcoded | 🟢 Low | ➖ Accepted (fallback OK) | — |
-| 21 | Zero tests | 🟢 Low | ❌ Open — highest impact gap | 8–16h |
-| 22 | Comment ratio 0–2% | 🟢 Low | ❌ Open | 0h (during refactors) |
+| 21 | Zero tests | 🟢 Low | ✅ Mostly resolved — 240 tests pass; Xbox HTTP/WebSocket fakes still open | 8–24h |
+| 22 | Service/ViewModel docs | 🟢 Low | ⚠️ Partial — interface XML docs and developer architecture guide added | ongoing |
 
 ---
 
 ## Recommended Priority for Fixes (updated Aug 2026)
 
-1. **IMMEDIATE:** Add test infrastructure (`dotnet test` + CI step) before any large refactor — makes #2 and #3 safe.
-2. **HIGH:** Split `FileExplorerViewModel` (largest file, 254 complexity) — biggest risk concentration in the app.
-3. **HIGH:** Split `XboxDeviceService` (+ implement `IDisposable` while touching it).
-4. **HIGH:** Eliminate the 15 high-risk `async void` handlers (FireAndForget wrapper).
-5. **MEDIUM:** Add `.ConfigureAwait(false)` to service layer.
-6. **MEDIUM:** Audit the ~7 flagged bare-catch sites.
-7. **LOW:** Straggler magic delays, comment-why on refactored paths.
+1. **HIGH:** Introduce DI/composition root to shrink `App.axaml.cs` and support Android-specific adapters.
+2. **HIGH:** Eliminate the 10 remaining `async void` handlers through logged `FireAndForget` wrappers.
+3. **HIGH:** Add platform adapter interfaces for dialogs, file pickers, clipboard, and navigation.
+4. **HIGH:** Add fake-transport tests for Xbox HTTP/WebSocket services.
+5. **MEDIUM:** Apply `.ConfigureAwait(false)` consistently in service-layer I/O.
+6. **MEDIUM:** Refactor `FileExplorerViewModel`, `BrowseViewModel`, and `CustomInstallViewModel` incrementally.
+7. **LOW:** Add rationale comments to remaining intentional bare catches.
 
 ---
 
-**Document version:** 3.0  
-**Last updated:** 2026-08-01  
-**Status:** Complete re-verification against v1.2.0
+**Document version:** 3.1  
+**Last updated:** 2026-08-17  
+**Status:** Historical v1.2.0 verification with 2026-08-17 status overlay. Use [Tech Debt](tech-debt) for live tracking.

@@ -1,3 +1,4 @@
+#nullable enable
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
@@ -16,12 +17,20 @@ namespace XBVault.ViewModels;
 
 public enum ToolbarStatusSeverity { None, Info, Success, Warning, Error }
 
+/// <summary>
+/// Coordinates SFTP navigation, file operations, transfers, and Portal app file workflows.
+/// </summary>
+/// <remarks>
+/// This ViewModel intentionally depends on services and callback delegates rather than Avalonia storage APIs.
+/// Desktop Views handle picker and drag/drop details; Android should provide equivalent platform adapters.
+/// </remarks>
 public partial class FileExplorerViewModel : ObservableObject, IDisposable
 {
     private readonly IXboxAuthService _authService;
     private readonly SftpService _sftpService;
     private readonly SftpTransferService _transfer;
     private readonly PortalAppFilesService _portal;
+    private readonly bool _isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
     internal SftpService SftpService => _sftpService;
     private string? _sftpPassword;
     private CancellationTokenSource? _deleteCts;
@@ -49,11 +58,22 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         Logger.Debug("FileExplorerViewModel initialized");
     }
 
+    public void RefreshConnectionState()
+    {
+        var connected = _authService.IsConnected;
+        Logger.Info($"FileExplorerViewModel.RefreshConnectionState: authService.IsConnected={connected} current IsConnected={IsConnected}");
+        if (IsConnected != connected)
+            IsConnected = connected;
+    }
+
     public Func<IReadOnlyList<SftpEntry>, Task<bool>>? ShowDeleteConfirmAsync { get; set; }
     public Func<SftpEntry, Task<string?>>? ShowSaveFileDialogAsync { get; set; }
     public Func<string, string, string, int, Task>? ShowConnectionInfoAsync { get; set; }
     public Func<Task<bool>>? ShowConnectAction { get; set; }
     public Func<Task<string?>>? ShowFolderPickerAsync { get; set; }
+    public Func<string, Task>? PostDownloadSaveAsync { get; set; }
+    public object? _pendingSaveFile { get; set; }
+    public string? _pendingSaveTempPath { get; set; }
     public Action<SftpEntry>? ScrollToEntry { get; set; }
     public Action? FocusFileList { get; set; }
     public Action<string, string, string>? ShowErrorDialog { get; set; }
@@ -63,9 +83,10 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
     private void OnBoxConnectionChanged(bool connected)
     {
-        Logger.Trace($"OnBoxConnectionChanged: connected={connected}");
-        Dispatcher.UIThread.Post(() =>
+        Logger.Info($"FileExplorerViewModel.OnBoxConnectionChanged: connected={connected} authService.IsConnected={_authService.IsConnected}");
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
+            Logger.Info($"FileExplorerViewModel.OnBoxConnectionChanged UI thread: setting IsConnected={connected}");
             IsConnected = connected;
             if (!connected)
                 _sftpService.Disconnect();
@@ -75,8 +96,8 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
     private void OnSftpConnectionChanged(object? sender, bool connected)
     {
-        Logger.Trace($"OnSftpConnectionChanged: connected={connected}");
-        Dispatcher.UIThread.Post(() =>
+        Logger.Info($"FileExplorerViewModel.OnSftpConnectionChanged: connected={connected}");
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             if (!connected)
             {
@@ -103,6 +124,9 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     private bool _isLoading;
 
     [ObservableProperty]
+    private bool _isNavigating;
+
+    [ObservableProperty]
     private SftpEntry? _selectedEntry;
 
     public bool SuppressTreeNavigation { get; set; }
@@ -113,7 +137,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         && (!PortalAppFilesService.IsPortalPath(CurrentPath)
             || PortalAppFilesService.HasPackageContext(CurrentPath));
     public bool CanDeleteMultiple => SelectedEntries.Count > 0 && CanModifyFiles;
-    public bool CanDownloadMultiple => SelectedEntries.Any(e => !e.IsDrive) && !ShowActivity;
+    public bool CanDownloadMultiple => (SelectedEntries.Any(e => !e.IsDrive) || HasSelectedEntry) && !ShowActivity;
     public bool CanRenameSingle => SelectedEntries.Count == 1 && CanModifyFiles;
     public string OperationLockedTooltip => ShowActivity
         ? "Waiting for current operation to finish..."
@@ -281,6 +305,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     {
         Logger.Trace($"OnSelectedEntryChanged: '{value?.FullPath ?? "null"}'");
         OnPropertyChanged(nameof(HasSelectedEntry));
+        OnPropertyChanged(nameof(CanDownloadMultiple));
     }
 
     partial void OnCurrentPathChanged(string value)
@@ -352,7 +377,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     public bool CanCreateFolder => _sftpService.IsConnected && TreeRoots.Count > 0 && !ShowActivity
         && (!PortalAppFilesService.IsPortalPath(CurrentPath) || PortalAppFilesService.HasPackageContext(CurrentPath));
     public bool CanRefreshLocation => _sftpService.IsConnected && TreeRoots.Count > 0 && !ShowActivity;
-    public bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    public bool IsWindows => _isWindows;
 
     public string[] BreadcrumbSegments => BuildBreadcrumbSegments(CurrentPath);
 
@@ -465,7 +490,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             Children = { new SftpEntry { Name = "" } }
         });
         SetIsLastChild(drives);
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             TreeRoots.Clear();
             foreach (var d in drives)
@@ -651,8 +676,20 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         Logger.Debug($"NavigateToPathAsync: '{path}'");
         if (string.IsNullOrWhiteSpace(path))
         {
-            StatusSeverity = ToolbarStatusSeverity.Warning;
-            StatusMessage = "Navigation failed: path is empty";
+            if (TreeRoots.Count > 0)
+            {
+                CurrentPath = string.Empty;
+                CurrentEntries.Clear();
+                foreach (var root in TreeRoots)
+                    CurrentEntries.Add(root);
+                OnPropertyChanged(nameof(CanRefresh));
+                FocusFileList?.Invoke();
+            }
+            else
+            {
+                StatusSeverity = ToolbarStatusSeverity.Warning;
+                StatusMessage = "Navigation failed: path is empty";
+            }
             return;
         }
 
@@ -673,11 +710,13 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             StatusSeverity = ToolbarStatusSeverity.None;
             StatusMessage = string.Empty;
             CurrentPath = path;
+            IsNavigating = true;
             var entries = await ListDirectoryForAsync(path, ct);
 
             if (ct.IsCancellationRequested)
                 return;
 
+            IsNavigating = false;
             CurrentEntries.Clear();
             var parentDir = GetParentPath(path);
             if (parentDir is not null)
@@ -686,6 +725,17 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
                 {
                     Name = "..",
                     FullPath = parentDir,
+                    IsDirectory = true,
+                    IsPlaceholder = true,
+                    IsLastChild = true
+                });
+            }
+            else if (TreeRoots.Any(r => string.Equals(r.FullPath, path, StringComparison.OrdinalIgnoreCase)))
+            {
+                CurrentEntries.Add(new SftpEntry
+                {
+                    Name = "..",
+                    FullPath = null,
                     IsDirectory = true,
                     IsPlaceholder = true,
                     IsLastChild = true
@@ -716,6 +766,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         }
         finally
         {
+            IsNavigating = false;
             if (string.Equals(_navPath, path, StringComparison.OrdinalIgnoreCase))
             {
                 _navCts?.Dispose();
@@ -789,7 +840,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             // Reload current file list
             var entries = await ListDirectoryForAsync(CurrentPath);
 
-            Dispatcher.UIThread.Post(() =>
+            XBVault.Helpers.UIHelpers.RunOnUI(() =>
             {
                 CurrentEntries.Clear();
                 var parentDir = GetParentPath(CurrentPath);
@@ -1027,7 +1078,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         Logger.Trace($"AddToCurrentAndTree: '{newEntry.FullPath}' inserted");
     }
 
-    private Progress<TransferUpdate> TransferProgress(Action<TransferUpdate> apply) =>
+    private static Progress<TransferUpdate> TransferProgress(Action<TransferUpdate> apply) =>
         new(apply);
 
     private void ApplyUploadResult(TransferResult result)
@@ -1193,6 +1244,8 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             var result = await _transfer.DownloadSingleFileAsync(entry, savePath,
                 TransferProgress(u => { DownloadProgress = u.Progress; DownloadStatusText = u.StatusText; }));
             ApplyDownloadResult(result);
+            if (PostDownloadSaveAsync is not null && _pendingSaveTempPath is not null)
+                await PostDownloadSaveAsync(savePath);
         }
         catch (Exception ex)
         {
@@ -1528,9 +1581,8 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
                 InsertSorted(parentNode.Children, entry);
             }
 
-            if (CurrentEntries.Contains(entry))
+            if (CurrentEntries.Remove(entry))
             {
-                CurrentEntries.Remove(entry);
                 InsertSorted(CurrentEntries, entry);
             }
 
@@ -1548,15 +1600,27 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task OpenConnectionInfoAsync()
     {
-        if (_authService.IsConnected)
+        try
         {
-            var creds = _authService.GetSshCredentials();
-            var pw = _authService.SmbPassword;
-            if (string.IsNullOrEmpty(pw))
-                pw = await _authService.FetchSmbPasswordAsync();
-            pw ??= creds.Password;
-            if (ShowConnectionInfoAsync is not null)
-                await ShowConnectionInfoAsync(creds.Host, creds.Username, pw, creds.Port);
+            if (_authService.IsConnected)
+            {
+                var creds = _authService.GetSshCredentials();
+                var pw = _authService.SmbPassword;
+                if (string.IsNullOrEmpty(pw))
+                    pw = await _authService.FetchSmbPasswordAsync();
+                pw ??= creds.Password;
+                if (ShowConnectionInfoAsync is not null)
+                    await ShowConnectionInfoAsync(creds.Host, creds.Username, pw, creds.Port);
+            }
+            else
+            {
+                Logger.Warn("OpenConnectionInfoAsync: not connected, button should be disabled");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "OpenConnectionInfoAsync failed");
+            ShowErrorDialog?.Invoke("SFTP Info Error", "Failed to open connection info dialog.", ex.ToString());
         }
     }
 

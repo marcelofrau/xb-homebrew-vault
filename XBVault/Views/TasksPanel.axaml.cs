@@ -1,3 +1,4 @@
+#nullable enable
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using XBVault.Models;

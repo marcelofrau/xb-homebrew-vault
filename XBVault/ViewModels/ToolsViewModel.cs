@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -8,10 +9,18 @@ using XBVault.Services;
 
 namespace XBVault.ViewModels;
 
+/// <summary>
+/// Exposes tool-launch commands and connection-aware visibility state for the Tools surface.
+/// </summary>
+/// <remarks>
+/// Tool actions are delegates supplied by the shell so desktop and Android can present different windows,
+/// routes, or modal flows while sharing the same command surface.
+/// </remarks>
 public partial class ToolsViewModel : ObservableObject
 {
     private readonly IXboxAuthService _authService;
     private readonly IXboxSystemService _systemService;
+    private readonly bool _isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
     public ToolsViewModel(IXboxAuthService authService, IXboxSystemService systemService)
     {
@@ -42,7 +51,9 @@ public partial class ToolsViewModel : ObservableObject
 
     public bool ShowDisconnected => !IsConnected;
     public bool ShowContent => IsConnected;
-    public bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    public bool IsWindows => _isWindows;
+
+    public Action<string>? OpenUrlAction { get; set; }
 
     partial void OnIsConnectedChanged(bool value)
     {
@@ -167,7 +178,10 @@ public partial class ToolsViewModel : ObservableObject
         }
         try
         {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            if (OpenUrlAction is not null)
+                OpenUrlAction(url);
+            else
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
         catch (Exception ex)
         {

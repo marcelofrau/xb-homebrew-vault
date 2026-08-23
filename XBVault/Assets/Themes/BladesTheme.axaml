@@ -96,14 +96,24 @@
     <!-- CheckBox indicator stroke overrides (correct Avalonia Fluent keys) -->
     <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUnchecked" Color="#8B8D91"/>
     <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" Color="#B5E665"/>
-    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#8B8D91"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#9ACA3C"/>
     <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#B5E665"/>
     <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUncheckedDisabled" Color="#3A3D43"/>
     <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="#3A3D43"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillUnchecked" Color="Transparent"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillUncheckedPointerOver" Color="Transparent"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#9ACA3C"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#B5E665"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="#3A3D43"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminate" Color="#555860"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" Color="#6B6E74"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" Color="#3A3D43"/>
     <SolidColorBrush x:Key="CheckBoxForegroundUnchecked" Color="#F0F0F0"/>
     <SolidColorBrush x:Key="CheckBoxForegroundUncheckedPointerOver" Color="#9ACA3C"/>
     <SolidColorBrush x:Key="CheckBoxForegroundChecked" Color="#F0F0F0"/>
     <SolidColorBrush x:Key="CheckBoxForegroundCheckedPointerOver" Color="#9ACA3C"/>
+    <SolidColorBrush x:Key="CheckBoxCheckGlyphForeground" Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="#1A1D23"/>
 
     <!-- RadioButton indicator stroke overrides (correct Avalonia Fluent keys) -->
     <SolidColorBrush x:Key="RadioButtonOuterEllipseStroke" Color="#8B8D91"/>

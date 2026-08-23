@@ -7,11 +7,11 @@ title: Roadmap
 
 ## Current Status
 
-**Latest release: v1.3.1** · [Download](https://github.com/marcelofrau/xb-homebrew-vault/releases/latest)
+**Current source version: v1.4.0** · [Download latest release](https://github.com/marcelofrau/xb-homebrew-vault/releases/latest)
 
 The app is feature-complete for daily Xbox Dev Mode homebrew management. Core flows — first-run setup, browse, install, uninstall, dev tools, USB permissions, Inspector — are all shipping and stable. **v1.0.0** marked the stabilization milestone with catalog overlay, multi-strategy package matching, and download flyout. **v1.0.1** added pre-flight checks, CLI parameters, and package manager fixes. **v1.1.0** shipped XRay/Inspector integration (TCP agent discovery, Lua REPL, live log streaming), keyboard shortcuts, performance tuning (Skia GPU cache, dirty-rect clipping), and comprehensive custom install wizard fixes. **v1.1.1** added custom install UX polish, single-instance mutex, and shortcut/view tweaks. **v1.2.0** shipped the auto-update checker (GitHub release comparison, NEW/UPDATE catalog badges, outdated-cache detection, update-flow fixes) plus a `linux-arm64` build-matrix entry. **v1.2.1–v1.3.1** shipped the User Files portal browser, X-Files enablement + Loopback Exempt wizards, UI scale, UI scale fixes, SFTP buffering/read-path performance rewrite (SSH.NET 2025.1), transfer diagnostics, and Window titles. **.NET 10 migration** (Aug 2026) moved the app from `net8.0` to `net10.0` — CI, tooling, and docs all updated; release builds stay self-contained.
 
-**Next: hardening + test coverage.** The roadmap past v1.3 is dedicated to tech-debt reduction and adding unit tests — see [Tech Debt](tech-debt) and [Testing Infrastructure](ideas/testing-infrastructure).
+**Next: Android enablement + hardening.** The roadmap past v1.4 is focused on Android frontend validation, composition-root cleanup, platform adapters, service-layer tests, and targeted tech-debt reduction — see [Tech Debt](tech-debt), [Developer Architecture Guide](developer-architecture), and [Testing Infrastructure](ideas/testing-infrastructure).
 
 ---
 
@@ -43,6 +43,7 @@ timeline
     v1.3.0 : User Files portal browser, X-Files enablement wizard, Loopback Exempt manager, UI scale to fit screen
     v1.3.1 : SFTP transfer performance rewrite (SSH.NET 2025.1), buffering up to 1 MB, transfer diagnostics, window titles
     v1.3.2 : .NET 10 migration (net8.0 → net10.0), CI/tooling/docs updated
+    v1.4.0 : Static-analysis cleanup, nullable context sweep, service docs, window icons, Android planning
 ```
 
 ## What's Shipped
@@ -221,20 +222,22 @@ gantt
     Storage analyzer                : 2026-10, 10d
 ```
 
-### v1.2.x → v1.3.0 — Hardening & Test Coverage
+### v1.4.x — Android Enablement & Hardening
 
-The road to **v1.3.0** is dedicated to **tech debt reduction and automated test coverage** — no major new features, just hardening so the god classes can be split safely.
+The road past **v1.4.0** is dedicated to **Android enablement, platform adapters, and safer refactors**. Desktop remains the reference implementation; Android should reuse the service and ViewModel contracts wherever possible.
 
 | Item | Status | Description |
 |------|--------|-------------|
-| **Test infrastructure** | ✅ Shipped | xUnit test project under `tests/`, wired into CI. Proposal in [Testing Infrastructure](ideas/testing-infrastructure) |
-| **Split FileExplorerViewModel** | ✅ Shipped | 1,880 → 1,223 lines / complexity 254 → 177. Extracted `FileSystemPathParser` + `ISftpService` + `SftpTransferService`; VM keeps tree/list state + command wiring |
-| **Split XboxDeviceService** | ✅ Shipped | 1,433-line god class split into `XboxAuthService`, `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService` (split #1 + #2, facade removed) |
-| **.NET 10 migration** | ✅ Shipped | `net8.0` → `net10.0` (app + tests), CI `10.0.x`, `Tmds.DBus.Protocol` 0.92.0 security bump, self-contained release unchanged |
-| **Remove `async void`** | 🟡 Planned | 22 fire-and-forget handlers (was 11) that can crash the process on unhandled exceptions |
-| **ConfigureAwait(false) sweep** | 🟡 Planned | ~404 awaits in services, 0 use `ConfigureAwait(false)` |
-| **IDisposable on XboxDeviceService** | 🟡 Planned | Last service without disposal (SftpService, XrayAgentService, PerformanceViewModel already dispose) |
-| **Remaining tech debt** | 🟡 12 items | Full list in [Tech Debt](tech-debt) |
+| **Test infrastructure** | ✅ Shipped | 240 tests passing under `tests/XBVault.Tests` |
+| **Static-analysis cleanup** | ✅ Shipped | Desktop app builds with 0 warnings / 0 errors; nullable context sweep completed |
+| **Window icon consistency** | ✅ Shipped | All desktop `Window` roots use the shared app icon, including splash and setup wizard |
+| **Developer architecture docs** | ✅ Shipped | Shared service contracts, ViewModel boundaries, threading rules, and Android reuse guidance documented |
+| **Android project skeleton** | ✅ Buildable | `XBVault.Android` builds in Release for `net10.0-android36.0/android-arm64` when `JAVA_HOME` points to JDK 21 |
+| **Remove `async void`** | 🟡 Planned | 10 remaining event handlers that should route through safe `FireAndForget` wrappers |
+| **ConfigureAwait(false) sweep** | 🟡 Planned | 9 uses exist; service-layer I/O policy still incomplete |
+| **DI / CompositionRoot** | 🟡 Planned | `App.axaml.cs` remains 847 lines with manual service/ViewModel construction |
+| **Platform adapters** | 🟡 Planned | Dialogs, pickers, clipboard, navigation, and Android-specific lifecycle need explicit abstractions |
+| **Remaining tech debt** | 🟡 Active | Full list in [Tech Debt](tech-debt) |
 
 ### v1.0.0 — First Stable Release ✅
 

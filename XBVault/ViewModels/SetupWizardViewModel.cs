@@ -1,5 +1,7 @@
+#nullable enable
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using XBVault.Helpers;
 using XBVault.Models;
 using XBVault.Services;
 
@@ -8,8 +10,9 @@ namespace XBVault.ViewModels;
 public partial class SetupWizardViewModel : ObservableObject
 {
     private readonly IXboxAuthService _authService;
+    private readonly bool _canCancel = true;
 
-    public Action? CloseAction;
+    public Action? CloseAction { get; set; }
 
     public SetupWizardViewModel(IXboxAuthService authService)
     {
@@ -51,13 +54,14 @@ public partial class SetupWizardViewModel : ObservableObject
     public bool CanGoNext => CurrentStep switch
     {
         0 => true,
-        1 => !string.IsNullOrWhiteSpace(Address),
+        1 => NetworkValidationHelper.ValidateAddress(Address) == string.Empty
+             && int.TryParse(Port, out var p) && p >= 1 && p <= 65535,
         2 => !string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password),
         _ => false
     };
 
     public bool CanGoBack => CurrentStep > 0;
-    public bool CanCancel => true;
+    public bool CanCancel => _canCancel;
 
     partial void OnCurrentStepChanged(int value)
     {
@@ -114,15 +118,16 @@ public partial class SetupWizardViewModel : ObservableObject
 
     private void SaveToSettings()
     {
-        var settings = SettingsService.Current.XboxConnection;
-        settings.Address = Address ?? "";
-        settings.Port = int.TryParse(Port, out var p) ? p : 11443;
-        settings.UseHttps = UseHttps;
-        settings.Username = Username ?? "";
-        settings.EncryptedPassword = CryptoService.Obfuscate(Password ?? "");
+        var settings = SettingsService.Current;
+        settings.XboxConnection.Address = Address ?? "";
+        settings.XboxConnection.Port = int.TryParse(Port, out var p) ? p : 11443;
+        settings.XboxConnection.UseHttps = UseHttps;
+        settings.XboxConnection.Username = Username ?? "";
+        settings.XboxConnection.EncryptedPassword = CryptoService.Obfuscate(Password ?? "");
+        settings.WizardCompleted = true;
         SettingsService.Save();
 
-        var baseUrl = settings.BaseUrl;
-        _authService.Configure(baseUrl, settings.Username, Password ?? "");
+        var baseUrl = settings.XboxConnection.BaseUrl;
+        _authService.Configure(baseUrl, settings.XboxConnection.Username, Password ?? "");
     }
 }

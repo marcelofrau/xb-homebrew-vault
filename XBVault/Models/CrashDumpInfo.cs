@@ -1,3 +1,4 @@
+#nullable enable
 using System.Globalization;
 using System.Text.Json.Serialization;
 
@@ -32,7 +33,7 @@ public class CrashDumpInfo
     }
 
     [JsonIgnore]
-    public string CreatedAtDisplay => CreatedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-";
+    public string CreatedAtDisplay => CreatedAt?.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) ?? "-";
 }
 
 public class CrashDumpListResponse

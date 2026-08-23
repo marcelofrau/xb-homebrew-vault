@@ -1,3 +1,4 @@
+#nullable enable
 using Renci.SshNet;
 using Renci.SshNet.Common;
 using Renci.SshNet.Sftp;
@@ -9,8 +10,9 @@ using static XBVault.Helpers.FileSystemPathParser;
 
 namespace XBVault.Services;
 
-public class SftpService : ISftpService
-{
+    public class SftpService : ISftpService
+    {
+        private readonly IAppLogger _log;
     private SshClient? _ssh;
     private SftpClient? _sftp;
     private string? _lastHost;
@@ -43,40 +45,51 @@ public class SftpService : ISftpService
     private static string ShellPath(string path) =>
         path.Replace('/', '\\');
 
+    // Back-compat ctor
+    public SftpService()
+        : this(ServiceLocator.Resolve<IAppLogger>())
+    {
+    }
+
+    public SftpService(IAppLogger log)
+    {
+        _log = log ?? throw new ArgumentNullException(nameof(log));
+    }
+
     public async Task ConnectAsync(string host, int port, string user, string pass)
     {
         _lastHost = host;
         _lastPort = port;
         _lastUser = user;
         _lastPass = pass;
-        Logger.Debug($"SftpService.ConnectAsync: connecting to {host}:{port} as {user}");
+        _log.Debug($"SftpService.ConnectAsync: connecting to {host}:{port} as {user}");
         await Task.Run(() =>
         {
             try
             {
-                Logger.Debug("Creating SSH connection info...");
+                _log.Debug("Creating SSH connection info...");
                 var connInfo = new ConnectionInfo(host, port, user,
                     new PasswordAuthenticationMethod(user, pass));
 
-                Logger.Debug("Connecting SSH client...");
+                _log.Debug("Connecting SSH client...");
                 _ssh = new SshClient(connInfo);
                 _ssh.Connect();
-                Logger.Debug($"SSH client connected: {_ssh.IsConnected}");
+                _log.Debug($"SSH client connected: {_ssh.IsConnected}");
 
-                Logger.Debug("Connecting SFTP client...");
+                _log.Debug("Connecting SFTP client...");
                 _sftp = new SftpClient(connInfo);
                 _sftp.OperationTimeout = TimeSpan.FromSeconds(15);
                 _sftp.KeepAliveInterval = TimeSpan.FromSeconds(30);
                 _sftp.Connect();
                 _sftp.BufferSize = 512 * 1024;
-                Logger.Debug($"SFTP client connected: {_sftp.IsConnected}, BufferSize={_sftp.BufferSize}");
+                _log.Debug($"SFTP client connected: {_sftp.IsConnected}, BufferSize={_sftp.BufferSize}");
 
-                Logger.Info($"SFTP connection established to {host}:{port} as {user}");
+                _log.Info($"SFTP connection established to {host}:{port} as {user}");
                 ConnectionChanged?.Invoke(this, true);
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, $"SFTP connection failed to {host}:{port} as {user}");
+                _log.LogError(ex, $"SFTP connection failed to {host}:{port} as {user}");
                 Disconnect();
                 throw;
             }
@@ -87,7 +100,7 @@ public class SftpService : ISftpService
     {
         if (_lastHost is null || _lastUser is null)
         {
-            Logger.Error("ReconnectSftp: no saved credentials available");
+            _log.LogError("ReconnectSftp: no saved credentials available");
             throw new InvalidOperationException("SFTP reconnect unavailable (no saved credentials)");
         }
 
@@ -97,7 +110,7 @@ public class SftpService : ISftpService
         var connInfo = new ConnectionInfo(_lastHost, _lastPort, _lastUser,
             new PasswordAuthenticationMethod(_lastUser, _lastPass));
 
-        Logger.Debug($"ReconnectSftp: connecting to {_lastHost}:{_lastPort} as {_lastUser}");
+        _log.Debug($"ReconnectSftp: connecting to {_lastHost}:{_lastPort} as {_lastUser}");
         _sftp = new SftpClient(connInfo);
         _sftp.OperationTimeout = TimeSpan.FromSeconds(15);
         _sftp.KeepAliveInterval = TimeSpan.FromSeconds(30);
@@ -108,14 +121,14 @@ public class SftpService : ISftpService
 
     public void Disconnect()
     {
-        Logger.Debug("SftpService.Disconnect: starting...");
+        _log.Debug("SftpService.Disconnect: starting...");
         if (_sftp?.IsConnected == true)
         {
-            try { _sftp.Disconnect(); Logger.Trace("SFTP client disconnected"); } catch { }
+            try { _sftp.Disconnect(); _log.Trace("SFTP client disconnected"); } catch { }
         }
         if (_ssh?.IsConnected == true)
         {
-            try { _ssh.Disconnect(); Logger.Trace("SSH client disconnected"); } catch { }
+            try { _ssh.Disconnect(); _log.Trace("SSH client disconnected"); } catch { }
         }
 
         _sftp?.Dispose();
@@ -129,7 +142,7 @@ public class SftpService : ISftpService
         _lastPass = null;
 
         ConnectionChanged?.Invoke(this, false);
-        Logger.Debug("SftpService.Disconnect: complete");
+        _log.Debug("SftpService.Disconnect: complete");
     }
 
     public Task<List<SftpEntry>> ListDirectoryAsync(string path, CancellationToken ct = default)
@@ -237,7 +250,7 @@ public class SftpService : ISftpService
                     Logger.Debug($"RecursiveListAsync: '{path}' is empty (exit=1, err=empty dir)");
                     return [];
                 }
-                throw new Exception($"dir /s /b /a-d failed: {result.Error}");
+                throw new InvalidOperationException($"dir /s /b /a-d failed: {result.Error}");
             }
 
             var parent = path.TrimEnd('\\');

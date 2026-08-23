@@ -1,7 +1,9 @@
+#nullable enable
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
@@ -70,7 +72,7 @@ public partial class MainWindow : Window
             AddToastHost(item);
         notificationCenter.Active.CollectionChanged += OnActiveNotificationsChanged;
         NotificationsPopup.DataContext = notificationCenter;
-        NotificationsPanelHost.CloseRequested += () => _ = ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen);
+        NotificationsPanelHost.CloseRequested += () => ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen).FireAndForget();
         notificationCenter.UnacknowledgedChanged += OnUnacknowledgedChanged;
         SetBellCount(notificationCenter.UnacknowledgedCount);
     }
@@ -96,7 +98,7 @@ public partial class MainWindow : Window
         else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems is not null)
         {
             foreach (NotificationItem item in e.OldItems)
-                _ = CloseToastAsync(item);
+                CloseToastAsync(item).FireAndForget();
         }
     }
 
@@ -104,8 +106,8 @@ public partial class MainWindow : Window
     {
         var host = new ToastHost(item);
         _toastHosts.Add(host);
-        if (item.AutoDismissToast)
-            _ = AutoHideToastAsync(item, host);
+            if (item.AutoDismissToast)
+                AutoHideToastAsync(item, host).FireAndForget();
     }
 
     private async Task AutoHideToastAsync(NotificationItem item, ToastHost host)
@@ -147,7 +149,7 @@ public partial class MainWindow : Window
     {
         var show = count > 0;
         BellBadge.IsVisible = show;
-        BellBadgeText.Text = count > 99 ? "99+" : count.ToString();
+        BellBadgeText.Text = count > 99 ? "99+" : count.ToString(CultureInfo.InvariantCulture);
     }
 
     public void SetTaskCenter(TaskCenterViewModel taskCenter)
@@ -187,10 +189,10 @@ public partial class MainWindow : Window
         _tasksFadeGen++;
         Logger.Trace($"Flyout: TasksPopup.Opened fired (gen={_tasksFadeGen}, isOpen={TasksPopup.IsOpen}, taskCenter.IsOpen={_taskCenter?.IsOpen})");
         FadeInPopup(TasksPopup);
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             Logger.Trace($"Flyout: TasksPopup check (isUsingOverlay={TasksPopup.IsUsingOverlayLayer}, childBounds={TasksPopup.Child?.Bounds}, childOpacity={TasksPopup.Child?.Opacity})");
-        }, DispatcherPriority.Background);
+        }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
     private void OnTasksPopupClosed(object? sender, EventArgs e)
@@ -205,10 +207,10 @@ public partial class MainWindow : Window
         _notificationsFadeGen++;
         Logger.Trace($"Flyout: NotificationsPopup.Opened fired (gen={_notificationsFadeGen}, isOpen={NotificationsPopup.IsOpen})");
         FadeInPopup(NotificationsPopup);
-        Dispatcher.UIThread.Post(() =>
+        XBVault.Helpers.UIHelpers.RunOnUI(() =>
         {
             Logger.Trace($"Flyout: NotificationsPopup check (isUsingOverlay={NotificationsPopup.IsUsingOverlayLayer}, childBounds={NotificationsPopup.Child?.Bounds}, childOpacity={NotificationsPopup.Child?.Opacity})");
-        }, DispatcherPriority.Background);
+        }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
     private void OnNotificationsPopupClosed(object? sender, EventArgs e)
@@ -272,7 +274,7 @@ public partial class MainWindow : Window
         TaskIndicatorIcon.Classes.Set("statusDot", _taskCenter.ActiveCount > 0);
         var count = _taskCenter.ActiveCount;
         TaskIndicatorBadge.IsVisible = count > 0;
-        TaskIndicatorBadgeText.Text = count > 99 ? "99+" : count.ToString();
+        TaskIndicatorBadgeText.Text = count > 99 ? "99+" : count.ToString(CultureInfo.InvariantCulture);
     }
 
     private void OnTaskIndicatorClick(object? sender, RoutedEventArgs e)
@@ -291,14 +293,14 @@ public partial class MainWindow : Window
         if (TasksPopup.IsOpen && !IsPointInPopup(e, TasksPopup))
         {
             Logger.Trace("Flyout: outside press -> fade-close tasks");
-            _ = ClosePopupWithFadeAsync(TasksPopup, _tasksFadeGen);
+            ClosePopupWithFadeAsync(TasksPopup, _tasksFadeGen).FireAndForget();
         }
 
-        if (NotificationsPopup.IsOpen && !IsPointInPopup(e, NotificationsPopup))
-        {
-            Logger.Trace("Flyout: outside press -> fade-close notifications");
-            _ = ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen);
-        }
+            if (NotificationsPopup.IsOpen && !IsPointInPopup(e, NotificationsPopup))
+            {
+                Logger.Trace("Flyout: outside press -> fade-close notifications");
+                ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen).FireAndForget();
+            }
     }
 
     private static bool IsPointInPopup(PointerPressedEventArgs e, Popup popup)
@@ -459,7 +461,7 @@ public partial class MainWindow : Window
             if (NotificationsPopup.IsOpen)
             {
                 Logger.Trace("Flyout: Escape -> close notifications");
-                _ = ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen);
+                ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen).FireAndForget();
                 e.Handled = true;
                 return;
             }
@@ -612,37 +614,59 @@ public partial class MainWindow : Window
         Process.Start(new ProcessStartInfo("https://emulationrevival.github.io") { UseShellExecute = true });
     }
 
-    private async void OnDiscordClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnDiscordClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        Logger.Info("Opening Discord community popup");
-        var vm = new DiscordPopupViewModel();
-        var popup = new DiscordPopup { DataContext = vm };
-        await popup.ShowDialog(this);
+        // Run UI work on Avalonia UI thread to avoid "different thread owns it" errors.
+        _ = XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
+        {
+            try
+            {
+                Logger.Info("Opening Discord community popup");
+                var vm = new DiscordPopupViewModel();
+                var popup = new DiscordPopup { DataContext = vm };
+                await popup.ShowDialog(this).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "OnDiscordClick failed");
+            }
+        });
     }
 
-    private async void OnDisconnectClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnDisconnectClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        Logger.Info("OnDisconnectClick: user clicked disconnect");
-        if (DataContext is not MainViewModel vm) return;
-
-        var confirmVm = new ConfirmViewModel(
-            "Disconnect",
-            "Are you sure you want to disconnect from the Xbox?",
-            "Disconnect", "Cancel",
-            "avares://XBVault/Assets/Views/ConfirmWindow/confirmwindow-disconnect-20.png",
-            "avares://XBVault/Assets/Views/ConfirmWindow/confirmwindow-disconnect-48.png",
-            isDestructive: true);
-        var confirmWindow = new ConfirmWindow { DataContext = confirmVm };
-        await confirmWindow.ShowDialog(this);
-
-        if (confirmVm.Confirmed)
+        // Ensure UI work runs on UI thread (window construction must happen on UI thread).
+        _ = XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
         {
-            Logger.Info("OnDisconnectClick: confirmed, executing DisconnectCommand");
-            vm.DisconnectCommand.Execute(null);
-        }
-        else
-        {
-            Logger.Trace("OnDisconnectClick: cancelled");
-        }
+            try
+            {
+                Logger.Info("OnDisconnectClick: user clicked disconnect");
+                if (DataContext is not MainViewModel vm) return;
+
+                var confirmVm = new ConfirmViewModel(
+                    "Disconnect",
+                    "Are you sure you want to disconnect from the Xbox?",
+                    "Disconnect", "Cancel",
+                    "avares://XBVault/Assets/Views/ConfirmWindow/confirmwindow-disconnect-20.png",
+                    "avares://XBVault/Assets/Views/ConfirmWindow/confirmwindow-disconnect-48.png",
+                    isDestructive: true);
+                var confirmWindow = new ConfirmWindow { DataContext = confirmVm };
+                await confirmWindow.ShowDialog(this).ConfigureAwait(false);
+
+                if (confirmVm.Confirmed)
+                {
+                    Logger.Info("OnDisconnectClick: confirmed, executing DisconnectCommand");
+                    vm.DisconnectCommand.Execute(null);
+                }
+                else
+                {
+                    Logger.Trace("OnDisconnectClick: cancelled");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "OnDisconnectClick failed");
+            }
+        });
     }
 }

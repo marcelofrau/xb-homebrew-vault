@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -14,11 +15,20 @@ using XBVault.Models;
 
 namespace XBVault.Services;
 
+/// <summary>
+/// Downloads, analyzes, and installs Xbox packages with dependency handling.
+/// </summary>
+/// <remarks>
+/// This service is UI-agnostic and should remain reusable by desktop and Android frontends.
+/// It owns install-file classification, dependency ordering, temporary extraction, and progress reporting;
+/// ViewModels own user-facing status state and dialogs.
+/// </remarks>
 public class PackageInstallService
 {
     private readonly HttpClient _http;
     private readonly CacheService _cache;
     private readonly IXboxPackageService _packageService;
+    private readonly IAppLogger _log;
 
     private static readonly HashSet<string> DepFolderNames = new(
         StringComparer.OrdinalIgnoreCase) { "Dependencies", "deps", "dep" };
@@ -79,14 +89,21 @@ public class PackageInstallService
     }
 
     public PackageInstallService(CacheService cache, IXboxPackageService packageService)
-        : this(cache, packageService, http: null)
+        : this(cache, packageService, http: null, log: null)
     {
     }
 
+    // Back-compat overload used throughout tests and callers: keep three-arg ctor
     public PackageInstallService(CacheService cache, IXboxPackageService packageService, HttpClient? http)
+        : this(cache, packageService, http, log: null)
+    {
+    }
+
+    public PackageInstallService(CacheService cache, IXboxPackageService packageService, HttpClient? http, IAppLogger? log)
     {
         _cache = cache;
         _packageService = packageService;
+        _log = log ?? new SerilogAdapter();
 
         if (http is not null)
         {
@@ -115,16 +132,16 @@ public class PackageInstallService
         var url = downloadUrl ?? item.DownloadUrl;
         if (string.IsNullOrWhiteSpace(url))
         {
-            Logger.Error($"No download URL for {item.Name}");
+            _log.LogError($"No download URL for {item.Name}");
             return InstallResult.Fail(InstallFailureStage.Download, "No download URL available for this item.");
         }
 
         progress?.Report(new InstallProgressInfo { Status = $"Starting install of {item.Name}..." });
-        Logger.Info($"DownloadAndInstall: {item.Name} from {url}");
+        _log.Info($"DownloadAndInstall: {item.Name} from {url}");
 
         var fileName = GetFileNameFromUrl(url);
         var localPath = _cache.GetDownloadPath(item.Id, fileName);
-        Logger.Debug($"Target local path: {localPath}");
+        _log.Debug($"Target local path: {localPath}");
 
         // Phase 1: Download
         if (_cache.IsCached(item.Id, fileName))
@@ -150,7 +167,7 @@ public class PackageInstallService
                     response.EnsureSuccessStatusCode();
 
                     var total = response.Content.Headers.ContentLength ?? -1;
-                    Logger.Info($"Download size: {(total > 0 ? $"{total} bytes" : "unknown")}");
+                    _log.Info($"Download size: {(total > 0 ? $"{total} bytes" : "unknown")}");
                     using var stream = await response.Content.ReadAsStreamAsync();
                     using var fileStream = File.Create(localPath);
 
@@ -173,24 +190,24 @@ public class PackageInstallService
                         }
                     }
 
-                    Logger.Info($"Downloaded {read} bytes to {localPath}");
+                    _log.Info($"Downloaded {read} bytes to {localPath}");
                     lastError = null;
                     break;
                 }
                 catch (Exception ex)
                 {
                     lastError = ex;
-                    Logger.Error(ex, $"Download attempt {attempt}/{maxAttempts} failed for {url}");
+                    _log.LogError(ex, $"Download attempt {attempt}/{maxAttempts} failed for {url}");
                     if (File.Exists(localPath))
                         File.Delete(localPath);
                     if (attempt < maxAttempts)
-                        await Task.Delay(TimeSpan.FromSeconds(1.5) * attempt);
+                        await Task.Delay(TimeSpan.FromSeconds(1.5) * attempt).ConfigureAwait(false);
                 }
             }
 
             if (lastError is not null)
             {
-                Logger.Error(lastError, $"Download failed for {url} after {maxAttempts} attempts");
+                _log.LogError(lastError, $"Download failed for {url} after {maxAttempts} attempts");
                 return InstallResult.Fail(InstallFailureStage.Download,
                     $"Download failed after {maxAttempts} attempts ({lastError.Message}). The source may be down or your network blocked it.");
             }
@@ -199,7 +216,7 @@ public class PackageInstallService
         progress?.Report(new InstallProgressInfo { Total = 0.4, Status = "Extracting package..." });
 
         // Phase 2: Extract ZIP
-        Logger.Info("Extracting package...");
+        _log.Info("Extracting package...");
 
         var extractDir = GetExtractPath(item.Id, fileName);
         string[] packages;
@@ -212,19 +229,19 @@ public class PackageInstallService
                 return InstallResult.Fail(InstallFailureStage.Extraction,
                     "No installable package found after extraction. The download may be corrupt or unsupported.");
             }
-            Logger.Info($"Found {packages.Length} installable file(s):");
+            _log.Info($"Found {packages.Length} installable file(s):");
             foreach (var p in packages)
-                Logger.Info($"  {Path.GetFileName(p)}");
+                _log.Info($"  {Path.GetFileName(p)}");
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, $"Extraction failed for {localPath}");
+            _log.LogError(ex, $"Extraction failed for {localPath}");
             return InstallResult.Fail(InstallFailureStage.Extraction,
                 $"Extraction failed: {ex.Message}");
         }
 
         // Phase 3: Classify main vs dependencies by name patterns
-        Logger.Info("Classifying packages (main vs dependencies)...");
+        _log.Info("Classifying packages (main vs dependencies)...");
         progress?.Report(new InstallProgressInfo { Total = 0.5, Status = "Classifying packages..." });
         var (mainPackage, dependencies) = ClassifyPackages(packages);
         if (mainPackage is null)
@@ -233,12 +250,12 @@ public class PackageInstallService
             return InstallResult.Fail(InstallFailureStage.Extraction,
                 "No main package identified after extraction. The download may be corrupt.");
         }
-        Logger.Info($"  Main: {Path.GetFileName(mainPackage)}");
+        _log.Info($"  Main: {Path.GetFileName(mainPackage)}");
         for (int i = 0; i < dependencies.Length; i++)
-            Logger.Info($"  Dep {i + 1}/{dependencies.Length}: {Path.GetFileName(dependencies[i])}");
+            _log.Info($"  Dep {i + 1}/{dependencies.Length}: {Path.GetFileName(dependencies[i])}");
 
         // Phase 4: Install on Xbox
-        Logger.Info("Installing on Xbox...");
+        _log.Info("Installing on Xbox...");
         progress?.Report(new InstallProgressInfo { Total = 0.6, Status = "Installing on Xbox..." });
 
         var installProgress = dependencies.Length > 0
@@ -269,13 +286,13 @@ public class PackageInstallService
         if (result)
         {
             progress?.Report(new InstallProgressInfo { Total = 1.0, Status = "Complete!" });
-            Logger.Info($"Install SUCCESS: {item.Name}");
+            _log.Info($"Install SUCCESS: {item.Name}");
             _cache.ClearAppCache(item.Id);
-            Logger.Debug($"Cache cleared for {item.Id} after successful install");
+            _log.Debug($"Cache cleared for {item.Id} after successful install");
         }
         else
         {
-            Logger.Error($"Install FAILED: {item.Name}");
+            _log.LogError($"Install FAILED: {item.Name}");
         }
         return result
             ? InstallResult.Ok()

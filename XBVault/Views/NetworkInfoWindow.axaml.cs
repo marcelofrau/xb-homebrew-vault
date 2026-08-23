@@ -1,3 +1,4 @@
+#nullable enable
 using Avalonia.Controls;
 using Avalonia.Input;
 using XBVault.Helpers;
@@ -15,10 +16,10 @@ public partial class NetworkInfoWindow : Window
         Opened += (_, _) => WindowFitHelper.ApplyScale(this, SettingsService.Current.UiScale);
     }
 
-    private async void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is NetworkInfoViewModel vm)
-            await vm.RefreshCommand.ExecuteAsync(null);
+            vm.RefreshCommand.ExecuteAsync(null).FireAndForget();
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)

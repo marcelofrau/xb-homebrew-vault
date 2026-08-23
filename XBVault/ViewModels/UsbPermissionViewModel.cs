@@ -1,3 +1,4 @@
+#nullable enable
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -9,14 +10,16 @@ using CommunityToolkit.Mvvm.Input;
 using XBVault.Models;
 using XBVault.Services;
 using Avalonia.Input;
+using Avalonia.Threading;
 
 namespace XBVault.ViewModels;
 
 public partial class UsbPermissionViewModel : ObservableObject
 {
     private const int MinSpinnerDelayMs = 1000;
+    private readonly bool _isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
-    public Action? CloseAction;
+    public Action? CloseAction { get; set; }
 
     public UsbPermissionViewModel()
     {
@@ -85,7 +88,7 @@ public partial class UsbPermissionViewModel : ObservableObject
     [ObservableProperty]
     private bool _isNoDrives;
 
-    public bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    public bool IsWindows => _isWindows;
 
     public bool IsWelcomeStep => CurrentStep == 0;
     public bool IsFormatStep => CurrentStep == 1;
@@ -207,19 +210,24 @@ public partial class UsbPermissionViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task LoadDrivesAsync()
-    {
-        Logger.Info("LoadDrivesAsync: starting drive detection");
+        private async Task LoadDrivesAsync()
+        {
+            Logger.Info("LoadDrivesAsync: starting drive detection");
         var drives = await Task.Run(() => UsbDriveDetector.ListUsbDrives());
-        _loadedDrives = drives;
-        UsbDriveNames = new ObservableCollection<string>(drives.Select(d => d.DisplayName));
-        IsNoDrives = drives.Count == 0;
-        Logger.Info($"LoadDrivesAsync: found {drives.Count} drives, IsNoDrives={IsNoDrives}");
+        Logger.Info($"LoadDrivesAsync: found {drives.Count} drives");
 
-        if (drives.Count > 0)
-            SelectedDriveIndex = 0;
-        else
-            SelectedDriveIndex = -1;
+        // Apply UI-bound state on UI thread
+        Dispatcher.UIThread.Post(() =>
+        {
+            _loadedDrives = drives;
+            UsbDriveNames = new ObservableCollection<string>(drives.Select(d => d.DisplayName));
+            IsNoDrives = drives.Count == 0;
+
+            if (drives.Count > 0)
+                SelectedDriveIndex = 0;
+            else
+                SelectedDriveIndex = -1;
+        });
     }
 
     [RelayCommand]

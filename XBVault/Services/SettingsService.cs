@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.IO;
 using System.Text.Json;
@@ -48,6 +49,15 @@ public static class SettingsService
                 {
                     var json = File.ReadAllText(SettingsPath);
                     _current = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+
+                    // Validate XboxConnection — reset if corrupt
+                    var conn = _current.XboxConnection;
+                    if (conn.IsConfigured && (string.IsNullOrWhiteSpace(conn.Address) || conn.Port < 1 || conn.Port > 65535))
+                    {
+                        Logger.Error($"Settings: corrupt XboxConnection (Address='{conn.Address}', Port={conn.Port}) — resetting");
+                        _current.XboxConnection = new Models.XboxConnection();
+                    }
+
                     Logger.Debug($"Settings loaded from {SettingsPath} ({json.Length} bytes)");
                     return;
                 }

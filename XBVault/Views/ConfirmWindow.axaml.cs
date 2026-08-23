@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -44,7 +45,7 @@ public partial class ConfirmWindow : Window
 
     private void OnCompleted(bool success)
     {
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => Close());
+        XBVault.Helpers.UIHelpers.RunOnUI(() => Close());
     }
 
     private void OnCloseClick(object? sender, RoutedEventArgs e)

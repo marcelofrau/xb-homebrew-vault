@@ -6,22 +6,26 @@ namespace XBVault.ViewModels;
 
 public partial class DiscordPopupViewModel : ObservableObject
 {
+    private readonly string _revivesUrl = "https://discord.gg/cBYsQCS7j7";
+    private readonly string _xboxHubUrl = "https://discord.gg/pVd47KAG24";
+    private readonly string _erUrl = "https://discord.gg/j2HndpJTej";
+
     [RelayCommand]
     private void JoinRevives()
     {
-        OpenUrl("https://discord.gg/cBYsQCS7j7");
+        OpenUrl(_revivesUrl);
     }
 
     [RelayCommand]
     private void JoinXboxHub()
     {
-        OpenUrl("https://discord.gg/pVd47KAG24");
+        OpenUrl(_xboxHubUrl);
     }
 
     [RelayCommand]
     private void JoinEr()
     {
-        OpenUrl("https://discord.gg/j2HndpJTej");
+        OpenUrl(_erUrl);
     }
 
     private static void OpenUrl(string url)

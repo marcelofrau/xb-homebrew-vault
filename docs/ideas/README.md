@@ -12,7 +12,7 @@ Catalog of ideas for future versions. Organized by area and estimated impact.
 | **DevOps/UX** | [Auto-Update](auto-update.md) | High | Low | ✅ Partial (startup dialog) |
 | **Automation** | [Background & Automation](background-and-automation.md) | High | High | 🔄 Planned (5 changes) |
 | **Build** | [macOS Universal](macos-universal-build.md) | Low | Medium | ⬜ Open |
-| **Quality** | [Testing](testing-infrastructure.md) | High | Medium | ✔ Partial (172 tests) |
+| **Quality** | [Testing](testing-infrastructure.md) | High | Medium | ✔ Partial (240 tests) |
 | **Refactoring** | [Split XboxDeviceService](refactor-xboxdeviceservice.md) | High | Medium | ✔ Done (Aug 2026) |
 | **Architecture** | [DI Container](di-container.md) | High | Medium | ⬜ Open |
 | **Globalization** | [i18n Localization](i18n-localization.md) | High | High | ⬜ Open |

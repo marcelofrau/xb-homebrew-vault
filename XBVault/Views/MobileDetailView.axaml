@@ -1,0 +1,520 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:XBVault.ViewModels"
+             xmlns:models="using:XBVault.Models"
+             xmlns:sys="using:System"
+             xmlns:controls="using:XBVault.Controls"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileDetailView"
+             x:DataType="vm:BrowseViewModel"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button.LinkBtn">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="HorizontalAlignment" Value="Left"/>
+    </Style>
+    <Style Selector="Button.LinkBtn:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="MenuFlyoutPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="4"/>
+    </Style>
+    <Style Selector="FlyoutPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="Padding" Value="0"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto">
+
+    <!-- Title Bar with back button -->
+    <views:MobileTitleBar Grid.Row="0"
+                          x:Name="TitleBar"
+                          Title="Item Details"
+                          ShowBackButton="True"
+                          ShowAppIcon="False"/>
+
+    <!-- Content -->
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="16,12,16,16" Spacing="0">
+
+        <!-- Thumbnail with CdSpinner -->
+        <Border CornerRadius="12"
+                Background="{StaticResource SurfaceAltBrush}"
+                MaxHeight="240"
+                ClipToBounds="True"
+                Margin="0,0,0,16">
+          <Grid>
+            <Image Source="{Binding SelectedItem.Thumbnail}"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center"
+                   RenderOptions.BitmapInterpolationMode="HighQuality"
+                   IsVisible="{Binding SelectedItem.IsThumbnailLoading, Converter={StaticResource BoolInverse}}"/>
+            <Border Background="{StaticResource SurfaceAltBrush}"
+                    IsVisible="{Binding SelectedItem.IsThumbnailLoading}">
+              <controls:CdSpinner/>
+            </Border>
+          </Grid>
+        </Border>
+
+        <!-- Name + badge -->
+        <TextBlock Text="{Binding SelectedItem.Name}"
+                   FontFamily="{StaticResource TitleFont}"
+                   FontSize="20" FontWeight="Bold"
+                   Foreground="White"
+                   TextWrapping="Wrap"/>
+
+        <!-- Category + version row -->
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,6,0,0">
+          <Border Background="{StaticResource AccentBrush}"
+                  CornerRadius="6" Padding="10,4">
+            <TextBlock Text="{Binding SelectedItem.Category}"
+                       FontSize="12" FontWeight="SemiBold"
+                       Foreground="White"/>
+          </Border>
+          <TextBlock Grid.Column="2"
+                     Text="{Binding SelectedItem.Version, StringFormat='v{0}'}"
+                     FontSize="13" Foreground="{StaticResource TextMutedBrush}"
+                     VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- Description -->
+        <TextBlock Text="{Binding SelectedItem.Description}"
+                   FontSize="14" Foreground="{StaticResource TextMutedBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,14,0,0"/>
+
+        <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,14,0,0"/>
+
+        <!-- Info grid with clickable Developer/PortedBy/MaintainedBy -->
+        <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+              RowSpacing="10" Margin="0,14,0,0">
+
+          <!-- Developer (clickable button with flyout) -->
+          <TextBlock Text="Developer" FontSize="12" Foreground="{StaticResource TextDimBrush}"/>
+          <Button Grid.Column="1"
+                  x:Name="DeveloperBtn"
+                  Classes="LinkBtn"
+                  Click="OnDeveloperClick"
+                  IsVisible="{Binding SelectedItem.Developer, Converter={StaticResource StringNotEmpty}}">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="{Binding SelectedItem.Developer}"
+                         FontSize="12" Foreground="{StaticResource AccentBrush}"
+                         VerticalAlignment="Center"/>
+              <TextBlock Text="▾" FontSize="9"
+                         Foreground="{StaticResource TextDimBrush}"
+                         VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+
+          <!-- UWP Port by (clickable) -->
+          <TextBlock Grid.Row="1" Text="UWP Port by" FontSize="12"
+                     Foreground="{StaticResource TextDimBrush}"
+                     IsVisible="{Binding SelectedItem.UwpPortBy, Converter={StaticResource StringNotEmpty}}"/>
+          <Button Grid.Row="1" Grid.Column="1"
+                  x:Name="UwpPortByBtn"
+                  Classes="LinkBtn"
+                  Click="OnUwpPortByClick"
+                  IsVisible="{Binding SelectedItem.UwpPortBy, Converter={StaticResource StringNotEmpty}}">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="{Binding SelectedItem.UwpPortBy}"
+                         FontSize="12" Foreground="{StaticResource AccentBrush}"
+                         VerticalAlignment="Center"/>
+              <TextBlock Text="▾" FontSize="9"
+                         Foreground="{StaticResource TextDimBrush}"
+                         VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+
+          <!-- Maintained by (clickable) -->
+          <TextBlock Grid.Row="2" Text="Maintained by" FontSize="12"
+                     Foreground="{StaticResource TextDimBrush}"
+                     IsVisible="{Binding SelectedItem.MaintainedBy, Converter={StaticResource StringNotEmpty}}"/>
+          <Button Grid.Row="2" Grid.Column="1"
+                  x:Name="MaintainedByBtn"
+                  Classes="LinkBtn"
+                  Click="OnMaintainedByClick"
+                  IsVisible="{Binding SelectedItem.MaintainedBy, Converter={StaticResource StringNotEmpty}}">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <TextBlock Text="{Binding SelectedItem.MaintainedBy}"
+                         FontSize="12" Foreground="{StaticResource AccentBrush}"
+                         VerticalAlignment="Center"/>
+              <TextBlock Text="▾" FontSize="9"
+                         Foreground="{StaticResource TextDimBrush}"
+                         VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+
+          <!-- Release date -->
+          <TextBlock Grid.Row="3" Text="Release date" FontSize="12"
+                     Foreground="{StaticResource TextDimBrush}"/>
+          <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedItem.ReleaseDate}"
+                     FontSize="12"/>
+
+          <!-- Compatibility -->
+          <TextBlock Grid.Row="4" Text="Compatibility" FontSize="12"
+                     Foreground="{StaticResource TextDimBrush}"/>
+          <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedItem.Compatibility}"
+                     FontSize="12" TextWrapping="Wrap"/>
+        </Grid>
+
+        <!-- Requirements -->
+        <StackPanel Spacing="4" Margin="0,14,0,0"
+                    IsVisible="{Binding SelectedItem.Requirements.Count, Converter={StaticResource IntToBool}}">
+          <TextBlock Text="Requirements" FontSize="13" FontWeight="SemiBold"/>
+          <ItemsControl ItemsSource="{Binding SelectedItem.Requirements}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="sys:String">
+                <TextBlock Text="{Binding}" FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           Margin="12,2,0,2"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <!-- Features -->
+        <StackPanel Spacing="4" Margin="0,14,0,0"
+                    IsVisible="{Binding SelectedItem.Features.Count, Converter={StaticResource IntToBool}}">
+          <TextBlock Text="Features" FontSize="13" FontWeight="SemiBold"/>
+          <ItemsControl ItemsSource="{Binding SelectedItem.Features}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="sys:String">
+                <TextBlock Text="{Binding}" FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           Margin="12,2,0,2"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <!-- Links -->
+        <StackPanel Spacing="4" Margin="0,14,0,0">
+          <TextBlock Text="Links" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,6"/>
+          <WrapPanel Orientation="Horizontal">
+            <Button Padding="10,8" Margin="0,0,8,8"
+                    Command="{Binding OpenLinkCommand}"
+                    CommandParameter="{Binding SelectedItem.SetupGuideUrl}"
+                    IsVisible="{Binding SelectedItem.SetupGuideUrl, Converter={StaticResource StringNotEmpty}}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-guide-20.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+                <TextBlock Text="Guide" FontSize="12" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button Padding="10,8" Margin="0,0,8,8"
+                    Command="{Binding OpenLinkCommand}"
+                    CommandParameter="{Binding SelectedItem.TutorialUrl}"
+                    IsVisible="{Binding SelectedItem.TutorialUrl, Converter={StaticResource StringNotEmpty}}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-youtube-20.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+                <TextBlock Text="Tutorial" FontSize="12" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button Padding="10,8" Margin="0,0,8,8"
+                    Command="{Binding OpenLinkCommand}"
+                    CommandParameter="{Binding SelectedItem.ReleaseNotesUrl}"
+                    IsVisible="{Binding SelectedItem.ReleaseNotesUrl, Converter={StaticResource StringNotEmpty}}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-notes-20.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+                <TextBlock Text="Notes" FontSize="12" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button Padding="10,8" Margin="0,0,8,8"
+                    Command="{Binding OpenLinkCommand}"
+                    CommandParameter="{Binding SelectedItem.SourceCodeUrl}"
+                    IsVisible="{Binding SelectedItem.SourceCodeUrl, Converter={StaticResource StringNotEmpty}}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-github-20.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+                <TextBlock Text="Source" FontSize="12" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button Padding="10,8" Margin="0,0,8,8"
+                    Command="{Binding OpenLinkCommand}"
+                    CommandParameter="{Binding SelectedItem.Url}"
+                    IsVisible="{Binding SelectedItem.Url, Converter={StaticResource StringNotEmpty}}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-globe-16.png"
+                       Width="16" Height="16" Stretch="Uniform"/>
+                <TextBlock Text="Website" FontSize="12" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+          </WrapPanel>
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Bottom action bar: full install flow -->
+    <Border Grid.Row="2" Background="{StaticResource SurfaceBrush}" Padding="16,12">
+      <StackPanel Spacing="8">
+
+        <!-- Install overlay: progress + status (only when active or complete) -->
+        <StackPanel IsVisible="{Binding ShowInstallOverlay}"
+                    VerticalAlignment="Center"
+                    Spacing="8">
+          <controls:CdSpinner HorizontalAlignment="Center"
+                              IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
+          <!-- Success -->
+          <StackPanel Spacing="6"
+                      VerticalAlignment="Center"
+                      IsVisible="{Binding ShowInstallSuccessResult}"
+                      IsHitTestVisible="False">
+            <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-success-100.png"
+                   Width="80" Height="80" Stretch="Uniform"
+                   HorizontalAlignment="Center"/>
+            <TextBlock Text="Install complete!"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{StaticResource SuccessBrush}"
+                       TextAlignment="Center"/>
+          </StackPanel>
+          <!-- Failure -->
+          <StackPanel Spacing="6"
+                      VerticalAlignment="Center"
+                      IsVisible="{Binding ShowInstallFailureResult}"
+                      IsHitTestVisible="False">
+            <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-failure-100.png"
+                   Width="80" Height="80" Stretch="Uniform"
+                   HorizontalAlignment="Center"/>
+            <TextBlock Text="Install failed"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{StaticResource DangerBrush}"
+                       TextAlignment="Center"/>
+            <TextBlock Text="{Binding InstallResultMessage}"
+                       FontSize="12"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       MaxWidth="320"
+                       TextAlignment="Center"/>
+          </StackPanel>
+          <ProgressBar Value="{Binding InstallProgress}"
+                       Maximum="1"
+                       Height="6"
+                       Foreground="{StaticResource AccentBrush}"
+                       IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
+          <TextBlock Text="{Binding InstallStatus}"
+                     FontSize="13"
+                     Foreground="{StaticResource TextMutedBrush}"
+                     TextAlignment="Center"
+                     TextWrapping="Wrap"
+                     IsVisible="{Binding InstallComplete, Converter={StaticResource BoolInverse}}"/>
+          <TextBlock Text="{Binding CurrentFile}"
+                     FontSize="11"
+                     Foreground="{StaticResource TextDimBrush}"
+                     TextAlignment="Center"
+                     TextWrapping="Wrap"
+                     IsVisible="{Binding CurrentFile, Converter={StaticResource StringNotEmpty}}"/>
+        </StackPanel>
+
+        <!-- Check overlay: spinner + results (only when active or complete) -->
+        <StackPanel IsVisible="{Binding ShowCheckOverlay}"
+                    VerticalAlignment="Center"
+                    Spacing="8">
+          <controls:CdSpinner HorizontalAlignment="Center"
+                              IsVisible="{Binding CheckComplete, Converter={StaticResource BoolInverse}}"/>
+          <TextBlock Text="Checking version on console..."
+                     FontSize="13"
+                     Foreground="{StaticResource TextMutedBrush}"
+                     TextAlignment="Center"
+                     IsVisible="{Binding CheckComplete, Converter={StaticResource BoolInverse}}"/>
+          <!-- Check complete: results -->
+          <StackPanel Spacing="6" IsVisible="{Binding CheckComplete}">
+            <!-- Installed -->
+            <StackPanel Spacing="6" IsVisible="{Binding CheckInstalled}">
+              <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-checkinstalled-100.png"
+                     Width="80" Height="80" Stretch="Uniform"
+                     HorizontalAlignment="Center"/>
+              <TextBlock FontSize="18" FontWeight="Bold"
+                         Foreground="{StaticResource SuccessBrush}"
+                         TextAlignment="Center"
+                         Text="{Binding CheckResultMessage, StringFormat='Installed: {0}'}"/>
+              <TextBlock Text="{Binding CheckVersionHint}"
+                         FontSize="12"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         TextAlignment="Center"
+                         IsVisible="{Binding CheckVersionHint, Converter={StaticResource StringNotEmpty}}"/>
+            </StackPanel>
+            <!-- Not detected -->
+            <StackPanel Spacing="6" IsVisible="{Binding ShowCheckNotInstalled}">
+              <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-checknotinstalled-100.png"
+                     Width="80" Height="80" Stretch="Uniform"
+                     HorizontalAlignment="Center"/>
+              <TextBlock Text="Not detected"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{StaticResource YellowBrush}"
+                         TextAlignment="Center"/>
+              <TextBlock Text="Package name on your console may differ from catalog. It could be installed under a different name."
+                         FontSize="11"
+                         Foreground="{StaticResource TextDimBrush}"
+                         TextAlignment="Center"
+                         TextWrapping="Wrap"
+                         IsVisible="{Binding ShowCheckNotDetectedHint}"/>
+            </StackPanel>
+            <!-- Error -->
+            <StackPanel Spacing="6" IsVisible="{Binding CheckError}">
+              <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-checkerror-100.png"
+                     Width="80" Height="80" Stretch="Uniform"
+                     HorizontalAlignment="Center"/>
+              <TextBlock Text="{Binding CheckResultMessage}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{StaticResource DangerBrush}"
+                         TextAlignment="Center"/>
+              <TextBlock Text="Connect via the sidebar to enable remote checking"
+                         FontSize="12"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         TextAlignment="Center"
+                         TextWrapping="Wrap"
+                         IsVisible="{Binding ShowCheckNotConnectedHint}"/>
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+
+        <!-- Buttons: always visible, disabled during operations -->
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+          <Button x:Name="CloseBtn"
+                  Grid.Column="0"
+                  Classes="Danger"
+                  Padding="16,12"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Click="OnCloseClick"
+                  IsEnabled="{Binding IsBusy, Converter={StaticResource BoolInverse}}">
+            <TextBlock Text="Close"
+                       FontFamily="{StaticResource TitleFont}"
+                       FontSize="14" FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+          </Button>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+            <Button x:Name="CheckBtn"
+                    Padding="16,12"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Command="{Binding CheckInstalledCommand}"
+                    IsEnabled="{Binding CanCheckXboxItem}"
+                    IsVisible="{Binding ShowCheckButton}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <Grid>
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
+                       IsVisible="{Binding #CheckBtn.IsEnabled}"
+                       Width="20" Height="20" Stretch="Uniform"/>
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20-disabled.png"
+                       IsVisible="{Binding #CheckBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                       Width="20" Height="20" Stretch="Uniform"/>
+              </Grid>
+              <TextBlock Grid.Column="1" Text="Check"
+                         FontFamily="{StaticResource TitleFont}"
+                         FontSize="14" FontWeight="SemiBold"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <Button x:Name="RecheckBtn"
+                  Padding="16,12"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Command="{Binding CheckInstalledCommand}"
+                  IsEnabled="{Binding CanRecheckXboxItem}"
+                  IsVisible="{Binding ShowRecheckButton}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <Grid>
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
+                       IsVisible="{Binding #RecheckBtn.IsEnabled}"
+                       Width="20" Height="20" Stretch="Uniform"/>
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20-disabled.png"
+                       IsVisible="{Binding #RecheckBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                       Width="20" Height="20" Stretch="Uniform"/>
+              </Grid>
+              <TextBlock Grid.Column="1" Text="Re-check"
+                         FontFamily="{StaticResource TitleFont}"
+                         FontSize="14" FontWeight="SemiBold"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <!-- Install button with dropdown for multiple downloads -->
+          <Button x:Name="InstallBtn"
+                  Classes="Accent"
+                  Padding="16,12"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Click="OnInstallClick"
+                  IsEnabled="{Binding CanInstallXboxItem}"
+                  IsVisible="{Binding ShowInstallActionButton}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <Grid>
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
+                       IsVisible="{Binding #InstallBtn.IsEnabled}"
+                       Width="20" Height="20" Stretch="Uniform"/>
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20-disabled.png"
+                       IsVisible="{Binding #InstallBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                       Width="20" Height="20" Stretch="Uniform"/>
+              </Grid>
+              <TextBlock Grid.Column="1" Text="Install"
+                         FontFamily="{StaticResource TitleFont}"
+                         FontSize="14" FontWeight="SemiBold"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <!-- Finish button (install complete, normal mode) -->
+          <Button x:Name="InstallFinishBtn"
+                  Classes="Accent"
+                  Padding="16,12"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Click="OnFinishClick"
+                  IsVisible="{Binding ShowInstallFinishButton}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-success-16.png"
+                     Width="20" Height="20" Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Finish"
+                         FontFamily="{StaticResource TitleFont}"
+                         FontSize="14" FontWeight="SemiBold"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <!-- Update button (update mode) -->
+          <Button x:Name="UpdateDetailBtn"
+                  Classes="Accent"
+                  Padding="16,12"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Click="OnInstallClick"
+                  IsEnabled="{Binding CanInstallXboxItem}"
+                  IsVisible="{Binding ShowUpdateButton}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
+                     Width="20" Height="20" Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Update"
+                         FontFamily="{StaticResource TitleFont}"
+                         FontSize="14" FontWeight="SemiBold"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+        </StackPanel>
+        </Grid>
+
+      </StackPanel>
+    </Border>
+
+  </Grid>
+
+</UserControl>

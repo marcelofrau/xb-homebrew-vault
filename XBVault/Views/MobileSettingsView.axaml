@@ -1,0 +1,234 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:XBVault.ViewModels"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileSettingsView"
+             x:DataType="vm:SettingsViewModel"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+
+    <!-- Title Bar with back button + save -->
+    <views:MobileTitleBar Grid.Row="0"
+                          x:Name="TitleBar"
+                          Title="SETTINGS"
+                          ShowBackButton="True"
+                          ShowAppIcon="False"/>
+
+    <!-- Save button as floating action in top-right -->
+    <Button x:Name="SaveBtn"
+            Grid.Row="0"
+            HorizontalAlignment="Right" VerticalAlignment="Center"
+            Margin="0,0,12,0"
+            Background="{StaticResource AccentBrush}"
+            CornerRadius="8"
+            Padding="18,10"
+            ZIndex="10">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-save-20.png"
+               Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+        <TextBlock Text="SAVE" FontSize="13" FontWeight="Bold"
+                   FontFamily="{StaticResource TitleFont}"
+                   Foreground="#1A1A1A" VerticalAlignment="Center"/>
+      </StackPanel>
+    </Button>
+
+    <!-- Saved notification -->
+    <Border Grid.Row="0"
+            IsVisible="{Binding ShowSavedNotification}"
+            Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource AccentBrush}"
+            BorderThickness="1" CornerRadius="8"
+            Padding="16,12" Margin="16,4"
+            VerticalAlignment="Top"
+            HorizontalAlignment="Stretch">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <Path Data="M10,18 L16,24 L26,12"
+              Stroke="{StaticResource AccentBrush}"
+              StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+              Width="20" Height="20" Stretch="Uniform"/>
+        <TextBlock Text="{Binding SavedNotificationText}"
+                   Foreground="{StaticResource AccentGlowBrush}"
+                   FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Content -->
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Spacing="12" Margin="16,12" MaxWidth="600" HorizontalAlignment="Center">
+
+        <!-- Xbox Connection -->
+        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="16,14">
+          <StackPanel Spacing="10">
+            <TextBlock Text="XBOX CONNECTION" FontSize="12" FontWeight="Bold"
+                       Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
+
+            <StackPanel Spacing="4">
+              <TextBlock Text="Address" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+              <TextBox x:Name="AddressBox" PlaceholderText="192.168.1.100" Text="{Binding Address}" FontSize="15"
+                       BorderBrush="{StaticResource AccentBrush}"/>
+              <TextBlock x:Name="AddressError" Text="" Foreground="{StaticResource DangerBrush}"
+                         FontSize="12" IsVisible="False" Margin="0,-4,0,0"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+              <TextBlock Text="Port" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+              <TextBox x:Name="PortBox" PlaceholderText="11443" Text="{Binding Port}" FontSize="15"
+                       BorderBrush="{StaticResource AccentBrush}" AcceptsReturn="False"
+                       IsTabStop="True"/>
+              <TextBlock x:Name="PortError" Text="{Binding PortError}" Foreground="{StaticResource DangerBrush}"
+                         FontSize="12" IsVisible="{Binding PortError, Converter={StaticResource StringNotEmpty}}"
+                         Margin="0,-4,0,0"/>
+            </StackPanel>
+
+            <CheckBox IsChecked="{Binding UseHttps}"
+                      Foreground="{StaticResource TextMutedBrush}" FontSize="14">
+              <TextBlock Text="Use HTTPS (recommended)"/>
+            </CheckBox>
+
+            <StackPanel Spacing="4">
+              <TextBlock Text="Username" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+              <TextBox x:Name="UsernameBox" PlaceholderText="Dev Mode username" Text="{Binding Username}" FontSize="15"
+                       BorderBrush="{StaticResource AccentBrush}"/>
+              <TextBlock x:Name="UsernameError" Text="" Foreground="{StaticResource DangerBrush}"
+                         FontSize="12" IsVisible="False" Margin="0,-4,0,0"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+              <TextBlock Text="Password" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+              <TextBox x:Name="PasswordBox" PlaceholderText="Dev Mode password" Text="{Binding Password}"
+                       PasswordChar="●" FontSize="15"
+                       BorderBrush="{StaticResource AccentBrush}"/>
+              <TextBlock x:Name="PasswordError" Text="" Foreground="{StaticResource DangerBrush}"
+                         FontSize="12" IsVisible="False" Margin="0,-4,0,0"/>
+            </StackPanel>
+
+            <Separator Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>
+
+            <Button x:Name="TestConnBtn"
+                    IsEnabled="{Binding IsTestingConnection, Converter={StaticResource BoolInverse}}"
+                    Padding="16,14" HorizontalAlignment="Stretch">
+              <Grid ColumnDefinitions="24,*,Auto" ColumnSpacing="10">
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-test-20.png"
+                         IsVisible="{Binding #TestConnBtn.IsEnabled}"
+                         Width="22" Height="22" Stretch="Uniform"/>
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-test-20-disabled.png"
+                         IsVisible="{Binding #TestConnBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                         Width="22" Height="22" Stretch="Uniform"/>
+                </Grid>
+                <TextBlock Grid.Column="1" Text="Test Connection" FontSize="15" VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+
+            <TextBlock x:Name="ConnectionStatusText"
+                       Text="{Binding ConnectionStatus}"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       FontSize="13" TextWrapping="Wrap"
+                       IsVisible="{Binding ConnectionStatus, Converter={StaticResource StringNotEmpty}}"/>
+          </StackPanel>
+        </Border>
+
+        <!-- Maintenance -->
+        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="16,14">
+          <StackPanel Spacing="10">
+            <TextBlock Text="MAINTENANCE" FontSize="12" FontWeight="Bold"
+                       Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Logs screen" FontSize="14"/>
+                <TextBlock Text="View the live log console" FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1" Command="{Binding GoToLogsCommand}"
+                      Padding="14,8" VerticalAlignment="Center">
+                <TextBlock Text="Open" FontSize="13" VerticalAlignment="Center"/>
+              </Button>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Local package cache" FontSize="14"/>
+                <TextBlock Text="{Binding CacheSizeText}" FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1" Command="{Binding ClearCacheCommand}"
+                      Padding="14,8" VerticalAlignment="Center">
+                <TextBlock Text="Clear" FontSize="13" VerticalAlignment="Center"/>
+              </Button>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Reset all settings" FontSize="14"/>
+                <TextBlock Text="Clear saved connection and preferences" FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1" Command="{Binding ResetSettingsCommand}"
+                      Padding="14,8" VerticalAlignment="Center">
+                <TextBlock Text="Reset" FontSize="13" VerticalAlignment="Center"/>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Application -->
+        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="16,14">
+          <StackPanel Spacing="10">
+            <TextBlock Text="APPLICATION" FontSize="12" FontWeight="Bold"
+                       Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
+
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Minimum log level" FontSize="14"/>
+                <TextBlock Text="Changes take effect immediately" FontSize="11"
+                           Foreground="{StaticResource TextDimBrush}"/>
+              </StackPanel>
+              <ComboBox Grid.Column="1"
+                        ItemsSource="{Binding LogLevels}"
+                        SelectedItem="{Binding SelectedLogLevel}"
+                        FontSize="14" MinWidth="100"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Autoconnect" FontSize="14"/>
+                <TextBlock Text="Connect at startup" FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <CheckBox Grid.Column="1"
+                        IsChecked="{Binding AutoConnect}"
+                        VerticalAlignment="Center"/>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Update check interval" FontSize="14"/>
+                <TextBlock Text="How often to check for newer versions" FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <ComboBox Grid.Column="1"
+                        ItemsSource="{Binding UpdateCheckIntervals}"
+                        SelectedValue="{Binding UpdateCheckIntervalMinutes}"
+                        FontSize="14" MinWidth="90"/>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <Rectangle Height="24"/>
+      </StackPanel>
+    </ScrollViewer>
+
+  </Grid>
+
+</UserControl>

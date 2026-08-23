@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -17,6 +18,13 @@ using XBVault.Services;
 
 namespace XBVault.ViewModels;
 
+/// <summary>
+/// Coordinates catalog browsing, filtering, thumbnail loading, install checks, and package installation.
+/// </summary>
+/// <remarks>
+/// The ViewModel is frontend-neutral: desktop and Android shells should provide dialogs, file pickers,
+/// and navigation through delegate properties instead of moving catalog or install logic into Views.
+/// </remarks>
 public partial class BrowseViewModel : ObservableObject, IDisposable
 {
     private const int SlowThumbnailDelayMs = 3000;
@@ -28,13 +36,14 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     private readonly IXboxPackageService _packageService;
     private readonly PackageOverrideService _overrideService;
     private readonly VersionCheckerService _versionChecker;
+    public Action<string> OpenUrlAction { get; set; } = OpenUrl;
     private List<CatalogItem> _allItems = [];
 
-    public Action<CatalogItem>? ShowDetailAction;
-    public Action? CloseDetailAction;
-    public Action? ShowCustomInstallAction;
-    public Func<string, Task>? OpenCustomInstallWithFileAction;
-    public Action? OnCatalogLoaded;
+    public Action<CatalogItem>? ShowDetailAction { get; set; }
+    public Action? CloseDetailAction { get; set; }
+    public Action? ShowCustomInstallAction { get; set; }
+    public Func<string, Task>? OpenCustomInstallWithFileAction { get; set; }
+    public Action? OnCatalogLoaded { get; set; }
 
     [RelayCommand]
     private void CloseDetail() => CloseDetailAction?.Invoke();
@@ -42,7 +51,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenCustomInstall() => ShowCustomInstallAction?.Invoke();
 
-    public Func<Task>? ShowRefreshDialogAsync;
+    public Func<Task>? ShowRefreshDialogAsync { get; set; }
 
     private static readonly HttpClient ImageHttp = new();
     private readonly ConcurrentDictionary<string, Task<Bitmap?>> _overrideImageCache = new();
@@ -70,6 +79,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Cursor))]
+    [NotifyPropertyChangedFor(nameof(ShowNoItems))]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -101,7 +111,10 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     private bool _showExperimental = true;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowNoItems))]
     private bool _hasItems;
+
+    public bool ShowNoItems => !IsLoading && !HasItems;
 
     [ObservableProperty]
     private CatalogItem? _selectedItem;
@@ -145,6 +158,9 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     public bool CanRecheckXboxItem => CanRecheck && !ShowWindowsToolBanner;
     public bool ShowInstallFinishButton => !IsUpdateMode && InstallComplete && InstallSuccess;
     public bool ShowInstallActionButton => !IsUpdateMode && !ShowInstallFinishButton;
+    public bool ShowInstallSuccessResult => InstallComplete && InstallSuccess;
+    public bool ShowInstallFailureResult => InstallComplete && !InstallSuccess;
+    public bool IsBusy => IsCheckingInstalled || IsInstalling;
     public bool ShowDescriptionPanel => !IsInstalling && !InstallComplete && !IsCheckingInstalled && !CheckComplete;
     public bool ShowInstallOverlay => IsInstalling || InstallComplete;
     public bool ShowCheckOverlay => IsCheckingInstalled || CheckComplete;
@@ -163,6 +179,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanRecheckXboxItem));
         OnPropertyChanged(nameof(ShowDescriptionPanel));
         OnPropertyChanged(nameof(ShowInstallOverlay));
+        OnPropertyChanged(nameof(IsBusy));
     }
 
     partial void OnInstallCompleteChanged(bool value)
@@ -173,6 +190,8 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowUpdateButton));
         OnPropertyChanged(nameof(ShowInstallFinishButton));
         OnPropertyChanged(nameof(ShowInstallActionButton));
+        OnPropertyChanged(nameof(ShowInstallSuccessResult));
+        OnPropertyChanged(nameof(ShowInstallFailureResult));
     }
 
     partial void OnInstallSuccessChanged(bool value)
@@ -183,6 +202,8 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowUpdateButton));
         OnPropertyChanged(nameof(ShowInstallFinishButton));
         OnPropertyChanged(nameof(ShowInstallActionButton));
+        OnPropertyChanged(nameof(ShowInstallSuccessResult));
+        OnPropertyChanged(nameof(ShowInstallFailureResult));
     }
 
     partial void OnCheckCompleteChanged(bool value)
@@ -215,6 +236,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowCheckNotInstalled));
         OnPropertyChanged(nameof(ShowCheckNotDetectedHint));
         OnPropertyChanged(nameof(ShowCheckNotConnectedHint));
+        OnPropertyChanged(nameof(IsBusy));
     }
 
     partial void OnIsUpdateModeChanged(bool value)
@@ -442,7 +464,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             Logger.Warn("VisitSite called but no URL");
             return;
         }
-        OpenUrl(url);
+        OpenUrlAction(url);
     }
 
     [RelayCommand]
@@ -453,7 +475,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             Logger.Warn("OpenLink called with empty URL");
             return;
         }
-        OpenUrl(url);
+        OpenUrlAction(url);
     }
 
     private static void OpenUrl(string url)
@@ -534,7 +556,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         InstallResultMessage = null;
         InstallProgress = 0;
         PackageProgress = 0;
-        InstallStatus = "";
+        InstallStatus = "Preparing download...";
         PackageStatus = "";
         CurrentFile = "";
         Logger.Info($"Install starting: {itemName} from {itemUrl}");
@@ -614,11 +636,10 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
 
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
-            var q = SearchText.ToLowerInvariant();
             filtered = filtered.Where(i =>
-                i.Name.ToLowerInvariant().Contains(q) ||
-                i.Description.ToLowerInvariant().Contains(q) ||
-                (i.Developer?.ToLowerInvariant().Contains(q) ?? false));
+                i.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                i.Description.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                (i.Developer?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ?? false));
         }
 
         if (SelectedCategory != "All")
@@ -652,11 +673,10 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     {
         var pending = _allItems.Where(i => !string.IsNullOrEmpty(i.ImageUrl) && i.Thumbnail is null).ToList();
         var total = pending.Count;
-        Logger.Debug($"Loading {total} thumbnails");
+        Logger.Debug($"Loading {total} thumbnails (immediate apply)");
 
         var loaded = 0;
         var cache = new CacheService();
-        var results = new ConcurrentBag<(CatalogItem Item, Bitmap Bitmap)>();
         var options = new ParallelOptions
         {
             MaxDegreeOfParallelism = 4,
@@ -689,7 +709,15 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
                     _ = cache.SaveThumbnailAsync(url, bytes);
                 }
 
-                results.Add((item, bitmap));
+                // Apply immediately on UI thread so cards show images as they load
+                var capturedItem = item;
+                var capturedBitmap = bitmap;
+                await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
+                {
+                    capturedItem.Thumbnail = capturedBitmap;
+                    return Task.CompletedTask;
+                });
+
                 Interlocked.Increment(ref loaded);
             }
             catch (OperationCanceledException)
@@ -701,18 +729,6 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
                 Logger.Trace($"Thumbnail failed for {item.Name}: {ex.Message}");
             }
         });
-
-        // Batch-apply on UI thread (5 per frame) to avoid storm
-        var items = results.ToArray();
-        for (var i = 0; i < items.Length; i += 5)
-        {
-            var batch = items.Skip(i).Take(5).ToList();
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                foreach (var (item, bitmap) in batch)
-                    item.Thumbnail = bitmap;
-            });
-        }
 
         Logger.Debug($"Thumbnails loaded: {loaded}/{total}");
     }

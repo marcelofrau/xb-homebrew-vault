@@ -1,3 +1,4 @@
+#nullable enable
 using System.Text.Json;
 using XBVault.Services;
 
@@ -41,14 +42,14 @@ public class PerformanceSnapshot
             var root = doc.RootElement;
             var snap = new PerformanceSnapshot
             {
-                CpuLoad = root.TryGetProperty("CpuLoad", out var cpu) ? cpu.GetDouble() : 0,
-                AvailablePages = root.TryGetProperty("AvailablePages", out var ap) ? ap.GetInt64() : 0,
-                TotalPages = root.TryGetProperty("TotalPages", out var tp) ? tp.GetInt64() : 0,
-                CommittedPages = root.TryGetProperty("CommittedPages", out var cp) ? cp.GetInt64() : 0,
-                PageSize = root.TryGetProperty("PageSize", out var ps) ? ps.GetInt64() : 4096,
-                IOReadSpeed = root.TryGetProperty("IOReadSpeed", out var rs) ? rs.GetInt64() : 0,
-                IOWriteSpeed = root.TryGetProperty("IOWriteSpeed", out var ws) ? ws.GetInt64() : 0,
-                IOOtherSpeed = root.TryGetProperty("IOOtherSpeed", out var os) ? os.GetInt64() : 0,
+                CpuLoad = root.TryGetProperty(nameof(CpuLoad), out var cpu) ? cpu.GetDouble() : 0,
+                AvailablePages = root.TryGetProperty(nameof(AvailablePages), out var ap) ? ap.GetInt64() : 0,
+                TotalPages = root.TryGetProperty(nameof(TotalPages), out var tp) ? tp.GetInt64() : 0,
+                CommittedPages = root.TryGetProperty(nameof(CommittedPages), out var cp) ? cp.GetInt64() : 0,
+                PageSize = root.TryGetProperty(nameof(PageSize), out var ps) ? ps.GetInt64() : 4096,
+                IOReadSpeed = root.TryGetProperty(nameof(IOReadSpeed), out var rs) ? rs.GetInt64() : 0,
+                IOWriteSpeed = root.TryGetProperty(nameof(IOWriteSpeed), out var ws) ? ws.GetInt64() : 0,
+                IOOtherSpeed = root.TryGetProperty(nameof(IOOtherSpeed), out var os) ? os.GetInt64() : 0,
             };
 
             if (root.TryGetProperty("GPUData", out var gpu) &&
@@ -56,10 +57,10 @@ public class PerformanceSnapshot
                 adapters.GetArrayLength() > 0)
             {
                 var adapter = adapters[0];
-                snap.DedicatedMemory = adapter.TryGetProperty("DedicatedMemory", out var dm) ? dm.GetInt64() : 0;
-                snap.DedicatedMemoryUsed = adapter.TryGetProperty("DedicatedMemoryUsed", out var dmu) ? dmu.GetInt64() : 0;
-                snap.SystemMemory = adapter.TryGetProperty("SystemMemory", out var sm) ? sm.GetInt64() : 0;
-                snap.SystemMemoryUsed = adapter.TryGetProperty("SystemMemoryUsed", out var smu) ? smu.GetInt64() : 0;
+                snap.DedicatedMemory = adapter.TryGetProperty(nameof(DedicatedMemory), out var dm) ? dm.GetInt64() : 0;
+                snap.DedicatedMemoryUsed = adapter.TryGetProperty(nameof(DedicatedMemoryUsed), out var dmu) ? dmu.GetInt64() : 0;
+                snap.SystemMemory = adapter.TryGetProperty(nameof(SystemMemory), out var sm) ? sm.GetInt64() : 0;
+                snap.SystemMemoryUsed = adapter.TryGetProperty(nameof(SystemMemoryUsed), out var smu) ? smu.GetInt64() : 0;
                 if (adapter.TryGetProperty("EnginesUtilization", out var engines) &&
                     engines.GetArrayLength() > 0)
                 {
@@ -69,8 +70,8 @@ public class PerformanceSnapshot
 
             if (root.TryGetProperty("NetworkingData", out var net))
             {
-                snap.NetworkInBytes = net.TryGetProperty("NetworkInBytes", out var ni) ? ni.GetInt64() : 0;
-                snap.NetworkOutBytes = net.TryGetProperty("NetworkOutBytes", out var no) ? no.GetInt64() : 0;
+                snap.NetworkInBytes = net.TryGetProperty(nameof(NetworkInBytes), out var ni) ? ni.GetInt64() : 0;
+                snap.NetworkOutBytes = net.TryGetProperty(nameof(NetworkOutBytes), out var no) ? no.GetInt64() : 0;
             }
 
             return snap;

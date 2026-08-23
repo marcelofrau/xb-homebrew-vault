@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="XBVault.SplashWindow"
         Title="XBVault - Home"
+        Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         Width="500" Height="380"
         WindowStartupLocation="CenterScreen"
         WindowDecorations="None"

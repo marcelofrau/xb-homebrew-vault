@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -128,8 +129,15 @@ public class InstalledAppUpdateService
             ? "1 app update available"
             : $"{outdated.Count} app updates available";
 
-        _notifications.NotifyGroupedReplacing(UpdateNotificationTag, title, actions, autoDismiss: false);
+        var message = outdated.Count == 1
+            ? "An installed app has a newer version."
+            : $"{outdated.Count} installed apps have newer versions.";
+
+        _notifications.NotifyGroupedReplacing(UpdateNotificationTag, title, actions,
+            autoDismiss: false,
+            iconUri: "avares://XBVault/Assets/Views/InstalledView/installed-update-20.png",
+            message: message);
         Logger.Info($"InstalledAppUpdateService: notified {outdated.Count} app update(s): " +
-            string.Join(", ", outdated.Select(op => $"{op.Catalog.Name} {op.InstalledVersion} → {op.AvailableVersion}")));
+            string.Join(", ", outdated.Select(op => $"{op.Catalog.Name}: {op.InstalledVersion} → {op.AvailableVersion}")));
     }
 }

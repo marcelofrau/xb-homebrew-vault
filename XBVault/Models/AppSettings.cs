@@ -1,3 +1,4 @@
+#nullable enable
 using System.Text.Json.Serialization;
 
 namespace XBVault.Models;
@@ -18,4 +19,5 @@ public class AppSettings
     public List<string> IgnoredUpdatePackageFamilies { get; set; } = [];
     public double MainWindowWidth { get; set; }
     public double MainWindowHeight { get; set; }
+    public bool WizardCompleted { get; set; }
 }

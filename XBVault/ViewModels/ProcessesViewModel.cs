@@ -1,5 +1,7 @@
+#nullable enable
 using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -104,7 +106,7 @@ public partial class ProcessesViewModel : ObservableObject
         var filtered = source
             .Where(p => string.IsNullOrWhiteSpace(FilterText) ||
                        p.ImageName?.Contains(FilterText, StringComparison.OrdinalIgnoreCase) == true ||
-                       p.ProcessId.ToString().Contains(FilterText));
+                       p.ProcessId.ToString(CultureInfo.InvariantCulture).Contains(FilterText, StringComparison.Ordinal));
 
         filtered = SortColumn switch
         {
@@ -154,7 +156,7 @@ public partial class ProcessesViewModel : ObservableObject
 
             _allProcesses = [.. resp.Processes];
             ApplyFilter();
-            LastUpdated = DateTime.Now.ToString("HH:mm:ss");
+            LastUpdated = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
         }
         catch (Exception ex)
         {

@@ -1,0 +1,237 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileAboutView">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button.ActionBtn">
+      <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+      <Setter Property="Foreground" Value="{StaticResource BgBrush}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="16,14"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button.ActionBtn:pointerover">
+      <Setter Property="Background" Value="{StaticResource AccentDimBrush}"/>
+    </Style>
+
+    <Style Selector="Button.DiscordServerBtn">
+      <Setter Property="Background" Value="#4E56D0"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="14,12"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button.DiscordServerBtn:pointerover">
+      <Setter Property="Background" Value="#5B63E0"/>
+    </Style>
+    <Style Selector="Button.DiscordServerBtn:pressed">
+      <Setter Property="Background" Value="#3D44B8"/>
+    </Style>
+
+    <Style Selector="Button.DiscordBtn">
+      <Setter Property="Background" Value="#4E56D0"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="16,14"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button.DiscordBtn:pointerover">
+      <Setter Property="Background" Value="#5B63E0"/>
+    </Style>
+    <Style Selector="Button.DiscordBtn:pressed">
+      <Setter Property="Background" Value="#3D44B8"/>
+    </Style>
+
+    <Style Selector="Button.LinkBtn">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="12,8"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+
+    <Style Selector="FlyoutPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="CornerRadius" Value="10"/>
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Fullscreen with splash background -->
+  <Panel>
+    <Image Source="avares://XBVault/Assets/Views/SplashWindow/android-splash-bg.jpg"
+           Stretch="UniformToFill" Opacity="0.35"/>
+    <Border Background="{StaticResource SurfaceBrush}" Opacity="0.8"/>
+
+    <Grid RowDefinitions="Auto,*">
+      <!-- Title Bar with back button -->
+      <views:MobileTitleBar Grid.Row="0"
+                            x:Name="TitleBar"
+                            Title="About"
+                            ShowBackButton="True"
+                            ShowAppIcon="False"/>
+
+      <!-- Content: centered vertically in available space -->
+      <ScrollViewer Grid.Row="1">
+        <StackPanel Spacing="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Margin="24,0" MaxWidth="380">
+
+          <!-- App Icon -->
+          <Image Source="avares://XBVault/Assets/Views/AboutWindow/about-appicon-80.png"
+                 Width="100" Height="100"
+                 Stretch="Uniform"
+                 HorizontalAlignment="Center"
+                 Margin="0,0,0,12"/>
+
+          <!-- Title -->
+          <TextBlock Text="XB HOMEBREW"
+                     FontFamily="{StaticResource TitleFont}"
+                     FontSize="16" FontWeight="Bold"
+                     Foreground="{StaticResource AccentBrush}"
+                     HorizontalAlignment="Center"
+                     LetterSpacing="2"/>
+          <TextBlock Text="VAULT"
+                     FontFamily="{StaticResource TitleFont}"
+                     FontSize="32" FontWeight="Bold"
+                     Foreground="White"
+                     HorizontalAlignment="Center"
+                     LetterSpacing="4"
+                     Margin="0,-4,0,0"/>
+
+          <TextBlock Text="Companion for Xbox Dev Mode"
+                     FontFamily="{StaticResource BodyFont}"
+                     FontSize="13"
+                     Foreground="#999"
+                     HorizontalAlignment="Center"
+                     Margin="0,6,0,0"/>
+
+          <Separator Width="40" Height="2"
+                     Background="{StaticResource AccentBrush}"
+                     Margin="0,12"
+                     HorizontalAlignment="Center"/>
+
+          <!-- Version -->
+          <StackPanel Spacing="4" HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+              <TextBlock x:Name="VersionText"
+                         FontFamily="{StaticResource TitleFont}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{StaticResource AccentBrush}"
+                         VerticalAlignment="Center"/>
+              <Button Cursor="Hand"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      Padding="4"
+                      VerticalAlignment="Center"
+                      Click="OnChangelogClick">
+                <Image Source="avares://XBVault/Assets/Views/AboutWindow/about-changelog-20.png"
+                       Width="16" Height="16"
+                       Stretch="Uniform"/>
+              </Button>
+            </StackPanel>
+            <TextBlock Text="Marcelo Frau" FontSize="12"
+                       Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"
+                       FontFamily="{StaticResource BodyFont}"/>
+            <TextBlock Text="GPL-3.0-only" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{StaticResource YellowBrush}" HorizontalAlignment="Center"
+                       FontFamily="{StaticResource BodyFont}"/>
+          </StackPanel>
+
+          <Separator Width="120" Height="1"            Background="{StaticResource TextMutedBrush}" Margin="0,16" HorizontalAlignment="Center"/>
+
+          <!-- Discord -->
+          <TextBlock Text="Community" FontSize="12" FontWeight="Bold"
+                     Foreground="{StaticResource TextMutedBrush}"
+                     HorizontalAlignment="Center" Margin="0,0,0,8"/>
+          <Button Classes="DiscordBtn" Click="OnDiscordClick">
+            <Button.Flyout>
+              <Flyout Placement="Bottom">
+                <StackPanel Width="260" Spacing="4" Margin="10"
+                            Background="{StaticResource SurfaceAltBrush}">
+                  <TextBlock Text="Choose a server to join:"
+                             FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                             Margin="6,6,6,0"/>
+                  <Button Classes="DiscordServerBtn" Click="OnDiscordRevives">
+                    <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+                      <Image Source="avares://XBVault/Assets/Views/DiscordPopup/discordpopup-discord-48.png"
+                             Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="1" Text="REVIVES COMMUNITY" FontSize="12" VerticalAlignment="Center"/>
+                    </Grid>
+                  </Button>
+                  <Button Classes="DiscordServerBtn" Click="OnDiscordXboxHub">
+                    <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+                      <Image Source="avares://XBVault/Assets/Views/DiscordPopup/discordpopup-discord-48.png"
+                             Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="1" Text="XBOX EMULATION HUB" FontSize="12" VerticalAlignment="Center"/>
+                    </Grid>
+                  </Button>
+                  <Button Classes="DiscordServerBtn" Click="OnDiscordEr">
+                    <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+                      <Image Source="avares://XBVault/Assets/Views/DiscordPopup/discordpopup-discord-48.png"
+                             Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="1" Text="EMULATION REVIVAL" FontSize="12" VerticalAlignment="Center"/>
+                    </Grid>
+                  </Button>
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+            <Grid ColumnDefinitions="20,*" ColumnSpacing="10" HorizontalAlignment="Center">
+              <Image Source="avares://XBVault/Assets/Views/DiscordPopup/discordpopup-discord-48.png"
+                     Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="JOIN DISCORD" VerticalAlignment="Center"
+                         FontSize="15" FontWeight="Bold"/>
+            </Grid>
+          </Button>
+
+          <Separator Width="120" Height="1"            Background="{StaticResource TextMutedBrush}" Margin="0,16" HorizontalAlignment="Center"/>
+
+          <!-- Links -->
+          <Button Classes="LinkBtn" Click="OnErLinkClick" HorizontalAlignment="Center">
+            <StackPanel Spacing="4">
+              <Image Source="avares://XBVault/Assets/Views/AboutWindow/about-erlogo.png"
+                     Width="150" Height="42"
+                     Stretch="Uniform"
+                     HorizontalAlignment="Center"/>
+              <TextBlock Text="Catalog powered by Emulation Revival"
+                         FontSize="11" Foreground="#777"
+                         HorizontalAlignment="Center"
+                         FontFamily="{StaticResource BodyFont}"/>
+            </StackPanel>
+          </Button>
+
+          <Button Classes="LinkBtn" Click="OnProjectLinkClick" HorizontalAlignment="Center" Margin="0,6,0,0">
+            <TextBlock Text="github.com/marcelofrau/xb-homebrew-vault"
+                       FontSize="11" Foreground="#999"
+                       FontFamily="{StaticResource BodyFont}"/>
+          </Button>
+
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </Panel>
+
+</UserControl>

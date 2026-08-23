@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -95,7 +96,7 @@ public partial class InstalledView : UserControl
     private Window? GetWindow() =>
         TopLevel.GetTopLevel(this) as Window;
 
-    private async Task ShowUnsupportedDialog(Window owner)
+    private static async Task ShowUnsupportedDialog(Window owner)
     {
         var dlg = new ErrorDialog(
             "Unsupported File",
@@ -127,7 +128,7 @@ public partial class InstalledView : UserControl
         }
 
         if (DataContext is InstalledViewModel vm && vm.OpenCustomInstallWithFileAction is not null)
-            await vm.OpenCustomInstallWithFileAction(path);
+            vm.OpenCustomInstallWithFileAction(path).FireAndForget();
     }
 
     private void OnItemPointerPressed(object? sender, PointerPressedEventArgs e)

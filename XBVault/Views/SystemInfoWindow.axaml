@@ -5,6 +5,7 @@
         Classes="dialogWindow"
         x:DataType="vm:SystemInfoViewModel"
         Title="XBVault - System Info"
+        Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         WindowStartupLocation="CenterOwner"
         Width="520" Height="480"
         CanResize="False"

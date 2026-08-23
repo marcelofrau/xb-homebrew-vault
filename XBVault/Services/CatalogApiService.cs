@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -40,9 +41,17 @@ public partial class CatalogApiService
     private static partial Regex DepPattern();
 
     private readonly HttpClient _http;
+    private readonly IAppLogger _log;
 
+    // Back-compat ctor for callers/tests
     public CatalogApiService()
+        : this(ServiceLocator.Resolve<IAppLogger>())
     {
+    }
+
+    public CatalogApiService(IAppLogger log)
+    {
+        _log = log ?? throw new ArgumentNullException(nameof(log));
         _http = new HttpClient() { Timeout = TimeSpan.FromSeconds(30) };
         _http.DefaultRequestHeaders.Add("User-Agent", $"XB Homebrew Vault/{BuildInfo.Version}");
     }
@@ -54,7 +63,7 @@ public partial class CatalogApiService
         bool forceRefresh = false,
         IProgress<(string Status, double Progress)>? progress = null)
     {
-        Logger.Debug($"CatalogApiService.FetchCatalogAsync(forceRefresh={forceRefresh})");
+        _log.Debug($"CatalogApiService.FetchCatalogAsync(forceRefresh={forceRefresh})");
 
         // Check cache first (unless forced refresh)
         if (!forceRefresh)
@@ -63,7 +72,7 @@ public partial class CatalogApiService
             if (cached is not null && cached.Count > 0)
             {
                 progress?.Report(("Loaded from cache", 1.0));
-                Logger.Info($"Catalog loaded from cache: {cached.Count} items");
+                _log.Info($"Catalog loaded from cache: {cached.Count} items");
                 return cached;
             }
         }
@@ -79,17 +88,17 @@ public partial class CatalogApiService
         }
 
         // JSON API failed — try stale cache as fallback
-        Logger.Warn("JSON API failed, trying stale cache");
+        _log.Warn("JSON API failed, trying stale cache");
         progress?.Report(("Using cached catalog...", 0.5));
         var stale = LoadFromCache(ignoreTtl: true);
         if (stale is not null && stale.Count > 0)
         {
-            Logger.Warn($"Using stale cache: {stale.Count} items");
+            _log.Warn($"Using stale cache: {stale.Count} items");
             progress?.Report(($"Using cached catalog ({stale.Count} items)", 1.0));
             return stale;
         }
 
-        Logger.Error("Catalog fetch failed — no cache available");
+        _log.LogError("Catalog fetch failed — no cache available");
         progress?.Report(("Failed to load catalog", 1.0));
         return [];
     }
@@ -100,34 +109,34 @@ public partial class CatalogApiService
         try
         {
             progress?.Report(("Downloading JSON catalog...", 0.2));
-            Logger.Debug($"Fetching: {JsonApiUrl}");
+            _log.Debug($"Fetching: {JsonApiUrl}");
 
             var response = await _http.GetAsync(JsonApiUrl);
             if (!response.IsSuccessStatusCode)
             {
-                Logger.Warn($"JSON API returned {response.StatusCode}");
+                _log.Warn($"JSON API returned {response.StatusCode}");
                 return null;
             }
 
             var json = await response.Content.ReadAsStringAsync();
-            Logger.Debug($"JSON response: {json.Length} bytes");
+            _log.Debug($"JSON response: {json.Length} bytes");
 
             progress?.Report(("Parsing catalog...", 0.5));
             var apiResponse = JsonSerializer.Deserialize<CatalogApiResponse>(json);
 
             if (apiResponse is null)
             {
-                Logger.Warn("Failed to deserialize JSON API response");
+                _log.Warn("Failed to deserialize JSON API response");
                 return null;
             }
 
             // Schema version check (warn but continue)
             if (apiResponse.SchemaVersion != ExpectedSchemaVersion)
             {
-                Logger.Warn($"Schema version mismatch: expected {ExpectedSchemaVersion}, got {apiResponse.SchemaVersion}. Attempting to parse anyway.");
+                _log.Warn($"Schema version mismatch: expected {ExpectedSchemaVersion}, got {apiResponse.SchemaVersion}. Attempting to parse anyway.");
             }
 
-            Logger.Info($"JSON API: {apiResponse.Items.Count} items, generated at {apiResponse.GeneratedAt:u}");
+            _log.Info($"JSON API: {apiResponse.Items.Count} items, generated at {apiResponse.GeneratedAt:u}");
 
             progress?.Report(("Processing items...", 0.7));
             var items = apiResponse.Items
@@ -147,17 +156,17 @@ public partial class CatalogApiService
         }
         catch (HttpRequestException ex)
         {
-            Logger.Warn($"JSON API network error: {ex.Message}");
+            _log.Warn($"JSON API network error: {ex.Message}");
             return null;
         }
         catch (JsonException ex)
         {
-            Logger.Warn($"JSON API parse error: {ex.Message}");
+            _log.Warn($"JSON API parse error: {ex.Message}");
             return null;
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Unexpected error fetching JSON API");
+            _log.LogError(ex, "Unexpected error fetching JSON API");
             return null;
         }
     }
@@ -253,9 +262,9 @@ public partial class CatalogApiService
             return DownloadType.Dependency;
 
         // Check for browse/mod links (not direct downloads)
-        if (!url.EndsWith(".appx") && !url.EndsWith(".msix") &&
-            !url.EndsWith(".zip") && !url.EndsWith(".msixbundle") &&
-            !url.EndsWith(".appxbundle"))
+        if (!url.EndsWith(".appx", StringComparison.Ordinal) && !url.EndsWith(".msix", StringComparison.Ordinal) &&
+            !url.EndsWith(".zip", StringComparison.Ordinal) && !url.EndsWith(".msixbundle", StringComparison.Ordinal) &&
+            !url.EndsWith(".appxbundle", StringComparison.Ordinal))
         {
             if (url.Contains("/mod") || label.Contains("mod"))
                 return DownloadType.ModLink;

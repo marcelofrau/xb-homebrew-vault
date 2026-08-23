@@ -1,3 +1,4 @@
+#nullable enable
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -48,7 +49,7 @@ public partial class RefreshWindow : Window
     private void OnRefreshCompleted(bool success)
     {
         Logger.Info($"Catalog refresh window completed: success={success}");
-        Dispatcher.UIThread.Post(async () =>
+        _ = XBVault.Helpers.UIHelpers.RunOnUIAsync(async () =>
         {
             await Task.Delay(CloseDelayMs);
             Close();

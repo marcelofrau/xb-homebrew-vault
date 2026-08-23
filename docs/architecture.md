@@ -8,6 +8,8 @@ description: MVVM architecture of XB Homebrew Vault — Avalonia UI, CommunityTo
 
 XB Homebrew Vault uses the **MVVM** pattern with **CommunityToolkit.Mvvm** and **Avalonia UI 12**, running on **.NET 10**.
 
+For contributor-facing layer contracts, threading rules, and Android reuse guidance, see the [Developer Architecture Guide](developer-architecture.md).
+
 ## Layered Architecture
 
 ```mermaid

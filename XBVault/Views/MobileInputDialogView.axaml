@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:XBVault.Views"
+             x:Class="XBVault.Views.MobileInputDialogView"
+             x:DataType="views:MobileInputDialogViewModel"
+             Background="#AA000000">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="32">
+    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12"
+            Padding="24,20" MaxWidth="380" HorizontalAlignment="Stretch">
+      <StackPanel Spacing="16">
+        <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="Bold"
+                   Foreground="White" TextWrapping="Wrap"/>
+        <TextBlock Text="{Binding Message}" FontSize="14"
+                   Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+        <TextBox Text="{Binding Value}" FontSize="14" Padding="10,8"
+                 Background="{StaticResource SurfaceAltBrush}" Foreground="{StaticResource TextBrush}"
+                 BorderBrush="{StaticResource AccentBrush}" BorderThickness="1"
+                 CornerRadius="6" Watermark="Enter name..."/>
+        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+          <Button Command="{Binding CancelCommand}"
+                  Padding="20,12" FontSize="14" Background="{StaticResource SurfaceAltBrush}"
+                  Foreground="{StaticResource TextMutedBrush}">
+            <TextBlock Text="{Binding CancelText}"/>
+          </Button>
+          <Button Command="{Binding ConfirmCommand}"
+                  Padding="20,12" FontSize="14" FontWeight="Bold"
+                  Background="{StaticResource AccentBrush}" Foreground="White">
+            <TextBlock Text="{Binding ConfirmText}"/>
+          </Button>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </Grid>
+
+</UserControl>

@@ -1,3 +1,4 @@
+#nullable enable
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -93,33 +94,41 @@ public partial class ErrorDialog : Window
         Close();
     }
 
-    private async void OnConnectClick(object? sender, RoutedEventArgs e)
+    private void OnConnectClick(object? sender, RoutedEventArgs e)
     {
         if (ConnectAction is null) return;
         Logger.Trace("ErrorDialog connect button clicked");
-        try
+        // run action without blocking UI thread and capture exceptions
+        Task.Run(async () =>
         {
-            await ConnectAction();
-            Close();
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "ErrorDialog connect action failed");
-        }
+            try
+            {
+                await ConnectAction().ConfigureAwait(false);
+                // Close must run on UI thread
+                XBVault.Helpers.UIHelpers.RunOnUI(() => Close());
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "ErrorDialog connect action failed");
+            }
+        }).FireAndForget();
     }
 
-    private async void OnDownloadClick(object? sender, RoutedEventArgs e)
+    private void OnDownloadClick(object? sender, RoutedEventArgs e)
     {
         if (DownloadAction is null) return;
         Logger.Info("ErrorDialog download button clicked");
-        try
+        Task.Run(async () =>
         {
-            await DownloadAction();
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "ErrorDialog download action failed");
-        }
+            try
+            {
+                await DownloadAction().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "ErrorDialog download action failed");
+            }
+        }).FireAndForget();
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -128,7 +137,7 @@ public partial class ErrorDialog : Window
             BeginMoveDrag(e);
     }
 
-    private async void OnCopyClick(object? sender, RoutedEventArgs e)
+    private void OnCopyClick(object? sender, RoutedEventArgs e)
     {
         Logger.Trace("ErrorDialog copy button clicked");
         var text = $"{TitleText.Text}\n\n{DescriptionText.Text}\n\n--- Details ---\n{DetailsText.Text}";
@@ -140,7 +149,7 @@ public partial class ErrorDialog : Window
                 item.Set(DataFormat.Text, text);
                 var transfer = new DataTransfer();
                 transfer.Add(item);
-                await cb.SetDataAsync(transfer);
+                cb.SetDataAsync(transfer).FireAndForget();
             }
         }
         catch (Exception ex)

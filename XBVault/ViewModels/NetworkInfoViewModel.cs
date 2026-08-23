@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -50,7 +51,7 @@ public partial class NetworkInfoViewModel : ObservableObject
                 try
                 {
                     using var doc = JsonDocument.Parse(cfgJson);
-                    if (doc.RootElement.TryGetProperty("Adapters", out var adapters))
+                    if (doc.RootElement.TryGetProperty(nameof(Adapters), out var adapters))
                         ParseAdapters(adapters);
                 }
                 catch (Exception ex)
@@ -159,7 +160,7 @@ public partial class NetworkInfoViewModel : ObservableObject
                         if (ips.Length > 0) ips.AppendLine();
                         ips.Append(addr);
                         if (!string.IsNullOrEmpty(mask) && mask != "0.0.0.0")
-                            ips.Append($" / {mask}");
+                            ips.Append(System.Globalization.CultureInfo.InvariantCulture, $" / {mask}");
                     }
                 }
             }

@@ -1,3 +1,4 @@
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Avalonia;
@@ -9,8 +10,6 @@ using XBVault.Services;
 
 class Program
 {
-    public static PreFlightReport? PreFlightReport { get; private set; }
-
     private const string MutexName = "Global\\XBVault_SingleInstance";
 
     [STAThread]
@@ -68,7 +67,7 @@ class Program
             }
 
             // Pre-flight: detect and auto-repair corruption
-            PreFlightReport = PreFlightChecker.Run();
+            AppBoot.PreFlightReport = PreFlightChecker.Run();
 
             BuildAvaloniaApp()
                 .StartWithClassicDesktopLifetime(args);
@@ -135,6 +134,9 @@ class Program
 
     static AppBuilder BuildAvaloniaApp()
     {
+        var logger = new SerilogAdapter();
+        ServiceLocator.Register<IAppLogger>(logger);
+
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()

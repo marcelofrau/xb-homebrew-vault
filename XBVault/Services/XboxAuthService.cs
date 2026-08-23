@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Net;
 using System.Net.Http;
@@ -25,6 +26,7 @@ public class XboxAuthService : IXboxAuthService
     private string? _username;
     private string? _password;
     private string? _smbPassword;
+    private readonly int _maxResponseBodyLogLength = 2000;
 
     public event Action<bool>? ConnectionChanged;
 
@@ -50,6 +52,17 @@ public class XboxAuthService : IXboxAuthService
         _username = username;
         _password = password;
 
+        Uri baseUri;
+        try
+        {
+            baseUri = new Uri(baseUrl);
+        }
+        catch (UriFormatException ex)
+        {
+            Logger.Error(ex, $"XboxAuthService: invalid baseUrl '{baseUrl}' — skipping configure");
+            return;
+        }
+
         // Fresh client each call — BaseAddress freezes after first request
         var handler = new HttpClientHandler
         {
@@ -59,7 +72,7 @@ public class XboxAuthService : IXboxAuthService
         var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
         http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", auth);
-        http.BaseAddress = new Uri(baseUrl);
+        http.BaseAddress = baseUri;
 
         var oldHttp = _http;
         var oldHandler = _handler;
@@ -269,7 +282,7 @@ public class XboxAuthService : IXboxAuthService
         {
             var body = await resp.Content.ReadAsStringAsync();
             if (string.IsNullOrWhiteSpace(body)) return "(empty body)";
-            return body.Length <= 2000 ? body : body[..2000] + "... (truncated)";
+            return body.Length <= _maxResponseBodyLogLength ? body : body[.._maxResponseBodyLogLength] + "... (truncated)";
         }
         catch
         {

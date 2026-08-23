@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,8 +14,14 @@ using static XBVault.Helpers.FileSystemPathParser;
 
 namespace XBVault.Services;
 
+/// <summary>
+/// Progress update emitted during SFTP upload/download workflows.
+/// </summary>
 public readonly record struct TransferUpdate(double Progress, string StatusText);
 
+/// <summary>
+/// Result object returned by high-level SFTP transfer workflows.
+/// </summary>
 public class TransferResult
 {
     public bool Cancelled { get; init; }
@@ -44,9 +51,17 @@ public class TransferResult
         };
 }
 
+/// <summary>
+/// Orchestrates high-level SFTP upload, download, extraction, and cancellation workflows.
+/// </summary>
+/// <remarks>
+/// Keep primitive SSH/SFTP operations in <see cref="ISftpService"/>. This service composes those primitives
+/// into user-facing file workflows and reports progress in a frontend-neutral way.
+/// </remarks>
 public class SftpTransferService : IDisposable
 {
     private readonly ISftpService _sftp;
+    private readonly IAppLogger _log;
     private CancellationTokenSource? _cts;
     private DateTime _transferStartTime;
     private DateTime _overallStartTime;
@@ -55,9 +70,10 @@ public class SftpTransferService : IDisposable
     private double _currentFraction;
     private long _currentFileBytes;
 
-    public SftpTransferService(ISftpService sftp)
+    public SftpTransferService(ISftpService sftp, IAppLogger? log = null)
     {
         _sftp = sftp;
+        _log = log ?? new SerilogAdapter();
     }
 
     public bool HasActiveTransfer => _cts is not null;
@@ -95,7 +111,7 @@ public class SftpTransferService : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private void Report(IProgress<TransferUpdate>? progress, double value, string status)
+    private static void Report(IProgress<TransferUpdate>? progress, double value, string status)
         => progress?.Report(new TransferUpdate(value, status));
 
     private ForwardingProgress MakeProgress(IProgress<TransferUpdate>? progress, Func<double, string> status)
@@ -130,7 +146,7 @@ public class SftpTransferService : IDisposable
     {
         var elapsed = (DateTime.UtcNow - _overallStartTime).TotalSeconds;
         if (elapsed < 0.01) return;
-        Logger.Info($"{action} complete: {fileCount} file(s), {FormatBytes(totalBytes)} in {elapsed:F1}s avg={FormatBps(totalBytes / elapsed)}");
+        _log.Info($"{action} complete: {fileCount} file(s), {FormatBytes(totalBytes)} in {elapsed:F1}s avg={FormatBps(totalBytes / elapsed)}");
     }
 
     private static string FormatBytes(long bytes)
@@ -205,7 +221,7 @@ public class SftpTransferService : IDisposable
         string? lastRemotePath = null;
         var totalFiles = filePaths.Length;
         long totalBytes = 0;
-        Logger.Info($"Upload started: {totalFiles} file(s) -> '{targetPath}'");
+                _log.Info($"Upload started: {totalFiles} file(s) -> '{targetPath}'");
         try
         {
             foreach (var filePath in filePaths)
@@ -223,7 +239,7 @@ public class SftpTransferService : IDisposable
                 await using var stream = File.OpenRead(filePath);
                 _transferBytesTotal = stream.Length;
                 totalBytes += stream.Length;
-                Logger.Debug($"Upload: {fileName} ({stream.Length}B)");
+                _log.Debug($"Upload: {fileName} ({stream.Length}B)");
                 var p = MakeProgress(progress,
                     f => $"Uploading {fileName}... ({f * 100:F0}%){FormatSpeed(f)}");
                 await _sftp.UploadFileAsync(stream, remotePath, p, ct);
@@ -239,12 +255,12 @@ public class SftpTransferService : IDisposable
                 });
                 Report(progress, 1, $"Uploading {fileName}... (100%)");
             }
-            LogSummary("Upload", totalFiles, totalBytes);
-            return TransferResult.Ok($"{lastFile} uploaded", newEntries);
+                LogSummary("Upload", totalFiles, totalBytes);
+                return TransferResult.Ok($"{lastFile} uploaded", newEntries);
         }
         catch (OperationCanceledException)
         {
-            Logger.Warn(FailureContext("Upload", "cancelled"));
+            _log.Warn(FailureContext("Upload", "cancelled"));
             if (lastRemotePath is not null)
             {
                 try { await _sftp.DeleteFileAsync(lastRemotePath); }
@@ -254,7 +270,7 @@ public class SftpTransferService : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, FailureContext("Upload"));
+            _log.LogError(ex, FailureContext("Upload"));
             return TransferResult.Fail(ex, $"Upload failed: {ex.Message}");
         }
         finally
@@ -279,7 +295,7 @@ public class SftpTransferService : IDisposable
             var folderName = Path.GetFileName(localFolder.TrimEnd('\\'));
             var basePath = targetPath.TrimEnd('\\') + "\\" + folderName;
 
-            Logger.Info($"Upload started: folder '{localFolder}' ({totalFiles} file(s)) -> '{targetPath}'");
+            _log.Info($"Upload started: folder '{localFolder}' ({totalFiles} file(s)) -> '{targetPath}'");
 
             // Pre-create remote dirs once (deduped, parent-first) to avoid per-file round trips
             var relativePaths = new string[totalFiles];
@@ -304,7 +320,7 @@ public class SftpTransferService : IDisposable
                 await using var stream = File.OpenRead(filePath);
                 _transferBytesTotal = stream.Length;
                 totalBytes += stream.Length;
-                Logger.Debug($"Upload: [{i + 1}/{totalFiles}] {relative} ({stream.Length}B)");
+                _log.Debug($"Upload: [{i + 1}/{totalFiles}] {relative} ({stream.Length}B)");
                 _currentFileLabel = relative;
                 _currentFraction = 0;
                 _currentFileBytes = 0;
@@ -349,7 +365,7 @@ public class SftpTransferService : IDisposable
         var fCount = filePaths?.Length ?? 0;
         var dCount = folderPaths?.Length ?? 0;
         var totalItems = fCount + dCount;
-        Logger.Info($"Upload started: {fCount} file(s), {dCount} folder(s) -> '{targetPath}'");
+            _log.Info($"Upload started: {fCount} file(s), {dCount} folder(s) -> '{targetPath}'");
         try
         {
             long totalBytes = 0;
@@ -372,7 +388,7 @@ public class SftpTransferService : IDisposable
                     await using var stream = File.OpenRead(filePath);
                     _transferBytesTotal = stream.Length;
                     totalBytes += stream.Length;
-                    Logger.Debug($"Upload: {fileName} ({stream.Length}B)");
+                    _log.Debug($"Upload: {fileName} ({stream.Length}B)");
                     var p = MakeProgress(progress,
                         f => $"Uploading {fileName}... ({f * 100:F0}%){FormatSpeed(f)}");
                     await _sftp.UploadFileAsync(stream, remotePath, p, ct);
@@ -418,7 +434,7 @@ public class SftpTransferService : IDisposable
                         await using var stream = File.OpenRead(filePath);
                         _transferBytesTotal = stream.Length;
                         totalBytes += stream.Length;
-                        Logger.Debug($"Upload: {relative} ({stream.Length}B)");
+                    _log.Debug($"Upload: {relative} ({stream.Length}B)");
                         _currentFileLabel = relative;
                         _currentFraction = 0;
                         _currentFileBytes = 0;
@@ -471,7 +487,7 @@ public class SftpTransferService : IDisposable
             if (allFiles.Length == 0)
                 return TransferResult.EmptyResult("Empty ZIP — nothing to upload");
 
-            Logger.Info($"ZIP upload started: '{zipPath}' ({allFiles.Length} file(s), extracted in {extractSw.ElapsedMilliseconds}ms) -> '{targetPath}'");
+            _log.Info($"ZIP upload started: '{zipPath}' ({allFiles.Length} file(s), extracted in {extractSw.ElapsedMilliseconds}ms) -> '{targetPath}'");
 
             BeginTransfer();
             var ct = Token;
@@ -502,7 +518,7 @@ public class SftpTransferService : IDisposable
                 await using var stream = File.OpenRead(filePath);
                 _transferBytesTotal = stream.Length;
                 totalBytes += stream.Length;
-                Logger.Debug($"Upload: [{i + 1}/{totalFiles}] {relative} ({stream.Length}B)");
+                _log.Debug($"Upload: [{i + 1}/{totalFiles}] {relative} ({stream.Length}B)");
                 _currentFileLabel = relative;
                 _currentFraction = 0;
                 _currentFileBytes = 0;
@@ -551,19 +567,19 @@ public class SftpTransferService : IDisposable
         }
         catch (OperationCanceledException)
         {
-            Logger.Warn(FailureContext("ZIP upload", "cancelled"));
+            _log.Warn(FailureContext("ZIP upload", "cancelled"));
             return TransferResult.CancelledResult("ZIP upload cancelled");
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, FailureContext("ZIP upload"));
+            _log.LogError(ex, FailureContext("ZIP upload"));
             return TransferResult.Fail(ex, $"ZIP upload failed: {ex.Message}");
         }
         finally
         {
             EndTransfer();
             try { Directory.Delete(tempDir, true); }
-            catch (Exception ex) { Logger.Warn($"Failed to clean temp folder: {tempDir} — {ex.Message}"); }
+            catch (Exception ex) { _log.Warn($"Failed to clean temp folder: {tempDir} — {ex.Message}"); }
         }
     }
 
@@ -609,7 +625,7 @@ public class SftpTransferService : IDisposable
             if (totalFiles == 0)
                 return TransferResult.EmptyResult("Nothing to download");
 
-            Logger.Info($"Download started: {totalFiles} file(s) (listed in {listSw.ElapsedMilliseconds}ms) -> '{localDir}'");
+            _log.Info($"Download started: {totalFiles} file(s) (listed in {listSw.ElapsedMilliseconds}ms) -> '{localDir}'");
 
             string? partialPath = null;
             _transferStartTime = DateTime.UtcNow;
@@ -623,7 +639,7 @@ public class SftpTransferService : IDisposable
                     _transferStartTime = DateTime.UtcNow;
                     _transferBytesTotal = await _sftp.GetFileSizeAsync(file.FullPath);
                     totalBytes += Math.Max(0, _transferBytesTotal);
-                    Logger.Debug($"Download: [{i + 1}/{totalFiles}] {relative} ({_transferBytesTotal}B)");
+                _log.Debug($"Download: [{i + 1}/{totalFiles}] {relative} ({_transferBytesTotal}B)");
                     Report(progress, (double)i / totalFiles, $"Downloading {file.Name}...");
 
                     partialPath = Path.Combine(localDir, relative);
@@ -645,7 +661,7 @@ public class SftpTransferService : IDisposable
             }
             catch (OperationCanceledException)
             {
-                Logger.Warn(FailureContext("Download", "cancelled"));
+                _log.Warn(FailureContext("Download", "cancelled"));
                 if (partialPath is not null && File.Exists(partialPath))
                     File.Delete(partialPath);
                 return TransferResult.CancelledResult("Download cancelled");
@@ -656,12 +672,12 @@ public class SftpTransferService : IDisposable
         }
         catch (OperationCanceledException)
         {
-            Logger.Warn(FailureContext("Download", "cancelled"));
+            _log.Warn(FailureContext("Download", "cancelled"));
             return TransferResult.CancelledResult("Download cancelled");
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, FailureContext("Download"));
+            _log.LogError(ex, FailureContext("Download"));
             return TransferResult.Fail(ex, $"Download failed: {ex.Message}");
         }
         finally
@@ -681,7 +697,7 @@ public class SftpTransferService : IDisposable
             _currentFileLabel = entry.Name;
             _currentFraction = 0;
             _currentFileBytes = 0;
-            Logger.Info($"Download started: '{entry.Name}' ({_transferBytesTotal}B) -> '{savePath}'");
+                _log.Info($"Download started: '{entry.Name}' ({_transferBytesTotal}B) -> '{savePath}'");
             Report(progress, 0, $"Downloading {entry.Name}... (0%)");
 
             await using var stream = File.Create(savePath);
@@ -694,14 +710,14 @@ public class SftpTransferService : IDisposable
         }
         catch (OperationCanceledException)
         {
-            Logger.Warn(FailureContext("Download", "cancelled"));
+            _log.Warn(FailureContext("Download", "cancelled"));
             if (File.Exists(savePath))
                 File.Delete(savePath);
             return TransferResult.CancelledResult($"{entry.Name} cancelled");
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, FailureContext("Download"));
+            _log.LogError(ex, FailureContext("Download"));
             return TransferResult.Fail(ex, $"Download failed: {entry.Name}: {ex.Message}");
         }
         finally
@@ -724,7 +740,7 @@ public class SftpTransferService : IDisposable
             if (totalFiles == 0)
                 return TransferResult.EmptyResult("Empty folder — nothing to download");
 
-            Logger.Info($"Download started: folder '{entry.Name}' ({totalFiles} file(s), listed in {listSw.ElapsedMilliseconds}ms) -> '{localRoot}'");
+            _log.Info($"Download started: folder '{entry.Name}' ({totalFiles} file(s), listed in {listSw.ElapsedMilliseconds}ms) -> '{localRoot}'");
 
             BeginTransfer();
             var ct = Token;

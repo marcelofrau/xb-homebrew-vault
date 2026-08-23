@@ -1,6 +1,6 @@
 ## Services — Detailed Breakdown
 
-> **⚠️ Metrics superseded (Aug 2026):** The `XboxDeviceService` god class (1,433 lines / ~41 public members / complexity 205) has since been **split into 6 domain services and deleted**; project migrated to .NET 10. `FileExplorerViewModel` remains large (~1,736 lines). Qualitative domain breakdown below remains valid. See current [Tech Debt](tech-debt) and [Architecture](architecture).
+> **⚠️ Metrics superseded (Aug 2026):** The `XboxDeviceService` god class (1,433 lines / ~41 public members / complexity 205) has since been **split into 6 domain services and deleted**; project migrated to .NET 10. `FileExplorerViewModel` remains large (~1,750 lines as of 2026-08-17). Qualitative domain breakdown below remains valid. See current [Tech Debt](tech-debt) and [Architecture](architecture).
 
 ### XboxDeviceService (God Class)
 **Metrics:** 1,433 lines, ~41 public members (v1.2.0) · 1,207 lines, 35 methods (Phase 1)

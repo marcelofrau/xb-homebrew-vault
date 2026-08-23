@@ -1,11 +1,12 @@
+#nullable enable
 using System;
 using XBVault.Models;
 
 namespace XBVault.Services;
 
-public class AutostartService
+public static class AutostartService
 {
-    public string? GetAutostartFullName()
+    public static string? GetAutostartFullName()
     {
         try
         {
@@ -18,7 +19,7 @@ public class AutostartService
         }
     }
 
-    public string? SetAutostart(string packageFullName)
+    public static string? SetAutostart(string packageFullName)
     {
         var previous = GetAutostartFullName();
         SettingsService.Current.AutostartPackageFullName = packageFullName;
@@ -27,7 +28,7 @@ public class AutostartService
         return previous;
     }
 
-    public void ClearAutostart()
+    public static void ClearAutostart()
     {
         SettingsService.Current.AutostartPackageFullName = null;
         SettingsService.Save();

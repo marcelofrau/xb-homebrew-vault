@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Version,
     [string]$Arch = "x64",
-    [string]$Project = "XBVault",
+    [string]$Project = "XBVault.Desktop",
     [string]$OutputDir = "dist",
     [switch]$Installer
 )

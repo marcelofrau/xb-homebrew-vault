@@ -1,5 +1,5 @@
 param(
-    [string]$Project = "XBVault"
+    [string]$Project = "XBVault.Desktop"
 )
 
 $root = Split-Path -Parent $PSScriptRoot
