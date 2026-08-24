@@ -26,5 +26,17 @@
       "packageName": "SMBRP",
       "catalogId": "super-mario-world-remastered-plus"
     }
+  ],
+  "versionOverrides": [
+    {
+      "catalogId": "safeexit",
+      "catalogVersion": "1.0.0.1",
+      "packageVersion": "1.0.0.0"
+    },
+    {
+      "catalogId": "sonic-2-sms-remake",
+      "catalogVersion": "2.9.2",
+      "packageVersion": "2.9.0.2"
+    }
   ]
 }

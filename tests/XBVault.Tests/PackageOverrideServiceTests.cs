@@ -129,4 +129,67 @@ public class PackageOverrideServiceTests
         Assert.NotEmpty(handler.Requests);
         Assert.Contains("XB Homebrew Vault", handler.Requests[0].Headers.UserAgent.ToString());
     }
+
+    [Fact]
+    public void ParseAndMerge_PopulatesVersionOverride()
+    {
+        using var service = new PackageOverrideService();
+        service.ParseAndMerge("""
+            { "VersionOverrides": [{ "CatalogId": "safeexit", "CatalogVersion": "1.0.0.1", "PackageVersion": "1.0.0.0" }] }
+            """);
+
+        Assert.True(service.TryGetPackageVersion("safeexit", "1.0.0.1", out var ver));
+        Assert.Equal("1.0.0.0", ver);
+    }
+
+    [Fact]
+    public void ParseAndMerge_VersionOverride_WrongVersion_ReturnsFalse()
+    {
+        using var service = new PackageOverrideService();
+        service.ParseAndMerge("""
+            { "VersionOverrides": [{ "CatalogId": "safeexit", "CatalogVersion": "1.0.0.1", "PackageVersion": "1.0.0.0" }] }
+            """);
+
+        Assert.False(service.TryGetPackageVersion("safeexit", "1.0.0.2", out _));
+    }
+
+    [Fact]
+    public void ParseAndMerge_VersionOverride_WrongCatalogId_ReturnsFalse()
+    {
+        using var service = new PackageOverrideService();
+        service.ParseAndMerge("""
+            { "VersionOverrides": [{ "CatalogId": "safeexit", "CatalogVersion": "1.0.0.1", "PackageVersion": "1.0.0.0" }] }
+            """);
+
+        Assert.False(service.TryGetPackageVersion("other", "1.0.0.1", out _));
+    }
+
+    [Fact]
+    public void ParseAndMerge_VersionOverride_MultipleEntriesSameCatalogId()
+    {
+        using var service = new PackageOverrideService();
+        service.ParseAndMerge("""
+            { "VersionOverrides": [
+                { "CatalogId": "sonic", "CatalogVersion": "2.9.2", "PackageVersion": "2.9.0.2" },
+                { "CatalogId": "sonic", "CatalogVersion": "3.0.0", "PackageVersion": "3.0.0.5" }
+            ] }
+            """);
+
+        Assert.True(service.TryGetPackageVersion("sonic", "2.9.2", out var v1));
+        Assert.Equal("2.9.0.2", v1);
+
+        Assert.True(service.TryGetPackageVersion("sonic", "3.0.0", out var v2));
+        Assert.Equal("3.0.0.5", v2);
+    }
+
+    [Fact]
+    public void ParseAndMerge_VersionOverride_EmptyFields_Ignored()
+    {
+        using var service = new PackageOverrideService();
+        service.ParseAndMerge("""
+            { "VersionOverrides": [{ "CatalogId": "  ", "CatalogVersion": "1.0", "PackageVersion": "1.0" }] }
+            """);
+
+        Assert.False(service.TryGetPackageVersion("  ", "1.0", out _));
+    }
 }

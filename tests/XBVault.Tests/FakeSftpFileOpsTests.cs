@@ -23,12 +23,12 @@ public class FakeSftpFileOpsTests
     }
 
     [Fact]
-    public void RenameFile_MovesFile()
+    public async Task RenameFile_MovesFile()
     {
         var fake = new FakeSftpService();
         fake.SeedFile(@"Games\old.bin", Encoding.UTF8.GetBytes("x"));
 
-        fake.RenameAsync(@"Games\old.bin", @"Games\new.bin").Wait();
+        await fake.RenameAsync(@"Games\old.bin", @"Games\new.bin");
 
         Assert.False(fake.FileExists(@"Games\old.bin"));
         Assert.True(fake.FileExists(@"Games\new.bin"));

@@ -32,12 +32,13 @@ public class VersionCheckerService
         if (match is null || !isOutdated)
             return null;
 
+        var effectiveVer = GetEffectiveVersion(match, match.Version ?? string.Empty);
         return new OutdatedPackage
         {
             Installed = pkg,
             Catalog = match,
             InstalledVersion = Version.TryParse(pkg.Version, out var iv) ? iv : null,
-            AvailableVersion = Version.TryParse(match.Version, out var cv) ? cv : null,
+            AvailableVersion = Version.TryParse(effectiveVer, out var cv) ? cv : null,
             IsCompatible = true
         };
     }
@@ -53,6 +54,7 @@ public class VersionCheckerService
 
         var installedVer = pkg.Version ?? string.Empty;
         var catalogVer = match.Version ?? string.Empty;
+        var effectiveVer = GetEffectiveVersion(match, catalogVer);
 
         // suppress outdated for package just updated — persist to cache
         if (!ignoreSuppression &&
@@ -60,26 +62,40 @@ public class VersionCheckerService
             match.Name.Equals(_justUpdatedItemName, StringComparison.OrdinalIgnoreCase))
         {
             _justUpdatedItemName = null;
-            _cache.RecordUpdate(match.Name, catalogVer, installedVer);
+            _cache.RecordUpdate(match.Name, effectiveVer, installedVer);
             return (match, false);
         }
 
         // persistent cache: same pair of versions = already synced (only for UI badge)
-        if (!ignoreSuppression && _cache.TryGetSuppressed(match.Name, catalogVer, installedVer))
+        if (!ignoreSuppression && _cache.TryGetSuppressed(match.Name, effectiveVer, installedVer))
             return (match, false);
 
         var isOutdated = false;
         if (Version.TryParse(installedVer, out var installedV) &&
-            Version.TryParse(catalogVer, out var catalogV))
+            Version.TryParse(effectiveVer, out var effectiveV))
         {
-            isOutdated = catalogV > installedV;
+            isOutdated = effectiveV > installedV;
         }
 
         return (match, isOutdated);
     }
 
     public void RecordUpdate(CatalogItem catalog, InstalledPackage installed)
-        => _cache.RecordUpdate(catalog.Name, catalog.Version ?? string.Empty, installed.Version ?? string.Empty);
+    {
+        var catalogVer = catalog.Version ?? string.Empty;
+        var effectiveVer = GetEffectiveVersion(catalog, catalogVer);
+        _cache.RecordUpdate(catalog.Name, effectiveVer, installed.Version ?? string.Empty);
+    }
+
+    private string GetEffectiveVersion(CatalogItem catalog, string catalogVersion)
+    {
+        if (_overrideService.TryGetPackageVersion(catalog.Id, catalogVersion, out var overrideVer) &&
+            !string.IsNullOrWhiteSpace(overrideVer))
+        {
+            return overrideVer;
+        }
+        return catalogVersion;
+    }
 
     public bool IsPackageMatch(CatalogItem catalog, InstalledPackage pkg)
     {

@@ -28,6 +28,15 @@ public class VersionCheckerServiceTests : IDisposable
         return checker;
     }
 
+    private VersionCheckerService CreateServiceWithVersionOverrides(List<CatalogItem> catalog, string overridesJson)
+    {
+        var overrideService = new PackageOverrideService();
+        overrideService.ParseAndMerge(overridesJson);
+        var checker = new VersionCheckerService(overrideService, new UpdateVersionCache(Path.Combine(_dir, "cache.json")));
+        checker.SetCatalog(catalog);
+        return checker;
+    }
+
     private static CatalogItem Item(string name, string version, string? appId = null, string? downloadUrl = null)
         => new()
         {
@@ -225,5 +234,63 @@ public class VersionCheckerServiceTests : IDisposable
 
         Assert.NotNull(result);
         Assert.NotNull(checker.FindOutdated(pkg));
+    }
+
+    [Fact]
+    public void FindOutdated_VersionOverride_SamePackageVersion_NotOutdated()
+    {
+        var overrides = """{ "VersionOverrides": [{ "CatalogId": "catalog-sonic", "CatalogVersion": "2.9.2", "PackageVersion": "2.9.0.2" }] }""";
+        var checker = CreateServiceWithVersionOverrides(
+            [Item("sonic", "2.9.2", appId: "catalog-sonic")], overrides);
+
+        var pkg = Pkg("sonic", "2.9.0.2");
+        Assert.Null(checker.FindOutdated(pkg));
+    }
+
+    [Fact]
+    public void FindOutdated_VersionOverride_NewerPackageVersion_Outdated()
+    {
+        var overrides = """{ "VersionOverrides": [{ "CatalogId": "catalog-sonic", "CatalogVersion": "2.9.2", "PackageVersion": "2.9.0.2" }] }""";
+        var checker = CreateServiceWithVersionOverrides(
+            [Item("sonic", "2.9.2", appId: "catalog-sonic")], overrides);
+
+        var pkg = Pkg("sonic", "2.9.0.1");
+        Assert.NotNull(checker.FindOutdated(pkg));
+    }
+
+    [Fact]
+    public void FindOutdated_VersionOverride_DifferentCatalogVersion_NoMatch()
+    {
+        var overrides = """{ "VersionOverrides": [{ "CatalogId": "catalog-sonic", "CatalogVersion": "2.9.2", "PackageVersion": "2.9.0.2" }] }""";
+        var checker = CreateServiceWithVersionOverrides(
+            [Item("sonic", "3.0.0", appId: "catalog-sonic")], overrides);
+
+        var pkg = Pkg("sonic", "2.9.0.2");
+        Assert.NotNull(checker.FindOutdated(pkg));
+    }
+
+    [Fact]
+    public void FindOutdated_NoOverride_FallsBackToCatalogVersion()
+    {
+        var overrides = """{ "VersionOverrides": [] }""";
+        var checker = CreateServiceWithVersionOverrides(
+            [Item("sonic", "1.2.0", appId: "catalog-sonic")], overrides);
+
+        var pkg = Pkg("sonic", "1.0.0");
+        Assert.NotNull(checker.FindOutdated(pkg));
+    }
+
+    [Fact]
+    public void RecordUpdate_UsesOverrideVersionForCache()
+    {
+        var overrides = """{ "VersionOverrides": [{ "CatalogId": "catalog-sonic", "CatalogVersion": "2.9.2", "PackageVersion": "2.9.0.2" }] }""";
+        var checker = CreateServiceWithVersionOverrides(
+            [Item("sonic", "2.9.2", appId: "catalog-sonic")], overrides);
+
+        var pkg = Pkg("sonic", "2.9.0.2");
+        var match = checker.FindCatalogMatch(pkg).match!;
+        checker.RecordUpdate(match, pkg);
+
+        Assert.Null(checker.FindOutdated(pkg));
     }
 }

@@ -1642,9 +1642,25 @@ public partial class App : Application
                     AllowMultiple = false,
                     FileTypeFilter = pickFileFilter
                 });
-                return files is { Count: > 0 } ? files[0].TryGetLocalPath() : null;
+                if (files is not { Count: > 0 })
+                    return null;
+
+                var localPath = files[0].TryGetLocalPath();
+                if (!string.IsNullOrEmpty(localPath))
+                    return localPath;
+
+                await using var stream = await files[0].OpenReadAsync();
+                var tempPath = Path.Combine(Path.GetTempPath(), $"sideload-{Guid.NewGuid():N}{Path.GetExtension(files[0].Name ?? ".appx")}");
+                await using (var fs = File.Create(tempPath))
+                    await stream.CopyToAsync(fs);
+                Logger.Info($"PickFileAsync: copied SAF file to temp path — {tempPath}");
+                return tempPath;
             }
-            catch { return null; }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "PickFileAsync: file picker failed");
+                return null;
+            }
         };
         vm.PickDependencyFilesAsync = async () =>
         {
@@ -1657,12 +1673,33 @@ public partial class App : Application
                     AllowMultiple = true,
                     FileTypeFilter = pickFileFilter
                 });
-                return files?.Select(f => f.TryGetLocalPath())
-                             .Where(p => p is not null)
-                             .Cast<string>()
-                             .ToArray();
+                if (files is null || files.Count == 0)
+                    return null;
+
+                var result = new List<string>();
+                foreach (var f in files)
+                {
+                    var localPath = f.TryGetLocalPath();
+                    if (!string.IsNullOrEmpty(localPath))
+                    {
+                        result.Add(localPath);
+                        continue;
+                    }
+
+                    await using var stream = await f.OpenReadAsync();
+                    var tempPath = Path.Combine(Path.GetTempPath(), $"sideload-dep-{Guid.NewGuid():N}{Path.GetExtension(f.Name ?? ".appx")}");
+                    await using (var fs = File.Create(tempPath))
+                        await stream.CopyToAsync(fs);
+                    Logger.Info($"PickDependencyFilesAsync: copied SAF file to temp path — {tempPath}");
+                    result.Add(tempPath);
+                }
+                return result.ToArray();
             }
-            catch { return null; }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "PickDependencyFilesAsync: file picker failed");
+                return null;
+            }
         };
         vm.CloseAction = () => main.CloseOverlay();
         var ciView = new Views.MobileCustomInstallView();

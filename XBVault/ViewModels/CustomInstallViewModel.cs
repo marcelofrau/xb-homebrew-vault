@@ -302,8 +302,12 @@ public partial class CustomInstallViewModel : ObservableObject
                     return;
                 }
                 Logger.Debug($"AnalyzeAsync: download mode — {SourceUrl}");
+                StatusText = "Resolving URL...";
+                var (resolvedUrl, suggestedName) = await UrlResolverService.ResolveAsync(SourceUrl);
+                if (resolvedUrl != SourceUrl)
+                    Logger.Info($"AnalyzeAsync: URL resolved — {SourceUrl} → {resolvedUrl}");
                 StatusText = "Downloading and analyzing...";
-                await DownloadAndAnalyzeAsync(SourceUrl);
+                await DownloadAndAnalyzeAsync(resolvedUrl, suggestedName);
             }
 
             if (_analysis is not null)
@@ -405,11 +409,11 @@ public partial class CustomInstallViewModel : ObservableObject
         }
     }
 
-    private async Task DownloadAndAnalyzeAsync(string url)
+    private async Task DownloadAndAnalyzeAsync(string url, string? suggestedFileName = null)
     {
         Logger.Info($"DownloadAndAnalyzeAsync: starting download from {url}");
         StatusText = "Downloading...";
-        var fileName = PackageInstallService.GetFileNameFromUrl(url);
+        var fileName = suggestedFileName ?? PackageInstallService.GetFileNameFromUrl(url);
         var tempDir = Path.Combine(Path.GetTempPath(), "XBVault", "custom");
         Directory.CreateDirectory(tempDir);
         var localPath = Path.Combine(tempDir, fileName);

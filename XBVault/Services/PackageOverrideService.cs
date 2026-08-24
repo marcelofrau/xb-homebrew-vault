@@ -26,6 +26,7 @@ public sealed class PackageOverrideService : IDisposable
     private Dictionary<string, string> _byName = new(StringComparer.OrdinalIgnoreCase);
     private Dictionary<string, string> _imageByPfn = new(StringComparer.OrdinalIgnoreCase);
     private Dictionary<string, string> _imageByName = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<(string CatalogId, string CatalogVersion), string> _versionOverrides = new();
     private bool _initialized;
 
     public PackageOverrideService(HttpClient? http = null)
@@ -81,8 +82,9 @@ public sealed class PackageOverrideService : IDisposable
             }
 
             var localCount = _byPfn.Count + _byName.Count;
+            var localVersionCount = _versionOverrides.Count;
             ParseAndMerge(json);
-            Logger.Info($"PackageOverrideService: remote overrides merged ({_byPfn.Count + _byName.Count} total, +{_byPfn.Count + _byName.Count - localCount} new)");
+            Logger.Info($"PackageOverrideService: remote overrides merged ({_byPfn.Count + _byName.Count} package + {_versionOverrides.Count} version overrides)");
         }
         catch (HttpRequestException ex)
         {
@@ -141,6 +143,21 @@ public sealed class PackageOverrideService : IDisposable
                     _imageByName[key] = entry.ImageUrl.Trim();
             }
         }
+
+        if (data.VersionOverrides is not null)
+        {
+            foreach (var entry in data.VersionOverrides)
+            {
+                var catalogId = entry.CatalogId?.Trim();
+                var catalogVersion = entry.CatalogVersion?.Trim();
+                var packageVersion = entry.PackageVersion?.Trim();
+                if (string.IsNullOrWhiteSpace(catalogId) ||
+                    string.IsNullOrWhiteSpace(catalogVersion) ||
+                    string.IsNullOrWhiteSpace(packageVersion)) continue;
+
+                _versionOverrides[(catalogId, catalogVersion)] = packageVersion;
+            }
+        }
     }
 
     public bool TryGetCatalogId(string packageFamilyName, out string? catalogId)
@@ -163,6 +180,13 @@ public sealed class PackageOverrideService : IDisposable
         return _imageByName.TryGetValue(packageName, out imageUrl);
     }
 
+    public bool TryGetPackageVersion(string catalogId, string catalogVersion, out string? packageVersion)
+    {
+        return _versionOverrides.TryGetValue((catalogId, catalogVersion), out packageVersion);
+    }
+
+    public int VersionOverrideCount => _versionOverrides.Count;
+
     public void Dispose()
     {
         _http.Dispose();
@@ -173,6 +197,7 @@ internal sealed class PackageOverrideData
 {
     public List<PackageOverrideEntry>? PackageFamilyNameOverrides { get; set; }
     public List<PackageOverrideEntry>? PackageNameOverrides { get; set; }
+    public List<VersionOverrideEntry>? VersionOverrides { get; set; }
 }
 
 internal sealed class PackageOverrideEntry
@@ -181,4 +206,11 @@ internal sealed class PackageOverrideEntry
     public string PackageName { get; set; } = "";
     public string CatalogId { get; set; } = "";
     public string? ImageUrl { get; set; }
+}
+
+internal sealed class VersionOverrideEntry
+{
+    public string CatalogId { get; set; } = "";
+    public string CatalogVersion { get; set; } = "";
+    public string PackageVersion { get; set; } = "";
 }
