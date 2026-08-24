@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Avalonia.Input;
@@ -50,7 +51,9 @@ public record SelectableDep
     }
 }
 
+#pragma warning disable CA1001 // CTS managed within AnalyzeAsync lifecycle
 public partial class CustomInstallViewModel : ObservableObject
+#pragma warning restore CA1001
 {
     private const int MinProgressMs = 1000;
     // Give the console a beat after uninstall/conflict before resuming install
@@ -62,6 +65,7 @@ public partial class CustomInstallViewModel : ObservableObject
 
     private AnalyzeResult? _analysis;
     private string? _downloadedFile;
+    private CancellationTokenSource? _analyzeCts;
 
     public Func<Task<string?>>? PickFileAsync { get; set; }
     public Func<Task<string[]?>>? PickDependencyFilesAsync { get; set; }
@@ -251,6 +255,9 @@ public partial class CustomInstallViewModel : ObservableObject
 
         // Full state reset — treat as fresh start
         Cleanup();
+        _analyzeCts?.Cancel();
+        _analyzeCts = new CancellationTokenSource();
+        var ct = _analyzeCts.Token;
         _analysis = null;
         _downloadedFile = null;
         FileList.Clear();
@@ -280,7 +287,7 @@ public partial class CustomInstallViewModel : ObservableObject
                 }
                 Logger.Debug($"AnalyzeAsync: local file mode — {SourcePath}");
                 StatusText = "Analyzing local file...";
-                await Task.Run(() => AnalyzeLocalFile(SourcePath));
+                await Task.Run(() => AnalyzeLocalFile(SourcePath), ct);
             }
             else
             {
@@ -469,11 +476,21 @@ public partial class CustomInstallViewModel : ObservableObject
         AnalyzeLocalFile(localPath);
     }
 
+    public void CancelAnalysis()
+    {
+        if (IsAnalyzing)
+        {
+            Logger.Info("CancelAnalysis: cancelling active analysis");
+            _analyzeCts?.Cancel();
+        }
+    }
+
     [RelayCommand]
     private void GoBack()
     {
         if (CurrentStep > 0)
         {
+            CancelAnalysis();
             if (CurrentStep == 3)
             {
                 IsInstalling = false;
@@ -581,7 +598,17 @@ public partial class CustomInstallViewModel : ObservableObject
                         Logger.Debug($"InstallAsync: no existing version of {identityName} found");
                     }
                 }
-                catch (Exception ex)
+        catch (OperationCanceledException)
+        {
+            Logger.Info("AnalyzeAsync: analysis cancelled by user");
+            await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
+            {
+                AnalysisResultText = null;
+                CurrentStep = 0;
+                return Task.CompletedTask;
+            });
+        }
+        catch (Exception ex)
                 {
                     Logger.Error(ex, "Clean install: failed to check/uninstall existing package");
                     InstallStatus = "Warning: could not check for existing version...";

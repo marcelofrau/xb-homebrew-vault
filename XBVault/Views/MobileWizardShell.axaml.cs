@@ -42,14 +42,14 @@ public partial class MobileWizardShell : UserControl
         };
     }
 
-    private static Avalonia.Media.Imaging.Bitmap LoadImage(string fileName)
+    private static Avalonia.Media.Imaging.Bitmap LoadImage(string fileName, string folder)
     {
-        var uri = new Uri($"{AssetsBase}{fileName}");
+        var uri = new Uri($"avares://XBVault/Assets/Views/{folder}/{fileName}");
         var stream = AssetLoader.Open(uri);
         return new Avalonia.Media.Imaging.Bitmap(stream);
     }
 
-    public void InitSteps(string title, IReadOnlyList<string> stepLabels)
+    public void InitSteps(string title, IReadOnlyList<string> stepLabels, string imagePrefix = "setupwizard-step", string imageFolder = "SetupWizardWindow")
     {
         TitleBar.Title = title;
         _totalSteps = stepLabels.Count;
@@ -74,7 +74,7 @@ public partial class MobileWizardShell : UserControl
 
             var activeImg = new Image
             {
-                Source = LoadImage($"setupwizard-step{i}-20.png"),
+                Source = LoadImage($"{imagePrefix}{i}-20.png", imageFolder),
                 Width = 20,
                 Height = 20,
                 Stretch = Stretch.None,
@@ -82,7 +82,7 @@ public partial class MobileWizardShell : UserControl
             };
             var inactiveImg = new Image
             {
-                Source = LoadImage($"setupwizard-step{i}-disabled-20.png"),
+                Source = LoadImage($"{imagePrefix}{i}-disabled-20.png", imageFolder),
                 Width = 20,
                 Height = 20,
                 Stretch = Stretch.None,

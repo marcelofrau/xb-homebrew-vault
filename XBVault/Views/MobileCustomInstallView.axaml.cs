@@ -78,7 +78,7 @@ public partial class MobileCustomInstallView : UserControl
         Wizard.StepChanged += OnWizardStepChanged;
         Wizard.FinishClicked += OnWizardFinish;
 
-        Wizard.InitSteps("Custom Install", ["Source", "Analysis", "Dependencies", "Install"]);
+        Wizard.InitSteps("Custom Install", ["Source", "Analysis", "Dependencies", "Install"], "custominstall-step", "CustomInstallWindow");
 
         vm.PropertyChanged += (_, e) =>
         {
@@ -632,6 +632,19 @@ public partial class MobileCustomInstallView : UserControl
     private void OnWizardStepChanged(object? sender, int step)
     {
         if (_vm is null) return;
+
+        if (step == 1 && _vm.CurrentStep == 0)
+        {
+            var hasSource = !string.IsNullOrWhiteSpace(_vm.SourcePath) || !string.IsNullOrWhiteSpace(_vm.SourceUrl);
+            if (hasSource && !_vm.IsAnalyzing)
+            {
+                _vm.AnalyzeCommand.Execute(null);
+                return;
+            }
+            if (!hasSource)
+                return;
+        }
+
         _vm.CurrentStep = step;
         NavigateToStep(step);
     }
@@ -641,8 +654,9 @@ public partial class MobileCustomInstallView : UserControl
         if (_vm is null) return;
         if (_vm.CurrentStep > 0)
         {
-            _vm.CurrentStep--;
-            NavigateToStep(_vm.CurrentStep);
+            _vm.CancelAnalysis();
+            _vm.CurrentStep = 0;
+            NavigateToStep(0);
         }
         else
         {
