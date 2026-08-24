@@ -39,28 +39,48 @@ public partial class MobileMainWindow : UserControl
         UpdateIndicators(0);
         ApplySafeAreaPadding();
 
-        // Android back button: intercept at Activity level
-        Services.AndroidBackHandler.OnBack = () =>
+        // Wire back navigation: BackRequested (Avalonia native, works on all Android)
+        // + AndroidBackHandler.OnBack as fallback for older API levels
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel != null)
+            topLevel.BackRequested += OnBackRequested;
+
+        Services.AndroidBackHandler.OnBack = () => HandleBackRequest();
+    }
+
+    private void OnBackRequested(object? sender, RoutedEventArgs e)
+    {
+        if (HandleBackRequest())
+            e.Handled = true;
+    }
+
+    private bool HandleBackRequest()
+    {
+        if (NavigationPanel.IsVisible)
         {
-            if (NavigationPanel.IsVisible)
-            {
-                XBVault.Services.Logger.Info("Android: Back button → run overlay back action + close");
-                _currentOverlayBackAction?.Invoke();
-                _currentOverlayBackAction = null;
-                NavigationPanel.Children.Clear();
-                NavigationPanel.IsVisible = false;
-                return true;
-            }
-            if (_tabHistory.Count > 0)
-            {
-                var prevTab = _tabHistory[^1];
-                _tabHistory.RemoveAt(_tabHistory.Count - 1);
-                XBVault.Services.Logger.Info($"Android: Back button → navigate to tab {prevTab} (history depth={_tabHistory.Count})");
-                SwitchToTab(prevTab, pushHistory: false);
-                return true;
-            }
-            return false;
-        };
+            XBVault.Services.Logger.Info("Android: Back button → run overlay back action + close");
+            _currentOverlayBackAction?.Invoke();
+            _currentOverlayBackAction = null;
+            NavigationPanel.Children.Clear();
+            NavigationPanel.IsVisible = false;
+            return true;
+        }
+        if (_tabHistory.Count > 0)
+        {
+            var prevTab = _tabHistory[^1];
+            _tabHistory.RemoveAt(_tabHistory.Count - 1);
+            XBVault.Services.Logger.Info($"Android: Back button → navigate to tab {prevTab} (history depth={_tabHistory.Count})");
+            SwitchToTab(prevTab, pushHistory: false);
+            return true;
+        }
+        if (_currentTab != 0)
+        {
+            XBVault.Services.Logger.Info("Android: Back button → navigate to Browse (home)");
+            SwitchToTab(0, pushHistory: false);
+            return true;
+        }
+        // On Browse with empty history → allow Activity to finish (app exit)
+        return false;
     }
 
     private void ApplySafeAreaPadding()
@@ -68,10 +88,13 @@ public partial class MobileMainWindow : UserControl
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel?.InsetsManager == null) return;
 
+        // Disable Avalonia's automatic safe area padding — we handle it manually
+        // to avoid double-padding (Avalonia auto + our margins)
+        TopLevel.SetAutoSafeAreaPadding(this, false);
+
         var insets = topLevel.InsetsManager;
 
         // Ensure system bars use dark theme (white icons on dark background)
-        // Accessing InsetsManager may override styles.xml settings
         try
         {
             insets.SystemBarColor = Color.Parse("#0D1117");
@@ -81,37 +104,39 @@ public partial class MobileMainWindow : UserControl
             Services.Logger.Debug($"Android: Could not set SystemBarColor: {ex.Message}");
         }
 
-        // SystemBarTheme (icon light/dark) is set automatically by RequestedThemeVariant="Dark" in App.axaml
-
-        // Safe area padding
+        // Safe area padding — apply real values or reset to zero (old Android)
         var safe = insets.SafeAreaPadding;
         Services.Logger.Info($"Android: SafeAreaPadding top={safe.Top} bottom={safe.Bottom} left={safe.Left} right={safe.Right}");
 
-        if (safe.Top > 0 || safe.Bottom > 0)
-        {
-            RootGrid.Margin = new Thickness(0, safe.Top, 0, 0);
-            BottomBarContent.Margin = new Thickness(0, 0, 0, safe.Bottom);
-            Services.Logger.Info($"Android: Applied safe area padding top={safe.Top} bottom={safe.Bottom}");
-        }
-        else
-        {
-            // Fallback: hardcoded estimates for typical Android system bars
-            RootGrid.Margin = new Thickness(0, 25, 0, 0);
-            BottomBarContent.Margin = new Thickness(0, 0, 0, 48);
-            Services.Logger.Warn("Android: SafeAreaPadding returned zero, using hardcoded fallback");
-        }
+        ApplyInsets(safe.Top, safe.Bottom);
 
         // Subscribe for dynamic changes (rotation, system bar visibility)
         insets.SafeAreaChanged += (_, args) =>
         {
             var s = args.SafeAreaPadding;
             Services.Logger.Info($"Android: SafeAreaChanged top={s.Top} bottom={s.Bottom}");
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                RootGrid.Margin = new Thickness(0, s.Top, 0, 0);
-                BottomBarContent.Margin = new Thickness(0, 0, 0, s.Bottom);
-            });
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyInsets(s.Top, s.Bottom));
         };
+    }
+
+    private void ApplyInsets(double top, double bottom)
+    {
+        if (top > 0 || bottom > 0)
+        {
+            // Android 15+ (edge-to-edge): apply real insets
+            RootGrid.Margin = new Thickness(0, top, 0, 0);
+            BottomBarContent.Margin = new Thickness(0, 0, 0, bottom);
+            NavigationPanel.Margin = new Thickness(0, 0, 0, bottom);
+            Services.Logger.Info($"Android: Applied safe area padding top={top} bottom={bottom}");
+        }
+        else
+        {
+            // Old Android: no edge-to-edge, no padding needed (matches v2.0.0 behavior)
+            RootGrid.Margin = new Thickness(0);
+            BottomBarContent.Margin = new Thickness(0);
+            NavigationPanel.Margin = new Thickness(0);
+            Services.Logger.Info("Android: SafeAreaPadding zero, no margins applied");
+        }
     }
 
     public void ShowOverlay(UserControl view, Action? onBack = null)

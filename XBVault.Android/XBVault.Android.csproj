@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
+    <ApplicationId>io.github.marcelofrau.xbvault</ApplicationId>
     <!-- RID overridable via CLI: -r android-x64 (emulator) or -r android-arm64 (device) -->
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">android-x64</RuntimeIdentifier>
   </PropertyGroup>

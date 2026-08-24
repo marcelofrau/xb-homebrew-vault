@@ -60,6 +60,7 @@ public partial class MobileCustomInstallView : UserControl
 
         _browseBtn.Command = vm.BrowseFileCommand;
         _analyzeBtn.Command = vm.AnalyzeCommand;
+        _sourceUrlBox.TextChanged += (_, _) => vm.SourceUrl = _sourceUrlBox.Text ?? "";
         vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(CustomInstallViewModel.SourcePath))
@@ -128,7 +129,7 @@ public partial class MobileCustomInstallView : UserControl
                 UpdateNextEnabled();
                 break;
             case 1:
-                Wizard.SetStepHero("custominstall-analyze-48.png", "Analyzing",
+                Wizard.SetStepHero("custominstall-analyze-100.png", "Analyzing",
                     "Examining package structure and dependencies", "CustomInstallWindow");
                 Wizard.SetStepContent(1, _step1Content);
                 Wizard.SetFinishMode(false);
@@ -136,7 +137,7 @@ public partial class MobileCustomInstallView : UserControl
                 UpdateAnalysisState();
                 break;
             case 2:
-                Wizard.SetStepHero("custominstall-package-48.png", "Review Packages",
+                Wizard.SetStepHero("custominstall-packages-100.png", "Review Packages",
                     "Review the main package and dependencies before installing", "CustomInstallWindow");
                 Wizard.SetStepContent(2, _step2Content);
                 Wizard.SetFinishMode(false);
@@ -144,7 +145,9 @@ public partial class MobileCustomInstallView : UserControl
                 Wizard.SetNextButtonEnabled(_vm.CanGoNext);
                 break;
             case 3:
-                Wizard.SetStepHero("custominstall-install-20.png", "Install",
+                Wizard.SetStepHero(_vm.IsInstalling ? "custominstall-download-100.png" :
+                    _vm.InstallComplete ? (_vm.InstallSuccess ? "custominstall-success-100.png" : "custominstall-failure-100.png") :
+                    "custominstall-install-20.png", "Install",
                     _vm.IsInstalling ? "Installing packages..." :
                     _vm.InstallComplete ? (_vm.InstallSuccess ? "Installation successful!" : "Installation failed") :
                     "Ready to install", "CustomInstallWindow");
@@ -177,7 +180,7 @@ public partial class MobileCustomInstallView : UserControl
         var complete = _vm.InstallComplete;
         var showSummary = !installing && !complete;
 
-        Wizard.SetNextButtonEnabled(false);
+        Wizard.SetNextButtonEnabled(complete && _vm.InstallSuccess);
 
         // Hide all sub-panels, show the right one
         foreach (var child in _step3Content.Children)
@@ -198,6 +201,9 @@ public partial class MobileCustomInstallView : UserControl
             UpdateInstallResult();
             _resultPanel.IsVisible = true;
             Wizard.SetFinishMode(true, "Done");
+            Wizard.SetStepHero(_vm.InstallSuccess ? "custominstall-success-100.png" : "custominstall-failure-100.png",
+                _vm.InstallSuccess ? "Success!" : "Failed",
+                _vm.InstallResultMessage ?? "", "CustomInstallWindow");
         }
         else
         {
@@ -510,14 +516,11 @@ public partial class MobileCustomInstallView : UserControl
 
         // Installing progress
         _installingPanel = new StackPanel { Spacing = 10, VerticalAlignment = VerticalAlignment.Center };
-        _installingPanel.Children.Add(new Image
+        _installingPanel.Children.Add(new CdSpinner
         {
-            Source = LoadImage("custominstall-analyze-48.png"),
             Width = 56, Height = 56,
-            Stretch = Stretch.Uniform,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
-            RenderTransform = new RotateTransform(0)
+            ShowText = false,
+            HorizontalAlignment = HorizontalAlignment.Center
         });
         _installStatus = new TextBlock
         {

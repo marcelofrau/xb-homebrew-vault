@@ -28,11 +28,11 @@
       <StackPanel Spacing="0">
 
         <!-- Step title area with bokeh hero background -->
-        <Border Padding="0,16,0,12">
+        <Border Padding="0,0,0,12">
           <Panel>
             <Image Source="avares://XBVault/Assets/Themes/wizard-hero-bg.png"
                    Stretch="UniformToFill" Opacity="0.9"/>
-            <StackPanel HorizontalAlignment="Center" Spacing="8" Margin="0,4">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Margin="0,0">
               <Image x:Name="WizardStepIcon"
                      Width="64" Height="64"
                      Stretch="Uniform"
@@ -76,8 +76,8 @@
     </Border>
 
     <!-- Row 2: Step content -->
-    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-      <TransitioningContentControl x:Name="StepContent" Margin="16,12">
+      <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+      <TransitioningContentControl x:Name="StepContent" Margin="16,24">
         <TransitioningContentControl.PageTransition>
           <CompositePageTransition>
             <CrossFade Duration="0:0:0.2"/>

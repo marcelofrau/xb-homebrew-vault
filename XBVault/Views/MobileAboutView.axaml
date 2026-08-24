@@ -81,11 +81,11 @@
     </Style>
   </UserControl.Styles>
 
-  <!-- Fullscreen with splash background -->
+  <!-- Fullscreen with bokeh background -->
   <Panel>
-    <Image Source="avares://XBVault/Assets/Views/SplashWindow/android-splash-bg.jpg"
-           Stretch="UniformToFill" Opacity="0.35"/>
-    <Border Background="{StaticResource SurfaceBrush}" Opacity="0.8"/>
+    <Image Source="avares://XBVault/Assets/Themes/about-hero-bg.png"
+           Stretch="UniformToFill" Opacity="0.9"/>
+    <Border Background="{StaticResource BgBrush}" Opacity="0.6"/>
 
     <Grid RowDefinitions="Auto,*">
       <!-- Title Bar with back button -->

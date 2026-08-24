@@ -29,7 +29,13 @@
     <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
       <Setter Property="Background" Value="Transparent"/>
     </Style>
+    <Style Selector="ListBoxItem:selected">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
     <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover">
       <Setter Property="Background" Value="Transparent"/>
     </Style>
     <Style Selector="TextBlock">

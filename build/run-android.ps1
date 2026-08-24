@@ -33,7 +33,7 @@ $deviceCount = ($deviceLines | Measure-Object).Count
 
 if ($deviceCount -eq 0) {
     Write-Host "No device/emulator detected. Starting emulator..." -ForegroundColor Yellow
-    Start-Process -FilePath $emulator -ArgumentList "-avd", "Medium_Phone" -WindowStyle Minimized | Out-Null
+    Start-Process -FilePath $emulator -ArgumentList "-avd", "XBVault_Dev" -WindowStyle Minimized | Out-Null
     Write-Host "Waiting for emulator to boot..." -ForegroundColor Yellow
     & $adb wait-for-device
     do {
@@ -81,6 +81,7 @@ $rid = "android-$Arch"
 if ($Uninstall) {
     Write-Host "Uninstalling previous build..." -ForegroundColor DarkGray
     & $adb -s $deviceSerial uninstall XBVault.Android 2>&1 | Out-Null
+    & $adb -s $deviceSerial uninstall io.github.marcelofrau.xbvault 2>&1 | Out-Null
     Write-Host "Cleaning previous build..." -ForegroundColor DarkGray
     & "C:\Program Files\dotnet\dotnet.exe" clean $project -c Release -r $rid -f net10.0-android36.0 2>&1 | Out-Null
 }
@@ -99,4 +100,7 @@ Write-Host "Installing $($apk.Name) on $deviceSerial..." -ForegroundColor Green
 if ($LASTEXITCODE -ne 0) { Write-Host "Install failed!" -ForegroundColor Red; exit $LASTEXITCODE }
 
 Write-Host "Starting app..." -ForegroundColor Green
-& $adb -s $deviceSerial shell am start -n "XBVault.Android/crc647da56a516f0b6d42.MainActivity"
+# Resolve launchable activity from the installed package (identity-proof: works with any ApplicationId)
+$component = (& $adb -s $deviceSerial shell cmd package resolve-activity --brief io.github.marcelofrau.xbvault | Select-Object -Last 1).Trim()
+if (-not $component -or $component -notmatch '/') { Write-Host "Could not resolve launchable activity: '$component'" -ForegroundColor Red; exit 1 }
+& $adb -s $deviceSerial shell am start -n "$component"

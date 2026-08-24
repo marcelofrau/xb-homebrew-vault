@@ -17,6 +17,7 @@ public partial class MobileLogsView : UserControl, IDisposable
     public MobileLogsView()
     {
         InitializeComponent();
+        TitleBar.BackClicked += (_, _) => _onBack?.Invoke();
     }
 
     public void SetOnBack(Action onBack) => _onBack = onBack;

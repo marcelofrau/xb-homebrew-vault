@@ -379,11 +379,11 @@
 
       <!-- Row 4: Activity bar (tall) -->
       <Border Grid.Row="4" IsVisible="{Binding ShowActivity}" Margin="8,0,8,4"
-              Padding="16,20" CornerRadius="8"
+              Padding="16,12" CornerRadius="8"
               Background="{StaticResource SurfaceBrush}"
               BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
         <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
-          <controls:CdSpinner Width="44" Height="44" VerticalAlignment="Center"/>
+          <controls:CdSpinner Width="44" Height="44" ShowText="False" VerticalAlignment="Center"/>
           <TextBlock Grid.Column="1" Grid.Row="0" Text="{Binding ActivityText}" FontSize="15" FontWeight="SemiBold"
                      Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" Margin="12,0,0,6"/>
           <ProgressBar Grid.Column="1" Grid.Row="1" Value="{Binding ActivityProgress}" Minimum="0" Maximum="1"

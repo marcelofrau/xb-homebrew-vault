@@ -63,6 +63,7 @@
       </StackPanel>
 
       <ProgressBar Grid.Row="1"
+                   x:Name="ProgressBar"
                    IsIndeterminate="True"
                    Height="2"
                    HorizontalAlignment="Stretch"

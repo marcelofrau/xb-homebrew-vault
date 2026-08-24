@@ -27,7 +27,7 @@ xmlns:converters="using:XBVault.Converters"
   <Grid RowDefinitions="Auto,Auto,*">
 
     <!-- Title bar -->
-    <views:MobileTitleBar Grid.Row="0" Title="LOGS" ShowAppIcon="False"/>
+    <views:MobileTitleBar Grid.Row="0" x:Name="TitleBar" Title="LOGS" ShowAppIcon="False" ShowBackButton="True"/>
 
     <!-- Toolbar: auto-scroll + share -->
     <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}"
