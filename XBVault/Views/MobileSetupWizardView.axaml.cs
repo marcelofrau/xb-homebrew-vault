@@ -415,7 +415,7 @@ public partial class MobileSetupWizardView : UserControl
     {
         if (_vm is null) return;
         _vm.Address = _addressBox.Text;
-        _vm.Port = _portBox.Text;
+        _vm.Port = _portBox.Text ?? string.Empty;
         _vm.UseHttps = _httpsCheck.IsChecked ?? true;
         _vm.Username = _usernameBox.Text;
         _vm.Password = _passwordBox.Text;
@@ -573,7 +573,7 @@ public partial class MobileSetupWizardView : UserControl
             TextWrapping = TextWrapping.Wrap,
             Foreground = FindBrush("TextMutedBrush")
         };
-        tb.Inlines.Add(new Avalonia.Controls.Documents.Run(before)
+        tb.Inlines!.Add(new Avalonia.Controls.Documents.Run(before)
         {
             Foreground = FindBrush("TextMutedBrush")
         });

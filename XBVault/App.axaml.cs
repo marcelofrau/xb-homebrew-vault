@@ -20,6 +20,8 @@ namespace XBVault;
 public partial class App : Application
 {
     private const int SplashMinDelayMs = 2000;
+    private static readonly string[] ScreenshotPatterns = ["*.png"];
+    private static readonly string[] PackagePatterns = ["*.appx", "*.msix", "*.appxbundle", "*.msixbundle", "*.zip"];
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -997,7 +999,7 @@ public partial class App : Application
                         {
                             Title = "Save Screenshot",
                             SuggestedFileName = $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png",
-                            FileTypeChoices = new List<FilePickerFileType> { new FilePickerFileType("PNG") { Patterns = new[] { "*.png" } } }
+                            FileTypeChoices = new List<FilePickerFileType> { new FilePickerFileType("PNG") { Patterns = ScreenshotPatterns } }
                         });
                         result.SetResult(file?.TryGetLocalPath());
                     });
@@ -1505,14 +1507,14 @@ public partial class App : Application
                 if (!string.IsNullOrEmpty(localPath))
                     return localPath;
                 var tempPath = Path.Combine(Path.GetTempPath(), $"xbv_dl_{entry.Name}");
-                fileExplorerViewModel._pendingSaveFile = file;
-                fileExplorerViewModel._pendingSaveTempPath = tempPath;
+                fileExplorerViewModel.PendingSaveFile = file;
+                fileExplorerViewModel.PendingSaveTempPath = tempPath;
                 return tempPath;
             };
 
             fileExplorerViewModel.PostDownloadSaveAsync = async (tempPath) =>
             {
-                if (fileExplorerViewModel._pendingSaveFile is { } safFile &&
+                if (fileExplorerViewModel.PendingSaveFile is { } safFile &&
                     !string.IsNullOrEmpty(tempPath) && File.Exists(tempPath))
                 {
                     try
@@ -1525,8 +1527,8 @@ public partial class App : Application
                     finally
                     {
                         try { File.Delete(tempPath); } catch { }
-                        fileExplorerViewModel._pendingSaveFile = null;
-                        fileExplorerViewModel._pendingSaveTempPath = null;
+                        fileExplorerViewModel.PendingSaveFile = null;
+                        fileExplorerViewModel.PendingSaveTempPath = null;
                     }
                 }
             };
@@ -1626,7 +1628,7 @@ public partial class App : Application
         {
             new FilePickerFileType("Package files")
             {
-                Patterns = new[] { "*.appx", "*.msix", "*.appxbundle", "*.msixbundle", "*.zip" }
+                Patterns = PackagePatterns
             }
         };
         vm.PickFileAsync = async () =>

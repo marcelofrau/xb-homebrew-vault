@@ -25,7 +25,6 @@ public partial class MobileScreenshotView : UserControl
 public partial class MobileScreenshotViewModel : ObservableObject, IDisposable
 {
     private readonly IXboxSystemService _systemService;
-    private CancellationTokenSource? _cts;
 
     public MobileScreenshotViewModel(IXboxSystemService systemService)
     {
@@ -34,8 +33,6 @@ public partial class MobileScreenshotViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        _cts?.Cancel();
-        _cts?.Dispose();
         GC.SuppressFinalize(this);
     }
 

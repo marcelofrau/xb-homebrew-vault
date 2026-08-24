@@ -139,8 +139,6 @@ public partial class MobileWizardShell : UserControl
 
     public void SetBackButtonVisible(bool visible) => TitleBar.ShowBackButton = visible;
     public void SetNextButtonEnabled(bool enabled) => NextBtn.IsEnabled = enabled;
-    public void SetBackButtonEnabled(bool enabled) { }
-
     public void SetWizardTitle(string title) => TitleBar.Title = title;
 
     public void SetStepHero(string iconName, string title, string subtitle, string? folderOverride = null)

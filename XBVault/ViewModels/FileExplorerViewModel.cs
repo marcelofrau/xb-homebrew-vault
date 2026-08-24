@@ -72,8 +72,8 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
     public Func<Task<bool>>? ShowConnectAction { get; set; }
     public Func<Task<string?>>? ShowFolderPickerAsync { get; set; }
     public Func<string, Task>? PostDownloadSaveAsync { get; set; }
-    public object? _pendingSaveFile { get; set; }
-    public string? _pendingSaveTempPath { get; set; }
+    public object? PendingSaveFile { get; set; }
+    public string? PendingSaveTempPath { get; set; }
     public Action<SftpEntry>? ScrollToEntry { get; set; }
     public Action? FocusFileList { get; set; }
     public Action<string, string, string>? ShowErrorDialog { get; set; }
@@ -735,7 +735,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
                 CurrentEntries.Add(new SftpEntry
                 {
                     Name = "..",
-                    FullPath = null,
+                    FullPath = string.Empty,
                     IsDirectory = true,
                     IsPlaceholder = true,
                     IsLastChild = true
@@ -1244,7 +1244,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             var result = await _transfer.DownloadSingleFileAsync(entry, savePath,
                 TransferProgress(u => { DownloadProgress = u.Progress; DownloadStatusText = u.StatusText; }));
             ApplyDownloadResult(result);
-            if (PostDownloadSaveAsync is not null && _pendingSaveTempPath is not null)
+            if (PostDownloadSaveAsync is not null && PendingSaveTempPath is not null)
                 await PostDownloadSaveAsync(savePath);
         }
         catch (Exception ex)

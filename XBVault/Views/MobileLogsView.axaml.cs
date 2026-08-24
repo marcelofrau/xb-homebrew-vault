@@ -9,7 +9,7 @@ using XBVault.Services;
 
 namespace XBVault.Views;
 
-public partial class MobileLogsView : UserControl
+public partial class MobileLogsView : UserControl, IDisposable
 {
     private CancellationTokenSource? _shareCts;
     private Action? _onBack;
@@ -131,5 +131,13 @@ public partial class MobileLogsView : UserControl
             _shareCts?.Dispose();
             _shareCts = null;
         }
+    }
+
+    public void Dispose()
+    {
+        _shareCts?.Cancel();
+        _shareCts?.Dispose();
+        _shareCts = null;
+        GC.SuppressFinalize(this);
     }
 }

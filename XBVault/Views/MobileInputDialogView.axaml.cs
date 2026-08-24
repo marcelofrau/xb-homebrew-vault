@@ -32,7 +32,9 @@ public partial class MobileInputDialogViewModel : ObservableObject
 
 public partial class MobileInputDialogView : UserControl
 {
+#pragma warning disable CS0067 // Event is used in App.axaml.cs
     public event EventHandler? BackRequested;
+#pragma warning restore CS0067
 
     public MobileInputDialogView()
     {
