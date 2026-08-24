@@ -49,6 +49,20 @@
       <Setter Property="CornerRadius" Value="12"/>
       <Setter Property="Padding" Value="0"/>
     </Style>
+
+    <!-- Disable global hover/press effects on mobile for smooth scrolling -->
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button:pointerover">
+      <Setter Property="RenderTransform" Value="none"/>
+    </Style>
+    <Style Selector="Button:pressed">
+      <Setter Property="RenderTransform" Value="none"/>
+    </Style>
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,*,Auto" x:Name="RootGrid">

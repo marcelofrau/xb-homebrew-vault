@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -24,6 +25,8 @@ public partial class MobileMainWindow : UserControl
     public BackgroundTaskService? BackgroundTasks { get; set; }
     public IXboxAuthService? AuthService { get; set; }
     private Action? _currentOverlayBackAction;
+    private readonly List<int> _tabHistory = new();
+    private int _currentTab;
 
     public MobileMainWindow()
     {
@@ -48,26 +51,65 @@ public partial class MobileMainWindow : UserControl
                 NavigationPanel.IsVisible = false;
                 return true;
             }
+            if (_tabHistory.Count > 0)
+            {
+                var prevTab = _tabHistory[^1];
+                _tabHistory.RemoveAt(_tabHistory.Count - 1);
+                XBVault.Services.Logger.Info($"Android: Back button → navigate to tab {prevTab} (history depth={_tabHistory.Count})");
+                SwitchToTab(prevTab, pushHistory: false);
+                return true;
+            }
             return false;
         };
     }
 
     private void ApplySafeAreaPadding()
     {
-        // Commented out — device handles insets automatically
-        // var topLevel = TopLevel.GetTopLevel(this);
-        // if (topLevel?.InsetsManager == null) return;
-        // var safe = topLevel.InsetsManager.SafeAreaPadding;
-        // if (safe.Top > 0 || safe.Bottom > 0)
-        // {
-        //     TopBarContent.Padding = new Thickness(0, safe.Top, 0, 0);
-        //     BottomBarContent.Padding = new Thickness(0, 0, 0, safe.Bottom);
-        // }
-        // else
-        // {
-        //     TopBarContent.Padding = new Thickness(0, 25, 0, 0);
-        //     BottomBarContent.Padding = new Thickness(0, 0, 0, 48);
-        // }
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel?.InsetsManager == null) return;
+
+        var insets = topLevel.InsetsManager;
+
+        // Ensure system bars use dark theme (white icons on dark background)
+        // Accessing InsetsManager may override styles.xml settings
+        try
+        {
+            insets.SystemBarColor = Color.Parse("#0D1117");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.Debug($"Android: Could not set SystemBarColor: {ex.Message}");
+        }
+
+        // Safe area padding
+        var safe = insets.SafeAreaPadding;
+        Services.Logger.Info($"Android: SafeAreaPadding top={safe.Top} bottom={safe.Bottom} left={safe.Left} right={safe.Right}");
+
+        if (safe.Top > 0 || safe.Bottom > 0)
+        {
+            RootGrid.Margin = new Thickness(0, safe.Top, 0, 0);
+            BottomBarContent.Margin = new Thickness(0, 0, 0, safe.Bottom);
+            Services.Logger.Info($"Android: Applied safe area padding top={safe.Top} bottom={safe.Bottom}");
+        }
+        else
+        {
+            // Fallback: hardcoded estimates for typical Android system bars
+            RootGrid.Margin = new Thickness(0, 25, 0, 0);
+            BottomBarContent.Margin = new Thickness(0, 0, 0, 48);
+            Services.Logger.Warn("Android: SafeAreaPadding returned zero, using hardcoded fallback");
+        }
+
+        // Subscribe for dynamic changes (rotation, system bar visibility)
+        insets.SafeAreaChanged += (_, args) =>
+        {
+            var s = args.SafeAreaPadding;
+            Services.Logger.Info($"Android: SafeAreaChanged top={s.Top} bottom={s.Bottom}");
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                RootGrid.Margin = new Thickness(0, s.Top, 0, 0);
+                BottomBarContent.Margin = new Thickness(0, 0, 0, s.Bottom);
+            });
+        };
     }
 
     public void ShowOverlay(UserControl view, Action? onBack = null)
@@ -115,30 +157,33 @@ public partial class MobileMainWindow : UserControl
 
     private void OnTabBrowse(object? sender, RoutedEventArgs e)
     {
-        XBVault.Services.Logger.Info("Android: Tab switch → Browse");
-        if (DataContext is MainViewModel vm) vm.SelectedTab = 0;
-        UpdateIndicators(0);
+        SwitchToTab(0);
     }
 
     private void OnTabInstalled(object? sender, RoutedEventArgs e)
     {
-        XBVault.Services.Logger.Info("Android: Tab switch → Catalog");
-        if (DataContext is MainViewModel vm) vm.SelectedTab = 1;
-        UpdateIndicators(1);
+        SwitchToTab(1);
     }
 
     private void OnTabFiles(object? sender, RoutedEventArgs e)
     {
-        XBVault.Services.Logger.Info("Android: Tab switch → Explorer");
-        if (DataContext is MainViewModel vm) vm.SelectedTab = 2;
-        UpdateIndicators(2);
+        SwitchToTab(2);
     }
 
     private void OnTabTools(object? sender, RoutedEventArgs e)
     {
-        XBVault.Services.Logger.Info("Android: Tab switch → Tools");
-        if (DataContext is MainViewModel vm) vm.SelectedTab = 3;
-        UpdateIndicators(3);
+        SwitchToTab(3);
+    }
+
+    private void SwitchToTab(int index, bool pushHistory = true)
+    {
+        if (pushHistory && _currentTab != index)
+            _tabHistory.Add(_currentTab);
+
+        _currentTab = index;
+        if (DataContext is MainViewModel vm) vm.SelectedTab = index;
+        UpdateIndicators(index);
+        XBVault.Services.Logger.Info($"Android: Tab switch → {index} (history depth={_tabHistory.Count})");
     }
 
     private void UpdateIndicators(int selected)
