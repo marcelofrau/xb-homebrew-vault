@@ -65,7 +65,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="Auto,*,Auto" x:Name="RootGrid">
+  <Grid RowDefinitions="Auto,*,Auto" x:Name="RootGrid" Margin="0,24,0,0">
 
     <!-- Title Bar: gradient with logo, title, connect, hamburger -->
     <views:MobileTitleBar Grid.Row="0"
@@ -150,7 +150,7 @@
 
     <!-- Bottom Tab Bar: surface fills full height (behind nav bar) -->
     <Grid Grid.Row="2" Background="{StaticResource SurfaceBrush}" x:Name="BottomBar">
-      <Border x:Name="BottomBarContent">
+      <Border x:Name="BottomBarContent" Margin="0,0,0,48">
         <Grid ColumnDefinitions="*,*,*,*">
           <!-- Browse -->
           <Button Grid.Column="0" x:Name="TabBrowseBtn" Classes="TabBtn" Click="OnTabBrowse" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">

@@ -81,6 +81,8 @@ public partial class MobileMainWindow : UserControl
             Services.Logger.Debug($"Android: Could not set SystemBarColor: {ex.Message}");
         }
 
+        // SystemBarTheme (icon light/dark) is set automatically by RequestedThemeVariant="Dark" in App.axaml
+
         // Safe area padding
         var safe = insets.SafeAreaPadding;
         Services.Logger.Info($"Android: SafeAreaPadding top={safe.Top} bottom={safe.Bottom} left={safe.Left} right={safe.Right}");
