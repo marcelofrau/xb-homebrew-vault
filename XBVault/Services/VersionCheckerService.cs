@@ -48,7 +48,9 @@ public class VersionCheckerService
         if (IsIgnoredForUpdates(pkg))
             return (null, false);
 
-        var match = _catalog.FirstOrDefault(i => IsPackageMatch(i, pkg));
+        // Override priority: manual mappings bypass algorithmic matching entirely
+        var overrideMatch = FindOverrideMatch(pkg);
+        var match = overrideMatch ?? _catalog.FirstOrDefault(i => IsPackageMatch(i, pkg));
         if (match is null)
             return (null, false);
 
@@ -95,6 +97,25 @@ public class VersionCheckerService
             return overrideVer;
         }
         return catalogVersion;
+    }
+
+    private CatalogItem? FindOverrideMatch(InstalledPackage pkg)
+    {
+        var pfn = !string.IsNullOrEmpty(pkg.PackageFamilyName) ? StripPackageFamilyName(pkg.PackageFamilyName) : null;
+
+        if (pfn is not null && _overrideService.TryGetCatalogId(pfn, out var overrideId))
+        {
+            var match = _catalog.FirstOrDefault(c => c.Id.Equals(overrideId, StringComparison.OrdinalIgnoreCase));
+            if (match is not null) return match;
+        }
+
+        if (_overrideService.TryGetCatalogIdByName(pkg.Name, out var overrideIdByName))
+        {
+            var match = _catalog.FirstOrDefault(c => c.Id.Equals(overrideIdByName, StringComparison.OrdinalIgnoreCase));
+            if (match is not null) return match;
+        }
+
+        return null;
     }
 
     public bool IsPackageMatch(CatalogItem catalog, InstalledPackage pkg)
@@ -208,8 +229,14 @@ public class VersionCheckerService
 
         // E2: Download URL filename contains package Name or DisplayName
         // Handles SMBR: downloadUrl "SMBR_1.2.zip" contains Name "SMBR"
+        // DisplayName requires >=5 chars to avoid "UWP" matching unrelated URLs (e.g. CVR-UWP-1.0.0.0.zip)
         if (DownloadUrlContains(pkg.Name, catalog) ||
-            (!string.IsNullOrEmpty(pkg.DisplayName) && DownloadUrlContains(pkg.DisplayName, catalog)))
+            (!string.IsNullOrEmpty(pkg.DisplayName) && pkg.DisplayName.Length >= 5 && DownloadUrlContains(pkg.DisplayName, catalog)))
+            return true;
+
+        // E2.1: Download URL filename first-token starts with package Name (prefix match)
+        // Handles SRB2: URL token "SRB2SDL2" startsWith "SRB2"
+        if (DownloadFilenameTokenStartsWith(pkg.Name, catalog))
             return true;
 
         // E3: Reverse — catalog.AppId word-contains PFN
@@ -373,6 +400,30 @@ public class VersionCheckerService
             if (startOk && endOk) return true;
             idx++;
         }
+        return false;
+    }
+
+    private static bool DownloadFilenameTokenStartsWith(string pkgName, CatalogItem catalog)
+    {
+        if (string.IsNullOrEmpty(pkgName) || pkgName.Length < 3) return false;
+
+        var urls = new[] { catalog.DownloadUrl }
+            .Concat(catalog.Downloads.Select(d => d.Url))
+            .Where(u => !string.IsNullOrEmpty(u))
+            .Distinct();
+
+        foreach (var url in urls)
+        {
+            var filename = Path.GetFileNameWithoutExtension(url);
+            if (string.IsNullOrEmpty(filename)) continue;
+
+            var token = filename.Split('_')[0];
+            if (token.Length < pkgName.Length) continue;
+
+            if (token.StartsWith(pkgName, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
         return false;
     }
 

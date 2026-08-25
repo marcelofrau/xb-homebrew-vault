@@ -593,5 +593,64 @@ public class VersionCheckerServiceTests : IDisposable
         Assert.True(Match(cat, pkg));
     }
 
+    [Fact]
+    public void Real_SRB2_MatchesViaDownloadUrlPrefix()
+    {
+        var cat = Cat("Sonic Robo Blast 2", id: "srb2");
+        cat.Downloads = [new DownloadAsset { Url = "https://github.com/aerisarn/srb2-uwp/releases/download/1.0.213/SRB2SDL2_1.0.213.0.zip" }];
+        var pkg = PkgFull("SRB2", "1.0.213.0",
+            displayName: "SRB2",
+            pfn: "115827d0-c6e7-4fcc-befe-a1de5c24c5d1_8wekyb3d8bbwe");
+        Assert.True(Match(cat, pkg));
+    }
+
+    [Fact]
+    public void Real_FlashBack_OverrideTakesPriorityOverAlgorithmicMatch()
+    {
+        var catRevamped = Cat("Castlevania Revamped", id: "castlevania");
+        catRevamped.Downloads = [new DownloadAsset { Url = "https://github.com/EmulationRevival/emulationrevival-downloads/releases/download/cvr-1.0.0.0/CVR-UWP-1.0.0.0.zip" }];
+        var catFlashback = Cat("Flashback / REminiscence", id: "flashback-reminiscence");
+        var pkg = PkgFull("FlashBack", "1.2.32.0",
+            displayName: "UWP",
+            pfn: "7800b501-ec0e-4d85-9d3b-f9499b529e37_8wekyb3d8bbwe");
+        var overrides = """{ "packageNameOverrides": [{ "packageName": "FlashBack", "catalogId": "flashback-reminiscence" }] }""";
+        var os = new PackageOverrideService();
+        os.ParseAndMerge(overrides);
+        var svc = new VersionCheckerService(os, new UpdateVersionCache(Path.Combine(Path.GetTempPath(), "t", Guid.NewGuid().ToString("N") + ".json")));
+        svc.SetCatalog([catRevamped, catFlashback]);
+        var (match, _) = svc.FindCatalogMatch(pkg);
+        Assert.NotNull(match);
+        Assert.Equal("flashback-reminiscence", match!.Id);
+    }
+
+    [Fact]
+    public void Real_FlashBack_DoesNotMatchCastlevaniaRevamped()
+    {
+        var cat = Cat("Castlevania Revamped", id: "castlevania");
+        cat.Downloads = [new DownloadAsset { Url = "https://github.com/EmulationRevival/emulationrevival-downloads/releases/download/cvr-1.0.0.0/CVR-UWP-1.0.0.0.zip" }];
+        var pkg = PkgFull("FlashBack", "1.2.32.0",
+            displayName: "UWP",
+            pfn: "7800b501-ec0e-4d85-9d3b-f9499b529e37_8wekyb3d8bbwe");
+        Assert.False(Match(cat, pkg));
+    }
+
+    [Fact]
+    public void E2_DownloadFilenamePrefixMatchesSRB2()
+    {
+        var cat = Cat("Sonic Robo Blast 2", id: "srb2");
+        cat.Downloads = [new DownloadAsset { Url = "SRB2SDL2_1.0.213.0.zip" }];
+        var pkg = PkgFull("SRB2", "1.0.213.0");
+        Assert.True(Match(cat, pkg));
+    }
+
+    [Fact]
+    public void E2_ShortDisplayName_DoesNotMatchUnrelatedUrl()
+    {
+        var cat = Cat("Castlevania Revamped");
+        cat.Downloads = [new DownloadAsset { Url = "CVR-UWP-1.0.0.0.zip" }];
+        var pkg = PkgFull("FlashBack", "1.2.32.0", displayName: "UWP");
+        Assert.False(Match(cat, pkg));
+    }
+
     #endregion
 }
