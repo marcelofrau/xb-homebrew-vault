@@ -17,6 +17,13 @@ namespace XBVault.Views;
 
 public partial class MobileLogsView : UserControl, IDisposable
 {
+    private static readonly FilePickerFileType[] SaveLogFileTypes =
+    [
+        new FilePickerFileType("ZIP Archive") { Patterns = new[] { "*.zip" } },
+        new FilePickerFileType("Log file") { Patterns = new[] { "*.log" } },
+        new FilePickerFileType("All files") { Patterns = new[] { "*.*" } }
+    ];
+
     private CancellationTokenSource? _shareCts;
     private Action? _onBack;
 
@@ -90,12 +97,7 @@ public partial class MobileLogsView : UserControl, IDisposable
             {
                 Title = "Save Logs",
                 SuggestedFileName = defaultName,
-                FileTypeChoices = new[]
-                {
-                    new FilePickerFileType("ZIP Archive") { Patterns = new[] { "*.zip" } },
-                    new FilePickerFileType("Log file") { Patterns = new[] { "*.log" } },
-                    new FilePickerFileType("All files") { Patterns = new[] { "*.*" } }
-                }
+                FileTypeChoices = SaveLogFileTypes
             });
 
             if (file is null) return;

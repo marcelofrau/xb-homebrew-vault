@@ -25,6 +25,10 @@
     {
       "packageName": "SMBRP",
       "catalogId": "super-mario-world-remastered-plus"
+    },
+    {
+      "packageName": "FlashBack",
+      "catalogId": "flashback-reminiscence"
     }
   ],
   "versionOverrides": [

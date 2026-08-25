@@ -325,8 +325,11 @@ public class PackageInstallService
         {
             progress?.Report(new InstallProgressInfo { Total = 1.0, Status = "Complete!" });
             _log.Info($"Install SUCCESS: {item.Name}");
-            _cache.ClearAppCache(item.Id);
-            _log.Debug($"Cache cleared for {item.Id} after successful install");
+            if (item.Id is not null)
+            {
+                _cache.ClearAppCache(item.Id);
+                _log.Debug($"Cache cleared for {item.Id} after successful install");
+            }
         }
         else
         {

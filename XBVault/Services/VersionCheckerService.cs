@@ -111,17 +111,100 @@ public class VersionCheckerService
         if (pfn is not null && catalog.Name.Equals(pfn, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        if (!string.IsNullOrEmpty(catalog.AppId) && catalog.AppId.Length * 2 >= pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.AppId))
+        // E0c: FullName contains catalog name (FullName format: "Name_Version_Arch__hash")
+        var fullNameBase = !string.IsNullOrEmpty(pkg.FullName) ? pkg.FullName.Split('_', 2)[0] : null;
+        if (!string.IsNullOrEmpty(fullNameBase) && catalog.Name.Equals(fullNameBase, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        if (!string.IsNullOrEmpty(catalog.Id) && catalog.Id.Length * 2 >= pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.Id))
+        // E0d: AppId/Id word-contains — require Id shorter than pkg name
+        // Prevents generic id "castlevania" (for Castlevania Revamped) from matching pkg "Castlevania"
+        if (!string.IsNullOrEmpty(catalog.AppId) && catalog.AppId.Length < pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.AppId))
+            return true;
+
+        if (!string.IsNullOrEmpty(catalog.Id) && catalog.Id.Length < pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.Id))
             return true;
 
         // E1: Alphanumeric normalization — strip non-alnum, lowercase
         // Handles "Super Mario Bros Remastered" vs "SuperMarioBrosRemastered" (spaces)
         var catNorm = NormalizeAlnum(catalog.Name);
+        var pkgNameNorm = NormalizeAlnum(pkg.Name);
+        var pkgDisplayNorm = !string.IsNullOrEmpty(pkg.DisplayName) ? NormalizeAlnum(pkg.DisplayName) : null;
+
+        if (catNorm.Equals(pkgNameNorm, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (pkgDisplayNorm is not null && catNorm.Equals(pkgDisplayNorm, StringComparison.OrdinalIgnoreCase))
+            return true;
+
         if (pfn is not null && catNorm.Equals(NormalizeAlnum(pfn), StringComparison.OrdinalIgnoreCase))
             return true;
+
+        // E1.1: Normalized prefix/containment for Name/DisplayName
+        // SAFE direction only: pkgNameNorm startsWith catNorm (pkg has extra generic text like "Emulator", "UWP")
+        // e.g. "DolphinEmulator" startsWith "Dolphin", "ScummVMUWPFrontend" startsWith "ScummVM"
+        // REJECTED: catNorm startsWith pkgNameNorm — "CastlevaniaRevamped" startsWith "Castlevania" is a different app
+        var pfnNorm = pfn is not null ? NormalizeAlnum(pfn) : null;
+
+        if (catNorm.Length >= 4 && pkgNameNorm.Length >= 4)
+        {
+            if (StartsWithNorm(pkgNameNorm, catNorm))
+                return true;
+        }
+
+        if (pkgDisplayNorm is not null && catNorm.Length >= 4 && pkgDisplayNorm.Length >= 4)
+        {
+            if (StartsWithNorm(pkgDisplayNorm, catNorm))
+                return true;
+            // Also allow containment when DisplayName is longer (e.g. "SpaceCadetPinballUWP" contains "SpaceCadetPinball")
+            if (ContainsWithRatio(pkgDisplayNorm, catNorm, 0.55))
+                return true;
+        }
+
+        // E1.1p: PFN prefix — bidirectional, PFN is authoritative system identifier
+        // "Sonic1" prefix of "Sonic1Decompilation" (catalog has extra "Decompilation")
+        // "ScummVMFrontend" startsWith "ScummVM" (catalog is core name)
+        if (pfnNorm is not null && catNorm.Length >= 4 && pfnNorm.Length >= 4)
+        {
+            if (StartsWithNorm(catNorm, pfnNorm) || StartsWithNorm(pfnNorm, catNorm))
+                return true;
+            if (ContainsWithRatio(catNorm, pfnNorm, 0.55))
+                return true;
+        }
+
+        // E1.1f: FullName base prefix — safe direction only (pkg has extra text)
+        if (!string.IsNullOrEmpty(fullNameBase))
+        {
+            var fullNameBaseNorm = NormalizeAlnum(fullNameBase);
+            if (fullNameBaseNorm.Length >= 4 && StartsWithNorm(fullNameBaseNorm, catNorm))
+                return true;
+        }
+
+        // E1.2: Strip common suffixes (UWP, Frontend, PC) then recheck E1
+        // Handles "dxx_rebirth_uwp" vs "DXX Rebirth", "Space Cadet Pinball UWP" vs "SpaceCadetPinball"
+        var pkgNameStripped = StripCommonSuffixes(pkg.Name);
+        var pkgDisplayStripped = !string.IsNullOrEmpty(pkg.DisplayName) ? StripCommonSuffixes(pkg.DisplayName) : null;
+        var pfnStripped = pfn is not null ? StripCommonSuffixes(pfn) : null;
+
+        if (!ReferenceEquals(pkgNameStripped, pkg.Name))
+        {
+            var stripped = NormalizeAlnum(pkgNameStripped);
+            if (catNorm.Equals(stripped, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        if (pkgDisplayStripped is not null && !ReferenceEquals(pkgDisplayStripped, pkg.DisplayName))
+        {
+            var stripped = NormalizeAlnum(pkgDisplayStripped);
+            if (catNorm.Equals(stripped, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        if (pfnStripped is not null && !ReferenceEquals(pfnStripped, pfn))
+        {
+            var stripped = NormalizeAlnum(pfnStripped);
+            if (catNorm.Equals(stripped, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
 
         // E2: Download URL filename contains package Name or DisplayName
         // Handles SMBR: downloadUrl "SMBR_1.2.zip" contains Name "SMBR"
@@ -171,10 +254,10 @@ public class VersionCheckerService
         if (pfn is not null && catalog.Name.Equals(pfn, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        if (!string.IsNullOrEmpty(catalog.AppId) && catalog.AppId.Length * 2 >= pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.AppId))
+        if (!string.IsNullOrEmpty(catalog.AppId) && catalog.AppId.Length < pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.AppId))
             return true;
 
-        if (!string.IsNullOrEmpty(catalog.Id) && catalog.Id.Length * 2 >= pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.Id))
+        if (!string.IsNullOrEmpty(catalog.Id) && catalog.Id.Length < pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.Id))
             return true;
 
         // E1: Alphanumeric normalization
@@ -205,6 +288,21 @@ public class VersionCheckerService
         return idx > 0 ? familyName[..idx] : familyName;
     }
 
+    private static string StripCommonSuffixes(string value)
+    {
+        const string UWP = "UWP";
+        const string Frontend = "Frontend";
+        const string PC = "PC";
+        var result = value;
+        if (result.EndsWith(UWP, StringComparison.OrdinalIgnoreCase) && result.Length > UWP.Length + 2)
+            result = result[..^UWP.Length].TrimEnd();
+        else if (result.EndsWith(Frontend, StringComparison.OrdinalIgnoreCase) && result.Length > Frontend.Length + 2)
+            result = result[..^Frontend.Length].TrimEnd();
+        else if (result.EndsWith(PC, StringComparison.OrdinalIgnoreCase) && result.Length > PC.Length + 2)
+            result = result[..^PC.Length].TrimEnd();
+        return result;
+    }
+
     private static bool IsIgnoredForUpdates(InstalledPackage pkg)
     {
         var pfn = pkg.PackageFamilyName;
@@ -218,6 +316,19 @@ public class VersionCheckerService
     private static string NormalizeAlnum(string value)
     {
         return System.Text.RegularExpressions.Regex.Replace(value, "[^a-zA-Z0-9]", "");
+    }
+
+    private static bool StartsWithNorm(string text, string prefix)
+    {
+        return text.Length >= prefix.Length &&
+               text.AsSpan(0, prefix.Length).Equals(prefix.AsSpan(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ContainsWithRatio(string text, string contained, double minRatio)
+    {
+        if (!text.Contains(contained, StringComparison.OrdinalIgnoreCase))
+            return false;
+        return contained.Length >= text.Length * minRatio;
     }
 
     private static bool DownloadUrlContains(string value, CatalogItem catalog)
@@ -234,8 +345,14 @@ public class VersionCheckerService
             var filename = Path.GetFileNameWithoutExtension(url);
             if (string.IsNullOrEmpty(filename) || filename.Length < 3) continue;
 
-            if (ContainsAsWord(filename, value) &&
-                Math.Min(value.Length, filename.Length) >= Math.Max(value.Length, filename.Length) * 0.5)
+            if (!ContainsAsWord(filename, value))
+                continue;
+
+            // Short names (<=5 chars) that pass word boundary are reliable enough
+            if (value.Length <= 5)
+                return true;
+
+            if (Math.Min(value.Length, filename.Length) >= Math.Max(value.Length, filename.Length) * 0.5)
                 return true;
         }
 

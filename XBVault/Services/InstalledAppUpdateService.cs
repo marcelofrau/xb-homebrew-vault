@@ -83,17 +83,32 @@ public class InstalledAppUpdateService
         {
             var packages = await _packageService.GetInstalledPackagesAsync();
             var outdated = new List<OutdatedPackage>();
+            var matched = 0;
+            var unmatched = new List<string>();
             foreach (var pkg in packages)
             {
                 ct.ThrowIfCancellationRequested();
                 var op = _versionChecker.FindOutdated(pkg, ignoreSuppression: true);
                 if (op is not null)
+                {
                     outdated.Add(op);
+                    matched++;
+                }
+                else
+                {
+                    var (catalogMatch, _) = _versionChecker.FindCatalogMatch(pkg, ignoreSuppression: true);
+                    if (catalogMatch is not null)
+                        matched++;
+                    else
+                        unmatched.Add(pkg.Name);
+                }
             }
 
-            Logger.Trace($"InstalledAppUpdateService: scan found {outdated.Count} outdated of {packages.Count} packages");
+            Logger.Info($"InstalledAppUpdateService: scan found {outdated.Count} outdated of {packages.Count} packages ({matched} matched, {unmatched.Count} unmatched)");
             foreach (var op in outdated)
-                Logger.Trace($"  {op.Catalog.Name}: {op.InstalledVersion} → {op.AvailableVersion}");
+                Logger.Info($"  {op.Catalog.Name}: {op.InstalledVersion} → {op.AvailableVersion}");
+            if (unmatched.Count > 0)
+                Logger.Info($"  Unmatched packages: {string.Join(", ", unmatched)}");
 
             if (outdated.Count == 0)
             {

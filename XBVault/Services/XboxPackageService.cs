@@ -382,16 +382,25 @@ public class XboxPackageService : IXboxPackageService
                 await WaitForPackageManagerReady();
             }
 
-            // Stream the file instead of loading into memory (avoids OOM on large packages)
+            // Build multipart manually — .NET MultipartFormDataContent reorders headers
+            // (Content-Type before Content-Disposition) and adds filename*=utf-8 which
+            // WDP Xbox rejects. Manual format matches browser multipart that works.
+            // Stream the file via ConcatStream to avoid loading it into memory.
             var boundary = "----XboxUploadBoundary";
+            var escapedFileName = fileName.Replace("\"", "\\\"");
+            var headerBytes = Encoding.UTF8.GetBytes(
+                $"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{escapedFileName}\"\r\nContent-Type: application/octet-stream\r\n\r\n");
+            var footerBytes = Encoding.UTF8.GetBytes($"\r\n--{boundary}--\r\n");
             var fileStream = File.OpenRead(filePath);
-            var streamContent = new StreamContent(fileStream);
-            streamContent.Headers.ContentType =
-                new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
-            var content = new MultipartFormDataContent(boundary)
-            {
-                { streamContent, "file", fileName }
-            };
+            var bodyStream = new ConcatStream(
+                new MemoryStream(headerBytes, writable: false),
+                fileStream,
+                new MemoryStream(footerBytes, writable: false));
+            var totalLength = headerBytes.Length + fileSize + footerBytes.Length;
+            var content = new StreamContent(bodyStream, (int)Math.Min(totalLength, int.MaxValue));
+            content.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue("multipart/form-data")
+                { Parameters = { new System.Net.Http.Headers.NameValueHeaderValue("boundary", boundary) } };
 
             var url = $"/api/app/packagemanager/package?package={Uri.EscapeDataString(fileName)}";
             Logger.Info($">> POST {url}");
@@ -523,5 +532,60 @@ public class XboxPackageService : IXboxPackageService
         }
         Logger.Warn("Timed out waiting for package manager");
         return false;
+    }
+
+    /// <summary>
+    /// Sequential read-only stream concatenation — streams header + file + footer
+    /// without loading the file into memory. WDP multipart needs exact byte order.
+    /// </summary>
+    private sealed class ConcatStream : Stream
+    {
+        private readonly Stream[] _streams;
+        private int _current;
+
+        public ConcatStream(params Stream[] streams) => _streams = streams;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => _streams.Sum(s => s.Length);
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            int totalRead = 0;
+            while (totalRead < count && _current < _streams.Length)
+            {
+                int read = _streams[_current].Read(buffer, offset + totalRead, count - totalRead);
+                if (read == 0) { _current++; continue; }
+                totalRead += read;
+            }
+            return totalRead;
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
+        {
+            int totalRead = 0;
+            while (totalRead < buffer.Length && _current < _streams.Length)
+            {
+                int read = await _streams[_current].ReadAsync(buffer[totalRead..], ct);
+                if (read == 0) { _current++; continue; }
+                totalRead += read;
+            }
+            return totalRead;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                foreach (var s in _streams)
+                    s.Dispose();
+            base.Dispose(disposing);
+        }
+
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }
