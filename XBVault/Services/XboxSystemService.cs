@@ -23,30 +23,47 @@ public class XboxSystemService : IXboxSystemService
             return null;
         }
 
-        try
+        const int maxRetries = 5;
+        const int retryDelayMs = 1000;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            var url = $"/ext/screenshot?download=true&hdr=false&time={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
-            Logger.Info($"GET {url}");
-            var response = await _auth.Http.GetAsync(url, ct);
-            Logger.Info($"GET screenshot => {(int)response.StatusCode}");
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                Logger.Warn($"Body: {await _auth.ReadResponseBody(response)}");
+                var url = $"/ext/screenshot?download=true&hdr=false&time={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+                if (attempt > 1)
+                    Logger.Info($"GET {url} (attempt {attempt}/{maxRetries})");
+                else
+                    Logger.Info($"GET {url}");
+                var response = await _auth.Http.GetAsync(url, ct);
+                Logger.Info($"GET screenshot => {(int)response.StatusCode}");
+                if (response.IsSuccessStatusCode)
+                    return await response.Content.ReadAsByteArrayAsync(ct);
+
+                var body = await _auth.ReadResponseBody(response);
+                Logger.Warn($"Body: {body}");
+
+                if (attempt < maxRetries)
+                {
+                    Logger.Info($"Screenshot returned {(int)response.StatusCode}, retrying in {retryDelayMs}ms...");
+                    await Task.Delay(retryDelayMs, ct);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Info("CaptureScreenshot cancelled");
                 return null;
             }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"CaptureScreenshot failed (attempt {attempt}/{maxRetries})");
+                if (attempt < maxRetries)
+                    await Task.Delay(retryDelayMs, ct);
+            }
+        }
 
-            return await response.Content.ReadAsByteArrayAsync(ct);
-        }
-        catch (OperationCanceledException)
-        {
-            Logger.Info("CaptureScreenshot cancelled");
-            return null;
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "CaptureScreenshot failed");
-            return null;
-        }
+        Logger.Warn($"Screenshot failed after {maxRetries} attempts");
+        return null;
     }
 
     public async Task<string?> GetSystemInfoAsync()

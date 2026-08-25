@@ -355,22 +355,16 @@ public class XboxPackageService : IXboxPackageService
                 await WaitForPackageManagerReady();
             }
 
-            var fileBytes = await File.ReadAllBytesAsync(filePath);
-            // Build multipart body manually so Content-Type boundary is unquoted
+            // Stream the file instead of loading into memory (avoids OOM on large packages)
             var boundary = "----XboxUploadBoundary";
-            var headerBytes = Encoding.UTF8.GetBytes(
-                $"--{boundary}\r\n" +
-                $"Content-Disposition: form-data; name=\"file\"; filename=\"{fileName}\"\r\n" +
-                $"Content-Type: application/octet-stream\r\n\r\n");
-            var trailerBytes = Encoding.UTF8.GetBytes($"\r\n--{boundary}--\r\n");
-            var bodyBytes = new byte[headerBytes.Length + fileBytes.Length + trailerBytes.Length];
-            headerBytes.CopyTo(bodyBytes, 0);
-            fileBytes.CopyTo(bodyBytes, headerBytes.Length);
-            trailerBytes.CopyTo(bodyBytes, headerBytes.Length + fileBytes.Length);
-
-            var content = new ByteArrayContent(bodyBytes);
-            content.Headers.TryAddWithoutValidation("Content-Type",
-                $"multipart/form-data; boundary={boundary}");
+            var fileStream = File.OpenRead(filePath);
+            var streamContent = new StreamContent(fileStream);
+            streamContent.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+            var content = new MultipartFormDataContent(boundary)
+            {
+                { streamContent, "file", fileName }
+            };
 
             var url = $"/api/app/packagemanager/package?package={Uri.EscapeDataString(fileName)}";
             Logger.Info($">> POST {url}");
@@ -470,8 +464,9 @@ public class XboxPackageService : IXboxPackageService
 
                     if (XboxResponseParser.IsResourceInUseError(body, out var busyApps))
                     {
-                        Logger.Error($"Package manager blocked — apps need to be closed: {busyApps}");
-                        return false;
+                        Logger.Warn($"Package manager blocked — apps need to be closed: {busyApps} (waiting for resources to free up)");
+                        await Task.Delay(5000);
+                        continue;
                     }
 
                     if (XboxResponseParser.IsHigherVersionError(body, out var higherVerMsg))
