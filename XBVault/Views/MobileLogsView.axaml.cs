@@ -1,8 +1,14 @@
 using System;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using XBVault.Services;
@@ -67,6 +73,80 @@ public partial class MobileLogsView : UserControl, IDisposable
             current = current.Parent as Avalonia.Visual;
         }
         return null;
+    }
+
+    private async void OnSaveClick(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is null) return;
+
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd-HHmmss",
+                System.Globalization.CultureInfo.InvariantCulture);
+            var defaultName = $"xbvault-logs-{timestamp}.zip";
+
+            var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Save Logs",
+                SuggestedFileName = defaultName,
+                FileTypeChoices = new[]
+                {
+                    new FilePickerFileType("ZIP Archive") { Patterns = new[] { "*.zip" } },
+                    new FilePickerFileType("Log file") { Patterns = new[] { "*.log" } },
+                    new FilePickerFileType("All files") { Patterns = new[] { "*.*" } }
+                }
+            });
+
+            if (file is null) return;
+
+            var logDir = Logger.LogDirectory;
+            if (string.IsNullOrEmpty(logDir) || !Directory.Exists(logDir))
+            {
+                UploadStatusText.Text = "No logs found.";
+                UploadOverlay.IsVisible = true;
+                await Task.Delay(2000);
+                UploadOverlay.IsVisible = false;
+                return;
+            }
+
+            var targetPath = file.Path.LocalPath;
+
+            if (targetPath.EndsWith(".log", StringComparison.OrdinalIgnoreCase))
+            {
+                var latestLog = Directory.GetFiles(logDir, "XBVault-*.log")
+                    .OrderByDescending(f => f, StringComparer.Ordinal)
+                    .FirstOrDefault();
+                if (latestLog is not null)
+                    File.Copy(latestLog, targetPath, overwrite: true);
+            }
+            else
+            {
+                var logFiles = Directory.GetFiles(logDir, "XBVault-*.log")
+                    .OrderByDescending(f => f, StringComparer.Ordinal)
+                    .ToArray();
+
+                using var zipStream = File.Create(targetPath);
+                using var archive = new ZipArchive(zipStream, ZipArchiveMode.Create);
+                foreach (var logFile in logFiles)
+                {
+                    archive.CreateEntryFromFile(logFile, Path.GetFileName(logFile));
+                }
+            }
+
+            UploadStatusText.Text = $"Saved to: {Path.GetFileName(targetPath)}";
+            UploadOverlay.IsVisible = true;
+            await Task.Delay(2000);
+            UploadOverlay.IsVisible = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "SaveLogs");
+            UploadStatusText.Text = $"Error: {ex.Message}";
+            UploadOverlay.IsVisible = true;
+            await Task.Delay(3000);
+            UploadOverlay.IsVisible = false;
+        }
     }
 
     private async void OnShareClick(object? sender, RoutedEventArgs e)

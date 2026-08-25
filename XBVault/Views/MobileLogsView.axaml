@@ -33,7 +33,7 @@ xmlns:converters="using:XBVault.Converters"
     <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}"
             Padding="12,8" BorderThickness="0,0,0,1"
             BorderBrush="{StaticResource CardBorderBrush}">
-      <Grid ColumnDefinitions="Auto,*,Auto">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
         <StackPanel Orientation="Horizontal" Spacing="6">
           <CheckBox IsChecked="{Binding AutoScroll}"
                     FontSize="13" Foreground="White"/>
@@ -43,7 +43,18 @@ xmlns:converters="using:XBVault.Converters"
 
         <TextBlock Grid.Column="1"/>
 
-        <Button Grid.Column="2" x:Name="ShareButton"
+        <Button Grid.Column="2" x:Name="SaveButton"
+                Click="OnSaveClick" Padding="10,6">
+          <Grid ColumnDefinitions="18,8,Auto" ColumnSpacing="6">
+            <Image Source="avares://XBVault/Assets/Views/LogsView/logs-send-20.png"
+                   Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"
+                   RenderTransform="ScaleX(-1)"/>
+            <TextBlock Grid.Column="2" Text="Save Log" FontSize="14"
+                       VerticalAlignment="Center" Foreground="White"/>
+          </Grid>
+        </Button>
+
+        <Button Grid.Column="3" x:Name="ShareButton"
                 Click="OnShareClick" Padding="10,6">
           <Grid ColumnDefinitions="18,8,Auto" ColumnSpacing="6">
             <Image Source="avares://XBVault/Assets/Views/LogsView/logs-send-20.png"
