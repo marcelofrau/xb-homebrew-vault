@@ -73,6 +73,8 @@ public partial class MobileCustomInstallView : UserControl
         _addDepBtn.Command = vm.AddDepCommand;
         _installBtn.Command = vm.InstallCommand;
 
+        vm.DepItems.CollectionChanged += (_, _) => UpdateDependencyList();
+
         Wizard.BackRequested += OnWizardBack;
         Wizard.CancelRequested += OnWizardCancel;
         Wizard.StepChanged += OnWizardStepChanged;
