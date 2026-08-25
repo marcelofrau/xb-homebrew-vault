@@ -94,41 +94,33 @@ public partial class ErrorDialog : Window
         Close();
     }
 
-    private void OnConnectClick(object? sender, RoutedEventArgs e)
+    private async void OnConnectClick(object? sender, RoutedEventArgs e)
     {
         if (ConnectAction is null) return;
         Logger.Trace("ErrorDialog connect button clicked");
-        // run action without blocking UI thread and capture exceptions
-        Task.Run(async () =>
+        try
         {
-            try
-            {
-                await ConnectAction().ConfigureAwait(false);
-                // Close must run on UI thread
-                XBVault.Helpers.UIHelpers.RunOnUI(() => Close());
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "ErrorDialog connect action failed");
-            }
-        }).FireAndForget();
+            await ConnectAction();
+            Close();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "ErrorDialog connect action failed");
+        }
     }
 
-    private void OnDownloadClick(object? sender, RoutedEventArgs e)
+    private async void OnDownloadClick(object? sender, RoutedEventArgs e)
     {
         if (DownloadAction is null) return;
         Logger.Info("ErrorDialog download button clicked");
-        Task.Run(async () =>
+        try
         {
-            try
-            {
-                await DownloadAction().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "ErrorDialog download action failed");
-            }
-        }).FireAndForget();
+            await DownloadAction();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "ErrorDialog download action failed");
+        }
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
