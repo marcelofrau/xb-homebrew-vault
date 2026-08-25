@@ -111,10 +111,10 @@ public class VersionCheckerService
         if (pfn is not null && catalog.Name.Equals(pfn, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        if (!string.IsNullOrEmpty(catalog.AppId) && pkg.Name.Contains(catalog.AppId, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrEmpty(catalog.AppId) && catalog.AppId.Length * 2 >= pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.AppId))
             return true;
 
-        if (!string.IsNullOrEmpty(catalog.Id) && pkg.Name.Contains(catalog.Id, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrEmpty(catalog.Id) && catalog.Id.Length * 2 >= pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.Id))
             return true;
 
         // E1: Alphanumeric normalization — strip non-alnum, lowercase
@@ -129,10 +129,11 @@ public class VersionCheckerService
             (!string.IsNullOrEmpty(pkg.DisplayName) && DownloadUrlContains(pkg.DisplayName, catalog)))
             return true;
 
-        // E3: Reverse — catalog.AppId contains normalized PFN
-        // Handles cases where PFN is abbreviation embedded in appId
+        // E3: Reverse — catalog.AppId word-contains PFN
+        // Handles cases where PFN is abbreviation embedded in appId (e.g. "sm64ex" in "sm64ex.uwp")
+        // Uses word-boundary + ratio guard to prevent "recomp" matching "gen1recomp"
         if (!string.IsNullOrEmpty(catalog.AppId) && pfn is not null &&
-            catalog.AppId.Contains(pfn, StringComparison.OrdinalIgnoreCase))
+            pfn.Length * 2 >= catalog.AppId.Length && ContainsAsWord(catalog.AppId, pfn))
             return true;
 
         // E4: Download URL filename first-token prefix of PFN (or vice versa), minimum 4 chars
@@ -152,6 +153,48 @@ public class VersionCheckerService
             if (catalog.Id.Equals(overrideIdByName, StringComparison.OrdinalIgnoreCase))
                 return true;
         }
+
+        return false;
+    }
+
+    public static bool IsPackageMatchBasic(CatalogItem catalog, InstalledPackage pkg)
+    {
+        // E0: Exact matches (highest confidence)
+        if (catalog.Name.Equals(pkg.Name, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!string.IsNullOrEmpty(pkg.DisplayName) && catalog.Name.Equals(pkg.DisplayName, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var pfn = !string.IsNullOrEmpty(pkg.PackageFamilyName) ? StripPackageFamilyName(pkg.PackageFamilyName) : null;
+
+        if (pfn is not null && catalog.Name.Equals(pfn, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!string.IsNullOrEmpty(catalog.AppId) && catalog.AppId.Length * 2 >= pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.AppId))
+            return true;
+
+        if (!string.IsNullOrEmpty(catalog.Id) && catalog.Id.Length * 2 >= pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.Id))
+            return true;
+
+        // E1: Alphanumeric normalization
+        var catNorm = NormalizeAlnum(catalog.Name);
+        if (pfn is not null && catNorm.Equals(NormalizeAlnum(pfn), StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // E2: Download URL filename contains package Name or DisplayName
+        if (DownloadUrlContains(pkg.Name, catalog) ||
+            (!string.IsNullOrEmpty(pkg.DisplayName) && DownloadUrlContains(pkg.DisplayName, catalog)))
+            return true;
+
+        // E3: Reverse — catalog.AppId word-contains PFN
+        if (!string.IsNullOrEmpty(catalog.AppId) && pfn is not null &&
+            pfn.Length * 2 >= catalog.AppId.Length && ContainsAsWord(catalog.AppId, pfn))
+            return true;
+
+        // E4: Download URL filename first-token prefix of PFN (or vice versa), minimum 4 chars
+        if (pfn is not null && DownloadTokenPrefixMatch(pfn, catalog))
+            return true;
 
         return false;
     }
@@ -189,10 +232,30 @@ public class VersionCheckerService
         foreach (var url in urls)
         {
             var filename = Path.GetFileNameWithoutExtension(url);
-            if (filename is not null && filename.Contains(value, StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(filename) || filename.Length < 3) continue;
+
+            if (ContainsAsWord(filename, value) &&
+                Math.Min(value.Length, filename.Length) >= Math.Max(value.Length, filename.Length) * 0.5)
                 return true;
         }
 
+        return false;
+    }
+
+    private static bool ContainsAsWord(string text, string word)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(word)) return false;
+        int idx = 0;
+        while (idx <= text.Length - word.Length)
+        {
+            idx = text.IndexOf(word, idx, StringComparison.OrdinalIgnoreCase);
+            if (idx < 0) return false;
+            bool startOk = idx == 0 || !char.IsLetterOrDigit(text[idx - 1]);
+            int endIdx = idx + word.Length;
+            bool endOk = endIdx >= text.Length || !char.IsLetterOrDigit(text[endIdx]);
+            if (startOk && endOk) return true;
+            idx++;
+        }
         return false;
     }
 
@@ -209,11 +272,17 @@ public class VersionCheckerService
             if (string.IsNullOrEmpty(filename)) continue;
 
             var token = filename.Split('_')[0];
-            if (token.Length < 4 && pfn.Length < 4) continue;
+            if (token.Length < 4 || pfn.Length < 4) continue;
 
             if (pfn.StartsWith(token, StringComparison.OrdinalIgnoreCase) ||
                 token.StartsWith(pfn, StringComparison.OrdinalIgnoreCase))
-                return true;
+            {
+                // Reject short prefix matches — "DOOM" prefix must not match "Doom64EXClassicUWP"
+                var shorter = Math.Min(token.Length, pfn.Length);
+                var longer = Math.Max(token.Length, pfn.Length);
+                if (shorter >= longer * 0.5)
+                    return true;
+            }
         }
 
         return false;

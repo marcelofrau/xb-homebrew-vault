@@ -321,6 +321,33 @@ public class XboxPackageService : IXboxPackageService
             var installOk = await WaitForPackageManagerReady();
             if (!installOk)
             {
+                // The Xbox may have accepted the deploy (202) but timed out due to
+                // 0x80073D02 (app in use). The console can still complete the install
+                // asynchronously when the blocking app closes. Verify before reporting failure.
+                var pkgName = XboxResponseParser.ParseMsixPackageName(packagePath);
+                if (!string.IsNullOrEmpty(pkgName))
+                {
+                    Logger.Info("Package manager timed out — waiting 15s then verifying if install completed...");
+                    await Task.Delay(15000);
+
+                    try
+                    {
+                        var installed = await GetInstalledPackagesAsync();
+                        var found = installed.FirstOrDefault(p =>
+                            p.FullName?.StartsWith(pkgName + "_", StringComparison.OrdinalIgnoreCase) == true);
+
+                        if (found is not null)
+                        {
+                            Logger.Info($"Post-timeout verification: package found — {found.FullName} (install succeeded despite timeout)");
+                            return true;
+                        }
+                    }
+                    catch (Exception verifyEx)
+                    {
+                        Logger.Warn($"Post-timeout verification failed: {verifyEx.Message}");
+                    }
+                }
+
                 Logger.Error("Install completed but package manager reported failure or timed out");
                 return false;
             }

@@ -1,5 +1,6 @@
 #nullable enable
 using System.Collections.Specialized;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -155,9 +156,37 @@ public partial class MobileFileExplorerView : UserControl
             Title = "Select files to upload",
             AllowMultiple = true
         });
-        var paths = files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToArray();
-        if (paths.Length == 0) return;
-        await vm.UploadMixedAsync(paths, []);
+        if (files.Count == 0) return;
+
+        var paths = new List<string>();
+        var tempFiles = new List<string>();
+        foreach (var f in files)
+        {
+            var localPath = f.TryGetLocalPath();
+            if (!string.IsNullOrEmpty(localPath))
+            {
+                paths.Add(localPath);
+            }
+            else
+            {
+                var tempPath = Path.Combine(Path.GetTempPath(), $"xbv_upload_{f.Name}");
+                await using var srcStream = await f.OpenReadAsync();
+                await using var dstStream = File.Create(tempPath);
+                await srcStream.CopyToAsync(dstStream);
+                paths.Add(tempPath);
+                tempFiles.Add(tempPath);
+            }
+        }
+        if (paths.Count == 0) return;
+        try
+        {
+            await vm.UploadMixedAsync(paths.ToArray(), []);
+        }
+        finally
+        {
+            foreach (var tmp in tempFiles)
+                try { File.Delete(tmp); } catch { }
+        }
     }
 
     private async void OnUploadFolderClick(object? sender, RoutedEventArgs e)
@@ -170,9 +199,59 @@ public partial class MobileFileExplorerView : UserControl
             Title = "Select folders to upload",
             AllowMultiple = true
         });
-        var paths = folders.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToArray();
-        if (paths.Length == 0) return;
-        await vm.UploadMixedAsync([], paths);
+        if (folders.Count == 0) return;
+
+        var paths = new List<string>();
+        var tempFolders = new List<string>();
+        foreach (var f in folders)
+        {
+            var localPath = f.TryGetLocalPath();
+            if (!string.IsNullOrEmpty(localPath))
+            {
+                paths.Add(localPath);
+            }
+            else
+            {
+                var tempDir = Path.Combine(Path.GetTempPath(), $"xbv_upload_{f.Name}");
+                await CopyFolderRecursiveAsync(f, tempDir);
+                paths.Add(tempDir);
+                tempFolders.Add(tempDir);
+            }
+        }
+        if (paths.Count == 0) return;
+        try
+        {
+            await vm.UploadMixedAsync([], paths.ToArray());
+        }
+        finally
+        {
+            foreach (var tmp in tempFolders)
+                try { Directory.Delete(tmp, recursive: true); } catch { }
+        }
+    }
+
+    private static async Task CopyFolderRecursiveAsync(IStorageFolder source, string destDir)
+    {
+        Directory.CreateDirectory(destDir);
+        await foreach (var item in source.GetItemsAsync())
+        {
+            if (item is IStorageFile file)
+            {
+                var localPath = file.TryGetLocalPath();
+                if (!string.IsNullOrEmpty(localPath))
+                    File.Copy(localPath, Path.Combine(destDir, file.Name), overwrite: true);
+                else
+                {
+                    await using var src = await file.OpenReadAsync();
+                    await using var dst = File.Create(Path.Combine(destDir, file.Name));
+                    await src.CopyToAsync(dst);
+                }
+            }
+            else if (item is IStorageFolder subFolder)
+            {
+                await CopyFolderRecursiveAsync(subFolder, Path.Combine(destDir, subFolder.Name));
+            }
+        }
     }
 
     private async void OnUploadZipClick(object? sender, RoutedEventArgs e)
@@ -188,9 +267,21 @@ public partial class MobileFileExplorerView : UserControl
             FileTypeFilter = zipTypes
         });
         if (files.Count == 0) return;
-        var zipPath = files[0].TryGetLocalPath();
-        if (zipPath is not null)
+        var zipFile = files[0];
+        var zipPath = zipFile.TryGetLocalPath();
+        if (string.IsNullOrEmpty(zipPath))
+        {
+            zipPath = Path.Combine(Path.GetTempPath(), $"xbv_upload_{zipFile.Name}.zip");
+            await using var src = await zipFile.OpenReadAsync();
+            await using var dst = File.Create(zipPath);
+            await src.CopyToAsync(dst);
+            try { await vm.UploadZipExtractAsync(zipPath); }
+            finally { try { File.Delete(zipPath); } catch { } }
+        }
+        else
+        {
             await vm.UploadZipExtractAsync(zipPath);
+        }
     }
 
     private async void OnDownloadConfirmClick(object? sender, RoutedEventArgs e)

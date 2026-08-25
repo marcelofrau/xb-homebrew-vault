@@ -254,7 +254,45 @@ public class PackageInstallService
         for (int i = 0; i < dependencies.Length; i++)
             _log.Info($"  Dep {i + 1}/{dependencies.Length}: {Path.GetFileName(dependencies[i])}");
 
-        // Phase 4: Install on Xbox
+        // Phase 4: Uninstall conflicting package if different PFN
+        _log.Info("Checking for conflicting installed packages...");
+        progress?.Report(new InstallProgressInfo { Total = 0.55, Status = "Checking for conflicts..." });
+
+        try
+        {
+            var installed = await _packageService.GetInstalledPackagesAsync();
+            var conflicting = installed.FirstOrDefault(p => VersionCheckerService.IsPackageMatchBasic(item, p));
+            if (conflicting is not null)
+            {
+                var installedPfn = conflicting.PackageFamilyName ?? "unknown";
+                var catalogPfn = item.AppId ?? item.Id ?? "unknown";
+                if (!string.Equals(installedPfn, catalogPfn, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Different PFN — catalog item matches this package but with a different identity
+                    // (e.g. old XBSX2 PFN "XBSX2" vs new "595c25f0-..."). Uninstall to avoid duplicate.
+                    _log.Info($"Found conflict: installed '{conflicting.Name}' (PFN: {installedPfn}) conflicts with catalog '{item.Name}' (PFN: {catalogPfn}). Uninstalling first...");
+                    progress?.Report(new InstallProgressInfo { Total = 0.55, Status = $"Removing {conflicting.Name} to avoid duplicate..." });
+                    var uninstalled = await _packageService.UninstallPackageAsync(conflicting.FullName);
+                    _log.Info(uninstalled
+                        ? $"Conflict resolved: {conflicting.Name} uninstalled successfully"
+                        : $"Conflict uninstall failed for {conflicting.Name} — proceeding with install anyway");
+                }
+                else
+                {
+                    _log.Info($"Same PFN ({installedPfn}) — in-place update, no uninstall needed");
+                }
+            }
+            else
+            {
+                _log.Info("No conflicting package found — fresh install");
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Conflict detection failed — proceeding with install anyway");
+        }
+
+        // Phase 5: Install on Xbox
         _log.Info("Installing on Xbox...");
         progress?.Report(new InstallProgressInfo { Total = 0.6, Status = "Installing on Xbox..." });
 

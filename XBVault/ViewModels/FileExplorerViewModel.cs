@@ -1239,11 +1239,13 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             if (entry.IsPortal)
             {
                 ApplyDownloadResult(await DownloadPortalAsync(entry, savePath));
-                return;
             }
-            var result = await _transfer.DownloadSingleFileAsync(entry, savePath,
-                TransferProgress(u => { DownloadProgress = u.Progress; DownloadStatusText = u.StatusText; }));
-            ApplyDownloadResult(result);
+            else
+            {
+                var result = await _transfer.DownloadSingleFileAsync(entry, savePath,
+                    TransferProgress(u => { DownloadProgress = u.Progress; DownloadStatusText = u.StatusText; }));
+                ApplyDownloadResult(result);
+            }
             if (PostDownloadSaveAsync is not null && PendingSaveTempPath is not null)
                 await PostDownloadSaveAsync(savePath);
         }
