@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Avalonia.Input;
@@ -51,11 +52,26 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenCustomInstall() => ShowCustomInstallAction?.Invoke();
 
+    [RelayCommand]
+    private void AbortInstall()
+    {
+        if (_installCts is { IsCancellationRequested: false })
+        {
+            Logger.Info("User aborted install");
+            _installCts.Cancel();
+            InstallStatus = "Aborted by user";
+            InstallComplete = true;
+            InstallSuccess = false;
+            InstallResultMessage = "Install aborted.";
+        }
+    }
+
     public Func<Task>? ShowRefreshDialogAsync { get; set; }
 
     private static readonly HttpClient ImageHttp = new();
     private readonly ConcurrentDictionary<string, Task<Bitmap?>> _overrideImageCache = new();
     private CancellationTokenSource? _thumbnailCts;
+    private CancellationTokenSource? _installCts;
 
     public BrowseViewModel(PackageInstallService installService, IXboxAuthService authService, IXboxPackageService packageService, CatalogApiService catalogService, PackageOverrideService overrideService, VersionCheckerService versionChecker)
     {
@@ -65,7 +81,26 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         _packageService = packageService;
         _overrideService = overrideService;
         _versionChecker = versionChecker;
+        _authService.ConnectionChanged += OnConnectionChanged;
         Logger.Debug("BrowseViewModel created");
+    }
+
+    private async void OnConnectionChanged(bool connected)
+    {
+        if (connected && _allItems.Count > 0)
+        {
+            Logger.Debug("Connection changed — refreshing installed badges");
+            await UpdateInstalledBadgesAsync();
+        }
+        else if (!connected)
+        {
+            foreach (var item in _allItems)
+            {
+                item.IsInstalledOnXbox = false;
+                item.IsOutdatedOnXbox = false;
+            }
+            Logger.Debug("Disconnected — cleared installed badges");
+        }
     }
 
     public ObservableCollection<CatalogItem> Items { get; } = [];
@@ -204,6 +239,10 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowInstallActionButton));
         OnPropertyChanged(nameof(ShowInstallSuccessResult));
         OnPropertyChanged(nameof(ShowInstallFailureResult));
+
+        // Refresh installed badges after install completes
+        if (value)
+            _ = UpdateInstalledBadgesAsync();
     }
 
     partial void OnCheckCompleteChanged(bool value)
@@ -247,6 +286,57 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowUpdateButton));
         OnPropertyChanged(nameof(ShowInstallFinishButton));
         OnPropertyChanged(nameof(ShowInstallActionButton));
+    }
+
+    /// <summary>
+    /// Fetches installed packages from Xbox and cross-references all catalog items
+    /// to set IsInstalledOnXbox/IsOutdatedOnXbox for badge display.
+    /// </summary>
+    private async Task UpdateInstalledBadgesAsync()
+    {
+        if (!_authService.IsConfigured || !_authService.IsConnected) return;
+
+        try
+        {
+            Logger.Debug("Updating installed badges for catalog items...");
+            var packages = await _packageService.GetInstalledPackagesAsync();
+            var matched = 0;
+            var outdated = 0;
+
+            foreach (var item in _allItems)
+            {
+                var match = packages.FirstOrDefault(p => _versionChecker.IsPackageMatch(item, p));
+                if (match is not null)
+                {
+                    item.IsInstalledOnXbox = true;
+                    matched++;
+
+                    var effectiveVer = item.Version ?? string.Empty;
+                    if (Version.TryParse(match.Version, out var installedV) &&
+                        Version.TryParse(effectiveVer, out var catalogV) &&
+                        catalogV > installedV)
+                    {
+                        item.IsOutdatedOnXbox = true;
+                        outdated++;
+                    }
+                    else
+                    {
+                        item.IsOutdatedOnXbox = false;
+                    }
+                }
+                else
+                {
+                    item.IsInstalledOnXbox = false;
+                    item.IsOutdatedOnXbox = false;
+                }
+            }
+
+            Logger.Info($"Badge update: {matched} installed, {outdated} outdated of {_allItems.Count} catalog items");
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"Failed to update installed badges: {ex.Message}");
+        }
     }
 
     [RelayCommand]
@@ -547,6 +637,9 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         var itemName = SelectedItem.Name;
         var itemUrl = downloadUrl ?? "?";
 
+        _installCts?.Dispose();
+        _installCts = new CancellationTokenSource();
+
         CheckComplete = false;
         CheckInstalled = false;
         CheckError = false;
@@ -574,7 +667,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             });
 
             Logger.Debug("Calling DownloadAndInstallAsync");
-            var result = await _installService.DownloadAndInstallAsync(SelectedItem!, downloadUrl, progress);
+            var result = await _installService.DownloadAndInstallAsync(SelectedItem!, downloadUrl, progress, _installCts?.Token ?? CancellationToken.None);
 
             if (result.Success)
             {
@@ -594,6 +687,10 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             }
 
             InstallProgress = result.Success ? 1.0 : 0;
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.Info($"Install cancelled: {itemName}");
         }
         catch (Exception ex)
         {

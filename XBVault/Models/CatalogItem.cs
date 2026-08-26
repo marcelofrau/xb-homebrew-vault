@@ -75,6 +75,20 @@ public partial class CatalogItem : ObservableObject
     [property: JsonIgnore]
     private bool _isSelected;
 
+    [ObservableProperty]
+    [property: JsonIgnore]
+    [NotifyPropertyChangedFor(nameof(ShowBadge))]
+    [NotifyPropertyChangedFor(nameof(BadgeText))]
+    [NotifyPropertyChangedFor(nameof(BadgeBrush))]
+    private bool _isInstalledOnXbox;
+
+    [ObservableProperty]
+    [property: JsonIgnore]
+    [NotifyPropertyChangedFor(nameof(ShowBadge))]
+    [NotifyPropertyChangedFor(nameof(BadgeText))]
+    [NotifyPropertyChangedFor(nameof(BadgeBrush))]
+    private bool _isOutdatedOnXbox;
+
     [JsonIgnore]
     public bool IsThumbnailLoading => Thumbnail is null;
 
@@ -119,13 +133,39 @@ public partial class CatalogItem : ObservableObject
     }
 
     [JsonIgnore]
-    public bool ShowBadge => IsNewRelease || IsUpdate;
+    public bool ShowBadge
+    {
+        get
+        {
+            if (IsInstalledOnXbox && IsOutdatedOnXbox) return true;
+            if (IsInstalledOnXbox && !IsOutdatedOnXbox) return true;
+            return IsNewRelease || IsUpdate;
+        }
+    }
 
     [JsonIgnore]
-    public string BadgeText => IsNewRelease ? "NEW" : "UPDATE";
+    public string BadgeText
+    {
+        get
+        {
+            if (IsInstalledOnXbox && IsOutdatedOnXbox) return "UPDATE AVAILABLE";
+            if (IsInstalledOnXbox && !IsOutdatedOnXbox) return "UPDATED";
+            return IsNewRelease ? "NEW" : "RECENTLY UPDATED";
+        }
+    }
 
     [JsonIgnore]
-    public IBrush BadgeBrush => IsNewRelease
-        ? new SolidColorBrush(Color.Parse("#2ECC71"))
-        : new SolidColorBrush(Color.Parse("#3498DB"));
+    public IBrush BadgeBrush
+    {
+        get
+        {
+            if (IsInstalledOnXbox && IsOutdatedOnXbox)
+                return new SolidColorBrush(Color.Parse("#CC3333"));
+            if (IsInstalledOnXbox && !IsOutdatedOnXbox)
+                return new SolidColorBrush(Color.Parse("#2ECC71"));
+            return IsNewRelease
+                ? new SolidColorBrush(Color.Parse("#2ECC71"))
+                : new SolidColorBrush(Color.Parse("#3498DB"));
+        }
+    }
 }

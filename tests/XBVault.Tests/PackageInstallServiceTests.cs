@@ -243,7 +243,7 @@ public class PackageInstallServiceTests : IDisposable
         public Task<bool> SuspendPackageAsync(string packageFullName) => Task.FromResult(true);
         public Task<bool> TerminatePackageAsync(string packageFullName) => Task.FromResult(true);
         public Task<bool> InstallPackageAsync(string filePath, IProgress<double>? progress = null) => Task.FromResult(InstallResult);
-        public Task<bool> InstallPackageAsync(string packagePath, string[] dependencies, IProgress<InstallProgressInfo>? progress = null)
+        public Task<bool> InstallPackageAsync(string packagePath, string[] dependencies, IProgress<InstallProgressInfo>? progress = null, CancellationToken cancellationToken = default)
         {
             Installed.Add(packagePath);
             return Task.FromResult(InstallResult);

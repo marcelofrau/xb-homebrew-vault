@@ -299,6 +299,16 @@ public class XboxAuthService : IXboxAuthService
         return await _http.SendAsync(req);
     }
 
+    internal async Task<HttpResponseMessage> PostWithCsrfAsync(string url, HttpContent? content, CancellationToken ct)
+    {
+        await EnsureCsrfTokenAsync();
+        var req = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+        if (!string.IsNullOrEmpty(_csrfToken))
+            req.Headers.Add("X-CSRF-Token", _csrfToken);
+        req.Options.Set(new HttpRequestOptionsKey<TimeSpan?>("RequestTimeout"), Timeout.InfiniteTimeSpan);
+        return await _http.SendAsync(req, ct);
+    }
+
     internal async Task<HttpResponseMessage> DeleteWithCsrfAsync(string url)
     {
         await EnsureCsrfTokenAsync();

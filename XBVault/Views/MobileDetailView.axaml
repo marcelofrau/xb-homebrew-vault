@@ -399,8 +399,22 @@
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
                   Click="OnCloseClick"
+                  IsVisible="{Binding IsInstalling, Converter={StaticResource BoolInverse}}"
                   IsEnabled="{Binding IsBusy, Converter={StaticResource BoolInverse}}">
             <TextBlock Text="Close"
+                       FontFamily="{StaticResource TitleFont}"
+                       FontSize="14" FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+          </Button>
+          <Button x:Name="AbortBtn"
+                  Grid.Column="0"
+                  Classes="Danger"
+                  Padding="16,12"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Command="{Binding AbortInstallCommand}"
+                  IsVisible="{Binding IsInstalling}">
+            <TextBlock Text="Abort"
                        FontFamily="{StaticResource TitleFont}"
                        FontSize="14" FontWeight="SemiBold"
                        VerticalAlignment="Center"/>

@@ -3,9 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using XBVault.Models;
 
@@ -242,7 +244,7 @@ public class XboxPackageService : IXboxPackageService
         return await InstallPackageAsync(filePath, [], wrapped);
     }
 
-    public async Task<bool> InstallPackageAsync(string packagePath, string[] dependencies, IProgress<InstallProgressInfo>? progress = null)
+    public async Task<bool> InstallPackageAsync(string packagePath, string[] dependencies, IProgress<InstallProgressInfo>? progress = null, CancellationToken cancellationToken = default)
     {
         if (!_auth.IsConfigured)
         {
@@ -272,7 +274,7 @@ public class XboxPackageService : IXboxPackageService
                 CurrentFile = mainName
             });
 
-            var mainOk = await UploadAppxFile(packagePath, progress);
+            var mainOk = await UploadAppxFile(packagePath, progress, cancellationToken);
             if (!mainOk)
             {
                 Logger.Error($"Main package upload failed: {mainName}");
@@ -292,6 +294,7 @@ public class XboxPackageService : IXboxPackageService
             var depIndex = 0;
             foreach (var dep in dependencies)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 depIndex++;
                 if (!File.Exists(dep))
                 {
@@ -308,9 +311,9 @@ public class XboxPackageService : IXboxPackageService
                     CurrentFile = depName
                 });
 
-                await WaitForPackageManagerReady();
+                await WaitForPackageManagerReady(cancellationToken);
 
-                var depOk = await UploadAppxFile(dep, progress);
+                var depOk = await UploadAppxFile(dep, progress, cancellationToken);
                 if (depOk)
                     Logger.Info($"  Dependency uploaded: {depName}");
                 else
@@ -318,7 +321,7 @@ public class XboxPackageService : IXboxPackageService
             }
 
             // Wait for final install to complete
-            var installOk = await WaitForPackageManagerReady();
+            var installOk = await WaitForPackageManagerReady(cancellationToken);
             if (!installOk)
             {
                 // The Xbox may have accepted the deploy (202) but timed out due to
@@ -328,7 +331,7 @@ public class XboxPackageService : IXboxPackageService
                 if (!string.IsNullOrEmpty(pkgName))
                 {
                     Logger.Info("Package manager timed out — waiting 15s then verifying if install completed...");
-                    await Task.Delay(15000);
+                    await Task.Delay(15000, cancellationToken);
 
                     try
                     {
@@ -361,7 +364,7 @@ public class XboxPackageService : IXboxPackageService
         }
     }
 
-    private async Task<bool> UploadAppxFile(string filePath, IProgress<InstallProgressInfo>? progress = null)
+    private async Task<bool> UploadAppxFile(string filePath, IProgress<InstallProgressInfo>? progress = null, CancellationToken cancellationToken = default)
     {
         var fileName = Path.GetFileName(filePath);
         var fileSize = new FileInfo(filePath).Length;
@@ -378,8 +381,8 @@ public class XboxPackageService : IXboxPackageService
                     Status = $"Waiting for previous install to finish ({wait}s)...",
                     CurrentFile = fileName
                 });
-                await Task.Delay(TimeSpan.FromSeconds(wait));
-                await WaitForPackageManagerReady();
+                await Task.Delay(TimeSpan.FromSeconds(wait), cancellationToken);
+                await WaitForPackageManagerReady(cancellationToken);
             }
 
             // Build multipart manually — .NET MultipartFormDataContent reorders headers
@@ -415,7 +418,27 @@ public class XboxPackageService : IXboxPackageService
                 File = 0.3
             });
 
-            var response = await _auth.PostWithCsrfAsync(url, content);
+            // Use per-request timeout for uploads — HttpClient 30s default is far too short
+            // for large packages. 10 minutes covers ~1 GB at 2 MB/s; still finite enough
+            // to detect genuinely stuck connections.
+            var uploadTimeout = TimeSpan.FromMinutes(10);
+            using var uploadCts = new CancellationTokenSource(uploadTimeout);
+            HttpResponseMessage response;
+            try
+            {
+                response = await _auth.PostWithCsrfAsync(url, content, uploadCts.Token);
+            }
+            catch (OperationCanceledException) when (uploadCts.IsCancellationRequested)
+            {
+                Logger.Error($"Upload timed out after {uploadTimeout.TotalMinutes} minutes: {fileName}");
+                progress?.Report(new InstallProgressInfo
+                {
+                    Status = $"Upload timed out: {fileName}",
+                    CurrentFile = fileName,
+                    File = 0
+                });
+                continue;
+            }
 
             Logger.Info($"<< {response.StatusCode:D} ({response.ReasonPhrase})");
             if (!response.IsSuccessStatusCode)
@@ -445,23 +468,24 @@ public class XboxPackageService : IXboxPackageService
         return false;
     }
 
-    private async Task<bool> WaitForPackageManagerReady()
+    private async Task<bool> WaitForPackageManagerReady(CancellationToken cancellationToken = default)
     {
         Logger.Info("Waiting for package manager to be ready...");
         var deadline = DateTime.UtcNow.AddSeconds(120);
         while (DateTime.UtcNow < deadline)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                var resp = await _auth.Http.GetAsync("/api/app/packagemanager/state");
+                var resp = await _auth.Http.GetAsync("/api/app/packagemanager/state", cancellationToken);
                 var code = (int)resp.StatusCode;
                 Logger.Info($"GET /api/app/packagemanager/state => {code}");
 
                 if (XboxResponseParser.IsIdleCode(resp.StatusCode))
                 {
                     // 204/404 means no operation in progress
-                    await Task.Delay(PollDelayMs);
-                    var resp2 = await _auth.Http.GetAsync("/api/app/packagemanager/state");
+                    await Task.Delay(PollDelayMs, cancellationToken);
+                    var resp2 = await _auth.Http.GetAsync("/api/app/packagemanager/state", cancellationToken);
                     var code2 = (int)resp2.StatusCode;
                     Logger.Info($"GET /api/app/packagemanager/state => {code2}");
 
@@ -472,7 +496,7 @@ public class XboxPackageService : IXboxPackageService
                     }
 
                     // Confirmation poll got 200+JSON — check Success
-                    if (resp2.StatusCode == System.Net.HttpStatusCode.OK && XboxResponseParser.IsJsonSuccess(await resp2.Content.ReadAsStringAsync(), out var statusMsg))
+                    if (resp2.StatusCode == System.Net.HttpStatusCode.OK && XboxResponseParser.IsJsonSuccess(await resp2.Content.ReadAsStringAsync(cancellationToken), out var statusMsg))
                     {
                         Logger.Info($"Package manager ready (idle then success: {statusMsg})");
                         return true;
@@ -483,7 +507,7 @@ public class XboxPackageService : IXboxPackageService
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    var body = await resp.Content.ReadAsStringAsync();
+                    var body = await resp.Content.ReadAsStringAsync(cancellationToken);
                     Logger.Debug($"GET /api/app/packagemanager/state body: {XboxResponseParser.Truncate(body, 500)}");
 
                     if (XboxResponseParser.IsJsonSuccess(body, out var statusMsg))
@@ -500,8 +524,22 @@ public class XboxPackageService : IXboxPackageService
 
                     if (XboxResponseParser.IsResourceInUseError(body, out var busyApps))
                     {
-                        Logger.Warn($"Package manager blocked — apps need to be closed: {busyApps} (waiting for resources to free up)");
-                        await Task.Delay(5000);
+                        Logger.Warn($"Package manager blocked — apps need to be closed: {busyApps}");
+                        var blockingPfns = ExtractPackageFullNames(busyApps);
+                        if (blockingPfns.Count > 0)
+                        {
+                            foreach (var pf in blockingPfns)
+                            {
+                                Logger.Info($"Auto-terminating blocking app: {pf}");
+                                await TerminatePackageAsync(pf);
+                            }
+                            await Task.Delay(2000, cancellationToken);
+                        }
+                        else
+                        {
+                            Logger.Warn("Could not extract package names from error, waiting 5s");
+                            await Task.Delay(5000, cancellationToken);
+                        }
                         continue;
                     }
 
@@ -524,14 +562,34 @@ public class XboxPackageService : IXboxPackageService
                 // Unexpected status code (4xx, 5xx, etc)
                 Logger.Warn($"Package manager unexpected status: {code} {resp.ReasonPhrase}");
             }
-            catch (Exception ex)
+        catch (OperationCanceledException)
+        {
+            Logger.Info("Install cancelled by user");
+            return false;
+        }
+        catch (Exception ex)
             {
                 Logger.Warn($"Package manager polling error: {ex.Message}");
             }
-            await Task.Delay(RetryDelayMs);
+            await Task.Delay(RetryDelayMs, cancellationToken);
         }
         Logger.Warn("Timed out waiting for package manager");
         return false;
+    }
+
+    private static readonly Regex PfnRegex = new(@"(\S+?_\d[\d.]+_\w+__\w+)", RegexOptions.Compiled);
+
+    internal static List<string> ExtractPackageFullNames(string errorText)
+    {
+        var results = new List<string>();
+        if (string.IsNullOrWhiteSpace(errorText)) return results;
+        foreach (Match m in PfnRegex.Matches(errorText))
+        {
+            var pf = m.Groups[1].Value;
+            if (!results.Contains(pf, StringComparer.OrdinalIgnoreCase))
+                results.Add(pf);
+        }
+        return results;
     }
 
     /// <summary>

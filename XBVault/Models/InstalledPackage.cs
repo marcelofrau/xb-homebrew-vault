@@ -89,6 +89,11 @@ public class InstalledPackage : INotifyPropertyChanged
     }
 
     [JsonIgnore]
+    public bool ShowPackageId =>
+        !string.IsNullOrEmpty(Name) && !string.IsNullOrEmpty(DisplayName) &&
+        !Name.Equals(DisplayName, StringComparison.OrdinalIgnoreCase);
+
+    [JsonIgnore]
     public string DisplayOrigin
     {
         get => Origin switch

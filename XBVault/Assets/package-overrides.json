@@ -19,6 +19,14 @@
     {
       "packageFamilyName": "Revive.SpaceCadetPinballUWP",
       "imageUrl": "https://emulationrevival.github.io/xbox-dev-mode/images/game-ports/spacecadetpinball.webp"
+    },
+    {
+      "packageFamilyName": "Doom64EXClassicUWP",
+      "catalogId": "doom64ex-classic"
+    },
+    {
+      "packageFamilyName": "uhexen2.UWP",
+      "catalogId": "uhexen2"
     }
   ],
   "packageNameOverrides": [
@@ -29,6 +37,14 @@
     {
       "packageName": "FlashBack",
       "catalogId": "flashback-reminiscence"
+    },
+    {
+      "packageName": "Doom64EX Classic",
+      "catalogId": "doom64ex-classic"
+    },
+    {
+      "packageName": "uHexen2",
+      "catalogId": "uhexen2"
     }
   ],
   "versionOverrides": [

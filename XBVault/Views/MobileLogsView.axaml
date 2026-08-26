@@ -44,12 +44,11 @@ xmlns:converters="using:XBVault.Converters"
         <TextBlock Grid.Column="1"/>
 
         <Button Grid.Column="2" x:Name="SaveButton"
-                Click="OnSaveClick" Padding="10,6">
+                Click="OnSaveClick" Padding="10,6" Margin="0,0,6,0">
           <Grid ColumnDefinitions="18,8,Auto" ColumnSpacing="6">
-            <Image Source="avares://XBVault/Assets/Views/LogsView/logs-send-20.png"
-                   Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"
-                   RenderTransform="ScaleX(-1)"/>
-            <TextBlock Grid.Column="2" Text="Save Log" FontSize="14"
+            <Image Source="avares://XBVault/Assets/Views/LogsView/logs-save-20.png"
+                   Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Text="Save" FontSize="14"
                        VerticalAlignment="Center" Foreground="White"/>
           </Grid>
         </Button>
@@ -59,7 +58,7 @@ xmlns:converters="using:XBVault.Converters"
           <Grid ColumnDefinitions="18,8,Auto" ColumnSpacing="6">
             <Image Source="avares://XBVault/Assets/Views/LogsView/logs-send-20.png"
                    Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="2" Text="Share Logs" FontSize="14"
+            <TextBlock Grid.Column="2" Text="Share" FontSize="14"
                        VerticalAlignment="Center" Foreground="White"/>
           </Grid>
         </Button>

@@ -439,7 +439,7 @@
                                 VerticalAlignment="Top"
                                 Margin="0,8,8,0"
                                 IsVisible="{Binding IsOutdated}">
-                          <TextBlock Text="OUTDATED"
+                          <TextBlock Text="UPDATE AVAILABLE"
                                      Foreground="White"
                                      FontSize="11"
                                      FontWeight="Bold"/>

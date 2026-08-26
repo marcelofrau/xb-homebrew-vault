@@ -7,6 +7,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using XBVault.Helpers;
 using XBVault.Models;
@@ -127,7 +128,8 @@ public class PackageInstallService
     public async Task<InstallResult> DownloadAndInstallAsync(
         CatalogItem item,
         string? downloadUrl = null,
-        IProgress<InstallProgressInfo>? progress = null)
+        IProgress<InstallProgressInfo>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         var url = downloadUrl ?? item.DownloadUrl;
         if (string.IsNullOrWhiteSpace(url))
@@ -163,21 +165,21 @@ public class PackageInstallService
                     if (attempt > 1)
                         Logger.Warn($"Retry {attempt - 1}/{maxAttempts - 1} for download of {fileName}");
                     var response = await _http.GetAsync(url,
-                        HttpCompletionOption.ResponseHeadersRead);
+                        HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                     response.EnsureSuccessStatusCode();
 
                     var total = response.Content.Headers.ContentLength ?? -1;
                     _log.Info($"Download size: {(total > 0 ? $"{total} bytes" : "unknown")}");
-                    using var stream = await response.Content.ReadAsStreamAsync();
+                    using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
                     using var fileStream = File.Create(localPath);
 
                     var buffer = new byte[81920];
                     long read = 0;
                     int bytesRead;
 
-                    while ((bytesRead = await stream.ReadAsync(buffer)) > 0)
+                    while ((bytesRead = await stream.ReadAsync(buffer, cancellationToken)) > 0)
                     {
-                        await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead));
+                        await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
                         read += bytesRead;
                         if (total > 0)
                         {
@@ -201,7 +203,7 @@ public class PackageInstallService
                     if (File.Exists(localPath))
                         File.Delete(localPath);
                     if (attempt < maxAttempts)
-                        await Task.Delay(TimeSpan.FromSeconds(1.5) * attempt).ConfigureAwait(false);
+                        await Task.Delay(TimeSpan.FromSeconds(1.5) * attempt, cancellationToken).ConfigureAwait(false);
                 }
             }
 
@@ -254,8 +256,10 @@ public class PackageInstallService
         for (int i = 0; i < dependencies.Length; i++)
             _log.Info($"  Dep {i + 1}/{dependencies.Length}: {Path.GetFileName(dependencies[i])}");
 
-        // Phase 4: Uninstall conflicting package if different PFN
-        _log.Info("Checking for conflicting installed packages...");
+        // Phase 4: Check for overlapping packages — NEVER auto-uninstall.
+        // A false-positive match (e.g. doom64ex → DOOM GZDoom mod) would silently
+        // wipe local state.  Instead, log a warning and let the user decide.
+        _log.Info("Checking for overlapping installed packages...");
         progress?.Report(new InstallProgressInfo { Total = 0.55, Status = "Checking for conflicts..." });
 
         try
@@ -268,28 +272,22 @@ public class PackageInstallService
                 var catalogPfn = item.AppId ?? item.Id ?? "unknown";
                 if (!string.Equals(installedPfn, catalogPfn, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Different PFN — catalog item matches this package but with a different identity
-                    // (e.g. old XBSX2 PFN "XBSX2" vs new "595c25f0-..."). Uninstall to avoid duplicate.
-                    _log.Info($"Found conflict: installed '{conflicting.Name}' (PFN: {installedPfn}) conflicts with catalog '{item.Name}' (PFN: {catalogPfn}). Uninstalling first...");
-                    progress?.Report(new InstallProgressInfo { Total = 0.55, Status = $"Removing {conflicting.Name} to avoid duplicate..." });
-                    var uninstalled = await _packageService.UninstallPackageAsync(conflicting.FullName);
-                    _log.Info(uninstalled
-                        ? $"Conflict resolved: {conflicting.Name} uninstalled successfully"
-                        : $"Conflict uninstall failed for {conflicting.Name} — proceeding with install anyway");
+                    _log.Warn($"Overlap detected: '{conflicting.Name}' (PFN: {installedPfn}) may overlap with '{item.Name}' (PFN: {catalogPfn}). No automatic uninstall — install will proceed; check Installed tab for duplicates.");
+                    progress?.Report(new InstallProgressInfo { Total = 0.55, Status = $"Similar package detected ({conflicting.Name}) — no uninstall performed" });
                 }
                 else
                 {
-                    _log.Info($"Same PFN ({installedPfn}) — in-place update, no uninstall needed");
+                    _log.Info($"Same PFN ({installedPfn}) — in-place update, no conflict");
                 }
             }
             else
             {
-                _log.Info("No conflicting package found — fresh install");
+                _log.Info("No overlapping package found — fresh install");
             }
         }
         catch (Exception ex)
         {
-            _log.LogError(ex, "Conflict detection failed — proceeding with install anyway");
+            _log.LogError(ex, "Overlap detection failed — proceeding with install anyway");
         }
 
         // Phase 5: Install on Xbox
@@ -319,7 +317,7 @@ public class PackageInstallService
                 });
             });
 
-        var result = await _packageService.InstallPackageAsync(mainPackage, dependencies, installProgress);
+        var result = await _packageService.InstallPackageAsync(mainPackage, dependencies, installProgress, cancellationToken);
 
         if (result)
         {

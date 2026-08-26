@@ -991,7 +991,7 @@ public partial class App : Application
                 var vm = new Views.MobileScreenshotViewModel(systemService);
                 vm.SaveScreenshotDialog = async stream =>
                 {
-                    var result = new TaskCompletionSource<string?>();
+                    var result = new TaskCompletionSource<IStorageFile?>();
                     await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                     {
                         var topLevel = TopLevel.GetTopLevel(main)!;
@@ -1001,16 +1001,16 @@ public partial class App : Application
                             SuggestedFileName = $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png",
                             FileTypeChoices = new List<FilePickerFileType> { new FilePickerFileType("PNG") { Patterns = ScreenshotPatterns } }
                         });
-                        result.SetResult(file?.TryGetLocalPath());
+                        result.SetResult(file);
                     });
-                    var path = await result.Task;
-                    if (!string.IsNullOrEmpty(path))
+                    var safFile = await result.Task;
+                    if (safFile is not null)
                     {
-                        using var fs = File.Create(path);
+                        await using var fs = await safFile.OpenWriteAsync();
                         stream.Position = 0;
                         await stream.CopyToAsync(fs);
                     }
-                    return path;
+                    return safFile?.Name;
                 };
                 var sView = new Views.MobileScreenshotView { DataContext = vm };
                 var overlay = new Views.MobileToolOverlayView();

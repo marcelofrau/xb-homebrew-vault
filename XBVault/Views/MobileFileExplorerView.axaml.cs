@@ -8,6 +8,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using XBVault.Models;
+using XBVault.Services;
 using XBVault.ViewModels;
 
 namespace XBVault.Views;
@@ -159,33 +160,40 @@ public partial class MobileFileExplorerView : UserControl
         if (files.Count == 0) return;
 
         var paths = new List<string>();
-        var tempFiles = new List<string>();
-        foreach (var f in files)
-        {
-            var localPath = f.TryGetLocalPath();
-            if (!string.IsNullOrEmpty(localPath))
-            {
-                paths.Add(localPath);
-            }
-            else
-            {
-                var tempPath = Path.Combine(Path.GetTempPath(), $"xbv_upload_{f.Name}");
-                await using var srcStream = await f.OpenReadAsync();
-                await using var dstStream = File.Create(tempPath);
-                await srcStream.CopyToAsync(dstStream);
-                paths.Add(tempPath);
-                tempFiles.Add(tempPath);
-            }
-        }
-        if (paths.Count == 0) return;
+        string? tempDir = null;
         try
         {
+            foreach (var f in files)
+            {
+                var localPath = f.TryGetLocalPath();
+                if (!string.IsNullOrEmpty(localPath))
+                {
+                    paths.Add(localPath);
+                }
+                else
+                {
+                    tempDir ??= Path.Combine(Path.GetTempPath(), $"xbv_upload_{Guid.NewGuid():N}");
+                    Directory.CreateDirectory(tempDir);
+                    var tempPath = Path.Combine(tempDir, f.Name);
+                    await using var srcStream = await f.OpenReadAsync();
+                    await using var dstStream = File.Create(tempPath);
+                    await srcStream.CopyToAsync(dstStream);
+                    paths.Add(tempPath);
+                }
+            }
+            if (paths.Count == 0) return;
             await vm.UploadMixedAsync(paths.ToArray(), []);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Upload files failed");
+            vm.StatusSeverity = ToolbarStatusSeverity.Error;
+            vm.StatusMessage = $"Upload failed: {ex.Message}";
         }
         finally
         {
-            foreach (var tmp in tempFiles)
-                try { File.Delete(tmp); } catch { }
+            if (tempDir is not null)
+                try { Directory.Delete(tempDir, recursive: true); } catch { }
         }
     }
 
@@ -202,31 +210,37 @@ public partial class MobileFileExplorerView : UserControl
         if (folders.Count == 0) return;
 
         var paths = new List<string>();
-        var tempFolders = new List<string>();
-        foreach (var f in folders)
-        {
-            var localPath = f.TryGetLocalPath();
-            if (!string.IsNullOrEmpty(localPath))
-            {
-                paths.Add(localPath);
-            }
-            else
-            {
-                var tempDir = Path.Combine(Path.GetTempPath(), $"xbv_upload_{f.Name}");
-                await CopyFolderRecursiveAsync(f, tempDir);
-                paths.Add(tempDir);
-                tempFolders.Add(tempDir);
-            }
-        }
-        if (paths.Count == 0) return;
+        string? tempDir = null;
         try
         {
+            foreach (var f in folders)
+            {
+                var localPath = f.TryGetLocalPath();
+                if (!string.IsNullOrEmpty(localPath))
+                {
+                    paths.Add(localPath);
+                }
+                else
+                {
+                    tempDir ??= Path.Combine(Path.GetTempPath(), $"xbv_upload_{Guid.NewGuid():N}");
+                    var folderPath = Path.Combine(tempDir, f.Name);
+                    await CopyFolderRecursiveAsync(f, folderPath);
+                    paths.Add(folderPath);
+                }
+            }
+            if (paths.Count == 0) return;
             await vm.UploadMixedAsync([], paths.ToArray());
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Upload folder failed");
+            vm.StatusSeverity = ToolbarStatusSeverity.Error;
+            vm.StatusMessage = $"Upload failed: {ex.Message}";
         }
         finally
         {
-            foreach (var tmp in tempFolders)
-                try { Directory.Delete(tmp, recursive: true); } catch { }
+            if (tempDir is not null)
+                try { Directory.Delete(tempDir, recursive: true); } catch { }
         }
     }
 
@@ -271,16 +285,34 @@ public partial class MobileFileExplorerView : UserControl
         var zipPath = zipFile.TryGetLocalPath();
         if (string.IsNullOrEmpty(zipPath))
         {
-            zipPath = Path.Combine(Path.GetTempPath(), $"xbv_upload_{zipFile.Name}.zip");
+            var tempDir = Path.Combine(Path.GetTempPath(), $"xbv_upload_{Guid.NewGuid():N}");
+            Directory.CreateDirectory(tempDir);
+            zipPath = Path.Combine(tempDir, zipFile.Name);
             await using var src = await zipFile.OpenReadAsync();
             await using var dst = File.Create(zipPath);
             await src.CopyToAsync(dst);
             try { await vm.UploadZipExtractAsync(zipPath); }
-            finally { try { File.Delete(zipPath); } catch { } }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Upload ZIP failed");
+                vm.StatusSeverity = ToolbarStatusSeverity.Error;
+                vm.StatusMessage = $"Upload failed: {ex.Message}";
+            }
+            finally
+            {
+                try { File.Delete(zipPath); } catch { }
+                try { Directory.Delete(tempDir); } catch { }
+            }
         }
         else
         {
-            await vm.UploadZipExtractAsync(zipPath);
+            try { await vm.UploadZipExtractAsync(zipPath); }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Upload ZIP failed");
+                vm.StatusSeverity = ToolbarStatusSeverity.Error;
+                vm.StatusMessage = $"Upload failed: {ex.Message}";
+            }
         }
     }
 

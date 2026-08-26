@@ -137,12 +137,14 @@ public class VersionCheckerService
         if (!string.IsNullOrEmpty(fullNameBase) && catalog.Name.Equals(fullNameBase, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        // E0d: AppId/Id word-contains — require Id shorter than pkg name
-        // Prevents generic id "castlevania" (for Castlevania Revamped) from matching pkg "Castlevania"
-        if (!string.IsNullOrEmpty(catalog.AppId) && catalog.AppId.Length < pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.AppId))
+        // E0d: AppId/Id word-contains — require Id shorter than pkg name AND at least half its length
+        // Prevents "doom" (4) matching "Doom64EXClassicUWP" (18) via substring word boundary
+        if (!string.IsNullOrEmpty(catalog.AppId) && catalog.AppId.Length < pkg.Name.Length &&
+            catalog.AppId.Length * 2 >= pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.AppId))
             return true;
 
-        if (!string.IsNullOrEmpty(catalog.Id) && catalog.Id.Length < pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.Id))
+        if (!string.IsNullOrEmpty(catalog.Id) && catalog.Id.Length < pkg.Name.Length &&
+            catalog.Id.Length * 2 >= pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.Id))
             return true;
 
         // E1: Alphanumeric normalization — strip non-alnum, lowercase
@@ -164,15 +166,16 @@ public class VersionCheckerService
         // SAFE direction only: pkgNameNorm startsWith catNorm (pkg has extra generic text like "Emulator", "UWP")
         // e.g. "DolphinEmulator" startsWith "Dolphin", "ScummVMUWPFrontend" startsWith "ScummVM"
         // REJECTED: catNorm startsWith pkgNameNorm — "CastlevaniaRevamped" startsWith "Castlevania" is a different app
+        // Require catNorm >= 6 chars to prevent short names like "DOOM" (4) and "HeXen" (5) from matching unrelated packages
         var pfnNorm = pfn is not null ? NormalizeAlnum(pfn) : null;
 
-        if (catNorm.Length >= 4 && pkgNameNorm.Length >= 4)
+        if (catNorm.Length >= 6 && pkgNameNorm.Length >= 6)
         {
             if (StartsWithNorm(pkgNameNorm, catNorm))
                 return true;
         }
 
-        if (pkgDisplayNorm is not null && catNorm.Length >= 4 && pkgDisplayNorm.Length >= 4)
+        if (pkgDisplayNorm is not null && catNorm.Length >= 6 && pkgDisplayNorm.Length >= 6)
         {
             if (StartsWithNorm(pkgDisplayNorm, catNorm))
                 return true;
@@ -184,7 +187,7 @@ public class VersionCheckerService
         // E1.1p: PFN prefix — bidirectional, PFN is authoritative system identifier
         // "Sonic1" prefix of "Sonic1Decompilation" (catalog has extra "Decompilation")
         // "ScummVMFrontend" startsWith "ScummVM" (catalog is core name)
-        if (pfnNorm is not null && catNorm.Length >= 4 && pfnNorm.Length >= 4)
+        if (pfnNorm is not null && catNorm.Length >= 6 && pfnNorm.Length >= 6)
         {
             if (StartsWithNorm(catNorm, pfnNorm) || StartsWithNorm(pfnNorm, catNorm))
                 return true;
@@ -281,10 +284,12 @@ public class VersionCheckerService
         if (pfn is not null && catalog.Name.Equals(pfn, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        if (!string.IsNullOrEmpty(catalog.AppId) && catalog.AppId.Length < pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.AppId))
+        if (!string.IsNullOrEmpty(catalog.AppId) && catalog.AppId.Length < pkg.Name.Length &&
+            catalog.AppId.Length * 2 >= pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.AppId))
             return true;
 
-        if (!string.IsNullOrEmpty(catalog.Id) && catalog.Id.Length < pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.Id))
+        if (!string.IsNullOrEmpty(catalog.Id) && catalog.Id.Length < pkg.Name.Length &&
+            catalog.Id.Length * 2 >= pkg.Name.Length && ContainsAsWord(pkg.Name, catalog.Id))
             return true;
 
         // E1: Alphanumeric normalization

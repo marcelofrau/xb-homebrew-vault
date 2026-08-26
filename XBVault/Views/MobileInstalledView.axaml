@@ -254,7 +254,7 @@
                     <Border CornerRadius="5" Padding="6,2"
                             Background="#FF6B35"
                             IsVisible="{Binding IsOutdated}">
-                      <TextBlock Text="OUTDATED" FontSize="8" FontWeight="Bold" Foreground="White"/>
+                      <TextBlock Text="UPDATE AVAILABLE" FontSize="8" FontWeight="Bold" Foreground="White"/>
                     </Border>
                     <Border CornerRadius="5" Padding="6,2"
                             Background="#229ACA3C"
@@ -267,6 +267,14 @@
                              FontSize="15" FontWeight="SemiBold"
                              Foreground="{StaticResource TextBrush}"
                              TextTrimming="CharacterEllipsis"/>
+                  <!-- Package ID (when different from DisplayName — helps disambiguate) -->
+                  <TextBlock Text="{Binding Name}"
+                             FontSize="10"
+                             Foreground="{StaticResource TextDimBrush}"
+                             TextTrimming="CharacterEllipsis"
+                             MaxWidth="200"
+                             Margin="0,-1,0,0"
+                             IsVisible="{Binding ShowPackageId}"/>
                   <!-- Version -->
                   <TextBlock Text="{Binding Version}"
                              FontSize="12"

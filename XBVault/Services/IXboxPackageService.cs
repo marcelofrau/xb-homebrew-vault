@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using XBVault.Models;
 
@@ -53,5 +54,5 @@ public interface IXboxPackageService
     /// <summary>
     /// Installs a package and its dependency files, reporting staged progress.
     /// </summary>
-    Task<bool> InstallPackageAsync(string packagePath, string[] dependencies, IProgress<InstallProgressInfo>? progress = null);
+    Task<bool> InstallPackageAsync(string packagePath, string[] dependencies, IProgress<InstallProgressInfo>? progress = null, CancellationToken cancellationToken = default);
 }

@@ -492,16 +492,33 @@
           <!-- Footer -->
           <StackPanel Grid.Row="4" Margin="0,12,0,0">
             <Grid ColumnDefinitions="Auto,*,Auto">
-              <!-- Left: Close -->
+              <!-- Left: Close (hidden during install) -->
               <Button Grid.Column="0"
                       Padding="16,10"
                       HorizontalAlignment="Left"
-                      Command="{Binding CloseDetailCommand}">
+                      Command="{Binding CloseDetailCommand}"
+                      IsVisible="{Binding IsInstalling, Converter={StaticResource BoolInverse}}">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                   <Image Source="avares://XBVault/Assets/Icons/close-20.png"
                          Width="20" Height="20"
                          Stretch="Uniform"/>
                   <TextBlock Grid.Column="1" Text="Close"
+                             FontSize="13"
+                             FontWeight="SemiBold"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+              <!-- Left: Abort (visible during install) -->
+              <Button Grid.Column="0"
+                      Padding="16,10"
+                      HorizontalAlignment="Left"
+                      Command="{Binding AbortInstallCommand}"
+                      IsVisible="{Binding IsInstalling}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Icons/close-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Abort"
                              FontSize="13"
                              FontWeight="SemiBold"
                              VerticalAlignment="Center"/>

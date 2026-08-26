@@ -112,15 +112,27 @@ public partial class MobileLogsView : UserControl, IDisposable
                 return;
             }
 
-            var targetPath = file.Path.LocalPath;
+            var localPath = file.TryGetLocalPath();
+            var targetFile = await file.OpenWriteAsync();
+            if (targetFile is null)
+            {
+                UploadStatusText.Text = "Could not open destination file.";
+                UploadOverlay.IsVisible = true;
+                await Task.Delay(2000);
+                UploadOverlay.IsVisible = false;
+                return;
+            }
 
-            if (targetPath.EndsWith(".log", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(localPath) && localPath.EndsWith(".log", StringComparison.OrdinalIgnoreCase))
             {
                 var latestLog = Directory.GetFiles(logDir, "XBVault-*.log")
                     .OrderByDescending(f => f, StringComparer.Ordinal)
                     .FirstOrDefault();
                 if (latestLog is not null)
-                    File.Copy(latestLog, targetPath, overwrite: true);
+                {
+                    await using var src = File.OpenRead(latestLog);
+                    await src.CopyToAsync(targetFile);
+                }
             }
             else
             {
@@ -128,15 +140,15 @@ public partial class MobileLogsView : UserControl, IDisposable
                     .OrderByDescending(f => f, StringComparer.Ordinal)
                     .ToArray();
 
-                using var zipStream = File.Create(targetPath);
-                using var archive = new ZipArchive(zipStream, ZipArchiveMode.Create);
+                using var archive = new ZipArchive(targetFile, ZipArchiveMode.Create, leaveOpen: true);
                 foreach (var logFile in logFiles)
                 {
                     archive.CreateEntryFromFile(logFile, Path.GetFileName(logFile));
                 }
             }
+            await targetFile.DisposeAsync();
 
-            UploadStatusText.Text = $"Saved to: {Path.GetFileName(targetPath)}";
+            UploadStatusText.Text = $"Saved to: {file.Name}";
             UploadOverlay.IsVisible = true;
             await Task.Delay(2000);
             UploadOverlay.IsVisible = false;

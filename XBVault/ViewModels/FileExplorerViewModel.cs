@@ -1529,6 +1529,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
             Logger.Trace($"CreateFolderAsync: folder '{dir}' created");
             StatusSeverity = ToolbarStatusSeverity.Success;
             StatusMessage = $"Folder \"{name}\" created";
+            await RefreshAsync();
         }
         catch (Exception ex)
         {
