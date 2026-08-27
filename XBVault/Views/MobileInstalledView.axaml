@@ -262,13 +262,13 @@
                       <TextBlock Text="RUNNING" FontSize="8" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
                     </Border>
                   </StackPanel>
-                  <!-- Name -->
-                  <TextBlock Text="{Binding DisplayName}"
+                  <!-- Name (Xbox reports a user-friendly name here; matches desktop) -->
+                  <TextBlock Text="{Binding Name}"
                              FontSize="15" FontWeight="SemiBold"
                              Foreground="{StaticResource TextBrush}"
                              TextTrimming="CharacterEllipsis"/>
-                  <!-- Package ID (when different from DisplayName — helps disambiguate) -->
-                  <TextBlock Text="{Binding Name}"
+                  <!-- Package display name (identity) shown when it differs from Name -->
+                  <TextBlock Text="{Binding DisplayName}"
                              FontSize="10"
                              Foreground="{StaticResource TextDimBrush}"
                              TextTrimming="CharacterEllipsis"

@@ -296,6 +296,8 @@ public partial class App : Application
                         if (browseViewModel.IsUpdateComplete)
                             _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
                         browseViewModel.IsUpdateMode = false;
+                        browseViewModel.IsInstalledMode = false;
+                        browseViewModel.SelectedInstalledPackage = null;
                         browseViewModel.SelectedItem = null;
                     };
                     browseViewModel.CloseDetailAction = () => detail.Close();
@@ -469,6 +471,39 @@ public partial class App : Application
                 browseViewModel.IsUpdateMode = true;
                 browseViewModel.SelectedItem = catalogItem;
             };
+            installedViewModel.ShowInstalledDetailAction = (pkg, match, isOutdated) =>
+            {
+                browseViewModel.SelectedInstalledPackage = pkg;
+                browseViewModel.IsInstalledMode = !isOutdated;
+                browseViewModel.IsUpdateMode = isOutdated;
+                browseViewModel.SelectedItem = match;
+            };
+            installedViewModel.ReinstallInstallAction = () =>
+            {
+                browseViewModel.IsInstalledMode = false;
+                browseViewModel.SelectedInstalledPackage = null;
+                browseViewModel.IsUpdateMode = false;
+                browseViewModel.InstallSelectedCommand.Execute(null);
+            };
+            installedViewModel.ConfirmReinstallAsync = async pkg =>
+            {
+                var confirmVm = new ConfirmViewModel(
+                    "Confirm Reinstall",
+                    $"Reinstall \"{pkg.Name}\"? This will remove and reinstall the application.",
+                    "Reinstall", "Cancel",
+                    "avares://XBVault/Assets/Views/InstalledView/installed-update-20.png",
+                    isDestructive: true);
+                var confirmWindow = new Views.ConfirmWindow { DataContext = confirmVm };
+                await confirmWindow.ShowDialog(main);
+                return confirmVm.Confirmed;
+            };
+            browseViewModel.UninstallFromDetailAction = pkg =>
+            {
+                browseViewModel.CloseDetailAction?.Invoke();
+                _ = installedViewModel.UninstallPackageCommand.ExecuteAsync(pkg);
+            };
+            browseViewModel.ReinstallFromDetailAction = pkg =>
+                installedViewModel.ReinstallPackageCommand.ExecuteAsync(pkg);
             updateService.OpenUpdateDialogAsync = catalogItem =>
             {
                 browseViewModel.IsUpdateMode = true;
@@ -1385,6 +1420,58 @@ public partial class App : Application
                 browseViewModel.CloseDetailAction = () => main.CloseOverlay();
                 main.ShowOverlay(detail);
             };
+            installedViewModel.ShowInstalledDetailAction = (pkg, match, isOutdated) =>
+            {
+                browseViewModel.SelectedInstalledPackage = pkg;
+                browseViewModel.IsInstalledMode = !isOutdated;
+                browseViewModel.IsUpdateMode = isOutdated;
+                browseViewModel.SelectedItem = match;
+                var detail = new Views.MobileDetailView { DataContext = browseViewModel };
+                detail.SetOnBack(() =>
+                {
+                    main.CloseOverlay();
+                    if (browseViewModel.IsUpdateComplete)
+                        _ = installedViewModel.RefreshPackagesCommand.ExecuteAsync(null);
+                    browseViewModel.IsUpdateMode = false;
+                    browseViewModel.IsInstalledMode = false;
+                    browseViewModel.SelectedInstalledPackage = null;
+                    browseViewModel.SelectedItem = null;
+                });
+                browseViewModel.CloseDetailAction = () => main.CloseOverlay();
+                main.ShowOverlay(detail);
+            };
+            installedViewModel.ReinstallInstallAction = () =>
+            {
+                browseViewModel.IsInstalledMode = false;
+                browseViewModel.SelectedInstalledPackage = null;
+                browseViewModel.IsUpdateMode = false;
+                browseViewModel.InstallSelectedCommand.Execute(null);
+            };
+            installedViewModel.ConfirmReinstallAsync = async pkg =>
+            {
+                var vm = new Views.MobileConfirmDialogViewModel
+                {
+                    Title = "Confirm Reinstall",
+                    Message = $"Reinstall \"{pkg.Name}\"? This will remove and reinstall the application.",
+                    ConfirmText = "Reinstall",
+                    CancelText = "Cancel",
+                    ImageSource = "avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
+                };
+                var dlg = new Views.MobileConfirmDialogView { DataContext = vm };
+                var tcs = vm.WaitForResult();
+                main.ShowOverlay(dlg);
+                dlg.SetOnBack(() => { vm.CancelCommand.Execute(null); main.CloseOverlay(); });
+                var result = await tcs;
+                main.CloseOverlay();
+                return result;
+            };
+            browseViewModel.UninstallFromDetailAction = pkg =>
+            {
+                browseViewModel.CloseDetailAction?.Invoke();
+                _ = installedViewModel.UninstallPackageCommand.ExecuteAsync(pkg);
+            };
+            browseViewModel.ReinstallFromDetailAction = pkg =>
+                installedViewModel.ReinstallPackageCommand.ExecuteAsync(pkg);
             installedViewModel.ShowCustomInstallAction = () => ShowMobileCustomInstall(main, authService, packageService, installService);
             installedViewModel.OpenCustomInstallWithFileAction = filePath =>
             {

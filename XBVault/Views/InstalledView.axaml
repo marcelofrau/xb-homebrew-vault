@@ -554,7 +554,7 @@
                               </MenuItem>
                               <MenuItem Header="Update"
                                         IsVisible="{Binding IsOutdated}"
-                                        Command="{Binding #ThisRoot.DataContext.UpdateSelectedCommand}"
+                                        Command="{Binding #ThisRoot.DataContext.UpdatePackageCommand}"
                                         CommandParameter="{Binding}">
                                 <MenuItem.Icon>
                                   <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-flyout-update-16.png"
@@ -590,7 +590,7 @@
                                 </MenuItem.Icon>
                               </MenuItem>
                               <MenuItem Header="Uninstall"
-                                        Command="{Binding #ThisRoot.DataContext.UninstallSelectedCommand}"
+                                        Command="{Binding #ThisRoot.DataContext.UninstallPackageCommand}"
                                         CommandParameter="{Binding}">
                                 <MenuItem.Icon>
                                   <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-flyout-uninstall-16.png"

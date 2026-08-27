@@ -136,7 +136,11 @@ public partial class InstalledView : UserControl
         if (sender is StyledElement { DataContext: InstalledPackage pkg })
         {
             if (DataContext is InstalledViewModel vm)
+            {
                 vm.SelectedPackage = pkg;
+                if (vm.OpenDetailForPackageCommand.CanExecute(pkg))
+                    vm.OpenDetailForPackageCommand.Execute(pkg);
+            }
         }
     }
 

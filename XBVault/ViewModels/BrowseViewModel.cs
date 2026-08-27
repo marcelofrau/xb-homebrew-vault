@@ -45,9 +45,27 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     public Action? ShowCustomInstallAction { get; set; }
     public Func<string, Task>? OpenCustomInstallWithFileAction { get; set; }
     public Action? OnCatalogLoaded { get; set; }
+    public Action<InstalledPackage>? UninstallFromDetailAction { get; set; }
+    public Func<InstalledPackage, Task>? ReinstallFromDetailAction { get; set; }
+    public Func<InstalledPackage, Task<(CatalogItem? match, bool isOutdated)>>? ResolveInstalledCatalogItem { get; set; }
 
     [RelayCommand]
     private void CloseDetail() => CloseDetailAction?.Invoke();
+
+    [RelayCommand]
+    private void UninstallFromDetail()
+    {
+        if (SelectedInstalledPackage is not null)
+            UninstallFromDetailAction?.Invoke(SelectedInstalledPackage);
+    }
+
+    [RelayCommand]
+    private Task ReinstallFromDetail()
+    {
+        return SelectedInstalledPackage is not null && ReinstallFromDetailAction is not null
+            ? ReinstallFromDetailAction(SelectedInstalledPackage)
+            : Task.CompletedTask;
+    }
 
     [RelayCommand]
     private void OpenCustomInstall() => ShowCustomInstallAction?.Invoke();
@@ -157,10 +175,18 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isUpdateMode;
 
-    public bool ShowCheckButton => !IsUpdateMode && !CheckComplete;
-    public bool ShowRecheckButton => !IsUpdateMode && CheckComplete;
+    [ObservableProperty]
+    private bool _isInstalledMode;
+
+    [ObservableProperty]
+    private InstalledPackage? _selectedInstalledPackage;
+
+    public bool ShowCheckButton => !IsUpdateMode && !IsInstalledMode && !CheckComplete;
+    public bool ShowRecheckButton => !IsUpdateMode && !IsInstalledMode && CheckComplete;
     public bool IsUpdateComplete => IsUpdateMode && InstallComplete && InstallSuccess;
     public bool ShowUpdateButton => IsUpdateMode && !IsUpdateComplete;
+    public bool ShowReinstallButton => IsInstalledMode && !IsInstalling;
+    public bool ShowUninstallButton => IsInstalledMode && !IsInstalling;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Cursor))]
@@ -192,7 +218,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     public bool CanCheckXboxItem => CanCheckInstalled && !ShowWindowsToolBanner;
     public bool CanRecheckXboxItem => CanRecheck && !ShowWindowsToolBanner;
     public bool ShowInstallFinishButton => !IsUpdateMode && InstallComplete && InstallSuccess;
-    public bool ShowInstallActionButton => !IsUpdateMode && !ShowInstallFinishButton;
+    public bool ShowInstallActionButton => !IsUpdateMode && !IsInstalledMode && !ShowInstallFinishButton;
     public bool ShowInstallSuccessResult => InstallComplete && InstallSuccess;
     public bool ShowInstallFailureResult => InstallComplete && !InstallSuccess;
     public bool IsBusy => IsCheckingInstalled || IsInstalling;
@@ -285,6 +311,15 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsUpdateComplete));
         OnPropertyChanged(nameof(ShowUpdateButton));
         OnPropertyChanged(nameof(ShowInstallFinishButton));
+        OnPropertyChanged(nameof(ShowInstallActionButton));
+    }
+
+    partial void OnIsInstalledModeChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowCheckButton));
+        OnPropertyChanged(nameof(ShowRecheckButton));
+        OnPropertyChanged(nameof(ShowReinstallButton));
+        OnPropertyChanged(nameof(ShowUninstallButton));
         OnPropertyChanged(nameof(ShowInstallActionButton));
     }
 

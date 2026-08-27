@@ -283,6 +283,9 @@ public partial class InstalledViewModel : ObservableObject
     public Func<InstalledPackage, Task<Bitmap?>>? ResolveBannerAsync { get; set; }
     public Func<InstalledPackage, Task<(CatalogItem? match, bool isOutdated)>>? CheckOutdatedAsync { get; set; }
     public Action<CatalogItem>? ShowCatalogDetailAction { get; set; }
+    public Action<InstalledPackage, CatalogItem, bool>? ShowInstalledDetailAction { get; set; }
+    public Action? ReinstallInstallAction { get; set; }
+    public Func<InstalledPackage, Task<bool>>? ConfirmReinstallAsync { get; set; }
     public Action? OnCatalogReady { get; set; }
     public Func<InstalledPackage, string?, Task<bool>>? ConfirmAutostartAction { get; set; }
     public Action<string>? NotifyAutostartAction { get; set; }
@@ -321,6 +324,60 @@ public partial class InstalledViewModel : ObservableObject
         catch (Exception ex)
         {
             Logger.Error(ex, $"UpdateSelected failed for {SelectedPackage.Name}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenDetailForPackageAsync(InstalledPackage? pkg)
+    {
+        if (pkg is null || CheckOutdatedAsync is null || ShowInstalledDetailAction is null)
+        {
+            Logger.Warn($"OpenDetailForPackage: cannot open detail (pkg={(pkg?.Name ?? "null")}, CheckOutdated={CheckOutdatedAsync != null}, ShowDetail={ShowInstalledDetailAction != null})");
+            return;
+        }
+
+        try
+        {
+            var (match, isOutdated) = await CheckOutdatedAsync(pkg);
+            if (match is null)
+            {
+                Logger.Warn($"OpenDetailForPackage: no catalog match for {pkg.Name} — cannot open detail");
+                return;
+            }
+            ShowInstalledDetailAction(pkg, match, isOutdated);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"OpenDetailForPackage failed for {pkg.Name}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task ReinstallPackageAsync(InstalledPackage? pkg)
+    {
+        if (pkg is null)
+            return;
+
+        if (ConfirmReinstallAsync is not null && !await ConfirmReinstallAsync(pkg))
+            return;
+
+        Logger.Info($"ReinstallPackage fired, uninstalling {pkg.Name}");
+        pkg.IsUninstalling = true;
+        try
+        {
+            var ok = await _packageService.UninstallPackageAsync(pkg.FullName);
+            Logger.Info($"Uninstall during reinstall: {ok}");
+            await RefreshPackagesAsync();
+            if (ok)
+                ReinstallInstallAction?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"Reinstall uninstall failed for {pkg.Name}");
+        }
+        finally
+        {
+            pkg.IsUninstalling = false;
         }
     }
 

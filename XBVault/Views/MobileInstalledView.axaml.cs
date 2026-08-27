@@ -32,6 +32,8 @@ public partial class MobileInstalledView : UserControl
         {
             vm.SelectedPackage = pkg;
             listBox.SelectedItem = null;
+            if (vm.OpenDetailForPackageCommand.CanExecute(pkg))
+                vm.OpenDetailForPackageCommand.Execute(pkg);
         }
     }
 

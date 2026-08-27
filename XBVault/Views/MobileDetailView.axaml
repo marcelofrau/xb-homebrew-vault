@@ -523,6 +523,40 @@
                          VerticalAlignment="Center"/>
             </Grid>
           </Button>
+          <!-- Reinstall button (installed mode only) -->
+          <Button x:Name="ReinstallBtn"
+                  Classes="Accent"
+                  Padding="16,12"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Command="{Binding ReinstallFromDetailCommand}"
+                  IsVisible="{Binding ShowReinstallButton}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
+                     Width="20" Height="20" Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Reinstall"
+                         FontFamily="{StaticResource TitleFont}"
+                         FontSize="14" FontWeight="SemiBold"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <!-- Uninstall button (installed mode only) -->
+          <Button x:Name="UninstallDetailBtn"
+                  Classes="Danger"
+                  Padding="16,12"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Command="{Binding UninstallFromDetailCommand}"
+                  IsVisible="{Binding ShowUninstallButton}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
+                     Width="20" Height="20" Stretch="Uniform"/>
+              <TextBlock Grid.Column="1" Text="Uninstall"
+                         FontFamily="{StaticResource TitleFont}"
+                         FontSize="14" FontWeight="SemiBold"
+                         VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
         </StackPanel>
         </Grid>
 

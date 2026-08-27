@@ -107,8 +107,8 @@ public class MainActivity : AvaloniaMainActivity
                 // Phase 1: immediate cancel — reset any pending pointer/gesture state
                 var now = Java.Lang.JavaSystem.CurrentTimeMillis();
                 var cancel = MotionEvent.Obtain(now, now, MotionEventActions.Cancel, 0, 0, 0);
-                var dispatched = avaloniaView.DispatchTouchEvent(cancel);
-                cancel.Recycle();
+                var dispatched = cancel is not null ? avaloniaView.DispatchTouchEvent(cancel) : false;
+                cancel?.Recycle();
                 Log.Info(TAG, $"OnResume: DispatchTouchEvent(Cancel) result={dispatched}");
 
                 // Phase 2: delayed invalidation — surface may not be fully ready immediately
@@ -123,8 +123,8 @@ public class MainActivity : AvaloniaMainActivity
                     {
                         var now2 = Java.Lang.JavaSystem.CurrentTimeMillis();
                         var cancel2 = MotionEvent.Obtain(now2, now2, MotionEventActions.Cancel, 0, 0, 0);
-                        avaloniaView.DispatchTouchEvent(cancel2);
-                        cancel2.Recycle();
+                        if (cancel2 is not null) avaloniaView.DispatchTouchEvent(cancel2);
+                        cancel2?.Recycle();
                         Log.Info(TAG, $"OnResume[+600ms]: second DispatchTouchEvent(Cancel) dispatched");
                     }, 300);
                 }, 300);
@@ -140,12 +140,12 @@ public class MainActivity : AvaloniaMainActivity
         }
     }
 
-#pragma warning disable CA1422
+#pragma warning disable CA1416, CA1422
     public override void OnBackPressed()
     {
         if (AndroidBackHandler.OnBack?.Invoke() is true)
             return;
         base.OnBackPressed();
     }
-#pragma warning restore CA1422
+#pragma warning restore CA1416, CA1422
 }
