@@ -151,10 +151,10 @@ Xbox packages often need other packages (frameworks, runtimes). The app detects 
 
 - **Direct dependencies** — required by the package itself
 - **Transitive dependencies** — required by other dependencies
-- **Already installed** — skipped automatically
-- **Needs install** — uploaded and installed in dependency-first order
+- **Already installed** — detected during install, skipped automatically
+- **Needs install** — uploaded and installed
 
-If a dependency is already on your Xbox, it's skipped. Only missing dependencies are transferred.
+If a dependency is already on your Xbox, the app detects it during installation and skips it (frameworks live system-wide, so the console reports them as "in use" and nothing is re-deployed). Only missing dependencies are actually transferred.
 
 ---
 

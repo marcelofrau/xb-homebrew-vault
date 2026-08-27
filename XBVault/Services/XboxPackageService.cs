@@ -15,8 +15,13 @@ namespace XBVault.Services;
 
 public class XboxPackageService : IXboxPackageService
 {
-    private const int PollDelayMs = 2000;
-    private const int RetryDelayMs = 3000;
+    // Time budgets. Instance settable so integration tests can shrink them (and the
+    // poll delays) to run fast against a stubbed HTTP layer.
+    internal TimeSpan MainPollTimeout { get; set; } = TimeSpan.FromSeconds(40);
+    internal TimeSpan DepPollTimeout { get; set; } = TimeSpan.FromSeconds(10);
+    internal TimeSpan IdlePollTimeout { get; set; } = TimeSpan.FromSeconds(20);
+    internal TimeSpan PollDelay { get; set; } = TimeSpan.FromSeconds(2);
+    internal TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(3);
 
     private readonly XboxAuthService _auth;
 
@@ -257,13 +262,16 @@ public class XboxPackageService : IXboxPackageService
             return false;
         }
 
+        var totalFiles = 1 + dependencies.Length;
+        var mainName = Path.GetFileName(packagePath);
+        var targetIdentity = XboxResponseParser.ParseMsixPackageName(packagePath)
+            ?? Path.GetFileNameWithoutExtension(packagePath);
+
         try
         {
             // Kill any running instance of this package before upload
             await TerminateRunningPackageAsync(packagePath);
 
-            var totalFiles = 1 + dependencies.Length;
-            var mainName = Path.GetFileName(packagePath);
             Logger.Info($"Install starting: {mainName} ({dependencies.Length} dependencies)");
 
             // Upload main package
@@ -289,9 +297,25 @@ public class XboxPackageService : IXboxPackageService
                 CurrentFile = mainName
             });
 
-            // Upload dependencies one at a time
+            // Let the main deploy settle before uploading dependencies.
+            var mainWait = await WaitForPackageManagerReady(PmWaitMode.AwaitDeployMain, targetIdentity, cancellationToken, MainPollTimeout);
+            if (mainWait == PackageManagerWaitResult.Failed)
+            {
+                Logger.Error($"Main package install reported failure: {mainName}");
+                return await ResolveFinalResultAsync(mainName, targetIdentity);
+            }
+
+            // Upload dependencies one at a time. A dependency is a framework (VCLibs,
+            // .NET Native, UI.Xaml...) — the Xbox installs them system-wide and they can
+            // never be listed by /packagemanager/packages (that endpoint returns registered
+            // apps only). When the deployment reports 0x80073D02 for a dependency, the
+            // framework is ALREADY installed and held in use by a running app; redeploying
+            // it can never succeed (the blocker, e.g. DevHome, is the Dev Mode shell and
+            // must not be terminated). Detected via the state poll, so we skip, never kill.
             Logger.Info($"Uploading {dependencies.Length} dependencies...");
             var depIndex = 0;
+            var skippedDependencies = 0;
+            var failedDependencies = 0;
             foreach (var dep in dependencies)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -299,6 +323,7 @@ public class XboxPackageService : IXboxPackageService
                 if (!File.Exists(dep))
                 {
                     Logger.Warn($"Dependency not found: {dep}");
+                    failedDependencies++;
                     continue;
                 }
 
@@ -311,51 +336,53 @@ public class XboxPackageService : IXboxPackageService
                     CurrentFile = depName
                 });
 
-                await WaitForPackageManagerReady(cancellationToken);
+                // Make sure the manager is idle before the next upload (409 backoff also guards this).
+                await WaitForPackageManagerReady(PmWaitMode.AwaitIdle, "", cancellationToken, IdlePollTimeout);
 
                 var depOk = await UploadAppxFile(dep, progress, cancellationToken);
-                if (depOk)
-                    Logger.Info($"  Dependency uploaded: {depName}");
-                else
-                    Logger.Error($"  Dependency failed: {depName}");
-            }
-
-            // Wait for final install to complete
-            var installOk = await WaitForPackageManagerReady(cancellationToken);
-            if (!installOk)
-            {
-                // The Xbox may have accepted the deploy (202) but timed out due to
-                // 0x80073D02 (app in use). The console can still complete the install
-                // asynchronously when the blocking app closes. Verify before reporting failure.
-                var pkgName = XboxResponseParser.ParseMsixPackageName(packagePath);
-                if (!string.IsNullOrEmpty(pkgName))
+                if (!depOk)
                 {
-                    Logger.Info("Package manager timed out — waiting 15s then verifying if install completed...");
-                    await Task.Delay(15000, cancellationToken);
-
-                    try
-                    {
-                        var installed = await GetInstalledPackagesAsync();
-                        var found = installed.FirstOrDefault(p =>
-                            p.FullName?.StartsWith(pkgName + "_", StringComparison.OrdinalIgnoreCase) == true);
-
-                        if (found is not null)
-                        {
-                            Logger.Info($"Post-timeout verification: package found — {found.FullName} (install succeeded despite timeout)");
-                            return true;
-                        }
-                    }
-                    catch (Exception verifyEx)
-                    {
-                        Logger.Warn($"Post-timeout verification failed: {verifyEx.Message}");
-                    }
+                    Logger.Error($"  Dependency failed: {depName}");
+                    failedDependencies++;
+                    continue;
                 }
 
-                Logger.Error("Install completed but package manager reported failure or timed out");
-                return false;
+                var depWait = await WaitForPackageManagerReady(PmWaitMode.AwaitDeployDep, "", cancellationToken, DepPollTimeout);
+                switch (depWait)
+                {
+                    case PackageManagerWaitResult.ResourceInUse:
+                        Logger.Warn($"  Dependency already installed system-wide, skipped: {depName}");
+                        skippedDependencies++;
+                        continue;
+                    case PackageManagerWaitResult.Cancelled:
+                        return await ResolveFinalResultAsync(mainName, targetIdentity, skippedDependencies, failedDependencies);
+                    case PackageManagerWaitResult.Failed:
+                    case PackageManagerWaitResult.TimedOut:
+                        Logger.Warn($"  Dependency deploy unresolved ({depWait}): {depName} — continuing; final check decides");
+                        failedDependencies++;
+                        continue;
+                    default:
+                        Logger.Info($"  Dependency installed: {depName}");
+                        break;
+                }
             }
 
-            return true;
+            // Final settle wait, then the AUTHORITATIVE verdict: query the installed-packages
+            // API directly (it lists registered apps, including the target). Deliberately NOT
+            // cancelled by the caller's token — an aborted/hung install must still report
+            // whether the app actually landed, instead of a misleading failure.
+            var finalWait = await WaitForPackageManagerReady(PmWaitMode.AwaitDeployMain, targetIdentity, cancellationToken, MainPollTimeout);
+            Logger.Info(finalWait == PackageManagerWaitResult.Ready
+                ? "Package manager settled"
+                : $"Package manager final state: {finalWait}. Checking installed packages...");
+
+            return await ResolveFinalResultAsync(mainName, targetIdentity, skippedDependencies, failedDependencies);
+        }
+        catch (OperationCanceledException)
+        {
+            // User aborted mid-deploy — resolve the true result via the installed-packages
+            // API instead of blindly reporting failure.
+            return await ResolveFinalResultAsync(Path.GetFileName(packagePath), targetIdentity);
         }
         catch (Exception ex)
         {
@@ -364,25 +391,68 @@ public class XboxPackageService : IXboxPackageService
         }
     }
 
+    /// <summary>
+    /// Always-run authoritative check. After the whole install/update flow, asks the
+    /// installed-packages API whether the target app is present, and reports success
+    /// whenever it is — regardless of dependency install outcomes (a dependency that
+    /// could not be deployed was, by construction of 0x80073D02, already present on
+    /// the console). Uses no caller token, so a user abort does not turn an installed
+    /// app into a "failed" result.
+    /// </summary>
+    private async Task<bool> ResolveFinalResultAsync(string mainName, string targetIdentity, int skippedDependencies = 0, int failedDependencies = 0)
+    {
+        var present = false;
+        try
+        {
+            var installed = await GetInstalledPackagesAsync();
+            var found = installed.FirstOrDefault(p =>
+                p.FullName?.StartsWith(targetIdentity + "_", StringComparison.OrdinalIgnoreCase) == true);
+            present = found is not null;
+            if (found is not null)
+                Logger.Info($"Install verified via installed-packages API: {found.FullName}");
+        }
+        catch (Exception verifyEx)
+        {
+            Logger.Warn($"Final install verification failed: {verifyEx.Message}");
+        }
+
+        if (present)
+        {
+            if (skippedDependencies > 0)
+                Logger.Info($"Install result: SUCCESS ({mainName} installed). {skippedDependencies} dependenc(ies) already present on console, skipped{SuccessSuffix(failedDependencies)}");
+            else if (failedDependencies > 0)
+                Logger.Info($"Install result: SUCCESS ({mainName} installed) despite {failedDependencies} failed dependenc(ies)");
+            else
+                Logger.Info($"Install result: SUCCESS ({mainName} installed)");
+            return true;
+        }
+
+        Logger.Error($"Install result: FAILED — {mainName} not present in installed packages");
+        return false;
+    }
+
+    private static string SuccessSuffix(int failedDependencies)
+        => failedDependencies > 0 ? $" ({failedDependencies} failed)" : "";
+
     private async Task<bool> UploadAppxFile(string filePath, IProgress<InstallProgressInfo>? progress = null, CancellationToken cancellationToken = default)
     {
         var fileName = Path.GetFileName(filePath);
         var fileSize = new FileInfo(filePath).Length;
         Logger.Info($"Uploading: {fileName} ({XboxResponseParser.SizeFormat(fileSize)})");
 
-        for (int attempt = 0; attempt <= 5; attempt++)
+        for (int attempt = 0; attempt <= 3; attempt++)
         {
             if (attempt > 0)
             {
                 var wait = attempt * 5;
-                Logger.Info($"Waiting {wait}s (Xbox busy, attempt {attempt}/5)...");
+                Logger.Info($"Waiting {wait}s (Xbox busy, attempt {attempt}/3)...");
                 progress?.Report(new InstallProgressInfo
                 {
                     Status = $"Waiting for previous install to finish ({wait}s)...",
                     CurrentFile = fileName
                 });
                 await Task.Delay(TimeSpan.FromSeconds(wait), cancellationToken);
-                await WaitForPackageManagerReady(cancellationToken);
+                await WaitForPackageManagerReady(PmWaitMode.AwaitIdle, "", cancellationToken, IdlePollTimeout);
             }
 
             // Build multipart manually — .NET MultipartFormDataContent reorders headers
@@ -400,7 +470,7 @@ public class XboxPackageService : IXboxPackageService
                 fileStream,
                 new MemoryStream(footerBytes, writable: false));
             var totalLength = headerBytes.Length + fileSize + footerBytes.Length;
-            var content = new StreamContent(bodyStream, (int)Math.Min(totalLength, int.MaxValue));
+            using var content = new StreamContent(bodyStream, (int)Math.Min(totalLength, int.MaxValue));
             content.Headers.ContentType =
                 new System.Net.Http.Headers.MediaTypeHeaderValue("multipart/form-data")
                 { Parameters = { new System.Net.Http.Headers.NameValueHeaderValue("boundary", boundary) } };
@@ -468,10 +538,33 @@ public class XboxPackageService : IXboxPackageService
         return false;
     }
 
-    private async Task<bool> WaitForPackageManagerReady(CancellationToken cancellationToken = default)
+    internal enum PackageManagerWaitResult
+    {
+        Ready,
+        ResourceInUse,
+        Cancelled,
+        Failed,
+        TimedOut
+    }
+
+    private enum PmWaitMode
+    {
+        /// <summary>Just need the manager idle before the next upload — never terminate anything.</summary>
+        AwaitIdle,
+        /// <summary>Waiting for the main package deploy to settle — may terminate ONLY the target being installed.</summary>
+        AwaitDeployMain,
+        /// <summary>Waiting for a dependency deploy. 0x80073D02 here means the framework is already installed and in use; return it to the caller as "present, skip".</summary>
+        AwaitDeployDep
+    }
+
+    private async Task<PackageManagerWaitResult> WaitForPackageManagerReady(
+        PmWaitMode mode,
+        string targetIdentity,
+        CancellationToken cancellationToken,
+        TimeSpan? timeout = null)
     {
         Logger.Info("Waiting for package manager to be ready...");
-        var deadline = DateTime.UtcNow.AddSeconds(120);
+        var deadline = DateTime.UtcNow.Add(timeout ?? MainPollTimeout);
         while (DateTime.UtcNow < deadline)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -484,7 +577,7 @@ public class XboxPackageService : IXboxPackageService
                 if (XboxResponseParser.IsIdleCode(resp.StatusCode))
                 {
                     // 204/404 means no operation in progress
-                    await Task.Delay(PollDelayMs, cancellationToken);
+                    await Task.Delay(PollDelay, cancellationToken);
                     var resp2 = await _auth.Http.GetAsync("/api/app/packagemanager/state", cancellationToken);
                     var code2 = (int)resp2.StatusCode;
                     Logger.Info($"GET /api/app/packagemanager/state => {code2}");
@@ -492,14 +585,14 @@ public class XboxPackageService : IXboxPackageService
                     if (XboxResponseParser.IsIdleCode(resp2.StatusCode))
                     {
                         Logger.Info("Package manager ready (got idle status twice)");
-                        return true;
+                        return PackageManagerWaitResult.Ready;
                     }
 
                     // Confirmation poll got 200+JSON — check Success
                     if (resp2.StatusCode == System.Net.HttpStatusCode.OK && XboxResponseParser.IsJsonSuccess(await resp2.Content.ReadAsStringAsync(cancellationToken), out var statusMsg))
                     {
                         Logger.Info($"Package manager ready (idle then success: {statusMsg})");
-                        return true;
+                        return PackageManagerWaitResult.Ready;
                     }
 
                     continue;
@@ -513,46 +606,59 @@ public class XboxPackageService : IXboxPackageService
                     if (XboxResponseParser.IsJsonSuccess(body, out var statusMsg))
                     {
                         Logger.Info($"Package manager ready (operation completed: {statusMsg})");
-                        return true;
+                        return PackageManagerWaitResult.Ready;
                     }
 
                     if (XboxResponseParser.IsSignatureError(body))
                     {
                         Logger.Info("Package manager ready (TRUST_E_NOSIGNATURE — no operation in progress)");
-                        return true;
+                        return PackageManagerWaitResult.Ready;
                     }
 
                     if (XboxResponseParser.IsResourceInUseError(body, out var busyApps))
                     {
-                        Logger.Warn($"Package manager blocked — apps need to be closed: {busyApps}");
-                        var blockingPfns = ExtractPackageFullNames(busyApps);
-                        if (blockingPfns.Count > 0)
+                        // 0x80073D02 — resources held by a running process. A process can only hold
+                        // resources "in use" on files that exist, so a dependency flagged this way is
+                        // ALREADY INSTALLED on the system (a genuinely missing framework surfaces as
+                        // 0x80073CF3 instead) and the blocker is often the Dev Mode shell. Never kill
+                        // a non-target; the whole point of this redesign is to stop killing DevHome.
+                        if (mode == PmWaitMode.AwaitDeployDep)
                         {
-                            foreach (var pf in blockingPfns)
+                            Logger.Warn($"Dependency blocked by app in use: {busyApps} — framework already installed system-wide, skipping");
+                            return PackageManagerWaitResult.ResourceInUse;
+                        }
+
+                        var blockingPfns = ExtractPackageFullNames(busyApps);
+                        var targets = FilterBlockingTargets(targetIdentity, blockingPfns);
+                        if (targets.Count > 0)
+                        {
+                            foreach (var pf in targets)
                             {
-                                Logger.Info($"Auto-terminating blocking app: {pf}");
+                                Logger.Info($"Terminating target app being updated: {pf}");
                                 await TerminatePackageAsync(pf);
                             }
-                            await Task.Delay(2000, cancellationToken);
+                            await Task.Delay(PollDelay, cancellationToken);
                         }
                         else
                         {
-                            Logger.Warn("Could not extract package names from error, waiting 5s");
-                            await Task.Delay(5000, cancellationToken);
+                            Logger.Warn($"Blocked by app(s) not targeted by this install: {busyApps}");
+                            if (mode == PmWaitMode.AwaitIdle)
+                                Logger.Info("  (waiting — no termination attempted)");
+                            await Task.Delay(PollDelay, cancellationToken);
                         }
                         continue;
                     }
 
                     if (XboxResponseParser.IsHigherVersionError(body, out var higherVerMsg))
                     {
-                        Logger.Warn($"Dependency skipped (higher version already installed): {higherVerMsg}");
-                        return true;
+                        Logger.Warn($"Skipped (higher version already installed): {higherVerMsg}");
+                        return PackageManagerWaitResult.Ready;
                     }
 
                     if (XboxResponseParser.IsFatalDeploymentError(body, out var deployError))
                     {
                         Logger.Error($"Package manager deployment failed: {deployError}");
-                        return false;
+                        return PackageManagerWaitResult.Failed;
                     }
 
                     Logger.Warn($"Package manager state: {statusMsg} — not ready yet");
@@ -562,19 +668,33 @@ public class XboxPackageService : IXboxPackageService
                 // Unexpected status code (4xx, 5xx, etc)
                 Logger.Warn($"Package manager unexpected status: {code} {resp.ReasonPhrase}");
             }
-        catch (OperationCanceledException)
-        {
-            Logger.Info("Install cancelled by user");
-            return false;
-        }
-        catch (Exception ex)
+            catch (OperationCanceledException)
+            {
+                Logger.Info("Install cancelled by user");
+                return PackageManagerWaitResult.Cancelled;
+            }
+            catch (Exception ex)
             {
                 Logger.Warn($"Package manager polling error: {ex.Message}");
             }
-            await Task.Delay(RetryDelayMs, cancellationToken);
+            await Task.Delay(RetryDelay, cancellationToken);
         }
         Logger.Warn("Timed out waiting for package manager");
-        return false;
+        return PackageManagerWaitResult.TimedOut;
+    }
+
+    /// <summary>
+    /// From a set of blocking package full names reported by 0x80073D02, keep only those that
+    /// belong to the package being installed/updated (identity prefix). Everything else — the
+    /// Dev Mode shell, IdleScreen, dashboard, games the user is running — must never be killed.
+    /// </summary>
+    internal static List<string> FilterBlockingTargets(string targetIdentity, List<string> blockingPfns)
+    {
+        if (string.IsNullOrEmpty(targetIdentity) || blockingPfns.Count == 0)
+            return [];
+        return blockingPfns
+            .Where(pf => pf.StartsWith(targetIdentity + "_", StringComparison.OrdinalIgnoreCase))
+            .ToList();
     }
 
     private static readonly Regex PfnRegex = new(@"(\S+?_\d[\d.]+_\w+__\w+)", RegexOptions.Compiled);

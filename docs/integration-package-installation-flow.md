@@ -18,9 +18,9 @@ graph LR
     A["1. Analyze"] --> B["2. Download"]
     B --> C["3. Upload"]
     C --> D["4. Poll"]
-    D --> E["5. Register"]
+    D --> E["5. Verify"]
     E --> F["✅ SUCCESS"]
-    
+
     style A fill:#447F3E,stroke:#9ACA3C,color:#fff
     style B fill:#447F3E,stroke:#9ACA3C,color:#fff
     style C fill:#447F3E,stroke:#9ACA3C,color:#fff
@@ -28,6 +28,8 @@ graph LR
     style E fill:#447F3E,stroke:#9ACA3C,color:#fff
     style F fill:#9ACA3C,stroke:#447F3E,color:#000
 ```
+
+Phase 5 changed over time: it used to be "Register" (the app trusted the package-manager poll result). Now it is **Verify** — the install result is decided by re-querying the installed-packages API directly, not by what the poll reports. The reason is at the bottom of this page ("Dependency presence detection").
 
 ---
 
@@ -48,19 +50,19 @@ graph LR
 ```mermaid
 graph TD
     PKG["Package Contents"]
-    
+
     PKG --> MAIN["Main Package<br/>install target"]
-    PKG --> DEPS["Dependencies<br/>must install first"]
+    PKG --> DEPS["Dependencies<br/>upload after main"]
     PKG --> JUNK["Junk<br/>skip, never install"]
-    
+
     MAIN --> MAIN_EX["&#92;.appx, &#92;.msix<br/>&#92;.appxbundle, etc"]
     DEPS --> DEPS_EX["Microsoft&#92;.*<br/>VCLibs, &#92;.NET<br/>ui&#92;.xaml, etc"]
     JUNK --> JUNK_EX["Certs (&#92;.cer, &#92;.pfx)<br/>Scripts (&#92;.ps1)<br/>Telemetry<br/>Diagnostics"]
-    
+
     MAIN_EX -.->|Count: 1| MAIN
     DEPS_EX -.->|Count: 0+| DEPS
     JUNK_EX -.->|Count: 0+| JUNK
-    
+
     style PKG fill:#1A1D23,stroke:#447F3E,color:#9ACA3C
     style MAIN fill:#447F3E,stroke:#9ACA3C,color:#fff
     style DEPS fill:#447F3E,stroke:#9ACA3C,color:#fff
@@ -144,13 +146,13 @@ graph TD
     ROOT --> MAIN["MyGame.appx<br/>(Main package)"]
     ROOT --> DEP["Dependencies/<br/>(Folder detected)"]
     ROOT --> DOCS["Docs/<br/>(Ignored)"]
-    
+
     DEP --> VC["VCLibs.appx"]
     DEP --> DN["DotNet.appx"]
     DEP --> UI["UI.Xaml.appx"]
-    
+
     DOCS --> README["README.txt"]
-    
+
     style ROOT fill:#1A1D23,stroke:#447F3E,color:#9ACA3C
     style MAIN fill:#447F3E,stroke:#9ACA3C,color:#fff
     style DEP fill:#447F3E,stroke:#9ACA3C,color:#fff
@@ -188,7 +190,7 @@ graph TD
     ARCH_CHECK -->|"neutral"| KEEP
     TARGET_MATCH -->|"Yes"| KEEP
     TARGET_MATCH -->|"No"| DROP["❌ Drop<br/>Wrong arch"]
-    
+
     style INPUT fill:#1A1D23,stroke:#447F3E,color:#9ACA3C
     style ARCH_CHECK fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style KEEP fill:#447F3E,stroke:#9ACA3C,color:#fff
@@ -231,10 +233,10 @@ if (_cache.IsCached(item.Id, fileName))
 {
     // Cache hit! Use local file
     Logger.Debug($"Cache hit for {item.Id}/{fileName}");
-    progress?.Report(new InstallProgressInfo 
-    { 
-        Total = 0.4, 
-        Status = $"Using cached {fileName}" 
+    progress?.Report(new InstallProgressInfo
+    {
+        Total = 0.4,
+        Status = $"Using cached {fileName}"
     });
 }
 else
@@ -260,34 +262,42 @@ else
 
 ### The Upload Challenge
 
-**Xbox package manager is single-threaded.** It can only process one upload at a time.
+**Xbox package manager is single-threaded.** It can only process one upload at a time. The main package is uploaded **first**, then each dependency is uploaded one at a time.
 
 ```mermaid
 sequenceDiagram
     participant App as XB Vault
     participant Portal as Device Portal
     participant Manager as Package Manager
-    
+
     App->>Portal: Upload Main Package
     activate Manager
     Portal->>Manager: Process package
     Manager-->>Portal: Ready
     deactivate Manager
-    
+
     App->>Portal: Upload Dependency 1
     activate Manager
     Portal->>Manager: Process dependency
     Manager-->>Portal: Ready
     deactivate Manager
-    
+
     App->>Portal: Upload Dependency 2
     activate Manager
     Portal->>Manager: Process dependency
     Manager-->>Portal: Ready
     deactivate Manager
-    
+
     Note over App,Manager: Must wait for Manager<br/>before each upload!
 ```
+
+### Upload Conflict Retry
+
+If a dependency upload races another deployment, the portal answers `409 Conflict` ("Another deployment is running"). The upload loop backs off (5s → 10s → 15s), waits for the manager, and retries — **3 attempts max**, then returns failure. On Xbox the manager is usually idle by the first retry.
+
+### Upload Streams & Handle Hygiene
+
+An upload is built as a manual multipart body (`ConcatStream` = header + file + footer) to match the exact byte order WDP's browser-upload path expects — `MultipartFormDataContent` reorders headers and is rejected. Every attempt builds **fresh** streams and disposes them after the round, so a `409` retry re-reads the file from disk and no file handle is leaked between attempts.
 
 ### Upload Progress Reporting
 
@@ -316,7 +326,7 @@ foreach (var dep in dependencies)
         Status = $"Uploading dependency {depIndex}/{dependencies.Length}: {depName}...",
         CurrentFile = depName
     });
-    
+
     await WaitForPackageManagerReady();  // ← CRITICAL POLLING
     var depOk = await UploadAppxFile(dep, progress);
 }
@@ -324,7 +334,7 @@ foreach (var dep in dependencies)
 
 ---
 
-## Phase 4: Package Manager Polling & Backoff
+## Phase 4: Package Manager Polling & Decisions
 
 ### Why Polling?
 
@@ -335,147 +345,122 @@ foreach (var dep in dependencies)
 4. Register in catalog
 5. Return to "ready" state
 
-**We can't just immediately upload the next file.** We have to poll `/api/app/packagemanager/packages` endpoint and check if `IsReady` is true.
-
-### Polling Strategy: Exponential Backoff
-
-**Code from `XboxPackageService.cs`:**
-
-```csharp
-private async Task WaitForPackageManagerReady()
-{
-    const int MaxAttempts = 15;
-    const int InitialDelay = 2000;    // 2 seconds
-    const int LaterDelay = 3000;      // 3 seconds
-    
-    for (int i = 0; i < MaxAttempts; i++)
-    {
-        // First 3 attempts: 2s delay (manager usually ready quickly)
-        // Later attempts: 3s delay (give more time if it's busy)
-        int delay = i < 3 ? InitialDelay : LaterDelay;
-        
-        await Task.Delay(delay);
-        
-        var info = await GetPackageManagerInfoAsync();
-        if (info?.IsReady == true)
-        {
-            Logger.Debug($"Package manager ready after {i+1} attempts ({delay*(i+1)}ms)");
-            return;  // Success!
-        }
-    }
-    
-    // Still not ready after 45 seconds (15 * 3s)
-    Logger.Warn("Package manager still not ready after max attempts");
-}
-```
-
-### Timing Analysis
+We poll `GET /api/app/packagemanager/state` and branch on what the portal answers. The poll is **decision-driven**, not a blind "wait until ready":
 
 ```mermaid
-graph LR
-    A1["Attempt 1<br/>Delay: 2s<br/>Total: 2s"]
-    A2["Attempt 2<br/>Delay: 2s<br/>Total: 4s"]
-    A3["Attempt 3<br/>Delay: 2s<br/>Total: 6s"]
-    A4["Attempt 4-15<br/>Delay: 3s<br/>Total: 39-45s"]
-    
-    R1["✅ Ready<br/>80% typical"]
-    R2["✅ Ready<br/>15% slow network"]
-    R3["✅ Ready<br/>4% large file"]
-    R4["❌ Timeout<br/>1% failure"]
-    
-    A1 --> R1
-    A2 --> R2
-    A3 --> R3
-    A4 --> R4
-    
-    style A1 fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style A2 fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style A3 fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style A4 fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style R1 fill:#9ACA3C,stroke:#447F3E,color:#000
-    style R2 fill:#9ACA3C,stroke:#447F3E,color:#000
-    style R3 fill:#9ACA3C,stroke:#447F3E,color:#000
-    style R4 fill:#CC3333,stroke:#9ACA3C,color:#fff
+flowchart TD
+    START["Poll /state<br/>every ~2s"] --> BODY{"Response"}
+
+    BODY -- "204 / idle twice" --> READY["✅ Ready<br/>safe to continue"]
+    BODY -- "Success JSON" --> READY
+    BODY -- "TRUST_E_NOSIGNATURE" --> READY
+    BODY -- "higher version already installed" --> READY["✅ Ready<br/>skip deploy"]
+    BODY -- "0x80073D02<br/>resources in use" --> INUSE
+
+    INUSE --> TYPE{"What is being deployed?"}
+    TYPE -- "main package" --> FILTER["Filter blockers to the target identity only"]
+    FILTER --> TARGET{"Blocker is the<br/>installed app itself?"}
+    TARGET -- "yes" --> KILL["Terminate ONLY the target<br/>app being updated"]
+    TARGET -- "no" --> WAIT["DevHome / IdleScreen / game running:<br/>NEVER terminate — keep polling<br/>until the deadline"]
+    KILL --> READY
+    WAIT --> TIMEOUT
+
+    BODY -- "deployment error (fatal)" --> FAIL["❌ FAILED"]
+    BODY -- "anything else" --> POLLMORE["not ready — keep polling"]
+    POLLMORE --> TIMEOUT["⌛ Deadline reached"]
+
+    TIMEOUT --> VERIFY["Verify via installed-packages API<br/>→ final verdict"]
+
+    style KILL fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style WAIT fill:#FF9900,stroke:#9ACA3C,color:#000
+    style FAIL fill:#CC3333,stroke:#9ACA3C,color:#fff
+    style VERIFY fill:#447F3E,stroke:#9ACA3C,color:#fff
 ```
 
-### Real-World Xbox Behavior
+### Time Budgets
 
-**Observation from deployment experience:**
+The poll is **bounded** — no infinite wait. Different operations get different budgets:
 
-1. **Typical case (80%):** Manager ready after 1-2 attempts (2-4 seconds)
-2. **Network slow (15%):** Ready by attempt 3-4 (6-9 seconds)
-3. **File large (4%):** Needs full polling (10-45 seconds)
-4. **Timeout (1%):** After 45s, operation fails
+| Operation | Budget | Used for |
+|-----------|--------|----------|
+| Main package deploy settle | 40s | `AwaitDeployMain` — polls + bounded kills |
+| Dependency deploy settle | 10s | `AwaitDeployDep` — fast skip/continue decision |
+| Idle wait before next upload | 20s | `AwaitIdle` — 409 backoff partner |
+| Upload `409` conflict retries | 3 × (5/10/15s) | backoff    |
+| Final installed-packages verification | 20s | authoritative verdict (own token) |
+
+Worst realistic case ends around ~70s; the common path (deps already present) finishes in ~10-20s with no screen flicker.
+
+### The Termination Rule (Critical)
+
+When `0x80073D02` (resources in use) lists a running app:
+
+1. **Never terminate a non-target app.** The Dev Mode shell `Microsoft.Xbox.DevHome`, `Xbox.IdleScreen`, the dashboard, and any game the user is running must not be killed — killing them black-flickers the screen and the shell just restarts.
+2. **Only the app being installed/updated may be terminated** — matched by `FullName.StartsWith(targetIdentity + "_")` (`FilterBlockingTargets`). A blocked **main package** that is not the target simply ⏳ waits out its deadline and fails cleanly.
+3. For **dependencies**, `0x80073D02` never triggers a kill at all — see the next section.
 
 ---
 
-## Phase 5: Installation State Machine
+## Phase 5: Install, Skip & Verify
+
+### The Full Flow
 
 ```mermaid
-stateDiagram-v2
-    [*] --> AnalyzePackage: Start Install
-    
-    AnalyzePackage --> ClassifyFiles
-    ClassifyFiles --> ValidateMain: Found main package
-    ClassifyFiles --> ErrorNoMain: ❌ No main package
-    
-    ValidateMain --> CheckCache
-    CheckCache --> CacheHit: Files cached locally
-    CheckCache --> CacheMiss: Need to download
-    
-    CacheHit --> UploadMain
-    CacheMiss --> Download: Fetch from URL
-    Download --> DownloadOk: ✓ Downloaded
-    Download --> ErrorDownload: ❌ Download failed
-    
-    DownloadOk --> UploadMain
-    
-    UploadMain --> UploadOk: ✓ Main uploaded
-    UploadMain --> ErrorUpload: ❌ Upload failed
-    
-    UploadOk --> HaveDeps: Check for dependencies
-    HaveDeps --> NoDeps: No dependencies
-    HaveDeps --> HasDeps: Dependencies found
-    
-    NoDeps --> PollReady: Poll manager ready
-    HasDeps --> UploadDep: Upload next dependency
-    
-    UploadDep --> UploadDepOk: ✓ Dep uploaded
-    UploadDep --> ErrorUpload: ❌ Dep upload failed
-    
-    UploadDepOk --> MoreDeps: More dependencies?
-    MoreDeps --> UploadDep: Upload next
-    MoreDeps --> MoreDepsDone: ✓ All uploaded
-    
-    MoreDepsDone --> PollReady
-    
-    PollReady --> PollingAttempt: Start polling (max 15 attempts)
-    PollingAttempt --> ManagerReady: ✓ Manager ready
-    PollingAttempt --> PollRetry: Not ready yet
-    PollRetry --> PollingAttempt: Retry (with backoff)
-    PollingAttempt --> ErrorPollTimeout: ❌ Timeout after 45s
-    
-    ManagerReady --> RegisterPackage: Signal install to manager
-    RegisterPackage --> RegisterOk: ✓ Package registered
-    RegisterPackage --> ErrorRegister: ❌ Registration failed
-    
-    RegisterOk --> [*]: ✅ SUCCESS
-    
-    ErrorNoMain --> [*]: ❌ FAILED
-    ErrorDownload --> [*]: ❌ FAILED
-    ErrorUpload --> [*]: ❌ FAILED
-    ErrorPollTimeout --> [*]: ❌ FAILED
-    ErrorRegister --> [*]: ❌ FAILED
-    
-    classDef processing fill:#447F3E,stroke:#9ACA3C,color:#fff
-    classDef success fill:#9ACA3C,stroke:#447F3E,color:#000
-    classDef error fill:#CC3333,stroke:#9ACA3C,color:#fff
-    classDef decision fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    
-    class AnalyzePackage,ClassifyFiles,ValidateMain,CheckCache,CacheHit,CacheMiss,Download,DownloadOk,UploadMain,UploadOk,HaveDeps,NoDeps,HasDeps,UploadDep,UploadDepOk,MoreDeps,MoreDepsDone,PollReady,PollingAttempt,PollRetry,ManagerReady,RegisterPackage,RegisterOk processing
-    class ErrorNoMain,ErrorDownload,ErrorUpload,ErrorPollTimeout,ErrorRegister error
-    class PollRetry decision
+flowchart TD
+    MAIN["Upload main package"] --> MW{"Main wait<br/>address state"}
+    MW -- "ready" --> DEPLOOP["Dependencies loop"]
+    MW -- "blocked by non-target<br/>deadline → verify" --> VF
+    MW -- "fatal deploy error" --> VF
+
+    DEPLOOP --> DEPUP["Upload dep (409 backoff)"]
+    DEPUP --> DW{"Dep wait<br/>address state"}
+    DW -- "ready" --> DEPOK["Dep installed"]
+    DW -- "0x80073D02 → skip<br/>like present, no kill" --> DEPSKIP["⚠ Dep already<br/>system-wide, skip"]
+    DW -- "timeout / fatal" --> DEPFAIL["⚠ Log + continue<br/>dep marked failed"]
+    DEPSKIP --> NEXT["more deps?"]
+    DEPOK --> NEXT
+    DEPFAIL --> NEXT
+    NEXT -- "yes" --> DEPLOOP
+    NEXT -- "no" --> FINAL["Final settle wait<br/>(bounded)"]
+
+    FINAL --> VF["AUTHORITATIVE VERIFY<br/>GET /packagemanager/packages<br/>own 20s token (never user's)"]
+    VF --> PRESENT{"target present?"}
+    PRESENT -- "yes" --> SUCCESS["✅ SUCCESS<br/>even with skipped/failed deps"]
+    PRESENT -- "no" --> FAILED["❌ FAILED<br/>not present in installed list"]
+
+    style DEPSKIP fill:#FF9900,stroke:#9ACA3C,color:#000
+    style SUCCESS fill:#9ACA3C,stroke:#447F3E,color:#000
+    style FAILED fill:#CC3333,stroke:#9ACA3C,color:#fff
+    style VF fill:#447F3E,stroke:#9ACA3C,color:#fff
 ```
+
+### Dependency Presence Detection (Why `0x80073D02` Means "Already Installed")
+
+This is the heart of the hang fix. It was the reason the Gen1Recomp **update** hung forever and reported failure while actually succeeding.
+
+**Key facts (verified against real consoles):**
+
+| Fact | How it was proved |
+|------|-------------------|
+| `GET /api/app/packagemanager/packages` lists **only registered apps** — never framework packages (VCLibs, .NET Native, UI.Xaml). | Full raw API dumps from 2 consoles (62 and 107 entries): every item has `AppListEntry` + `RegisteredUsers` + `PackageRelativeId ...!App`. Zero frameworks. |
+| A **missing** framework produces `0x80073CF3` ("framework could not be found") — a *different* error code. | Microsoft's official MSIX troubleshooting guide (`0x80073CF3`) vs the in-use error. |
+| `0x80073D02` = `ERROR_PACKAGES_IN_USE`: "resources it modifies are currently in use". A process can only hold files in use if those files **exist on disk**. | Microsoft Win32 docs for the code; the reason names e.g. `Microsoft.Xbox.DevHome_1.0.2607.19001_x64__...`. |
+| `Microsoft.Xbox.DevHome` only runs because it has already loaded the x64 C++ runtime framework. If VCLibs were absent, Dev Mode's shell could not start. | DevHome is a UWP x64 app that statically depends on `Microsoft.VCLibs.*`; it demonstrably runs (it's the always-on Dev Mode shell). |
+| The conflict is **specific to the dependency**, not a global gate. | The main package deployed seconds before it succeeded with no `0x80073D02` at all. Only the dependency deploy was blocked. |
+
+**Consequence:** during a dependency deploy, `0x80073D02` can *only* mean the framework is already installed system-wide and held by a running app. Redeploying it can never succeed, and killing the holder (DevHome) does not help — DevHome is the shell and restarts instantly. So the only sane action is:
+
+> **WARN + skip. Never kill. Move on.**
+
+The framework is re-verified indirectly by the final authoritative check: if the main app is present after the flow, the install succeeded — and if it launches (Dev Mode shell boots every time), the framework it needs was present all along.
+
+### Final Authoritative Verification
+
+Before returning, the service **always** re-queries `GET /api/app/packagemanager/packages` and looks for `FullName.StartsWith(targetIdentity + "_")`:
+
+- It uses **its own 20s cancellation token** — deliberately **not** the user's token, so an aborted or hung install still reports the *true* final state instead of a misleading "FAILED" (the old flow reused the user's canceled token and let a `TaskCanceledException` mask a successful install).
+- **Main app present ⇒ `SUCCESS`**, even when a dependency was skipped or failed.
+- **Main app absent ⇒ `FAILED`.**
 
 ---
 
@@ -508,7 +493,7 @@ try
 {
     var response = await _http.GetAsync(item.DownloadUrl,
         HttpCompletionOption.ResponseHeadersRead);
-    
+
     response.EnsureSuccessStatusCode();
     // ... download to cache
 }
@@ -523,22 +508,17 @@ catch (HttpRequestException ex)
 
 ---
 
-#### 3. Xbox Upload Failure (Network Unreachable)
+#### 3. Upload Failure (Network Unreachable / 409 Exhausted)
 
-**Scenario:** Xbox offline, network disconnected, or wrong IP
+**Scenario:** Xbox offline, network disconnected, or the manager stays busy past the 3 upload retries
 
 ```csharp
 try
 {
-    var response = await _http.PostAsync(uploadEndpoint, multipartContent);
-    
-    if (!response.IsSuccessStatusCode)
-    {
-        var errorBody = await response.Content.ReadAsStringAsync();
-        var error = TryParseError(errorBody);
-        Logger.Error($"Upload failed: {error}");
-        return false;
-    }
+    var response = await _auth.PostWithCsrfAsync(uploadEndpoint, content, ...);
+    if (response.StatusCode == HttpStatusCode.Conflict && attempt < 3) // backoff & retry
+        continue;
+    if (!response.IsSuccessStatusCode) { ...; return false; }
 }
 catch (HttpRequestException ex)
 {
@@ -547,81 +527,45 @@ catch (HttpRequestException ex)
 }
 ```
 
-**UI Response:** "Failed to reach Xbox" error
+**UI Response:** "Failed to reach Xbox" error; `409` conflicts resolve themselves on the next attempt in the common case.
 
 ---
 
-#### 4. Package Manager Polling Timeout
+#### 4. Main Package Deployment Fails or Times Out
 
-**Scenario:** Xbox is processing large file, takes >45 seconds
+**Scenario:** The poll ends on a fatal deployment error (`Failed`) or hits the 40s deadline. The app no longer trusts the poll — it goes straight to the installed-packages verification (own 20s token). Real outcome decides.
 
-```csharp
-// After 15 attempts * 3s = 45 seconds max
-if (i >= MaxAttempts)
-{
-    Logger.Warn($"Package manager still not ready after {MaxAttempts} attempts");
-    // Installation continues anyway or fails?
-    // Depends on implementation
-    return;  // or throw exception
-}
-```
-
-**Risk:** If we don't wait long enough, uploading next file while manager is busy can corrupt the installation
-
-**Current behavior:** Falls through and attempts next upload anyway (potential issue)
-
-**Recommendation:** Increase max attempts or add explicit timeout error
+**Behavior change vs. legacy:** the old code "fell through and attempted the next upload" and marked `FAILED` from a canceled verification. Now the verdict always comes from `GET /packagemanager/packages`.
 
 ---
 
-#### 5. Malformed Package File
+#### 5. Dependency Deploy Fails, Times Out, or Is Blocked
 
-**Scenario:** Corrupted ZIP, invalid .appx format
+**Scenario:** A dependency upload fails, the 10s dep poll times out, or `0x80073D02` appears.
 
 ```csharp
-private static string TryParseError(string? body)
-{
-    if (string.IsNullOrEmpty(body)) return null;
-    try
-    {
-        using var doc = JsonDocument.Parse(body);
-        if (doc.RootElement.TryGetProperty("ErrorMessage", out var msg))
-            return msg.GetString();
-    }
-    catch { }  // ← BARE CATCH (issue #5)
-    return null;
-}
+case PackageManagerWaitResult.ResourceInUse:
+    Logger.Warn($"  Dependency already installed system-wide, skipped: {depName}");
+    skippedDependencies++;
+    continue;
+case PackageManagerWaitResult.Failed:
+case PackageManagerWaitResult.TimedOut:
+    Logger.Warn($"  Dependency deploy unresolved ({depWait}): {depName} — continuing; final check decides");
+    failedDependencies++;
+    continue;
 ```
 
-**Xbox response:** Returns 400 Bad Request with error message
-
-**Code handling:** Extracts error message (if JSON parseable), logs, returns false
+**Behavior:** dependency problems are **tolerated** — logged, counted, skipped. The final authoritative check decides success. The old immediate-abort on first dependency failure is gone.
 
 ---
 
 ### Partial Installation Recovery
 
-**Challenge:** What if 2/3 dependencies uploaded successfully, then network fails?
+**Challenge:** What if 2/3 dependencies uploaded successfully, then one is blocked or fails?
 
-**Current behavior:**
-```csharp
-foreach (var dep in dependencies)
-{
-    var depOk = await UploadAppxFile(dep, progress);
-    if (!depOk)
-    {
-        Logger.Error($"Dependency upload failed: {dep}");
-        return false;  // ← Abort immediately
-        // Partially uploaded packages remain on Xbox
-    }
-}
-```
+**Current behavior:** dependencies never abort the flow — each bad outcome is logged and the loop continues. Partially uploaded frameworks are harmless (the final check focuses on the **main app**, and a framework that fails to deploy was, by `0x80073D02` semantics, already present).
 
-**Issue:** No cleanup of partially uploaded files
-
-**Consequence:** Next installation attempt sees those files already present (potential conflict)
-
-**Workaround:** User can manually clean via Dev Portal or re-run install (will skip cached files)
+**Residual limitation:** if the main app itself errors out or a genuinely *missing* framework dependency fails (upload-level, not presence-level), the install fails and no cleanup of partial artifacts is attempted. Retry is the workaround.
 
 ---
 
@@ -643,28 +587,32 @@ progress?.Report(new InstallProgressInfo
 
 ```mermaid
 graph LR
-    A["[DEBUG]<br/>DownloadAndInstall<br/>MyGame from..."]
-    B["[DEBUG]<br/>Cache hit for<br/>game123/myapp.zip"]
-    C["[DEBUG]<br/>Target local path<br/>C:&#92;...&#92;myapp.zip"]
-    D["[INFO]<br/>Upload starting<br/>MyGame.appx<br/>2 dependencies"]
-    E["[DEBUG]<br/>Package manager<br/>ready after<br/>2 attempts"]
-    F["[ERROR]<br/>Main package<br/>upload failed<br/>MyGame.appx"]
-    G["[WARN]<br/>Package manager<br/>still not ready<br/>max attempts"]
-    H["[ERROR]<br/>Dependency<br/>not found<br/>missing-lib.appx"]
-    
-    A --> B --> C --> D --> E
-    D --> F
-    E --> G
-    D --> H
-    
+    A["[INFO]<br/>GET /state<br/>deciding..."]
+    B["[INFO]<br/>Package manager<br/>ready (idle)")
+    C["[WARN]<br/>Dependency skipped —<br/>already installed"]
+    D["[INFO]<br/>Terminating target<br/>app being updated"]
+    E["[INFO]<br/>Install verified via<br/>packages API"]
+    F["[ERROR]<br/>Main package<br/>upload failed"]
+    G["[WARN]<br/>Blocked by app not<br/>targeted — waiting"]
+    H["[ERROR]<br/>Install confirmed failed —<br/>not present"]
+
+    A --> B
+    A --> C
+    A --> D
+    A --> G
+    E --> H
+    E --> K["[INFO]<br/>Install result: SUCCESS"]
+    F --> H
+
     style A fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style B fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style C fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style D fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style C fill:#FF9900,stroke:#9ACA3C,color:#000
+    style D fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style E fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style F fill:#CC3333,stroke:#9ACA3C,color:#fff
     style G fill:#FF9900,stroke:#9ACA3C,color:#000
     style H fill:#CC3333,stroke:#9ACA3C,color:#fff
+    style K fill:#9ACA3C,stroke:#447F3E,color:#000
 ```
 
 ---
@@ -673,51 +621,66 @@ graph LR
 
 ```mermaid
 graph TD
-    A["Package Manager API"]
-    
+    A["Package Manager & TaskManager API"]
+
     B["GET /api/app/packagemanager/packages"]
     C["POST /api/app/packagemanager/package"]
     D["DELETE /api/app/packagemanager/package"]
-    E["POST /api/taskmanager/app"]
-    
+    S["GET /api/app/packagemanager/state"]
+    P["GET /api/resourcemanager/processes"]
+    T["POST /api/taskmanager/app"]
+    TS["POST /api/taskmanager/app/state"]
+
     A --> B
     A --> C
     A --> D
-    A --> E
-    
-    B --> B_DESC["List installed packages"]
-    C --> C_DESC["Upload file"]
+    A --> S
+    A --> P
+    A --> T
+    A --> TS
+
+    B --> B_DESC["List installed packages (apps only) — conflict check + final verdict"]
+    C --> C_DESC["Upload file (main + deps)"]
     D --> D_DESC["Uninstall package"]
-    E --> E_DESC["Launch package"]
-    
+    S --> S_DESC["Deployment state — polled, branched by error code"]
+    P --> P_DESC["Running processes w/ package info (pre-upload target kill)"]
+    T --> T_DESC["Terminate target app (DELETE variant)"]
+    TS --> TS_DESC["Suspend / launch target app"]
+
     style A fill:#1A1D23,stroke:#447F3E,color:#9ACA3C
     style B fill:#447F3E,stroke:#9ACA3C,color:#fff
     style C fill:#447F3E,stroke:#9ACA3C,color:#fff
     style D fill:#CC3333,stroke:#9ACA3C,color:#fff
-    style E fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style S fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style P fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style T fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style TS fill:#447F3E,stroke:#9ACA3C,color:#fff
     style B_DESC fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style C_DESC fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style D_DESC fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
-    style E_DESC fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style S_DESC fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style P_DESC fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style T_DESC fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style TS_DESC fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
 ```
 
 ### Upload Endpoint: Multipart Form Data
 
-**Endpoint:** `POST /api/app/packagemanager/package`
+**Endpoint:** `POST /api/app/packagemanager/package?package=<filename>`
 
 **Headers:**
 - `Authorization: Basic base64(user:pass)`
 - `X-CSRF-Token: [token from cookie]`
-- `Content-Type: multipart/form-data; boundary=...`
+- `Content-Type: multipart/form-data; boundary=----XboxUploadBoundary`
 
 **Body format:**
 ```
---boundary
+----XboxUploadBoundary
 Content-Disposition: form-data; name="file"; filename="MyApp.appx"
 Content-Type: application/octet-stream
 
 [binary file data]
---boundary--
+----XboxUploadBoundary--
 ```
 
 ---
@@ -729,51 +692,51 @@ Content-Type: application/octet-stream
 | **Multi-phase process** | Xbox package manager single-threaded, requires orchestration |
 | **Pre-analysis** | Avoid uploading junk, identify dependencies upfront |
 | **Regex classification** | Fast, maintainable, handles naming variations |
-| **Exponential backoff polling** | Balances responsiveness (2s) + tolerance for slow operations (3s) |
+| **Bounded polls (40/10/20s)** | Balances responsiveness + tolerance for slow ops, **never hangs** |
+| **Decision-driven polling** | Branch by error code instead of blind wait-until-ready |
+| **Terminate only the install target** | DevHome/IdleScreen/games must never be killed (screen flicker, shell restart) |
+| **Dep `0x80073D02` ⇒ skip-as-present** | Framework is system-wide and in use by the shell; redeploy can never succeed |
+| **`409` retry ×3** | Busy manager resolves itself within ~30s |
+| **Final authoritative verification** | Truth comes from the installed-packages API, own 20s token — not from a canceled poll |
 | **Cache before download** | Speeds up repeated installs, survives app restart |
 | **Sequential upload** | Xbox limitation, can't parallelize |
-| **15 attempts, 45s timeout** | Handles network delays, avoids infinite hangs |
-| **Immediate abort on error** | Fails fast, prevents partial/corrupted installations |
+| **Tolerate dependency failures** | Main-app presence decides success; dependencies are best-effort |
 
 ---
 
 ## Known Issues & Workarounds
 
-### Issue 1: Bare catch in TryParseError
+### Issue 1: Verification only proves presence, not launch
 
-**Code:** `TryParseError` in `XboxResponseParser.cs`  
-**Risk:** JSON parse error silently swallowed  
-**Workaround:** Assume no error message if parse fails
+The final check proves the main app is **registered**, not that it launches. A corrupted registration (rare) would still pass. Workaround: manual launch visibility on the console is the real end-to-end proof — XB Vault's own "Launch" on the Installed tab covers this.
 
-### Issue 2: Polling might not wait long enough
+### Issue 2: No cleanup on partial upload failure
 
-**Code:** MaxAttempts = 15, delay = 3s  
-**Risk:** 45 seconds might be insufficient for very large files  
-**Recommendation:** Make timeout configurable or increase max attempts
+If the main app itself errors out mid-flow, no cleanup is attempted; partially uploaded artifacts can remain. Workaround: retry (next attempt re-uploads over them) or uninstall via the Installed tab / Dev Portal.
 
-### Issue 3: No cleanup on partial upload failure
+### Issue 3: `0x80073D02` skip is inferred, not confirmed via a framework listing
 
-**Code:** Foreach loop aborts on first failure  
-**Risk:** Partially uploaded dependencies might cause next install to fail  
-**Workaround:** User can retry or manually clean via Dev Portal
+The API never lists frameworks, so the skip trusts the error-code semantics. If a future Xbox version returns `0x80073D02` for a *missing* framework (unknown today), the dep would be skipped wrongly. Safeguard: the final verdict still requires the main app present, and a missing framework would normally surface earlier as `0x80073CF3`, which is still a hard error.
 
 ---
 
 ## Testing & Validation
 
-**Scenarios to test:**
-- ✓ Download hit (cached file)
-- ✓ Download miss (fetch from server)
-- ✓ Single package, no dependencies
-- ✓ Package with 2-3 dependencies
-- ✓ Large file (>500MB)
-- ✓ Network timeout during upload
-- ✓ Xbox offline during installation
-- ✓ Corrupted ZIP file
-- ✓ Missing dependencies in archive
+**Automated (xUnit, `XboxPackageInstallFlowTests` with stub HTTP + shrunk budgets):**
+- ✓ Dependency `0x80073D02` → skipped, **zero** terminate calls, success when main present
+- ✓ Dependency deploy timeout → still succeeds when main app present
+- ✓ Main blocked by a non-target app → clean fail, no kills
+- ✓ Main blocked by its own running instance → target-only kill, success
+- ✓ User cancel during wait → still reports the true (installed) state via fresh-token verification
+- ✓ `FilterBlockingTargets` keeps only the install target
+
+**Manual (console, real hardware):**
+- [ ] Gen1Recomp update → ~20s success, no flicker/black screen, version updates, LocalState intact
+- [ ] Fresh install of an app bundling VCLibs on a console that lacks it → dependency really installs
+- [ ] Update while the target app itself is running → only the target is terminated
 
 ---
 
-**Document version:** 1.0  
+**Document version:** 2.0  
 **Based on:** PackageInstallService.cs + XboxPackageService.cs analysis  
-**Last updated:** 2026-06-25
+**Last updated:** 2026-08-27

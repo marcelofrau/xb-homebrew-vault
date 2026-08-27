@@ -138,14 +138,16 @@ Returns the currently running foreground title.
 
 The package manager processes one operation at a time and is briefly unavailable after each upload/install. Before issuing the next operation (e.g. uploading a dependency), the client polls `GET /api/app/packagemanager/packages` and waits until the manager reports ready.
 
-**Backoff strategy** (`WaitForPackageManagerReady`):
+**Polling budgets** (`WaitForPackageManagerReady`):
 
-| Attempts | Delay each | Cumulative |
-|---------:|-----------:|-----------:|
-| 1–3 | 2s | up to 6s |
-| 4–15 | 3s | up to 45s |
+| Operation | Budget | Decides |
+|-----------|--------|---------|
+| Main deploy settle | 40s | terminate-only-target vs fail |
+| Dependency deploy settle | 10s | skip-as-present vs continue |
+| Idle before next upload | 20s | 409 backoff partner |
+| Final installed-packages verify | 20s | authoritative verdict (own token) |
 
-After 15 attempts (~45s) the wait gives up and the operation is reported as failed. Most installs become ready within 1–2 attempts. See the full [Package Installation Flow](integration-package-installation-flow) for the multipart upload pattern, dependency ordering, and failure recovery.
+The poll is decision-driven: each `/state` response is branched by error code. On deadline, the final verdict comes from `GET .../packagemanager/packages` (main app present = success), never from the poll alone — and it runs with its own timeout token so an aborted install still reports its true state. See the full [Package Installation Flow](integration-package-installation-flow) for the multipart upload pattern, dependency ordering, and failure recovery.
 
 > **Multipart uploads:** install (`POST .../package`) accepts `multipart/form-data` with the package file. Dependencies are uploaded sequentially, each gated by the readiness poll above.
 

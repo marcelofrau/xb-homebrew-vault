@@ -112,7 +112,7 @@ Xbox is reachable but not responding to the Dev Mode API.
 
 ### "Package manager busy"
 
-The Xbox is already installing something — wait 30-60 seconds and try again.
+The Xbox is already installing something. The app now retries automatically (up to 3 times) when the upload gets a `409 Conflict`, so a busy manager usually resolves by itself within ~30 seconds. If it persists, wait a couple of minutes and try again.
 
 ### "Dependency missing"
 
@@ -137,7 +137,7 @@ The custom install wizard should resolve this automatically:
 
 ### "Install completed but package manager reported failure"
 
-The file was uploaded but the Xbox failed to register it. This is usually transient:
+The package manager reported a deployment error, but the app now re-checks the installed-packages API before failing, so a successful registration is reported as success even when the manager's own error text was stale. If this error appears at all:
 1. Wait a moment and check if the package appears in Installed view
 2. Try installing again — sometimes a second attempt works
 3. Check Dev Mode on the Xbox for any error messages

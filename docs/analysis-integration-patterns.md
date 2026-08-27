@@ -89,13 +89,13 @@ private async Task WaitForPackageManagerReady()
 **Why polling with backoff?**
 - Xbox package manager is a background service that can be busy
 - Uploading one file blocks the manager briefly
-- Exponential backoff (2s for first 3 attempts, 3s after) balances responsiveness + tolerance
-- 15 attempts * 3s = 45s max wait
+- Polling is bounded (main 40s, dep 10s, idle 20s) and **decision-driven**: each `/state` response is branched by error code (`0x80073D02` → kill-target/skip, higher-version → skip, fatal → fail)
 
 **Real-world observation:**
 - Initial attempts fail quickly (manager still processing)
 - Later attempts succeed more often
-- Backoff prevents hammering the API
+- A dependency answered with `0x80073D02` (resources in use) is treated as already installed system-wide and skipped — it is never re-deployed and its holder is never killed
+- The final verdict comes from `GET /packagemanager/packages`, not from the poll
 
 ---
 
