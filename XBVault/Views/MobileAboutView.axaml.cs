@@ -9,9 +9,9 @@ namespace XBVault.Views;
 
 public partial class MobileAboutView : UserControl
 {
-    private static readonly string RevivesUrl = "https://discord.gg/cBYsQCS7j7";
-    private static readonly string XboxHubUrl = "https://discord.gg/pVd47KAG24";
-    private static readonly string ErUrl = "https://discord.gg/j2HndpJTej";
+    private static readonly string RevivesUrl = AppUrls.DiscordRevives;
+    private static readonly string XboxHubUrl = AppUrls.DiscordXboxHub;
+    private static readonly string ErUrl = AppUrls.DiscordEmuRevival;
 
     private Action? _onBack;
 
@@ -34,7 +34,7 @@ public partial class MobileAboutView : UserControl
 
     private void OnChangelogClick(object? sender, RoutedEventArgs e)
     {
-        PlatformHelper.OpenUrl("https://github.com/marcelofrau/xb-homebrew-vault/releases");
+        PlatformHelper.OpenUrl(AppUrls.GitHubReleases);
     }
 
     private void OnDiscordClick(object? sender, RoutedEventArgs e)
@@ -59,12 +59,12 @@ public partial class MobileAboutView : UserControl
 
     private void OnErLinkClick(object? sender, RoutedEventArgs e)
     {
-        PlatformHelper.OpenUrl("https://emulationrevival.github.io");
+        PlatformHelper.OpenUrl(AppUrls.EmulationRevival);
     }
 
     private void OnProjectLinkClick(object? sender, RoutedEventArgs e)
     {
-        PlatformHelper.OpenUrl("https://github.com/marcelofrau/xb-homebrew-vault");
+        PlatformHelper.OpenUrl(AppUrls.GitHubRepo);
     }
 }
 

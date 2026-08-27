@@ -7,7 +7,7 @@ namespace XBVault.Services;
 
 public sealed class GitHubReleaseCheckerService : IDisposable
 {
-    private const string ApiUrl = "https://api.github.com/repos/marcelofrau/xb-homebrew-vault/releases/latest";
+    private const string ApiUrl = AppUrls.ReleaseApiLatest;
     private static readonly HttpClient _defaultHttp = new();
     private static readonly Version ZeroVersion = new(0, 0, 0);
 

@@ -35,6 +35,9 @@ public partial class SettingsViewModel : ObservableObject
 
     public Func<string, string, string, string, string?, string?, Task<bool>>? ShowConfirmAsync { get; set; }
 
+    // Called to reopen the setup wizard when a stored password cannot be decrypted
+    public Func<Task>? ReconfigureCredentialsRequested { get; set; }
+
     public SettingsViewModel(IXboxAuthService authService, CacheService cacheService)
     {
         _authService = authService;
@@ -43,6 +46,13 @@ public partial class SettingsViewModel : ObservableObject
         CaptureSnapshot();
         UpdateCacheInfo();
         Logger.Debug("SettingsViewModel initialized");
+    }
+
+    public void RefreshFromStorage()
+    {
+        LoadSettings();
+        CaptureSnapshot();
+        UpdateCacheInfo();
     }
 
     // Snapshot of the last-persisted form state, used for dirty tracking
@@ -127,6 +137,9 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private string _password = string.Empty;
+
+    [ObservableProperty]
+    private bool _passwordDecryptFailed;
 
     [ObservableProperty]
     private bool _useHttps = true;
@@ -216,11 +229,11 @@ public partial class SettingsViewModel : ObservableObject
         {
             "Trace" => LogLevel.Trace,
             "Debug" => LogLevel.Debug,
-            "Info"  => LogLevel.Info,
-            "Warn"  => LogLevel.Warn,
+            "Info" => LogLevel.Info,
+            "Warn" => LogLevel.Warn,
             "Error" => LogLevel.Error,
             "Fatal" => LogLevel.Fatal,
-            _       => LogLevel.Info
+            _ => LogLevel.Info
         };
         SettingsService.Current.MinLogLevel = value;
         Logger.Info($"Log level set to {value}");
@@ -248,16 +261,37 @@ public partial class SettingsViewModel : ObservableObject
         _uiScalePercent = UiScaleOptions.OrderBy(o => Math.Abs(o - savedScale)).First();
 #pragma warning restore MVVMTK0034
 
-        Password = string.IsNullOrEmpty(conn.EncryptedPassword)
-            ? string.Empty
-            : CryptoService.Deobfuscate(conn.EncryptedPassword);
+        PasswordDecryptFailed = false;
+        if (!string.IsNullOrEmpty(conn.EncryptedPassword))
+        {
+            if (CryptoService.TryDeobfuscate(conn.EncryptedPassword, out var storedPw))
+            {
+                Password = storedPw ?? string.Empty;
+            }
+            else
+            {
+                PasswordDecryptFailed = true;
+                Password = string.Empty;
+            }
+        }
+        else
+        {
+            Password = string.Empty;
+        }
 
         if (conn.IsConfigured)
         {
             Logger.Debug("Connection already configured, applying");
-            _authService.Configure(conn.BaseUrl, conn.Username,
-                CryptoService.Deobfuscate(conn.EncryptedPassword));
-            ConnectionStatus = "Configured";
+            if (PasswordDecryptFailed)
+            {
+                Logger.Warn("Connection configured but stored password cannot be decrypted — skipping configure");
+                ConnectionStatus = "Password needs reconfiguration";
+            }
+            else
+            {
+                _authService.Configure(conn.BaseUrl, conn.Username, Password);
+                ConnectionStatus = "Configured";
+            }
         }
         else
         {
@@ -325,6 +359,10 @@ public partial class SettingsViewModel : ObservableObject
     {
         ShowSavedNotification = false;
     }
+
+    [RelayCommand]
+    private void ReconfigureCredentials()
+        => ReconfigureCredentialsRequested?.Invoke();
 
     [RelayCommand]
     private void SaveSettings()

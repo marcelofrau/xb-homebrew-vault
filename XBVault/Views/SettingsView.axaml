@@ -166,6 +166,19 @@
               </StackPanel>
             </Grid>
 
+            <StackPanel Orientation="Horizontal"
+                        Spacing="8"
+                        IsVisible="{Binding PasswordDecryptFailed}">
+              <TextBlock Text="Stored password could not be decrypted (config from another machine/user or corrupt)."
+                         FontSize="12"
+                         TextWrapping="Wrap"
+                         VerticalAlignment="Center"
+                         Foreground="{StaticResource DangerBrush}"/>
+              <Button Content="Reconfigure"
+                      Command="{Binding ReconfigureCredentialsCommand}"
+                      Padding="12,6"/>
+            </StackPanel>
+
             <Separator Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>
 
             <!-- Actions -->

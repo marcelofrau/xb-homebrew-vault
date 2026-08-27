@@ -12,7 +12,7 @@ namespace XBVault.Services;
 public sealed class PackageOverrideService : IDisposable
 {
     private const string GitHubRawUrl =
-        "https://raw.githubusercontent.com/marcelofrau/xb-homebrew-vault/main/XBVault/Assets/package-overrides.json";
+        AppUrls.OverridesJson;
 
     private const string EmbeddedAssetPath = "avares://XBVault/Assets/package-overrides.json";
 

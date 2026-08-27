@@ -6,9 +6,9 @@ namespace XBVault.ViewModels;
 
 public partial class DiscordPopupViewModel : ObservableObject
 {
-    private readonly string _revivesUrl = "https://discord.gg/cBYsQCS7j7";
-    private readonly string _xboxHubUrl = "https://discord.gg/pVd47KAG24";
-    private readonly string _erUrl = "https://discord.gg/j2HndpJTej";
+    private readonly string _revivesUrl = AppUrls.DiscordRevives;
+    private readonly string _xboxHubUrl = AppUrls.DiscordXboxHub;
+    private readonly string _erUrl = AppUrls.DiscordEmuRevival;
 
     [RelayCommand]
     private void JoinRevives()

@@ -39,7 +39,7 @@ public partial class SetupWizardWindow : Window
     private void OnDevModeLinkClick(object? sender, RoutedEventArgs e)
     {
         Logger.Info("Opening Emulation Revival Dev Mode info");
-        Process.Start(new ProcessStartInfo("https://emulationrevival.github.io") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo(AppUrls.EmulationRevival) { UseShellExecute = true });
     }
 
     private static void OnPortKeyDown(object? sender, KeyEventArgs e)

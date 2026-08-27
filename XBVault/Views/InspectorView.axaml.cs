@@ -276,11 +276,11 @@ public partial class InspectorView : UserControl
 
     private void OnXrayDepotLinkClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        Process.Start(new ProcessStartInfo("https://github.com/marcelofrau/uwp-xray-depot") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo(AppUrls.UwxXrayDepotRepo) { UseShellExecute = true });
     }
 
     private void OnPyConnectorLinkClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        Process.Start(new ProcessStartInfo("https://github.com/marcelofrau/xb-xray-py-connector") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo(AppUrls.XrayPyConnector) { UseShellExecute = true });
     }
 }

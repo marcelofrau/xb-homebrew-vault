@@ -106,8 +106,8 @@ public partial class MainWindow : Window
     {
         var host = new ToastHost(item);
         _toastHosts.Add(host);
-            if (item.AutoDismissToast)
-                AutoHideToastAsync(item, host).FireAndForget();
+        if (item.AutoDismissToast)
+            AutoHideToastAsync(item, host).FireAndForget();
     }
 
     private async Task AutoHideToastAsync(NotificationItem item, ToastHost host)
@@ -296,11 +296,11 @@ public partial class MainWindow : Window
             ClosePopupWithFadeAsync(TasksPopup, _tasksFadeGen).FireAndForget();
         }
 
-            if (NotificationsPopup.IsOpen && !IsPointInPopup(e, NotificationsPopup))
-            {
-                Logger.Trace("Flyout: outside press -> fade-close notifications");
-                ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen).FireAndForget();
-            }
+        if (NotificationsPopup.IsOpen && !IsPointInPopup(e, NotificationsPopup))
+        {
+            Logger.Trace("Flyout: outside press -> fade-close notifications");
+            ClosePopupWithFadeAsync(NotificationsPopup, _notificationsFadeGen).FireAndForget();
+        }
     }
 
     private static bool IsPointInPopup(PointerPressedEventArgs e, Popup popup)
@@ -448,7 +448,8 @@ public partial class MainWindow : Window
     private void OnBrandClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Logger.Info("Opening project website from brand logo");
-        Process.Start(new ProcessStartInfo("https://marcelofrau.github.io/xb-homebrew-vault/") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo(AppUrls.LegacyDocsSite)
+        { UseShellExecute = true });
     }
 
     private void OnMainWindowKeyDown(object? sender, KeyEventArgs e)
@@ -611,7 +612,8 @@ public partial class MainWindow : Window
     private void OnErLinkClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Logger.Info("Opening Emulation Revival website from sidebar");
-        Process.Start(new ProcessStartInfo("https://emulationrevival.github.io") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo(AppUrls.EmulationRevival)
+        { UseShellExecute = true });
     }
 
     private void OnDiscordClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

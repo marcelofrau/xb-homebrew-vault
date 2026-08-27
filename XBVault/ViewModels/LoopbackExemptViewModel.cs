@@ -13,7 +13,7 @@ namespace XBVault.ViewModels;
 
 public partial class LoopbackExemptViewModel : ObservableObject
 {
-    public const string XFilesProjectUrl = "https://github.com/marcelofrau/x-files-uwp";
+    public const string XFilesProjectUrl = AppUrls.XFilesUwp;
 
     public enum StatusSeverity { None, Success, Error, Info }
 

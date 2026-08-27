@@ -118,7 +118,7 @@ public static class LogShareService
         progress?.Report(0.5);
 
         // Step 2: Upload file
-        var uploadUrl = $"https://{server}.gofile.io/contents/uploadfile";
+        var uploadUrl = AppUrls.GoFileUpload(server);
 
         using var fileStream = File.OpenRead(filePath);
         var streamContent = new StreamContent(fileStream);
@@ -139,7 +139,7 @@ public static class LogShareService
     {
         try
         {
-            var response = await SharedClient.GetAsync("https://api.gofile.io/servers", ct);
+            var response = await SharedClient.GetAsync(AppUrls.GoFileServers, ct);
             var json = await response.Content.ReadAsStringAsync(ct);
 
             if (JsonDocument.Parse(json) is { } doc &&

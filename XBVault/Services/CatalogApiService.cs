@@ -20,7 +20,7 @@ namespace XBVault.Services;
 /// </summary>
 public partial class CatalogApiService
 {
-    private const string JsonApiUrl = "https://emulationrevival.github.io/api/catalog.json";
+    private const string JsonApiUrl = AppUrls.CatalogJson;
     private const int CacheTtlHours = 6;
     internal const int ExpectedSchemaVersion = 1;
 

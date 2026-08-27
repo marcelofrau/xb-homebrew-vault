@@ -212,7 +212,8 @@ public partial class MobileSetupWizardView : UserControl
         content.Children.Add(new Image
         {
             Source = LoadImage("setupwizard-welcome-48.png"),
-            Width = 72, Height = 72,
+            Width = 72,
+            Height = 72,
             Stretch = Stretch.Uniform,
             HorizontalAlignment = HorizontalAlignment.Center
         });
@@ -465,7 +466,7 @@ public partial class MobileSetupWizardView : UserControl
 
     private void OnDevModeLinkClick(object? sender, RoutedEventArgs e)
     {
-        try { PlatformHelper.OpenUrl("https://emulationrevival.github.io"); } catch { /* ignore */ }
+        try { PlatformHelper.OpenUrl(AppUrls.EmulationRevival); } catch { /* ignore */ }
     }
 
     public event EventHandler? CloseRequested;
