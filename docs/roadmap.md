@@ -7,11 +7,18 @@ title: Roadmap
 
 ## Current Status
 
-**Current source version: v1.4.0** · [Download latest release](https://github.com/marcelofrau/xb-homebrew-vault/releases/latest)
+**Current source version: v2.0.4** · [Download latest release](https://github.com/marcelofrau/xb-homebrew-vault/releases/latest)
 
-The app is feature-complete for daily Xbox Dev Mode homebrew management. Core flows — first-run setup, browse, install, uninstall, dev tools, USB permissions, Inspector — are all shipping and stable. **v1.0.0** marked the stabilization milestone with catalog overlay, multi-strategy package matching, and download flyout. **v1.0.1** added pre-flight checks, CLI parameters, and package manager fixes. **v1.1.0** shipped XRay/Inspector integration (TCP agent discovery, Lua REPL, live log streaming), keyboard shortcuts, performance tuning (Skia GPU cache, dirty-rect clipping), and comprehensive custom install wizard fixes. **v1.1.1** added custom install UX polish, single-instance mutex, and shortcut/view tweaks. **v1.2.0** shipped the auto-update checker (GitHub release comparison, NEW/UPDATE catalog badges, outdated-cache detection, update-flow fixes) plus a `linux-arm64` build-matrix entry. **v1.2.1–v1.3.1** shipped the User Files portal browser, X-Files enablement + Loopback Exempt wizards, UI scale, UI scale fixes, SFTP buffering/read-path performance rewrite (SSH.NET 2025.1), transfer diagnostics, and Window titles. **.NET 10 migration** (Aug 2026) moved the app from `net8.0` to `net10.0` — CI, tooling, and docs all updated; release builds stay self-contained.
+The app is feature-complete for daily Xbox Dev Mode homebrew management — on **desktop (Windows/macOS/Linux)** and **Android** (shipped in **v2.0.0**). Core flows — first-run setup, browse, install, uninstall, sideload, dev tools, file explorer, USB permissions, Inspector — are all shipping and stable. Highlights since v1.4:
 
-**Next: Android enablement + hardening.** The roadmap past v1.4 is focused on Android frontend validation, composition-root cleanup, platform adapters, service-layer tests, and targeted tech-debt reduction — see [Tech Debt](tech-debt), [Developer Architecture Guide](developer-architecture), and [Testing Infrastructure](ideas/testing-infrastructure).
+- **v1.4.0** — .NET 10 migration, background tasks + notification center, app-update scan with per-app ignore, autostart-on-connect, screen-level settings (save/discard/reset).
+- **v2.0.0** — **Android mobile app**: full portrait port (~27 `Mobile*` views), tabs shell (Browse/Installed/Tools/Settings), sideload wizard, QR connect share, GoFile share, safe-area handling, `IAppLogger`/SerilogAdapter, exception-safe event handlers, 3-project structure.
+- **v2.0.1** — white status-bar icons + safe-area on Android 15+, URL resolver (GoFile / Google Drive / OneDrive), version-gated `versionOverrides`.
+- **v2.0.2** — resource-in-use install retries, streaming uploads (OOM fix for 200+ MB packages), screenshot retries.
+- **v2.0.3** — matcher overhaul (10+ strategies, false-positive guards), WDP upload format fix, Save Log button.
+- **v2.0.4** — abort button, adaptive Browse badges, no auto-uninstall on update, matcher false-positive fixes, **390/390 tests**.
+
+**Next: hardening + the tail of the tech-debt backlog** — the remaining `async void` handlers, the `ConfigureAwait(false)` service-layer policy, composition-root cleanup (`App.axaml.cs` is past 1,900 lines), and the platform-adapter abstractions — see [Tech Debt](tech-debt) and [Developer Architecture Guide](developer-architecture).
 
 ---
 
@@ -42,8 +49,12 @@ timeline
     v1.2.1 : XboxDeviceService split finalized, FileExplorerViewModel split, test infrastructure (172 green), About polish
     v1.3.0 : User Files portal browser, X-Files enablement wizard, Loopback Exempt manager, UI scale to fit screen
     v1.3.1 : SFTP transfer performance rewrite (SSH.NET 2025.1), buffering up to 1 MB, transfer diagnostics, window titles
-    v1.3.2 : .NET 10 migration (net8.0 → net10.0), CI/tooling/docs updated
-    v1.4.0 : Static-analysis cleanup, nullable context sweep, service docs, window icons, Android planning
+    v1.4.0 : .NET 10 migration, background tasks + notification center, app-update scan, autostart-on-connect, settings save/discard/reset
+    v2.0.0 : Android mobile app (portrait shell, tabs, splash), mobile views (~27), sideload wizard, QR + GoFile share, file explorer, IAppLogger/SerilogAdapter
+    v2.0.1 : Safe area + white status icons, URL resolver (GoFile/Drive/OneDrive), version overrides
+    v2.0.2 : Resource-in-use retries, streaming uploads (OOM fix), screenshot retries
+    v2.0.3 : Matcher overhaul (10+ strategies), WDP upload format fix, Save Log button
+    v2.0.4 : Abort button, adaptive badges, no auto-uninstall, matcher false positives, 390/390 tests
 ```
 
 ## What's Shipped
@@ -73,6 +84,12 @@ timeline
 | Hardening | v1.2.1 | XboxDeviceService split finalized, FileExplorerViewModel split, test infrastructure (172 green), About polish |
 | Portal & wizards | v1.3.0 | User Files portal browser, X-Files enablement wizard, Loopback Exempt manager, UI scale to fit screen |
 | SFTP performance | v1.3.1 | SSH.NET 2025.1 read-path rewrite, up-to-1 MB buffers, transfer diagnostics, window titles |
+| Background & updates | v1.4.0 | .NET 10, background tasks + notification center, app-update scan, autostart, settings save/discard/reset |
+| Mobile (Android) | v2.0.0 | Full portrait Android app — tabs shell, ~27 mobile views, sideload wizard, QR + GoFile share, file explorer, IAppLogger |
+| Mobile hardening | v2.0.1 | Safe area + white status icons, URL resolver (GoFile/Drive/OneDrive), version overrides |
+| Install robustness | v2.0.2 | Resource-in-use retries, streaming uploads (OOM fix), screenshot retries |
+| Matcher + WDP | v2.0.3 | Matcher overhaul (10+ strategies), WDP upload format fix, Save Log button |
+| Mobile reliability | v2.0.4 | Abort button, adaptive badges, no auto-uninstall, matcher fixes, 390/390 tests |
 
 ### Feature Delivery Timeline
 
@@ -189,13 +206,21 @@ gantt
 | Stability | TreeView chevron offset fix | ✅ v0.9.4 |
 | Stability | Duplicate pointer handler cleanup | ✅ v0.9.4 |
 | Stability | CI VirusTotal integration | ✅ v0.9.4 |
-| Stability | Test infrastructure (xUnit, 172 green) | ✅ v1.2.1 |
+| Stability | Test infrastructure (xUnit, 390+ green) | ✅ v2.0.4 |
 | Stability | .NET 10 migration | ✅ v1.3.2 |
 | File Explorer | User Files portal browser (REST) | ✅ v1.3.0 |
 | File Explorer | Portal rename / delete / new folder | ✅ v1.3.0 |
 | Tools | X-Files enablement wizard | ✅ v1.3.0 |
 | Tools | Loopback Exempt manager | ✅ v1.3.0 |
 | UI | UI scale to fit screen (80–120%) | ✅ v1.3.0 |
+| Mobile | Android app (portrait shell, tabs, splash) | ✅ v2.0.0 |
+| Mobile | Sideload wizard + SAF content URIs | ✅ v2.0.0/v2.0.1 |
+| Mobile | QR connect share / GoFile share | ✅ v2.0.0 |
+| Mobile | Safe areas + white status icons | ✅ v2.0.1 |
+| Mobile | URL resolver (GoFile, Google Drive, OneDrive) | ✅ v2.0.1 |
+| Mobile | Logs screen with Save/Share | ✅ v2.0.3 |
+| Mobile | Adaptive badges + abort button | ✅ v2.0.4 |
+| Updates | Version overrides + 10+ matcher strategies | ✅ v2.0.1/v2.0.3 |
 
 ---
 
@@ -205,57 +230,61 @@ gantt
 
 ```mermaid
 gantt
-    title Road to v1.3 — Hardening
+    title Road to v2.1 — Hardening
     dateFormat  YYYY-MM-DD
     section Test infrastructure
-    xUnit test project + CI step     :done, 2026-08, 5d
-    Service layer tests (cache, crypto, catalog, override, install classify) :done, 2026-08, 10d
+    xUnit test project + CI step            :done, 2026-08, 5d
+    Service layer tests (cache, crypto, catalog, override, matcher, url-resolver) :done, 2026-08, 15d
+    section Mobile
+    Android app (shell, views, wizards, explorer) :done, 2026-08, 20d
+    Safe areas + white status icons         :done, 2026-08, 3d
     section Tech debt sweep
-    Split FileExplorerViewModel     :done, 2026-08, 14d
-    Split XboxDeviceService         :done, 2026-08, 14d
-    .NET 10 migration               :done, 2026-08, 3d
-    async void fix                  : 2026-08, 3d
-    ConfigureAwait(false) sweep     : 2026-08, 2d
-    section Beyond v1.3
-    Community catalog               : 2026-09, 21d
-    Enhanced version checker        : 2026-09, 5d
-    Storage analyzer                : 2026-10, 10d
+    Split FileExplorerViewModel             :done, 2026-08, 14d
+    Split XboxDeviceService                 :done, 2026-08, 14d
+    .NET 10 migration                       :done, 2026-08, 3d
+    FireAndForget async void fix            :active, 2026-08, 30d
+    ConfigureAwait(false) sweep             :active, 2026-08, 20d
+    Composition-root cleanup                :active, 2026-09, 15d
+    section Beyond v2.0
+    Community catalog                       : 2026-10, 21d
+    Storage analyzer                        : 2026-11, 10d
+    Enhanced log viewer search/export       : 2026-11, 5d
 ```
 
-### v1.4.x — Android Enablement & Hardening
+### v2.x — Hardening & Beyond
 
-The road past **v1.4.0** is dedicated to **Android enablement, platform adapters, and safer refactors**. Desktop remains the reference implementation; Android should reuse the service and ViewModel contracts wherever possible.
+The **Android app shipped in v2.0.0** — the remaining road is the tail of the tech-debt backlog plus long-term ecosystem features. Desktop stays the reference implementation; Android reuses the same service and ViewModel contracts.
 
 | Item | Status | Description |
 |------|--------|-------------|
-| **Test infrastructure** | ✅ Shipped | 240 tests passing under `tests/XBVault.Tests` |
+| **Test infrastructure** | ✅ Shipped | 390+ tests passing under `tests/XBVault.Tests` |
 | **Static-analysis cleanup** | ✅ Shipped | Desktop app builds with 0 warnings / 0 errors; nullable context sweep completed |
 | **Window icon consistency** | ✅ Shipped | All desktop `Window` roots use the shared app icon, including splash and setup wizard |
-| **Developer architecture docs** | ✅ Shipped | Shared service contracts, ViewModel boundaries, threading rules, and Android reuse guidance documented |
-| **Android project skeleton** | ✅ Buildable | `XBVault.Android` builds in Release for `net10.0-android36.0/android-arm64` when `JAVA_HOME` points to JDK 21 |
-| **Remove `async void`** | 🟡 Planned | 10 remaining event handlers that should route through safe `FireAndForget` wrappers |
-| **ConfigureAwait(false) sweep** | 🟡 Planned | 9 uses exist; service-layer I/O policy still incomplete |
-| **DI / CompositionRoot** | 🟡 Planned | `App.axaml.cs` remains 847 lines with manual service/ViewModel construction |
-| **Platform adapters** | 🟡 Planned | Dialogs, pickers, clipboard, navigation, and Android-specific lifecycle need explicit abstractions |
+| **Developer architecture docs** | ✅ Shipped | Shared service contracts, ViewModel boundaries, threading rules, Android reuse guidance documented |
+| **Android app** | ✅ Shipped | v2.0.0 — portrait shell + ~27 mobile views, launcher icons, native splash, safe areas, back navigation |
+| **Remove remaining `async void`** | 🟡 Active | `FireAndForget` helper shipped in v2.0.0; ~24 high-risk handlers remain to convert |
+| **ConfigureAwait(false) sweep** | 🟡 Active | 8 uses exist; service-layer I/O policy still incomplete |
+| **DI / CompositionRoot** | 🟡 Active | `App.axaml.cs` is ~1,906 lines with manual service/ViewModel construction |
+| **Platform adapters** | 🟢 Mostly done | Dialogs, pickers, clipboard, navigation, safe-area and lifecycle adapters landed with the Android port; residual gaps tracked in tech-debt |
 | **Remaining tech debt** | 🟡 Active | Full list in [Tech Debt](tech-debt) |
 
 ### v1.0.0 — First Stable Release ✅
 
 Shipped. Feature-complete, refactored, and tech-debt-reduced. See [CHANGELOG](https://github.com/marcelofrau/xb-homebrew-vault/blob/main/CHANGELOG.md) for details.
 
-### Beyond v1.2 (v1.x+) — Ecosystem & Features
+### Beyond v2.0 — Ecosystem & Features
 
 | Feature | Notes |
 |---------|-------|
 | Community catalog | Curated homebrew repo, click-to-install beyond Emulation Revival |
-| Enhanced version checker | Compare installed vs catalog version, 1-click update all |
-| Scheduled tasks | Recurring restart/shutdown/catalog refresh/backup |
+| ~~Enhanced version checker~~ | ✅ v2.0.1–v2.0.4 — version overrides + 10+ matcher strategies |
+| ~~Scheduled tasks~~ | ✅ v1.4.0 — background task runner (restart/shutdown/catalog refresh hooks) |
+| ~~Enhanced log viewer~~ | ✅ v2.0.3 — save log to file + share (QR/GoFile) |
 | Storage analyzer | Pie chart per-app storage, temp/cache cleanup |
 | System health checks | Ping latency, storage, memory overview dashboard |
-| Enhanced log viewer | Real-time Xbox logs, filter, search, export to file |
 | Game clip manager | Browse and download Xbox screenshots and game captures |
 | Media player streaming | Play Xbox media on PC over network |
-| Xbox Remote Play | Stream Xbox screen to PC |
+| Xbox Remote Play | Stream Xbox screen to PC (or phone) |
 
 ---
 

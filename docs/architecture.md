@@ -6,7 +6,7 @@ description: MVVM architecture of XB Homebrew Vault — Avalonia UI, CommunityTo
 
 # Architecture
 
-XB Homebrew Vault uses the **MVVM** pattern with **CommunityToolkit.Mvvm** and **Avalonia UI 12**, running on **.NET 10**.
+XB Homebrew Vault uses the **MVVM** pattern with **CommunityToolkit.Mvvm** and **Avalonia UI 12**, running on **.NET 10** (desktop: Windows/macOS/Linux; mobile: **.NET Android**, arm64).
 
 For contributor-facing layer contracts, threading rules, and Android reuse guidance, see the [Developer Architecture Guide](developer-architecture.md).
 
@@ -89,14 +89,23 @@ graph TD
         UpdChk[GitHubReleaseCheckerService]
         PO[PackageOverrideService]
         BgT[BackgroundTaskService]
-        ConnMon[ConnectionMonitorService]
         NotifC[NotificationCenterService]
+        IAU[InstalledAppUpdateService]
+        VChk[VersionCheckerService]
+        LOR[LocalOverrideService]
+        AutoS[AutostartService]
+        PL[PackageLauncher]
+        QR[QRCodeService]
+        LogS[LogShareService]
+        URL[UrlResolverService]
         PreF[PreFlightChecker]
         WinSet[WindowSettingsService]
         UpdCache[UpdateVersionCache]
         Colorizer[InspectorConsoleColorizer]
         PDiag[PlatformDialog]
-        L[Logger]
+        PH[PlatformHelper]
+        LA[IAppLogger + SerilogAdapter]
+        SL[ServiceLocator]
     end
 
     subgraph Models["Models"]
@@ -183,14 +192,49 @@ sequenceDiagram
         App->>Setup: ShowDialog() — 3-step wizard
         Setup->>App: credentials captured
     end
-    App->>App: Compose services (auth, package, system, network, process, performance, sftp, portal, cache, catalog, override)
-    App->>App: Start BackgroundTaskService + ConnectionMonitorService
+    App->>App: Compose services (auth, package, system, network, process, performance, sftp, portal, cache, catalog, overrides, update, autostart, logs, qr, url-resolver)
+    App->>App: Start BackgroundTaskService (app-updates scan, connection hook tasks)
     App->>MainW: new MainWindow
     App->>Splash: Close()
     App->>MainW: Show()
     MainW->>MainW: Register dialog actions
     User->>MainW: Interact
 ```
+
+## Mobile (Android) Architecture
+
+Since **v2.0.0**, XBVault also ships as a portrait-first Android app (`XBVault.Android`, `.NET Android` on `net10.0-android36.0`, arm64). It shares all services, ViewModels, and the general composition logic of the desktop app — only the **view layer** is rebuilt for the phone form factor.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User
+    participant Act as AvaloniaMainActivity
+    participant App as App.axaml.cs (shared)
+    participant Splash as MobileSplashView
+    participant MainW as MobileMainWindow
+    participant Nav as NavigationPanel overlays
+
+    User->>Act: Launch / resume
+    Act->>App: InitializeAvaloniaView (portrait, edge-to-edge)
+    App->>Splash: Show (fullscreen, outside safety margins)
+    Splash->>App: 5s min delay
+    App->>App: Compose + property-pass services (same services as desktop)
+    App->>App: Swap rootPanel content (Splash removed → MainWindow added)
+    App->>MainW: ShowOverlay(SetupWizard, About, Settings, SideloadWizard, …)
+    MainW->>Nav: Dialog overlays open via NavigationPanel (safe-area aware)
+    User->>MainW: Hardware back
+    MainW->>MainW: BackRequested → close overlay → pop tab history → Browse (base) → exit
+```
+
+Key properties of the mobile shell:
+
+- **One hybrid window** — `MobileMainWindow` hosts a bottom tab bar (Browse, Installed, Tools, Settings) and every overlay view (setup wizard, connection, about, settings, sideload wizard, file explorer, logs, tools, notifications, jobs, dialogs). Overlays open through `ShowOverlay` → `NavigationPanel`; the intro splash is the only fullscreen content hosted directly on the root panel.
+- **Reused desktop ViewModels** — `MobileBrowseView` drives the same `BrowseViewModel`, `MobileInstalledView` the same `InstalledViewModel`, etc. The action/`Func` delegates (dialogs, share, logs) are wired in `App.axaml.cs`, exactly like desktop.
+- **Avalonia's `AutoSafeAreaPadding` is disabled** — `MobileMainWindow` owns bar margins manually: AXAML margins are a first-frame guess, then `OnLoaded` applies the real `SafeAreaPadding` (or zeroes margins on older Android). Combining auto padding with manual margins double-pads.
+- **Hardware back** — intercepted via Avalonia's `TopLevel.BackRequested` (Android 16+/API 36 uses `OnBackInvokedCallback`); overlays close first, then tab history pops, and an empty stack navigates back to Browse (the implicit base). `MainActivity.OnBackPressed` remains a pre-API-36 fallback.
+- **SAF content URIs** — Android file pickers return `content://` URIs with no filesystem path; storage writes go through `IStorageFile.OpenWriteAsync()`, never `File.Create`.
+- **Build-time constraints** — Android dev APKs must be produced with `dotnet publish -c Release` (FastDev incremental installs corrupt bundled assemblies); AOT + trimming are required for the Avalonia JNI bridge. See [Android Architecture](android/01-architecture).
 
 ## Services
 
@@ -209,21 +253,31 @@ sequenceDiagram
 | `SftpService` | SSH.NET SFTP connection + low-level ops for the File Explorer | 694 |
 | `SftpTransferService` | High-level transfers: upload file/folder/mixed/ZIP-extract, download, progress + cancel | 789 |
 | `PortalAppFilesService` | WDP file API (portal) for the File Explorer: list/upload/download/rename/delete | 449 |
-| `XrayAgentService` | XRay TCP agent discovery + log streaming for the Inspector | 267 |
-| `GitHubReleaseCheckerService` | Auto-update checker — compares installed version against latest GitHub release | 72 |
-| `BackgroundTaskService` | Recurring background job runner + task center registry | 358 |
-| `ConnectionMonitorService` | Periodic connectivity polling → notifications | 90 |
-| `NotificationCenterService` | In-app notification aggregation + dismiss/action routing | 171 |
-| `SettingsService` | Persists `AppSettings` to `%APPDATA%/XBVault/settings.json` | 103 |
+| `XrayAgentService` | XRay TCP agent discovery + log streaming for the Inspector | 269 |
+| `GitHubReleaseCheckerService` | Auto-update checker — compares installed version against latest GitHub release | 73 |
+| `BackgroundTaskService` | Recurring background job runner + task center registry | 385 |
+| `InstalledAppUpdateService` | Periodic app-update scan (installed × catalog, override-aware) + per-app ignore tracking | 158 |
+| `VersionCheckerService` | Effective version resolution cascade (remote `versionOverrides` → embedded → catalog) + update comparisons | 487 |
+| `LocalOverrideService` | User-triggered catalog overrides persisted to `local-overrides.json` (UI-driven matching fixes) | 175 |
+| `NotificationCenterService` | In-app notification aggregation + dismiss/action routing | 243 |
+| `AutostartService` | Launch apps automatically on connect (flyout toggle, badge, launch hook) | 37 |
+| `PackageLauncher` | Launch installed apps with running-state feedback | 71 |
+| `QRCodeService` | QR code encode/decode for connection share | 80 |
+| `LogShareService` | Export/share logs — save to file, GoFile upload, QR | 181 |
+| `UrlResolverService` | Resolves indirect share links (GoFile, Google Drive, OneDrive) to direct downloads | 256 |
+| `SettingsService` | Persists `AppSettings` to `%APPDATA%/XBVault/settings.json` | 127 |
 | `CryptoService` | XOR + Base64 credential obfuscation | 47 |
 | `CacheService` | In-memory catalog cache with expiry | 116 |
 | `UsbDriveDetector` | Lists USB drives via WMI (`System.Management`) — Windows-only (`#if WINDOWS_BUILD`) | 218 |
 | `PreFlightChecker` | Startup settings/cache integrity validation + corrupt-repair | 270 |
 | `WindowSettingsService` | Persists window size/position | 43 |
-| `UpdateVersionCache` | Update-availability memoization | 83 |
+| `UpdateVersionCache` | Update-availability memoization | 91 |
 | `InspectorConsoleColorizer` | Log/console colorization for the Inspector | 37 |
 | `PlatformDialog` | Platform-aware file dialogs (WPF/Avalonia interop) | 135 |
-| `Logger` | File + console logging (`AttachConsole` via `DllImport` — Windows-only) | 351 |
+| `PlatformHelper` | Cross-platform environment helpers (paths, asset URI loading) | 28 |
+| `ServiceLocator` | App-wide service lookup used by views wired in `App.axaml.cs` | 36 |
+| `IAppLogger` / `SerilogAdapter` | Logging abstraction with Serilog backend — the legacy `Logger` (384) is being migrated onto it | 38 + 17 |
+| `Logger` | File + console logging (`AttachConsole` via `DllImport` — Windows-only). Legacy, superseded by `IAppLogger` | 384 |
 
 > **Verified from `main` code analysis (Aug 2026).** Line counts approximate.
 
@@ -328,7 +382,7 @@ graph LR
 | `SystemInfoViewModel` | SystemInfoWindow | XboxAuthService, XboxSystemService |
 | `CrashDataViewModel` | CrashDataWindow | XboxAuthService, XboxSystemService |
 
-> **DI pattern:** manual composition in `App.axaml.cs` (no DI container). Services constructed once, shared across VMs; dialog VMs constructed per-open with the services they need.
+> **DI pattern:** manual composition in `App.axaml.cs` (no DI container). Services constructed once, shared across VMs; dialog VMs constructed per-open with the services they need. Mobile views receive the same services as properties wired in `App.axaml.cs` — same pattern, no container.
 
 ## MVVM Patterns & Conventions
 
@@ -452,10 +506,22 @@ Base URL: `https://{xbox-ip}:11443` · Auth: HTTP Basic
 `CatalogApiService` fetches the Emulation Revival catalog from a single JSON endpoint:
 
 ```
-https://emulationrevival.github.io/catalog.json
+https://emulationrevival.github.io/api/catalog.json
 ```
 
 The JSON is parsed into `CatalogItem` models covering categories: Emulator, Frontend, GamePort, App, Experimental, Media, Utility. Results are cached by `CacheService` (6h TTL) with a persistent disk cache and stale-fallback on API failure.
+
+### Catalog Overrides
+
+Matching accuracy is corrected app-side (the catalog itself is externally maintained and read-only):
+
+| Source | Mechanism | Purpose |
+|--------|-----------|---------|
+| **Embedded** | `XBVault/Assets/package-overrides.json` | PFN / name → catalog-ID mappings shipped with the app |
+| **Remote version overrides** | GitHub raw `versionOverrides` merged over the embedded table | maps a `catalogVersion` to the real Xbox manifest version when upstream reports the wrong version (e.g. Sonic 2 SMS `2.9.2` → `2.9.0.2`); remote wins duplicate keys, and entries are gated on the catalog version so a real upstream fix is never masked |
+| **Local (user)** | `local-overrides.json` under `%APPDATA%/XBVault` via `LocalOverrideService` | UI-triggered manual remap of a catalog name to an installed package (highest priority) |
+
+Effective version resolution is centralized in `VersionCheckerService` (remote → embedded → catalog fallback).
 
 > **Previously:** the catalog was scraped from 7 individual HTML pages using HtmlAgilityPack. That approach was replaced when Emulation Revival published the `catalog.json` API.
 
@@ -524,10 +590,14 @@ CI runs on every push and PR via GitHub Actions:
 
 | Job | Runs on | Steps |
 |-----|---------|-------|
-| `build` | Windows + Ubuntu (matrix) | restore → build Release → test |
-| `release` | Windows + Ubuntu + macOS (tag push only) | publish win-x64, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64 → ZIP → GitHub Release |
+| `build` | Windows + Ubuntu (matrix) | restore → build Release |
+| `test` | Windows | `dotnet test` (390+ tests) |
+| `build-android` | Windows | restore → publish android-arm64 APK (debug key) |
+| `release` | Windows + Ubuntu + macOS (tag push only) | publish win-x64, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64 + android-arm64 APK → ZIP per RID → SHA256 + VirusTotal scan |
+| `publish` | Ubuntu (tag push only) | GitHub Release from tag (notes from `release-notes/v{version}.md` + checksums + VirusTotal sections) |
+| `deploy-docs` | Ubuntu (main push) | Jekyll build → Cloudflare Pages |
 
-Release artifacts: `XBVault-{version}-win-x64.zip`, `XBVault-{version}-win-arm64.zip`, `XBVault-{version}-linux-x64.zip`, `XBVault-{version}-linux-arm64.zip`, `XBVault-{version}-osx-x64.zip`, `XBVault-{version}-osx-arm64.zip` (all self-contained, no client runtime required).
+Release artifacts: `XBVault-{version}-win-x64.zip`, `XBVault-{version}-win-arm64.zip`, `XBVault-{version}-linux-x64.zip`, `XBVault-{version}-linux-arm64.zip`, `XBVault-{version}-osx-x64.zip`, `XBVault-{version}-osx-arm64.zip`, `XBVault-{version}-android-arm64.apk` (all self-contained, no client runtime required; the APK is signed with the release keystore).
 
 ---
 

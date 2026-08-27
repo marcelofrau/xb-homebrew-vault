@@ -14,7 +14,7 @@ The Android port uses the **canonical Avalonia multi-platform pattern** — a sh
 | `XBVault/` | Library | net10.0 | Shared code: Views, ViewModels, Services, Models, Assets |
 | `XBVault.Desktop/` | Exe | net10.0 | Desktop host: `Program.cs` (entry point, CLI, mutex) |
 | `XBVault.Android/` | Exe | net10.0-android36.0 | Android host: `MainActivity.cs`, `AndroidApp.cs` |
-| `tests/XBVault.Tests/` | Library | net10.0 | xUnit tests (240 tests) |
+| `tests/XBVault.Tests/` | Library | net10.0 | xUnit tests (390+ tests) |
 
 ### Why This Pattern?
 
@@ -36,8 +36,8 @@ Initially we tried renaming `XBVault` to `XBVault.Shared`, but:
 ```mermaid
 graph TD
     subgraph "XBVault (shared library — net10.0)"
-        Views["Views/ (9 UserControls)"]
-        ViewModels["ViewModels/ (24)"]
+        Views["Views/ (desktop UserControls + 27 Mobile* files)"]
+        ViewModels["ViewModels/ (shared with desktop)"]
         Services["Services/ (33)"]
         Models["Models/"]
         Helpers["Helpers/"]
@@ -163,28 +163,39 @@ graph LR
 ```mermaid
 graph TB
     TabBar["Bottom Tab Bar (4 tabs)"] --> Content["Content Area"]
-    Content --> BV["BrowsePage"]
-    Content --> IV["InstalledPage"]
-    Content --> FE["FilesPage"]
-    Content --> TV["ToolsPage"]
+    Content --> BV["MobileBrowseView"]
+    Content --> IV["MobileInstalledView"]
+    Content --> FE["MobileFileExplorerView"]
+    Content --> TV["MobileToolsView"]
 
-    Hamburger["Hamburger Menu"] --> Settings["Settings"]
-    Hamburger --> Logs["Logs"]
-    Hamburger --> Notifications["Notifications"]
-    Hamburger --> Jobs["Jobs"]
-    Hamburger --> About["About"]
+    Hamburger["Hamburger Menu (top-right)"] --> Settings["MobileSettingsView"]
+    Hamburger --> Logs["MobileLogsView"]
+    Hamburger --> About["MobileAboutView"]
 
-    ConnectionIcon["Connection Icon (top bar)"] --> ConnectionPage["ConnectionPage"]
+    ConnectionIcon["Connection Icon (top bar)"] --> ConnectionPage["MobileConnectionView"]
 ```
 
 The `MainViewModel.SelectedTab` index maps to both navigation systems — the Carousel binding works identically; only the visual chrome changes.
 
+**Actual implementation (shipped in v2.0.0):**
+- **One hybrid window** — `MobileMainWindow` (a `UserControl`) hosts the tab carousel, top bar, bottom tab bar, and a full-screen `NavigationPanel`. There is no second OS window anywhere on mobile.
+- **Overlays** — every non-tab screen (setup wizard, connection, settings, about, logs, tools result views, item detail, dialogs) is pushed as a fullscreen overlay onto `NavigationPanel` via `App.ShowOverlay(...)` → `MobileMainWindow.ShowOverlay`. Overlays cover the top bar + content + tabs.
+- **Wizards** — `MobileWizardShell` provides shared step navigation (Next/Back/step dots); setup wizard, custom install and sideload wizards use it.
+- **Back navigation** — a tab-history stack sits behind a central `SwitchToTab`: hardware back closes overlays first, then pops tab history, and an empty stack returns to Browse (the implicit base tab, never pushed). The app exits only when back is pressed on Browse.
+- **Connection path** — the shared `MainViewModel.Connection` VM is bound to a `MobileConnectionView` overlay opened from the top-bar icon (and via the first-run setup wizard).
+
+## Mobile Shell & Lifecycle
+
+- **Splash → main swap** — Avalonia's `MainViewFactory` reassignment does not work in the Android host; `App.OnFrameworkInitializationCompleted()` swaps the root panel content directly (`rootPanel.Children.Remove/Add`), replacing `MobileSplashView` with `MobileMainWindow` after a short min-delay.
+- **Portrait-only, fullscreen** — the activity is locked to portrait and the shell owns its safe-area margins.
+- **Safe areas** — AXAML margins are only a first-frame guess; at runtime the code applies the real `SafeAreaPadding` (or zeroes margins on devices where system bars sit outside the app surface). Edge-to-edge is forced on Android 15+ (API 35) once the app targets API 36, and Android 16+ (API 36) removes the opt-out entirely.
+- **Service injection** — no DI container; `App.axaml.cs` composes the same services as desktop and passes them to mobile views as properties, mirroring the desktop pattern.
+
 **Key differences from desktop:**
-- **4 tabs** (Browse, Installed, Files, Tools) — not 7
-- **Inspector excluded** from Android
-- **Settings, Logs** accessed via hamburger menu, not tabs
-- **Connection** accessed via top bar icon, not sidebar
-- **All Android views are independent files** in `XBVault.Android/Views/` — no shared AXAML with desktop
+- **4 tabs** (Browse, Installed, Explorer, Tools) — take the place of the desktop carousel
+- **Settings, Logs, About** accessed via the top-right hamburger flyout
+- **Connection** accessed via the top-bar connect icon
+- **All mobile views are standalone files in `XBVault/Views/`** (shared project) — pure-Avalonia `Mobile*` views that embed no Android types. They are kept separate from the desktop UserControls so each platform gets maximum design freedom; `App.axaml.cs` lives in the shared project and therefore cannot reference `XBVault.Android` types (this avoids the shared→android circular dependency).
 
 ## Dialog Strategy
 
@@ -192,15 +203,16 @@ The `MainViewModel.SelectedTab` index maps to both navigation systems — the Ca
 
 All 21 dialog views inherit from `Window` and are opened via `ShowDialog(mainWindow)`. This creates a new OS window with its own chrome.
 
-### Mobile: Embedded pages or fullscreen overlays
+### Mobile: fullscreen overlay views on the shared shell
 
-On Android, dialogs are rendered as:
+On Android there are no separate windows — every dialog is a dedicated `Mobile*` view hosted in the shell's `NavigationPanel`:
 
-1. **Fullscreen pages** — pushed onto a navigation stack within the content area
-2. **Bottom sheets** — for simple confirms/inputs (ConfirmWindow, InputDialog, DeleteConfirmWindow)
-3. **Reused UserControls** — some Window-based dialogs may be converted to UserControls for mobile embedding
+1. **Dialogs** — `MobileConfirmDialogView`, `MobileInputDialogView`, `MobileInfoDialogView`, `MobileErrorDialogView`, `MobileQrDialogView` (all safe-area aware).
+2. **Wizards** — `MobileSetupWizardView`, `MobileCustomInstallView` and the sideload flow run through `MobileWizardShell` (shared Next/Back step navigation).
+3. **Results & tools** — `MobileToolResultView` / `MobileToolOverlayView` show command output and tool execution inside the shell.
+4. **Item detail** — `MobileDetailView` is an overlay with install/update actions; `MobileSftpInfoView`, `MobileLoopbackView`, `MobileScreenshotView` cover their desktop counterparts.
 
-The `ShowDialog()` calls in ViewModels will be routed through a platform-aware dialog service that decides the presentation.
+The `ShowDialog()` calls in desktop ViewModels are **not** reused on mobile — overlays are triggered from `App.axaml.cs`, which wires the shared VMs' dialog delegates to the mobile overlay views instead.
 
 ## Shared Resources
 
@@ -236,10 +248,10 @@ No resource duplication needed — the `XBVault` project is referenced as a depe
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.0.0" />
-    <PackageReference Include="Avalonia.Android" Version="12.0.0" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.0" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.0" />
+    <PackageReference Include="Avalonia" Version="12.0.5" />
+    <PackageReference Include="Avalonia.Android" Version="12.0.5" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.5" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.5" />
   </ItemGroup>
 
   <ItemGroup>

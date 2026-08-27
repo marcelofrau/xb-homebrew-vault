@@ -18,7 +18,10 @@ Complete guide to using XB Homebrew Vault — from first launch to advanced feat
 | **Windows** | Windows 10/11 64-bit |
 | **macOS** | macOS 12 (Monterey), Apple Silicon or Intel | macOS 14 (Sonoma) |
 | **Linux** | glibc-based distro (Ubuntu 22.04+, Fedora 38+) | Ubuntu 24.04+ |
+| **Android** | Android 6.0+ (API 23), ARM64 | Recent Android, ARM64 |
 | **Xbox** | Xbox One or Series S\|X in Developer Mode | Latest Dev Mode update |
+
+> The Android app is documented separately in the [Mobile Guide](mobile).
 
 ### Download & Installation
 
@@ -30,6 +33,7 @@ Complete guide to using XB Homebrew Vault — from first launch to advanced feat
    - `osx-arm64.zip` — macOS Apple Silicon
    - `linux-x64.zip` — Linux 64-bit
    - `linux-arm64.zip` — Linux ARM (Raspberry Pi, ARM servers)
+   - `android-arm64.apk` — Android ARM64 (see [Mobile Guide](mobile))
 3. Extract the ZIP to any folder
 4. Run `XBVault.exe` (Windows) or `XBVault` (macOS/Linux)
 
@@ -412,7 +416,7 @@ Results are printed to the console and logged.
 | **Settings** (connection, preferences) | `%APPDATA%/XBVault/settings.json` |
 | **Logs** | `%APPDATA%/XBVault/logs/` |
 | **Package cache** (downloaded files) | `%LOCALAPPDATA%/XBVault/cache/` |
-| **Catalog cache** | `%LOCALAPPDATA%/XBVault/cache/catalog-v1.json` |
+| **Catalog cache** | `%LOCALAPPDATA%/XBVault/cache/catalog-api.json` |
 
 On Linux/macOS:
 - Settings & Logs: `~/.local/share/XBVault/`
@@ -423,7 +427,7 @@ On Linux/macOS:
 **Nothing.** XB Homebrew Vault does not collect telemetry, analytics, or usage data. It has no "phone home" feature.
 
 - All connection data stays on your machine
-- The only outbound request is fetching the catalog from Emulation Revival's CDN
+- Outbound requests: fetching the catalog from Emulation Revival, checking GitHub for app updates / version overrides, and any share/upload you explicitly trigger (QR share, GoFile upload, indirect download links)
 - No account, no login, no tracking
 
 ### Resetting Your Data

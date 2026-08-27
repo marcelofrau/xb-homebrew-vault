@@ -9,7 +9,7 @@ title: Implementation Plan
 
 Phased implementation plan with incremental deliverables. Each phase produces a testable artifact.
 
-> **Current status (2026-08-19):** Phases 0 + 1 complete. Phase 2 in progress (Browse functional, Installed/Connection remaining).
+> **Current status (2026-08-27):** All phases shipped in v2.0.0+. This page documents the original plan and its delivery record.
 
 ---
 
@@ -54,7 +54,9 @@ Plus: `PlatformHelper.OpenUrl`, `AndroidBackHandler`, systematic `Logger.Info`, 
 
 ---
 
-## Phase 2: Core Views 🔄 In Progress
+## Phase 2: Core Views ✅ Delivered
+
+Browse, Item Detail, Connection, Installed, File Explorer, Logs — all shipped and verified on physical devices.
 
 **Goal:** Browse, Installed, and Connection features fully functional on Android.
 
@@ -90,7 +92,9 @@ Plus: `PlatformHelper.OpenUrl`, `AndroidBackHandler`, systematic `Logger.Info`, 
 
 ---
 
-## Phase 3: Extended Features — Not started
+## Phase 3: Extended Features ✅ Delivered
+
+Tools, Settings, Sideload Wizard, Jobs, Notifications, Loopback, Screenshot, SFTP info — shipped.
 
 **Goal:** File Explorer, Tools (real actions), Settings (full), Logs functional on Android.
 
@@ -117,7 +121,9 @@ Plus: `PlatformHelper.OpenUrl`, `AndroidBackHandler`, systematic `Logger.Info`, 
 
 ---
 
-## Phase 4: Polish — Not started
+## Phase 4: Polish ✅ Delivered
+
+Safe areas, status-bar icons, back navigation, QR connect, URL resolver — shipped.
 
 **Goal:** Production-ready Android app with proper edge case handling.
 
@@ -149,9 +155,9 @@ Plus: `PlatformHelper.OpenUrl`, `AndroidBackHandler`, systematic `Logger.Info`, 
 ```mermaid
 graph TD
     P0["Phase 0: Setup ✅"] --> P1["Phase 1: Mobile Shell ✅"]
-    P1 --> P2["Phase 2: Core Views 🔄"]
-    P2 --> P3["Phase 3: Extended Features"]
-    P3 --> P4["Phase 4: Polish"]
+    P1 --> P2["Phase 2: Core Views ✅"]
+    P2 --> P3["Phase 3: Extended Features ✅"]
+    P3 --> P4["Phase 4: Polish ✅"]
 ```
 
 ---

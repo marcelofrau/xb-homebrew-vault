@@ -38,8 +38,8 @@ title: Requirements
 | F27 | User can copy files to a USB drive connected to the console | v0.9.4 |
 | F28 | User can browse app `LocalAppData`/`DevelopmentFiles` via the Dev Portal REST API and manage entries | v1.3.0 |
 | F29 | User can apply/remove the loopback exemption for any installed app (X-Files wizard) | v1.3.0 |
-| F30 | User can adjust UI scale (80–120%) and connection check interval in Settings | v1.3.1 |
-| F31 | User can save/discard/reset Settings changes from the header toolbar | v1.3.1 |
+| F30 | User can adjust UI scale (80–120%) and connection check interval in Settings | v1.3.0 / v1.4.0 |
+| F31 | User can save/discard/reset Settings changes from the header toolbar | v1.4.0 |
 
 > **F05 note:** Originally implemented as HTML scraping of 7 catalog pages via HtmlAgilityPack. Replaced in v0.8.5 with `CatalogApiService` consuming the `catalog.json` endpoint published by Emulation Revival, which provides more reliable and structured data.
 

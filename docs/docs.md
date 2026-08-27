@@ -18,6 +18,7 @@ Everything you need to understand, build, and contribute to XB Homebrew Vault.
 | [Requirements](requirements) | Functional and non-functional requirements — what the app must do and how |
 | [Roadmap](roadmap) | Version history, shipped features, and what's planned next |
 | [Inspector](inspector) | XRay TCP agent discovery, Lua REPL, live log streaming — Xbox diagnostics built-in |
+| [Mobile Guide](mobile) | End-user guide for the Android app — APK install, QR connect, sideload, file explorer, logs |
 
 ---
 
@@ -45,14 +46,32 @@ Deep-dives into the trickier integration challenges — how the app actually tal
 
 ---
 
+## Mobile (Android)
+
+The Android app (v2.0.0+) is a portrait-first port that reuses the desktop services and ViewModels behind a new phone-form-factor view layer.
+
+| Document | Description |
+|----------|-------------|
+| [Mobile Guide](mobile) | End-user guide — install the APK, QR connect, browse, sideload, file explorer, logs, jobs |
+| [Android Architecture](android/01-architecture) | How the port reuses desktop services/VMs — shell, safe areas, back navigation, lifecycle |
+| [Services Adaptation](android/04-services) | Service consumption matrix on Android — SAF paths, storage, platform limits |
+| [Views Matrix](android/06-views-matrix) | Every mobile view vs its desktop counterpart — shipped status |
+| [Mobile UX Design](android/09-mobile-ux-design) | Portrait-first design principles, tab structure, wizard/dialog system |
+| [Android Build & Release](android/08-build-and-release) | Signing, versionCode, APK naming, CI pipeline, sideloading |
+| [Android Testing Strategy](android/07-testing-strategy) | Test approach, build constraints (AOT/trimming), device testing |
+
+---
+
 ## Development
 
 | Document | Description |
 |----------|-------------|
-| [Tech Debt](tech-debt) | Known issues ordered by severity — 9 open items with file:line references and fix recommendations |
+| [Tech Debt](tech-debt) | Known issues ordered by severity — open items with file:line references and fix recommendations |
 | [Branching & Versioning](branching-and-versioning) | Git branch strategy, SemVer rules, commit message conventions, release workflow |
 | [Assets Guide](assets-guide) | Icon naming conventions, size selection, directory structure, format rules |
-| [Cross-Platform Porting](cross-platform-porting) | Plan to support Linux and macOS builds — blockers, steps, CI matrix |
+| [Cross-Platform Porting](cross-platform-porting) | Windows/macOS/Linux/Android support — porting history, blockers, CI matrix |
+| [Developer Architecture](developer-architecture) | Shared service contracts, ViewModel boundaries, threading rules, Android reuse guidance |
+| [Portal Filesystem API](portal-filesystem-api) | The REST API behind the User Files portal browser — endpoints, auth, operations |
 
 ---
 

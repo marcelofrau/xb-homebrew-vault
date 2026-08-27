@@ -65,7 +65,7 @@ The Avalonia canonical pattern uses a shared library + platform hosts:
 
 ```powershell
 $env:JAVA_HOME = "$env:LOCALAPPDATA\Android\Sdk\jdk-21"
-rtk dotnet build XBVault.sln -c Debug
+dotnet build XBVault.sln -c Debug
 ```
 
 ### Desktop only
@@ -73,7 +73,7 @@ rtk dotnet build XBVault.sln -c Debug
 ```powershell
 powershell -File build/build.ps1
 # or
-rtk dotnet build XBVault.Desktop/XBVault.Desktop.csproj -c Debug
+dotnet build XBVault.Desktop/XBVault.Desktop.csproj -c Debug
 ```
 
 ### Android only
@@ -82,7 +82,7 @@ rtk dotnet build XBVault.Desktop/XBVault.Desktop.csproj -c Debug
 $env:JAVA_HOME = "$env:LOCALAPPDATA\Android\Sdk\jdk-21"
 powershell -File build/build-android.ps1
 # or
-rtk dotnet build XBVault.Android/XBVault.Android.csproj -c Debug
+dotnet build XBVault.Android/XBVault.Android.csproj -c Debug
 ```
 
 ### Run desktop
@@ -102,21 +102,21 @@ powershell -File build/run-android.ps1
 
 ```powershell
 # Desktop (Windows x64)
-powershell -File build/build-release.ps1 -Version 1.4.0 -Arch x64
+powershell -File build/build-release.ps1 -Version 2.0.4 -Arch x64
 
 # Desktop (Linux/macOS)
-bash build/build-release.sh 1.4.0 x64
+bash build/build-release.sh 2.0.4 x64
 
-# Android (arm64)
+# Android (arm64) — signed release APK
 $env:JAVA_HOME = "$env:LOCALAPPDATA\Android\Sdk\jdk-21"
-powershell -File build/build-release-android.ps1 -Version 1.4.0
+powershell -File build/build-release-android.ps1 -Version 2.0.4
 ```
 
 ### Tests
 
 ```powershell
-rtk dotnet test tests/XBVault.Tests/XBVault.Tests.csproj -c Release
-# 240 tests, all pass
+dotnet test tests/XBVault.Tests/XBVault.Tests.csproj -c Release
+# 390+ tests, all pass
 ```
 
 ---
@@ -127,11 +127,12 @@ rtk dotnet test tests/XBVault.Tests/XBVault.Tests.csproj -c Release
 
 | Job | Trigger | Runner | What it does |
 |-----|---------|--------|--------------|
-| `build` | push/PR to main | windows-latest + ubuntu-latest | `dotnet build XBVault.Desktop` |
-| `build-android` | push/PR to main | windows-latest | `dotnet build XBVault.Android` (JDK 21 + Android SDK) |
-| `test` | push/PR to main | windows-latest + ubuntu-latest | `dotnet test` |
-| `release` | tag `v*` | matrix | win-x64, win-arm64, linux-x64, osx-x64, osx-arm64, **android-arm64** |
-| `publish` | tag `v*` | ubuntu-latest | GitHub Release with all ZIPs + checksums |
+| `build` | push/PR to main | windows-latest + ubuntu-latest | `dotnet restore` + `dotnet build -c Release` |
+| `test` | push/PR to main | windows-latest | `dotnet test` (390+ tests) |
+| `build-android` | push/PR to main | windows-latest | publish Release APK (debug key) for `android-arm64` |
+| `release` | tag `v*` | matrix | win-x64, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64, **android-arm64** (APK) → ZIP + SHA256 + VirusTotal |
+| `publish` | tag `v*` | ubuntu-latest | GitHub Release with all artifacts, checksums and VirusTotal section |
+| `deploy-docs` (separate workflow) | main push | ubuntu-latest | Jekyll site build + Cloudflare Pages |
 
 ### Release Matrix
 
@@ -143,7 +144,19 @@ rtk dotnet test tests/XBVault.Tests/XBVault.Tests.csproj -c Release
 | Linux ARM64 | linux-arm64 | `build-release.sh` | `XBVault-v{V}-linux-arm64.zip` |
 | macOS x64 | osx-x64 | `build-release.sh` | `XBVault-v{V}-osx-x64.zip` |
 | macOS ARM64 | osx-arm64 | `build-release.sh` | `XBVault-v{V}-osx-arm64.zip` |
-| Android ARM64 | android-arm64 | `build-release-android.ps1` | `XBVault-v{V}-android-arm64.zip` |
+| Android ARM64 | android-arm64 | `build-release-android.ps1` | `XBVault-v{V}-android-arm64.apk` (signed) |
+
+---
+
+## Signing, versionCode & ApplicationId
+
+The release APK is signed with the project's release keystore:
+
+- **Keystore**: `xbvault-release.keystore` (backed up outside the repo); alias `xbvault`; fingerprints/passwords are **not** in the repository.
+- **Conditional signing**: `build-release-android.ps1` signs with the release keystore when the GitHub secrets `ANDROID_KEYSTORE_BASE64` / `ANDROID_KEYSTORE_PASS` / `ANDROID_KEY_ALIAS` / `ANDROID_KEY_PASS` are present; locally (no env) it falls back to the debug key.
+- **ApplicationId**: `io.github.marcelofrau.xbvault` (set in `XBVault.Android.csproj`).
+- **versionCode**: derived from the semantic version and passed as `-p:ApplicationVersion = MAJOR*1_000_000 + MINOR*1_000 + PATCH`. The `-p:ApplicationVersionCode` property does **not** exist in the .NET Android SDK and is silently ignored (versionCode stays 1).
+- **Output naming**: once `<ApplicationId>` is set, publish output renames to `io.github.marcelofrau.xbvault-Signed.apk` — build scripts glob `*-Signed.apk` instead of hardcoding names.
 
 ---
 
@@ -221,5 +234,8 @@ Single RID (`android-arm64`) avoids MSBuild outer-multi-RID build issues. Do not
 ### File Naming Convention
 
 ```
-XBVault-v{Version}-android-arm64.zip
+XBVault-v{Version}-android-arm64.apk    (release build-release-android.ps1)
+XBVault.Android-Signed.apk             (raw publish output, ApplicationId-based)
 ```
+
+The APK is distributed as a standalone **asset** in every GitHub release alongside the desktop ZIPs.

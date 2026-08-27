@@ -5,7 +5,7 @@ title: Android Port
 
 # XBVault Android Port
 
-> **Status: Phase 1B complete, Phase 2 in progress.** Splash, main shell, and 6 mobile views deployed and working on physical device. Catalog browse with item detail functional. Next: Installed, Settings, Tools content, connection, dialogs.
+> **Status: Shipped in v2.0.0.** The Android app is released and working on physical devices — splash, shell, 4 tabs, all overlays, sideload wizard, QR connect, file explorer, logs, jobs and notifications. See the [Mobile Guide](../mobile) for end-user instructions and the [views matrix](06-views-matrix) for the full view inventory.
 
 ## Objective
 
@@ -38,20 +38,20 @@ XBVault already uses Avalonia 12 for its desktop UI. Avalonia natively supports 
 
 | Metric | Value |
 |--------|-------|
-| Mobile views created | 7 — Splash, MainWindow, BrowseView, DetailView, AboutView, SettingsView, ToolsView |
-| ViewModels | 24 — all cross-platform, no changes needed |
-| Services | 33 implementations — 18 fully compatible, 12 need minor changes, 1 needs major changes (PlatformDialog), 2 not applicable on mobile |
-| Platform-specific code | P/Invoke (3 files), WMI (1 file) — all guarded or not-applicable |
-| Blocking issues | Launcher icon showing generic (needs adaptive icon fix), native splash logo missing |
+| Mobile files (`XBVault/Views/Mobile*`) | **27** — splash, shell, title bar, 4 tabs, wizard shell, 5 dialogs + 14 overlays/screens |
+| ViewModels | Shared with desktop — no mobile-specific VM layer |
+| Services | 33 implementations — shared with desktop, property-passed from `App.axaml.cs` |
+| Desktop-only | USB permission wizard (hardware) and Inspector (XRay console) |
+| Blocking issues | None — safe areas, status-bar icons, URL resolver and SAF content-URI fixes all landed |
 
-## Estimated Timeline
+## Delivery Status
 
-| Phase | Duration | Status |
-|-------|----------|--------|
-| Phase 0: Project setup | ✅ Done | Buildable Android project skeleton |
-| Phase 1A: Placeholder | ✅ Done | Pre-splash placeholder on emulator |
-| Phase 1B: Shell + Splash | ✅ Done | Pre-splash, Avalonia splash, MobileMainWindow shell |
-| Phase 1C: Mobile views | ✅ Done | Browse, Detail, About, Settings, Tools views created |
-| Phase 2: Core views | In progress | Browse functional, need Installed + Connection |
-| Phase 3: Extended features | 5–8 days | File Explorer, full Tools, full Settings, Logs |
-| Phase 4: Polish | 3–5 days | Dialogs, notifications, back button, edge cases |
+| Phase | Status |
+|-------|--------|
+| Phase 0: Project setup | ✅ Done — buildable Android project skeleton |
+| Phase 1A: Placeholder | ✅ Done — pre-splash placeholder on emulator |
+| Phase 1B: Shell + Splash | ✅ Done — pre-splash, Avalonia splash, `MobileMainWindow` shell |
+| Phase 1C: Mobile views | ✅ Done — browse, detail, about, settings, tools, dialogs |
+| Phase 2: Core views | ✅ Done — installed, connection, file explorer, logs |
+| Phase 3: Extended features | ✅ Done — sideload wizard, jobs, notifications, loopback, screenshot |
+| Phase 4: Polish | ✅ Done — safe areas, status-bar icons, back navigation, QR connect |

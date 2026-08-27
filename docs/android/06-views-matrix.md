@@ -5,9 +5,9 @@ title: Views Matrix
 
 # Views Matrix — View-by-View Adaptation Status
 
-Every AXAML view in the project, classified by type, mobile adaptation needs, and priority.
+Every AXAML view in the project, classified by type, mobile adaptation, and shipped status.
 
-> **Updated 2026-08-19.** 7 mobile views created and deployed. Phase 1C complete.
+> **Updated 2026-08-27.** The Android port ships with **27 `Mobile*` files** — all views below are shipped and working on physical devices (v2.0.0+).
 
 ---
 
@@ -15,133 +15,104 @@ Every AXAML view in the project, classified by type, mobile adaptation needs, an
 
 | Symbol | Meaning |
 |--------|---------|
-| ✅ | Done — mobile view created and deployed |
-| 🔵 | Created — view exists but content still placeholder or needs wiring |
-| ⬜ | Not applicable on mobile |
-| 🔴 | Not started — needs new mobile-specific view |
+| ✅ | Shipped — mobile view created, deployed and verified |
+| ⬜ | Not applicable / intentionally excluded on mobile |
 
 ---
 
-## Android-Specific Views (Created Files)
+## Mobile Views (XBVault/Views/)
 
-These are **independent mobile views** in `XBVault/Views/`. They reuse ViewModels from the shared project but have their own AXAML layouts designed for mobile portrait fullscreen.
+These are **standalone mobile views** in the shared `XBVault/Views/` directory (pure-Avalonia, no Android types — keeps `App.axaml.cs` in the shared project free of circular references). They reuse ViewModels from the shared project with their own portrait-first AXAML layouts.
 
-| View | File | Status | Description |
-|------|------|--------|-------------|
-| MobileSplashView | `Views/MobileSplashView.axaml` | ✅ Done | Portrait splash with background image, version, Oxanium fonts |
-| MobileMainWindow | `Views/MobileMainWindow.axaml` | ✅ Done | Shell: gradient top bar + Carousel content + bottom tab bar |
-| MobileBrowseView | `Views/MobileBrowseView.axaml` | ✅ Done | Catalog cards with images, category filter, search, CdSpinner |
-| MobileDetailView | `Views/MobileDetailView.axaml` | ✅ Done | Fullscreen item detail with thumbnail, metadata, install button |
-| MobileAboutView | `Views/MobileAboutView.axaml` | ✅ Done | Splash bg image, Discord flyout, gradient top bar, back header |
-| MobileSettingsView | `Views/MobileSettingsView.axaml` | ✅ Done | Single-column, Save button, gradient top bar, back header |
-| MobileToolsView | `Views/MobileToolsView.axaml` | 🔵 Created | 4 section cards (placeholder actions, needs real tool wiring) |
+### Shell & Chrome
 
----
+| View | File | Status | Purpose |
+|------|------|--------|---------|
+| MobileSplashView | `Views/MobileSplashView.axaml` | ✅ | Portrait splash with background, version, Oxanium fonts; the only fullscreen content hosted outside the main shell |
+| MobileMainWindow | `Views/MobileMainWindow.axaml` | ✅ | The single hybrid window (a `UserControl`): gradient top bar, tab Carousel, bottom tab bar, full-screen `NavigationPanel` overlay layer |
+| MobileTitleBar | `Views/MobileTitleBar.axaml` | ✅ | Reusable top bar component — logo, back button, right/far-right content slots |
 
-## Main Navigation Views (Desktop — Not reused on Android)
+### Tabs
 
-These are the desktop tab content views. On Android, they're replaced by independent Mobile* views.
+| View | File | Status | Purpose |
+|------|------|--------|---------|
+| MobileBrowseView | `Views/MobileBrowseView.axaml` | ✅ | Catalog cards with images, category filter, search, refresh spinner |
+| MobileInstalledView | `Views/MobileInstalledView.axaml` | ✅ | Installed packages — launch/suspend/uninstall, update status |
+| MobileFileExplorerView | `Views/MobileFileExplorerView.axaml` | ✅ | SFTP explorer — breadcrumbs, upload/download, new folder/delete, SAF content-URI uploads |
+| MobileToolsView | `Views/MobileToolsView.axaml` | ✅ | Tools menu — card grid wired to the shared tool commands |
 
-| View | File | Desktop Features | Mobile Adaptation | Status |
-|------|------|------------------|-------------------|--------|
-| BrowseView | `Views/BrowseView.axaml` | Responsive grid, hover cards, search | Replaced by `MobileBrowseView` | ✅ |
-| InstalledView | `Views/InstalledView.axaml` | Card list, package actions | **Not yet created** — needs MobileInstalledView | 🔴 |
-| FileExplorerView | `Views/FileExplorerView.axaml` | TreeView sidebar, file list | **Not yet created** — needs MobileFilesView | 🔴 |
-| ToolsView | `Views/ToolsView.axaml` | Button grid, Windows-only features | Replaced by `MobileToolsView` (placeholder) | 🔵 |
-| InspectorView | `Views/InspectorView.axaml` | AvaloniaEdit console | **Excluded from Android** | ⬜ |
-| SettingsView | `Views/SettingsView.axaml` | Settings form, scale controls | Replaced by `MobileSettingsView` | 🔵 |
-| LogsView | `Views/LogsView.axaml` | AvaloniaEdit log viewer | **Not yet created** — needs MobileLogsView | 🔴 |
+### Overlays (NavigationPanel)
 
----
+| View | File | Status | Purpose |
+|------|------|--------|---------|
+| MobileConnectionView | `Views/MobileConnectionView.axaml` | ✅ | Connect screen — manual credentials or QR (scan/share) from the top-bar connect icon |
+| MobileSetupWizardView | `Views/MobileSetupWizardView.axaml` | ✅ | First-run setup wizard via `MobileWizardShell` |
+| MobileCustomInstallView | `Views/MobileCustomInstallView.axaml` | ✅ | Custom install + sideload wizard — local file (SAF) or URL (incl. GoFile/Drive/OneDrive) via `MobileWizardShell` |
+| MobileDetailView | `Views/MobileDetailView.axaml` | ✅ | Item detail — thumbnail, metadata, downloads, install/update |
+| MobileSettingsView | `Views/MobileSettingsView.axaml` | ✅ | Settings — single-column, save/back header |
+| MobileAboutView | `Views/MobileAboutView.axaml` | ✅ | About — splash background, community dialogs, version |
+| MobileLogsView | `Views/MobileLogsView.axaml` | ✅ | Logs — plain text log viewer with copy + **Save Log** (file / share) |
+| MobileJobsView | `Views/MobileJobsView.axaml` | ✅ | Jobs — background activity with progress, retry, abort |
+| MobileNotificationsView | `Views/MobileNotificationsView.axaml` | ✅ | Notifications — in-app history from the notification center |
+| MobileSftpInfoView | `Views/MobileSftpInfoView.axaml` | ✅ | SFTP transfer info overlay |
+| MobileLoopbackView | `Views/MobileLoopbackView.axaml` | ✅ | Loopback exempt manager |
+| MobileScreenshotView | `Views/MobileScreenshotView.axaml` | ✅ | Screenshot viewer |
+| MobileToolResultView | `Views/MobileToolResultView.axaml` | ✅ | Generic tool result (output text) overlay |
+| MobileToolOverlayView | `Views/MobileToolOverlayView.axaml` | ✅ | In-session tool execution overlay |
 
-## Modal Dialogs (Desktop — Need conversion)
+### Dialogs
 
-All dialogs inherit from `Window` and use `ShowDialog()`. On Android, each must be converted.
+| View | File | Status | Purpose |
+|------|------|--------|---------|
+| MobileConfirmDialogView | `Views/MobileConfirmDialogView.axaml` | ✅ | Confirm dialog (replaces ConfirmWindow / DeleteConfirmWindow) |
+| MobileInputDialogView | `Views/MobileInputDialogView.axaml` | ✅ | Text input dialog |
+| MobileInfoDialogView | `Views/MobileInfoDialogView.axaml` | ✅ | Info dialog |
+| MobileErrorDialogView | `Views/MobileErrorDialogView.axaml` | ✅ | Global error dialog (shown for unhandled exceptions) |
+| MobileQrDialogView | `Views/MobileQrDialogView.axaml` | ✅ | QR code display (connection share, log share) |
 
-### Complex Dialogs (fullscreen page pattern)
+### Wizard Shell
 
-| Dialog | File | Status | Mobile Adaptation |
-|--------|------|--------|-------------------|
-| ConnectionWindow | `Views/ConnectionWindow.axaml` | 🔴 Not started | Multi-step wizard → fullscreen with progress |
-| SetupWizardWindow | `Views/SetupWizardWindow.axaml` | 🔴 Not started | Multi-step wizard → fullscreen with progress |
-| ItemDetailWindow | `Views/ItemDetailWindow.axaml` | ✅ Done | Replaced by `MobileDetailView` |
-| CustomInstallWindow | `Views/CustomInstallWindow.axaml` | 🔴 Not started | Form inputs, file picker → fullscreen page |
-| PerformanceWindow | `Views/PerformanceWindow.axaml` | ⬜ Skip | Charts need touch-friendly redesign — Phase 4 |
-| ScreenshotWindow | `Views/ScreenshotWindow.axaml` | ⬜ Skip | Phase 4 |
-| SystemInfoWindow | `Views/SystemInfoWindow.axaml` | ⬜ Skip | Phase 4 |
-| ProcessesWindow | `Views/ProcessesWindow.axaml` | ⬜ Skip | Phase 4 |
-| NetworkInfoWindow | `Views/NetworkInfoWindow.axaml` | ⬜ Skip | Phase 4 |
-| CrashDataWindow | `Views/CrashDataWindow.axaml` | ⬜ Skip | Phase 4 |
-| RefreshWindow | `Views/RefreshWindow.axaml` | ⬜ Skip | Phase 4 |
-
-### Simple Dialogs (bottom sheet or safe wrapper)
-
-| Dialog | File | Status | Mobile Adaptation |
-|--------|------|--------|-------------------|
-| ConfirmWindow | `Views/ConfirmWindow.axaml` | 🔴 Not started | Bottom sheet with two buttons |
-| DeleteConfirmWindow | `Views/DeleteConfirmWindow.axaml` | 🔴 Not started | Bottom sheet with two buttons |
-| InputDialog | `Views/InputDialog.axaml` | 🔴 Not started | Bottom sheet with text field |
-| ErrorDialog | `Views/ErrorDialog.axaml` | ✅ Done | Log-only on Android (no Window) |
-
-### Inline / Hamburger Menu
-
-| Dialog | File | Status | Mobile Adaptation |
-|--------|------|--------|-------------------|
-| AboutWindow | `Views/AboutWindow.axaml` | ✅ Done | Replaced by `MobileAboutView` (fullscreen overlay) |
-| SftpInfoWindow | `Views/SftpInfoWindow.axaml` | ⬜ Skip | Inline card — Phase 4 |
-| DiscordPopup | `Views/DiscordPopup.axaml` | ✅ Done | Inline Flyout on Discord button in `MobileAboutView` |
-| UsbPermissionWindow | `Views/UsbPermissionWindow.axaml` | ⬜ Skip | Windows-only |
-| LoopbackExemptWindow | `Views/LoopbackExemptWindow.axaml` | ⬜ Skip | Windows-only |
+| View | File | Status | Purpose |
+|------|------|--------|---------|
+| MobileWizardShell | `Views/MobileWizardShell.axaml` | ✅ | Shared multi-step wizard chrome (Next/Back/step dots) used by setup, custom install and sideload flows |
 
 ---
 
-## Panels (Desktop — Need mobile alternatives)
+## Desktop View Coverage (what replaced what)
 
-| View | File | Status | Mobile Adaptation |
-|------|------|--------|-------------------|
-| TasksPanel | `Views/TasksPanel.axaml` | 🔴 Not started | Bottom sheet or inline in hamburger menu |
-| NotificationsPanel | `Views/NotificationsPanel.axaml` | 🔴 Not started | Bottom sheet or inline in hamburger menu |
+| Desktop view | Mobile replacement | Status |
+|--------------|--------------------|--------|
+| MainWindow | `MobileMainWindow` | ✅ |
+| SplashWindow | `MobileSplashView` + native pre-splash | ✅ |
+| BrowseView | `MobileBrowseView` | ✅ |
+| ItemDetailWindow | `MobileDetailView` | ✅ |
+| InstalledView | `MobileInstalledView` | ✅ |
+| FileExplorerView | `MobileFileExplorerView` | ✅ |
+| ToolsView | `MobileToolsView` | ✅ |
+| SettingsView | `MobileSettingsView` | ✅ |
+| LogsView | `MobileLogsView` (plain TextBlock, no AvaloniaEdit) | ✅ |
+| ConnectionWindow | `MobileConnectionView` | ✅ |
+| SetupWizardWindow | `MobileSetupWizardView` (`MobileWizardShell`) | ✅ |
+| CustomInstallWindow | `MobileCustomInstallView` (`MobileWizardShell`) | ✅ |
+| **SideloadWizard** (new on mobile) | sideload flow inside `MobileCustomInstallView` | ✅ |
+| ConfirmWindow / DeleteConfirmWindow | `MobileConfirmDialogView` | ✅ |
+| InputDialog | `MobileInputDialogView` | ✅ |
+| InfoDialog | `MobileInfoDialogView` | ✅ |
+| ErrorDialog | `MobileErrorDialogView` | ✅ |
+| QrDialog | `MobileQrDialogView` | ✅ |
+| AboutWindow | `MobileAboutView` | ✅ |
+| SftpInfoWindow | `MobileSftpInfoView` | ✅ |
+| LoopbackExemptWindow | `MobileLoopbackView` | ✅ |
+| ScreenshotWindow | `MobileScreenshotView` | ✅ |
+| Performance / SystemInfo / Processes / NetworkInfo / CrashData | `MobileToolResultView` / `MobileToolOverlayView` (in-tab tool execution) | ✅ |
+| TasksPanel / NotificationsPanel | `MobileJobsView` / `MobileNotificationsView` | ✅ |
+| UsbPermissionWindow | ⬜ Windows-only (USB detection) | ⬜ |
+| InspectorView | ⬜ Excluded from Android (desktop XRay console) | ⬜ |
 
 ---
 
-## Root Views
+## Summary
 
-| View | File | Status | Mobile Adaptation |
-|------|------|--------|-------------------|
-| MainWindow | `MainWindow.axaml` | ✅ Done | Replaced by `MobileMainWindow` on Android |
-| SplashWindow | `SplashWindow.axaml` | ✅ Done | Replaced by `MobileSplashView` + native pre-splash |
-| App.axaml | `App.axaml` | ✅ Done | No changes needed |
-
----
-
-## Summary by Phase
-
-### Phase 1 (Mobile Shell) ✅
-- MobileSplashView, MobileMainWindow created
-- Pre-splash native + Avalonia splash
-- Tab bar, top bar, hamburger menu
-
-### Phase 1C (Mobile Views) ✅
-- MobileBrowseView, MobileDetailView, MobileAboutView, MobileSettingsView, MobileToolsView
-
-### Phase 2 (Core) 🔄
-- ✅ BrowseView — working with cards, search, detail
-- ✅ ItemDetailWindow — replaced by MobileDetailView
-- ✅ ErrorDialog — log-only on Android
-- 🔴 InstalledView — needs MobileInstalledView
-- 🔴 ConnectionWindow — needs fullscreen page
-- 🔴 Confirm/DeleteConfirm — need bottom sheets
-
-### Phase 3 (Extended)
-- 🔴 FileExplorerView — needs MobileFilesView with breadcrumbs
-- 🔴 ToolsView — needs real tool actions wired
-- 🔴 SettingsView — needs real settings save/load
-- 🔴 LogsView — needs plain TextBlock (no AvaloniaEdit)
-- 🔴 SetupWizardWindow — needs fullscreen page
-- 🔴 TasksPanel, NotificationsPanel — need mobile alternatives
-
-### Phase 4 (Polish)
-- ⬜ PerformanceWindow, ScreenshotWindow, SystemInfoWindow, etc.
-- ⬜ Adaptive icon fix
-- ⬜ Native splash logo restoration
-- ⬜ Network state handling, battery optimization
+- **27 `Mobile*` files** — 4 tab views, 1 shell, 1 title bar, 1 splash, 5 dialog views, 1 wizard shell, and 14 overlay/screen views — all shipped in **v2.0.0+**.
+- Mobile views reuse the **shared ViewModels**; `App.axaml.cs` wires their `Action`/`Func` delegates (dialogs, share, logs) to the mobile overlay views.
+- Only **USB permission** (desktop hardware) and **Inspector** (AvaloniaEdit console) are intentionally absent on Android.

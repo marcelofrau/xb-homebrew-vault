@@ -7,6 +7,137 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.4] — 2026-08-27
+
+### Added
+
+- **Abort button on install/update** — the Close button becomes "Abort" during an active install; a `CancellationToken` is now threaded through the entire install/update chain
+- **Adaptive Browse badges** — shows freshness (`NEW` / `RECENTLY UPDATED`) while disconnected and switches to update status (`UPDATE AVAILABLE` / `UPDATED`) once connected to the Xbox
+- **InstalledView package identity** — cards show the real `PackageRelativeId` when the catalog name matches the installed name (ambiguity hint)
+
+### Fixed
+
+- **No auto-uninstall on update** — the app no longer removes existing packages when updating; it warns the user to check for duplicates and uninstall manually
+- **Matcher false positives** — `doom64ex` and `uhexen2` no longer match as gzdoom mods; tightened prefix guards (min 6 chars) and name-ratio checks
+- **Package name overrides** — "Doom64EX Classic" and "uHexen2" mapped to the correct catalog entries via `packageOverrides`
+- **Update hanging** — Xbox `IdleScreen` (screensaver) blocking the package manager no longer causes an infinite wait; the app auto-terminates blocking apps and uses size-based timeouts (2/5/10 min by file size)
+- **Uploaded files renamed** — files uploaded via the mobile file explorer no longer get the `xbvupload` prefix; original filenames preserved
+- **Log download 0-byte ZIP** — Android SAF content-URI path issue fixed; logs now save correctly via `OpenWriteAsync`
+- **Screenshot save 0-byte** — same SAF root cause, same fix
+- **New folder not appearing** — mobile file explorer now refreshes after folder creation
+- **Upload crash** — upload handlers catch exceptions instead of crashing the app silently
+
+### Changed
+
+- **LogsView button polish** — floppy-disk icon, shorter labels (Save/Share), spacing between buttons
+- **CancellationToken propagation** — 15 CA2016 warnings eliminated along the edit chain
+- **390/390 tests passing**
+
+---
+
+## [2.0.3] — 2026-08-25
+
+### Added
+
+- **Matcher overhaul** — catalog-to-installed matching rewritten with 10+ strategies replacing prefix-only matching: alphanumeric normalization, prefix matching, PFN / FullName signals, download-URL token matching, suffix stripping, override priority, and false-positive guards (directional prefix checks, min display-name length, strict ID lengths)
+
+### Fixed
+
+- **Xbox WDP upload format** — manual multipart body matching the browser format; fixes 400 "Missing .msix" errors
+- **Large file OOM** — all file uploads now stream from disk via `StreamContent` / `ConcatStream` instead of loading into memory
+- **Sideload dependency refresh** — dependency list updates when new deps are added in the sideload wizard
+- **Portal download failures** — improved error handling for indirect share links (GoFile, Google Drive, OneDrive)
+- **Install verification** — better post-install state checking
+
+### Mobile
+
+- **Save Log button** — the logs screen now has a button to save the current log to file
+
+### Changed
+
+- 6 compiler warnings eliminated (CA1844, CA1861, CA1835, CS8604)
+- **48 unit tests** — comprehensive matcher coverage (10+ strategies, real-world scenarios, false-positive regressions)
+
+---
+
+## [2.0.2] — 2026-08-25
+
+### Fixed
+
+- **X-Files / sideload install false failures** — package manager retries on resource-in-use (`0x80073D02`) instead of failing immediately (Xbox releases DevHome/XboxDevices locks within ~10–20 s)
+- **Large package upload crash (OOM)** — sideload uploads stream files via `StreamContent` instead of loading the whole package in memory; fixes OOM on packages > 200 MB (e.g. 574 MB appx)
+- **Screenshot intermittent failure** — capture retries up to 5× with a 1 s delay before reporting failure (Xbox WDP occasionally returns transient HTTP 500)
+
+---
+
+## [2.0.1] — 2026-08-25
+
+### Added
+
+- **Safe area + system bars** — content respects status/navigation bar insets; white status-bar icons via `RequestedThemeVariant="Dark"`; graceful fallback on pre-Android-15 devices
+- **URL resolver** — indirect share links from GoFile, Google Drive, and OneDrive are resolved and downloaded automatically for sideload
+- **Version overrides** — `package-overrides.json` supports catalog-version-gated `versionOverrides` mapping catalog versions to actual Xbox manifest versions, eliminating false update positives (e.g. Sonic 2 SMS `2.9.2` → `2.9.0.2`)
+
+### Fixed
+
+- **SAF file picker** — Android `content://` URIs correctly copied to temp files instead of silently failing
+- **Back during analysis** — pressing back while analyzing dependencies cancels cleanly instead of leaving an infinite spinner
+- **Sideload polish** — breadcrumb icons, local filename display, Done button enabled only on success, CdSpinner during install
+- **Android back button** — walks back through tab history and overlays; exits only on Browse with empty history
+- **Installed tab dropdown** — flyout closes via `Dispatcher.UIThread.Post(Background)` to avoid suppressing the command binding
+
+### Changed
+
+- **Release notes template** — release body sourced from `release-notes/v{version}.md`, preventing CI from overwriting curated notes
+- **VirusTotal links** — scan results appended as a collapsible section
+- 11 build warnings eliminated (CA1707, CA1822, CA1001, CA1816, CA1861, CS0067, CS8601/CS8602/CS8625)
+- New tests: 20+ URL resolver + version-override logic, safe-area behavior on Android 11 and 15+
+
+---
+
+## [2.0.0] — 2026-08-24
+
+### Added
+
+- **Android mobile app** — full portrait mobile port on .NET Android (`net10.0-android36.0`, arm64) with Avalonia 12; splash + main shell with tabs (Browse, Installed, Tools, Settings), top bar, and safe-area insets
+- **Mobile views (~26)** — Browse grid + detail, custom install wizard, connection overlay, installed cards, file explorer, sideload wizard, logs screen, tools overlays, notifications, jobs, about, settings, and mobile dialogs (confirm / input / info / QR / error)
+- **QR connect share** — connection shared/received via QR code
+- **GoFile sharing** — upload + share logs/packages through GoFile
+- **URL resolver foundation** — indirect share host resolution (GoFile, Google Drive, OneDrive)
+- **`IAppLogger` + `SerilogAdapter`** — logging abstraction introduced; services migrating off the static logger
+- **`FireAndForget` helper** — high-risk `async void` event handlers made exception-safe
+- **Desktop usability** — home button, flyout close, uninstall feedback, log-level sweep
+
+### Changed
+
+- **Three-project structure** — `XBVault` (shared), `XBVault.Desktop`, `XBVault.Android`
+- **CI** — Android build pipeline (JAVA_HOME to JDK 21, SDK 36), standalone APK added to release assets, VirusTotal APK scanning, Android test job platform
+- **SSH.NET upgraded to 2026.0.0** — security fixes
+- **macOS** — `xattr` helper script + Gatekeeper/codesign troubleshooting docs
+- **Wiki** — 14 user-facing pages added (`wiki/`)
+- **Launcher icons + native splash** — adaptive launcher icons regenerated
+
+---
+
+## [1.4.0] — 2026-08-13
+
+### Added
+
+- **.NET 10 migration** — app and tests moved from `net8.0` to `net10.0` (release builds stay self-contained)
+- **Background tasks + notification center** — periodic background work and consolidated notifications; replaces the old connection monitor
+- **App updates** — periodic update scan (`app-updates` background task), update badge, per-app "ignore this update" toggle, retry downloads, per-stage install error surfacing
+- **Autostart app on connect** — flyout toggle, badge, launch hook
+- **Screen-level settings** — save / discard / reset with an unsaved-changes badge
+- **Compact Installed toolbar** — actions hamburger and icon-only buttons
+- **External USB HDD detection** — detects external HDDs and elevates `icacls` in the drive-prep wizard
+- **Lazy autoconnect + startup connect** — connection flow no longer auto-connects on window open
+
+### Changed
+
+- Connection monitoring folded into background tasks (dedicated monitor removed)
+
+---
+
 ## [1.3.1] — 2026-08-08
 
 ### Fixed

@@ -5,10 +5,10 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square)](https://dotnet.microsoft.com/download)
 [![Build](https://img.shields.io/github/actions/workflow/status/marcelofrau/xb-homebrew-vault/build.yml?style=flat-square&label=build)](https://github.com/marcelofrau/xb-homebrew-vault/actions)
 [![Docs](https://img.shields.io/github/actions/workflow/status/marcelofrau/xb-homebrew-vault/deploy-docs.yml?style=flat-square&label=docs&logo=cloudflare)](https://github.com/marcelofrau/xb-homebrew-vault/actions/workflows/deploy-docs.yml)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0078D6?style=flat-square)](https://github.com/marcelofrau/xb-homebrew-vault/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android-0078D6?style=flat-square)](https://github.com/marcelofrau/xb-homebrew-vault/releases)
 [![VirusTotal](https://img.shields.io/badge/Security-VirusTotal_Scanned-394EFF?style=flat-square&logo=virustotal)](https://www.virustotal.com/gui/home/upload)
 
-> The easiest way to manage homebrew on your Xbox Dev Mode console — browse, install, and control everything wirelessly from your PC.
+> The easiest way to manage homebrew on your Xbox Dev Mode console — browse, install, and control everything wirelessly from your PC or Android phone.
 
 <p align="center">
   <img src="docs/social-preview.jpg" alt="XB Homebrew Vault" width="800"/>
@@ -48,6 +48,10 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 | 📋 | **Activity Log** | Full in-app log with multi-select, copy, auto-scroll, and configurable log level |
 | 🔬 | **XRay / Inspector** | Live Xbox log streaming and Lua REPL via TCP — connect to agents on ports 9000–9009, send commands, view real-time logs, run diagnostics |
 | ⌨️ | **Keyboard Shortcuts** | Escape to close, Ctrl+Enter for quick actions — built-in shortcuts for common workflows |
+| 📱 | **Mobile App (Android)** | Full portrait Android port — browse, sideload, file explorer, logs, tools, notifications and jobs on your phone |
+| 🔗 | **QR Connect** | Share and receive your Xbox connection as a QR code |
+| ⬆️ | **Sideload Wizard** | Install `.appx`/`.msix`/`.zip` from local files or indirect share links (GoFile, Google Drive, OneDrive) |
+| 🔄 | **Smart Update Detection** | Version overrides resolve Xbox-manifest vs catalog version drift; 10+ matching strategies find updates without false positives |
 
 ---
 
@@ -99,12 +103,15 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 - `XBVault-v{version}-linux-arm64.zip` — Linux ARM64
 - `XBVault-v{version}-osx-x64.zip` — macOS Intel
 - `XBVault-v{version}-osx-arm64.zip` — macOS Apple Silicon
+- `XBVault-v{version}-android-arm64.apk` — Android (ARM64 phones and tablets)
+
+**On Android:** download the APK from the [Releases page](https://github.com/marcelofrau/xb-homebrew-vault/releases) and sideload it (allow "Install unknown apps" for your browser). The app runs entirely on-device — no phone-to-PC coupling needed.
 
 ### Prerequisites
 
 - **Xbox One or Xbox Series S|X** in [Developer Mode](https://wiki.sternserv.xyz/docs/xbox-setup/xbox-developer-mode-setup)
-- Xbox and PC on the **same local network**
-- Windows 10/11, macOS, or Linux (x64)
+- Xbox and device on the **same local network**
+- Windows 10/11, macOS, Linux (x64), or Android 8+ (ARM64)
 
 ### Connect to your Xbox
 
@@ -126,11 +133,13 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 | File Explorer (SSH/SFTP) | ✅ | Browse, upload/download, delete, create folders — dual-pane tree + list |
 | User Files portal browser | ✅ | REST-based portal browsing, rename/delete/new folder |
 | X-Ray / Inspector | ✅ | TCP agent discovery, Lua REPL, live log streaming |
-| Wizards | ✅ | X-Files enablement, Loopback Exempt manager |
+| Wizards | ✅ | X-Files enablement, Loopback Exempt manager, sideload |
 | Cross-platform polish | ✅ | Windows/macOS/Linux x64+arm64, self-contained builds |
+| Mobile app (Android) | ✅ | v2.0.0 — full portrait port, QR connect, sideload, file explorer |
+| Update detection | ✅ | Overrides, 10+ match strategies, adaptive badges, per-app ignore |
 | Modern runtime | ✅ | .NET 10 (LTS) — see the [migration notes](docs/architecture.md) |
 
-See the full [Roadmap](https://marcelofrau.github.io/xb-homebrew-vault/roadmap) for details and future plans.
+See the full [Roadmap](https://xbvault.pages.dev/roadmap) for details and future plans.
 
 ---
 
@@ -147,7 +156,7 @@ XB Homebrew Vault includes built-in support for [XRay](https://github.com/marcel
 
 XRay runs as a separate agent on your Xbox. XB Homebrew Vault discovers it and provides a built-in Inspector console for sending commands and viewing output — no separate tools needed.
 
-[Learn more →](https://marcelofrau.github.io/xb-homebrew-vault/inspector)
+[Learn more →](https://xbvault.pages.dev/inspector)
 
 ---
 
@@ -158,8 +167,10 @@ XRay runs as a separate agent on your Xbox. XB Homebrew Vault discovers it and p
 | Runtime | .NET 10 |
 | UI Framework | Avalonia UI 12 |
 | Architecture | MVVM — CommunityToolkit.Mvvm with source generators |
+| Mobile | .NET Android (`net10.0-android36.0`, arm64) — same Avalonia codebase |
 | Catalog API | Emulation Revival `catalog.json` |
 | Xbox API | Xbox Device Portal (REST + WebSocket) |
+| SSH/SFTP | SSH.NET 2026.0.0 |
 | USB detection | WMI via `System.Management` (Windows) |
 
 ---
@@ -177,7 +188,10 @@ cd xb-homebrew-vault
 .\build\run.ps1
 
 # Build release (produces self-contained ZIP)
-.\build\build-release.ps1 -Version 1.3.1 -Arch x64
+.\build\build-release.ps1 -Version 2.0.4 -Arch x64
+
+# Android release APK (signed, requires Android SDK + JDK 21)
+.\build\build-release-android.ps1 -Version 2.0.4
 ```
 
 ## 🏛️ Project Structure
@@ -186,7 +200,7 @@ cd xb-homebrew-vault
 XBVault/
 ├── Models/        # Data models (CatalogItem, InstalledPackage, UsbDriveInfo…)
 ├── ViewModels/    # MVVM view models (CommunityToolkit source generators)
-├── Views/         # Avalonia AXAML windows & controls
+├── Views/         # Avalonia AXAML — desktop windows + Mobile* views (shared, cross-platform)
 ├── Services/      # Business logic & API clients
 │   ├── XboxAuthService.cs          — Authentication & connection
 │   ├── XboxPackageService.cs       — Package catalog & install
@@ -196,16 +210,22 @@ XBVault/
 │   ├── XboxPerformanceService.cs   — Real-time CPU/GPU/RAM WebSocket feed
 │   ├── CatalogApiService.cs        — Emulation Revival catalog.json
 │   ├── SftpService.cs / SftpTransferService.cs — SSH/SFTP file operations
-│   ├── SettingsService.cs          — Settings persistence
-│   └── Logger.cs                   — Application logging
+│   ├── PackageOverrideService.cs   — Catalog overrides (embedded + remote version overrides)
+│   ├── UrlResolverService.cs       — Indirect share links (GoFile, Google Drive, OneDrive)
+│   ├── AutostartService.cs         — Launch apps on connect
+│   └── SettingsService.cs          — Settings persistence
 ├── Controls/      # Custom UI controls (CdSpinner, IconTextBlock)
 ├── Converters/    # Value converters
 └── Assets/        # Icons, fonts, themes
+
+XBVault.Desktop/   # Windows/macOS/Linux desktop entry point
+XBVault.Android/   # Android entry point (MainActivity, AndroidApp, csproj)
+tests/             # xUnit test suite
 build/             # Build & packaging scripts
 docs/              # Documentation + Jekyll site source
 ```
 
-> **Note:** `XboxDeviceService` was split into the six `Xbox*Service` classes above (see [docs/architecture.md](docs/architecture.md)).
+> **Note:** `XboxDeviceService` was split into the six `Xbox*Service` classes above (see [docs/architecture.md](docs/architecture.md)). Mobile views share the desktop ViewModels and services — only the view layer is rebuilt for phones.
 
 ## 📦 Release Artifacts
 
@@ -217,6 +237,9 @@ Releases are built on tag push (`v*`) via GitHub Actions (Windows + Ubuntu + mac
 - `XBVault-{version}-linux-arm64.zip` — Linux ARM64 self-contained
 - `XBVault-{version}-osx-x64.zip` — macOS Intel
 - `XBVault-{version}-osx-arm64.zip` — macOS Apple Silicon
+- `XBVault-{version}-android-arm64.apk` — Android ARM64 (signed APK)
+
+Windows, Linux and macOS ZIPs are self-contained (no runtime install needed); the Android APK is code-signed with the project's release keystore.
 
 ## 🙏 Thanks
 

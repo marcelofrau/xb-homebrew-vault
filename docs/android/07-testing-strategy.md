@@ -3,7 +3,9 @@ layout: default
 title: Testing Strategy
 ---
 
-# Testing Strategy — Android Port
+# Testing Strategy — Android
+
+> **Updated 2026-08-27.** All phases shipped; the checklists below serve as the regression matrix used during manual device testing. Automated suite (xUnit) now lives in `tests/XBVault.Tests` (390+ tests) and is not duplicated on device. Port
 
 ## Testing Levels
 

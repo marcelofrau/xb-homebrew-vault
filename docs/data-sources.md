@@ -65,7 +65,7 @@ The primary `downloadUrl` resolves to the first non-dependency asset, falling ba
 Parsed results are cached to disk so the app starts instantly and works offline:
 
 ```
-%APPDATA%\XBVault\cache\catalog-api.json
+%LOCALAPPDATA%\XBVault\cache\catalog-api.json
 ```
 
 Cache envelope (`CatalogCache`): `{ fetchedAt, source, data }`, where `data` is the full `catalog.json` payload.
@@ -73,7 +73,7 @@ Cache envelope (`CatalogCache`): `{ fetchedAt, source, data }`, where `data` is 
 | Property | Value |
 |----------|-------|
 | TTL | **6 hours** (`CacheTtlHours = 6`) |
-| Location | `%APPDATA%\XBVault\cache\catalog-api.json` |
+| Location | `%LOCALAPPDATA%\XBVault\cache\catalog-api.json` |
 | Stale fallback | Used (TTL ignored) when the API is unreachable |
 | Manual refresh | `CatalogApiService.ClearCache()` / force-refresh in the UI |
 
@@ -104,6 +104,58 @@ flowchart TD
     style Ok fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style Stale fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
     style Save fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+```
+
+## Catalog Overrides
+
+The Emulation Revival catalog is **externally maintained and read-only within the app** — matching accuracy is corrected app-side through three override layers:
+
+| # | Source | File / location | Purpose | Priority |
+|---|--------|-----------------|---------|----------|
+| 1 | **Embedded** | `XBVault/Assets/package-overrides.json` | PFN / name → catalog-ID mappings shipped with the app (e.g. `Doom64EX-Classic` → its catalog ID) | High |
+| 2 | **Remote version overrides** | GitHub raw `versionOverrides` merged over the embedded table | maps a `catalogVersion` to the real Xbox manifest version when upstream reports the wrong version (e.g. Sonic 2 SMS catalog `2.9.2` vs manifest `2.9.0.2`); remote wins on duplicate keys | Higher |
+| 3 | **Local (user)** | `%APPDATA%\XBVault\local-overrides.json` via `LocalOverrideService` | UI-triggered remap of a catalog name to an installed package | Highest |
+
+Key rules:
+
+- `versionOverrides` entries are **gated on `catalogVersion`** — they only apply while the catalog reports that version, so a real upstream fix in a later catalog release is never permanently masked.
+- Effective version resolution falls back `remote → embedded → catalog.Version` and is centralized in `VersionCheckerService`.
+- The override layers reuse the same `PackageOverrideService` "remote over embedded" merge pattern as the embedded table, so version-override fixes ship **without an app release**.
+
+```mermaid
+flowchart LR
+    subgraph versionOverrides["Remote (GitHub raw)"]
+        R1["catalogVersion → real manifest version"]
+    end
+    subgraph embedded["Embedded (package-overrides.json)"]
+        E1["PFN / name → catalog ID"] 
+        E2["base versionOverrides"]
+    end
+    subgraph local["Local (local-overrides.json)"]
+        L1["user remapped name → package"]
+    end
+    subgraph source["Install source"]
+        S1["Installed package manifest"]
+        S2["catalog.json"]
+    end
+    S1 --> C{"VersionCheckerService"}
+    S2 --> C
+    R1 --> C
+    E1 --> M{"Matcher"}
+    E2 --> C
+    L1 --> M
+    C --> D["Effective version → update decision"]
+    M --> D
+
+    style R1 fill:#447F3E,stroke:#9ACA3C,color:#fff
+    style E1 fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style E2 fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style L1 fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style S1 fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style S2 fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style C fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style M fill:#2A2D33,stroke:#447F3E,color:#9ACA3C
+    style D fill:#9ACA3C,stroke:#447F3E,color:#000
 ```
 
 ## Package Cache

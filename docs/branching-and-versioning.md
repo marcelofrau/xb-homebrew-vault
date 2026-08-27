@@ -31,21 +31,28 @@ Use dots to append labels for intermediate builds:
 
 ## Version Source of Truth
 
-The canonical version lives in **`XBVault/XBVault.csproj`**:
+The canonical version lives in **`Directory.Build.props`** at the repo root (applied to every project):
 
 ```xml
-<Version>0.8.5</Version>
+<PropertyGroup>
+  <Version>2.0.4</Version>
+</PropertyGroup>
 ```
 
-The release script `build/build-release.ps1` overrides it at publish time:
+The release scripts override or stamp it at publish time:
 
 ```powershell
-.\build\build-release.ps1 -Version 0.9.0 -Arch x64
+# Desktop releases (self-contained ZIPs per RID)
+.\build\build-release.ps1 -Version 2.0.4 -Arch x64
+
+# Android release (signed APK, requires Android SDK + JDK 21)
+.\build\build-release-android.ps1 -Version 2.0.4
 ```
 
 **Workflow:**
-1. Before a release, update `<Version>` in `.csproj` to the target version.
-2. The release script stamps that version into the compiled binary and ZIP name.
+1. Before a release, update `<Version>` in `Directory.Build.props` to the target version.
+2. The release script stamps that version into the compiled binary, ZIP name, and APK.
+3. For Android, the version is also mapped to a monotonic integer `versionCode` (`-p:ApplicationVersion = MAJOR*1000000 + MINOR*1000 + PATCH`) via `build-release-android.ps1`.
 
 ## Branch Strategy
 
@@ -117,7 +124,7 @@ git tag -a v0.9.0 -m "Release v0.9.0"
 git push origin v0.9.0
 ```
 
-The tag triggers CI to produce the final build artifact (future improvement).
+The tag triggers the `release` GitHub Actions job, which builds the full artifact matrix (6 desktop ZIPs + the signed Android APK), runs VirusTotal scans, and publishes the GitHub Release with notes from `release-notes/v{version}.md`.
 
 ## Bumping the Version
 
@@ -128,21 +135,33 @@ The tag triggers CI to produce the final build artifact (future improvement).
    - New feature? → bump MINOR
    - Bug fix only? → bump PATCH
 
-2. Update `.csproj`:
+2. Update `Directory.Build.props`:
    ```xml
-   <Version>0.9.0</Version>
+   <Version>2.0.4</Version>
    ```
 
-3. Commit with message:
+3. Add a `release-notes/v{version}.md` (templates live under `release-notes/`) and backfill the `CHANGELOG.md` entry.
+
+4. Commit with message:
    ```
-   chore: bump to 0.9.0
+   chore: bump to 2.0.4
    ```
 
-4. Tag and push.
+5. Tag and push.
+
+### Android versionCode
+
+`versionCode` must be monotonic and is derived from the semantic version:
+
+```
+versionCode = MAJOR * 1_000_000 + MINOR * 1_000 + PATCH
+```
+
+Passed to the Android publish as `-p:ApplicationVersion` (the `-p:ApplicationVersionCode` MSBuild property does **not** exist and is silently ignored).
 
 ### Between releases (development)
 
-No version bumps needed during development. The `.csproj` version stays at the last release until the next release is ready.
+No version bumps needed during development. `Directory.Build.props` stays at the last release until the next release is ready.
 
 ## Commit Messages
 
@@ -171,16 +190,16 @@ docs: add branching and versioning strategy
 
 ## CI
 
-Current CI (`.github/workflows/build.yml`) runs on every push:
+CI runs via GitHub Actions (`.github/workflows/build.yml`) on **push and PR** to `main`:
 
-```yaml
-dotnet build XBVault/XBVault.csproj
-```
+| Job | When | Runs |
+|-----|------|------|
+| `build` | push/PR | `dotnet restore` + `dotnet build -c Release` on windows-latest and ubuntu-latest |
+| `build-android` | push/PR | publish android-arm64 Release APK (debug key on CI) |
+| `release` | tag `v*` | full artifact matrix (win/linux/osx × x64/arm64 + android-arm64 APK) → ZIP → SHA256 + VirusTotal → GitHub Release with notes |
+| `deploy-docs` | main push | Jekyll site → Cloudflare Pages |
 
-**Planned future improvements:**
-- Run on pull requests only
-- Add `dotnet test` when tests exist
-- Publish release artifacts on tag push
+Tests run in the `build` job via `dotnet test` (the suite currently has **390+ tests**; the list must stay green before merging).
 
 ## Quick Reference
 
@@ -198,11 +217,11 @@ git merge feat/first-run-setup-wizard
 git branch -d feat/first-run-setup-wizard
 
 # Release
-# 1. bump version in .csproj
+# 1. bump version in Directory.Build.props
 # 2. commit
-git add . && git commit -m "chore: bump to 0.9.0"
-git tag -a v0.9.0 -m "Release v0.9.0"
-git push && git push origin v0.9.0
+git add . && git commit -m "chore: bump to 2.0.4"
+git tag -a v2.0.4 -m "Release v2.0.4"
+git push && git push origin v2.0.4
 # 3. build
-.\build\build-release.ps1 -Version 0.9.0 -Arch x64
+.\build\build-release.ps1 -Version 2.0.4 -Arch x64
 ```

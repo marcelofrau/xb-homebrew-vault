@@ -9,8 +9,8 @@ Run / build
 - Dev run (desktop): `powershell -File build/run.ps1` (or `dotnet run --project XBVault.Desktop`)
 - Quick build (debug): `powershell -File build/build.ps1` (or `dotnet build XBVault.Desktop/XBVault.Desktop.csproj`)
 - Release build (mandatory Version):
-  - Windows: `powershell -File build/build-release.ps1 -Version 0.1.0 -Arch x64`
-  - Linux/macOS: `bash build/build-release.sh 0.1.0 x64`
+  - Windows: `powershell -File build/build-release.ps1 -Version 2.0.4 -Arch x64`
+  - Linux/macOS: `bash build/build-release.sh 2.0.4 x64`
   - Optional Windows installer: add `-Installer` flag (requires Inno Setup)
   - Output ZIP: `build/dist/XBVault-v<Version>-<RID>.zip`
 - Android build: `powershell -File build/build-android.ps1` (requires JAVA_HOME to Android SDK JDK 21)
@@ -20,9 +20,11 @@ Run / build
 
 CI (`.github/workflows/build.yml`)
 - `build` job: runs on push/PR to `main` (windows-latest + ubuntu-latest). `dotnet restore` + `dotnet build -c Release`.
-- `build-android` job: runs on push/PR to `main` (windows-latest). Builds Android arm64 APK.
-- `release` job: on tag `v*`. Builds matrix: win-x64, win-arm64, linux-x64, osx-x64, osx-arm64, android-arm64. ZIP per RID.
-- `publish` job: creates GitHub release from tag with all ZIPs.
+- `test` job: runs xUnit suite (`tests/XBVault.Tests`) on windows-latest — pinned to Windows because USB detection (System.Management/WMI) is Windows-only.
+- `build-android` job: runs on push/PR to `main` (windows-latest). Publishes Android arm64 APK.
+- `release` job: on tag `v*`. Builds matrix: win-x64, win-arm64, linux-x64, osx-x64, osx-arm64, android-arm64. ZIP per RID + standalone `android-arm64.apk`.
+- `publish` job: creates GitHub release from tag with all ZIPs + APK.
+- `deploy-docs` workflow (separate file): on push to `main`, builds the Jekyll site in `docs/` and publishes to Cloudflare Pages (`xbvault.pages.dev`). Keep site structure stable — the README and site cross-link.
 
 Environment
 - Requires .NET 10 SDK. CI uses `dotnet-version: 10.0.x`.
@@ -39,8 +41,8 @@ Project / conventions
 - Project folder name must remain `XBVault` (build scripts expect it). Do not rename.
 - Settings stored at `%APPDATA%/XBVault/settings.json`. Credentials obfuscated via `CryptoService` (XOR + salt). Do not commit this file.
 - `Assets/**` embedded as AvaloniaResource — referenced in AXAML via `avares://XBVault/...`.
-- Test project lives in `tests/XBVault.Tests` (xUnit). Run `dotnet test tests/XBVault.Tests/XBVault.Tests.csproj -c Release`.
-- Tech stack: .NET 10, Avalonia 12, CommunityToolkit.Mvvm 8.4 (source generators), SSH.NET 2025.1.
+- Test project lives in `tests/XBVault.Tests` (xUnit, 390+ tests). Run `dotnet test tests/XBVault.Tests/XBVault.Tests.csproj -c Release`.
+- Tech stack: .NET 10, Avalonia 12, CommunityToolkit.Mvvm 8.4 (source generators), SSH.NET 2026.0.0.
 
 OpenSpec workflow
 - `openspec/` directory tracks spec-driven changes. Check `openspec/changes/` for active work.
@@ -59,8 +61,11 @@ Branching
 - Branch off `main`, merge back, delete branch. No commits directly on `main` for app code.
 
 Docs
-- Always use Mermaid (```mermaid) for diagrams — never ASCII art.
+- `docs/` is the **Jekyll site source**, deployed to Cloudflare Pages at `xbvault.pages.dev` (workflow `deploy-docs.yml`). Always use Mermaid (```mermaid) for diagrams — never ASCII art.
 - Supported diagram types: flowchart, sequenceDiagram, classDiagram, stateDiagram, gantt.
+- Site nav/page inventory lives in `docs/docs.md` + `docs/_config.yml` (`header_pages`). Adding a page = add the `.md` with `layout: default` front matter + link it in `docs.md`.
+- Mobile/Android docs live in `docs/android/` and `docs/mobile.md` (end-user Android guide).
+- `wiki/` is a **git submodule** pointing at `https://github.com/marcelofrau/xb-homebrew-vault.wiki.git` (the GitHub wiki). Edit pages inside `wiki/`, commit in the submodule, push the wiki repo, then bump the `wiki` pointer commit in `main`. Git clones need `git submodule update --init`.
 
 When unsure
 - Prefer executable sources (build scripts, csproj) over prose docs.

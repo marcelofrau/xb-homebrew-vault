@@ -101,7 +101,7 @@ Splash Avalonia que aparece assim que o framework inicializa. Repete o layout do
 │                                      │
 │  Desktop manager for Xbox Dev Mode   │
 │            ────                      │
-│            v1.4.0                    │
+│            v2.0.4                    │
 │         Marcelo Frau                 │
 │         GPL-3.0-only                 │
 │                                      │

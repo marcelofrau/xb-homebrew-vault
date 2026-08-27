@@ -3,11 +3,18 @@ layout: default
 title: Cross-Platform Porting
 ---
 
-# Porting Log: Linux and macOS
+# Porting Log: Linux, macOS and Android
 
-## Status: ✅ Shipped in v0.8.6
+## Status: ✅ Shipped
 
-Both Linux (x64) and macOS (x64 + arm64) release artifacts are built and published via CI. What follows is the original plan — kept for historical reference.
+| Platform | RID | Shipped in |
+|----------|-----|-----------|
+| Windows x64 / arm64 | `win-x64` / `win-arm64` | v0.1 / v0.8.x |
+| Linux x64 / arm64 | `linux-x64` / `linux-arm64` | v0.8.6 / v1.2.0 |
+| macOS x64 / arm64 | `osx-x64` / `osx-arm64` | v0.8.6 |
+| **Android arm64** | `android-arm64` | **v2.0.0** |
+
+All release artifacts are built and published via CI (see [Architecture → CI](architecture#ci--builds)). The Android port is a full portrait-first app documented in the [Android Architecture](android/01-architecture) and [Mobile Guide](mobile). What follows is the original Linux/macOS plan — kept for historical reference.
 
 ## Original Objective
 - Enable building, publishing, and running XBVault on Linux and macOS for development and testing (does not cover final packaging like macOS notarization).
