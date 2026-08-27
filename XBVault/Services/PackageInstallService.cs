@@ -29,6 +29,7 @@ public class PackageInstallService
     private readonly HttpClient _http;
     private readonly CacheService _cache;
     private readonly IXboxPackageService _packageService;
+    private readonly LocalOverrideService? _localOverride;
     private readonly IAppLogger _log;
 
     private static readonly HashSet<string> DepFolderNames = new(
@@ -101,10 +102,16 @@ public class PackageInstallService
     }
 
     public PackageInstallService(CacheService cache, IXboxPackageService packageService, HttpClient? http, IAppLogger? log)
+        : this(cache, packageService, http, log, localOverride: null)
+    {
+    }
+
+    public PackageInstallService(CacheService cache, IXboxPackageService packageService, HttpClient? http, IAppLogger? log, LocalOverrideService? localOverride)
     {
         _cache = cache;
         _packageService = packageService;
         _log = log ?? new SerilogAdapter();
+        _localOverride = localOverride;
 
         if (http is not null)
         {
@@ -262,9 +269,11 @@ public class PackageInstallService
         _log.Info("Checking for overlapping installed packages...");
         progress?.Report(new InstallProgressInfo { Total = 0.55, Status = "Checking for conflicts..." });
 
+        var preInstall = new List<XBVault.Models.InstalledPackage>();
         try
         {
             var installed = await _packageService.GetInstalledPackagesAsync();
+            preInstall.AddRange(installed);
             var conflicting = installed.FirstOrDefault(p => VersionCheckerService.IsPackageMatchBasic(item, p));
             if (conflicting is not null)
             {
@@ -328,6 +337,11 @@ public class PackageInstallService
                 _cache.ClearAppCache(item.Id);
                 _log.Debug($"Cache cleared for {item.Id} after successful install");
             }
+
+            // Phase 6: Record a local override for newly installed packages whose
+            // real identity does not match the catalog entry by any heuristic.
+            // This stops the installed↔catalog matcher from guessing on the next scan.
+            await RecordLocalOverrideForNewPackagesAsync(item, preInstall);
         }
         else
         {
@@ -337,6 +351,64 @@ public class PackageInstallService
             ? InstallResult.Ok()
             : InstallResult.Fail(InstallFailureStage.Install,
                 "Xbox rejected the install. The package may be incompatible, corrupted during transfer, or the console rejected it. Check the logs for details.");
+    }
+
+    private async Task RecordLocalOverrideForNewPackagesAsync(
+        CatalogItem item,
+        List<XBVault.Models.InstalledPackage> preInstall)
+    {
+        if (_localOverride is null || string.IsNullOrWhiteSpace(item.Id))
+            return;
+
+        try
+        {
+            var post = await _packageService.GetInstalledPackagesAsync();
+            var preKeys = preInstall
+                .Select(PackageKey)
+                .Where(k => k is not null)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            // Only consider packages that were NOT installed before this install
+            // (i.e. the ones this install actually added).
+            var newly = post.Where(p => PackageKey(p) is string key && !preKeys.Contains(key)).ToList();
+            if (newly.Count == 0)
+            {
+                _log.Debug("Local override: no newly installed packages detected — skipping");
+                return;
+            }
+
+            foreach (var pkg in newly)
+            {
+                // If a heuristic already resolves this package to the catalog item,
+                // no override is needed.
+                if (VersionCheckerService.IsPackageMatchBasic(item, pkg))
+                {
+                    _log.Info($"Local override: '{pkg.Name}' heuristic-matches '{item.Name}' — no override needed");
+                    continue;
+                }
+
+                var key = PackageKey(pkg);
+                if (key is null)
+                    continue;
+
+                _log.Info($"Local override: recording '{key}' → '{item.Id}' (installed identity '{pkg.Name}' differs from catalog '{item.Name}')");
+                _localOverride.AddOrUpdate(key, item.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Override recording is best-effort — never fail the install for it.
+            _log.LogError(ex, "Local override recording failed — install already succeeded");
+        }
+    }
+
+    // The identity key the matcher resolves installed packages by: the stripped
+    // PackageFamilyName (=== package <Name>) or, failing that, the package Name.
+    private static string? PackageKey(XBVault.Models.InstalledPackage pkg)
+    {
+        if (!string.IsNullOrWhiteSpace(pkg.PackageFamilyName))
+            return VersionCheckerService.StripPackageFamilyName(pkg.PackageFamilyName);
+        return string.IsNullOrWhiteSpace(pkg.Name) ? null : pkg.Name.Trim();
     }
 
     private string GetExtractPath(string itemId, string fileName)

@@ -1794,4 +1794,80 @@ public class VersionCheckerServiceTests : IDisposable
     }
 
     #endregion
+
+    #region Local override (install-time) — resolution + priority
+
+    private static (VersionCheckerService svc, LocalOverrideService local) BuildWithLocal(params CatalogItem[] catalog)
+    {
+        var path = Path.Combine(Path.GetTempPath(), "xbvault-tests", Guid.NewGuid().ToString("N") + ".json");
+        var local = new LocalOverrideService(path);
+        var svc = new VersionCheckerService(new PackageOverrideService(), cache: null, localOverrideService: local);
+        svc.SetCatalog(catalog);
+        return (svc, local);
+    }
+
+    [Fact]
+    public void LocalOverride_ResolvesMatch_WhenHeuristicFails()
+    {
+        // "Shipwright" does not heuristic-match "Ship of Harkinian", but a local
+        // override from a prior install links them.
+        var (svc, local) = BuildWithLocal(Cat("Ship of Harkinian", id: "soh"));
+        local.AddOrUpdate("Shipwright", "soh");
+        var pkg = PkgFull("Shipwright", "1.0.0", pfn: "Shipwright_8wekyb3d8bbwe");
+
+        var (match, _) = svc.FindCatalogMatch(pkg);
+
+        Assert.NotNull(match);
+        Assert.Equal("soh", match!.Id);
+    }
+
+    [Fact]
+    public void LocalOverride_WithoutCatalogEntry_ResolvesToNull()
+    {
+        var (svc, local) = BuildWithLocal(Cat("Ship of Harkinian", id: "soh"));
+        local.AddOrUpdate("Unknown", "nonexistent");
+        var pkg = PkgFull("Unknown", "1.0.0");
+
+        var (match, _) = svc.FindCatalogMatch(pkg);
+
+        Assert.Null(match);
+    }
+
+    [Fact]
+    public void LocalOverride_TakesPriorityOverGlobalOverride()
+    {
+        // Global says Shipwright → some-other; local says Shipwright → soh.
+        // Local (user-authored) must win.
+        var path = Path.Combine(Path.GetTempPath(), "xbvault-tests", Guid.NewGuid().ToString("N") + ".json");
+        var local = new LocalOverrideService(path);
+        local.AddOrUpdate("Shipwright", "soh");
+
+        var globalJson = """{ "packageFamilyNameOverrides": [{ "packageFamilyName": "Shipwright", "catalogId": "other" }] }""";
+        var os = new PackageOverrideService();
+        os.ParseAndMerge(globalJson);
+
+        var svc = new VersionCheckerService(os, cache: null, localOverrideService: local);
+        svc.SetCatalog([Cat("Ship of Harkinian", id: "soh"), Cat("Other App", id: "other")]);
+        var pkg = PkgFull("Shipwright", "1.0.0", pfn: "Shipwright_8wekyb3d8bbwe");
+
+        var (match, _) = svc.FindCatalogMatch(pkg);
+
+        Assert.NotNull(match);
+        Assert.Equal("soh", match!.Id);
+    }
+
+    [Fact]
+    public void LocalOverride_CaseInsensitiveLookup()
+    {
+        var (svc, local) = BuildWithLocal(Cat("Ship of Harkinian", id: "soh"));
+        local.AddOrUpdate("SHIPWRIGHT", "soh");
+        var pkg = PkgFull("shipwright", "1.0.0");
+
+        var (match, _) = svc.FindCatalogMatch(pkg);
+
+        Assert.NotNull(match);
+        Assert.Equal("soh", match!.Id);
+    }
+
+    #endregion
 }

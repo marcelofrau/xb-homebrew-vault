@@ -234,8 +234,17 @@ public class PackageInstallServiceTests : IDisposable
     {
         public bool InstallResult { get; set; } = true;
         public List<string> Installed { get; } = [];
+        // Packages returned pre-install (Phase 4). Empty by default = fresh install.
+        public List<InstalledPackage> PreInstalled { get; set; } = [];
+        // Packages returned post-install (Phase 6 override scan).
+        public List<InstalledPackage> PostInstalled { get; set; } = [];
+        private int _installedCalls;
 
-        public Task<List<InstalledPackage>> GetInstalledPackagesAsync() => Task.FromResult(new List<InstalledPackage>());
+        public Task<List<InstalledPackage>> GetInstalledPackagesAsync()
+        {
+            var first = Interlocked.Increment(ref _installedCalls) == 1;
+            return Task.FromResult(first ? PreInstalled : PostInstalled);
+        }
         public Task<bool> UninstallPackageAsync(string packageFullName) => Task.FromResult(true);
         public Task<(bool Success, string? ErrorMessage)> LaunchPackageAsync(string packageFullName, string packageRelativeId)
             => Task.FromResult((true, (string?)null));
@@ -336,5 +345,71 @@ public class PackageInstallServiceTests : IDisposable
 
         Assert.False(result.Success);
         Assert.Equal(InstallFailureStage.Download, result.Stage);
+    }
+
+    private (PackageInstallService service, FlakyHandler handler, FakePackageService pkg, LocalOverrideService local) BuildInstallServiceWithLocal(LocalOverrideService? local = null)
+    {
+        var handler = new FlakyHandler(0, ZipResponse);
+        var http = new HttpClient(handler);
+        var cache = new CacheService(Path.Combine(_dir, "cache"));
+        var pkg = new FakePackageService();
+        var svc = local ?? new LocalOverrideService(Path.Combine(_dir, "local-overrides.json"));
+        var service = new PackageInstallService(cache, pkg, http, log: null, localOverride: svc);
+        return (service, handler, pkg, svc);
+    }
+
+    [Fact]
+    public async Task DownloadAndInstall_NewPackageDiffersFromCatalog_RecordsLocalOverride()
+    {
+        var (service, _, pkg, local) = BuildInstallServiceWithLocal();
+        // Nothing installed before; after install a package with an identity that
+        // does not heuristic-match the catalog entry appears.
+        pkg.PostInstalled = [new InstalledPackage { Name = "realname", PackageFamilyName = "realname_8wekyb3d8bbwe", DisplayName = "Real Name" }];
+
+        var result = await service.DownloadAndInstallAsync(GameItem());
+
+        Assert.True(result.Success);
+        Assert.True(local.TryGetCatalogIdByName("realname", out var id));
+        Assert.Equal("game", id);
+    }
+
+    [Fact]
+    public async Task DownloadAndInstall_NoLocalOverrideService_NoOp()
+    {
+        // Back-compat: service built without a LocalOverrideService still installs fine.
+        var (service, _, pkg) = BuildInstallService();
+        pkg.PostInstalled = [new InstalledPackage { Name = "realname", PackageFamilyName = "realname_8wekyb3d8bbwe" }];
+
+        var result = await service.DownloadAndInstallAsync(GameItem());
+
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task DownloadAndInstall_NewPackageHeuristicMatches_NoOverrideRecorded()
+    {
+        var (service, _, pkg, local) = BuildInstallServiceWithLocal();
+        // The installed package Name matches the catalog name exactly (E0).
+        pkg.PostInstalled = [new InstalledPackage { Name = "Game", PackageFamilyName = "realname_8wekyb3d8bbwe" }];
+
+        var result = await service.DownloadAndInstallAsync(GameItem());
+
+        Assert.True(result.Success);
+        Assert.Equal(0, local.Count);
+    }
+
+    [Fact]
+    public async Task DownloadAndInstall_PreExistingPackage_NotTreatedAsNew()
+    {
+        var (service, _, pkg, local) = BuildInstallServiceWithLocal();
+        // Package already installed before this install (Phase 4 and Phase 6 agree),
+        // so it is not "newly installed" and no override is recorded.
+        pkg.PreInstalled = [new InstalledPackage { Name = "realname", PackageFamilyName = "realname_8wekyb3d8bbwe" }];
+        pkg.PostInstalled = [new InstalledPackage { Name = "realname", PackageFamilyName = "realname_8wekyb3d8bbwe" }];
+
+        var result = await service.DownloadAndInstallAsync(GameItem());
+
+        Assert.True(result.Success);
+        Assert.Equal(0, local.Count);
     }
 }

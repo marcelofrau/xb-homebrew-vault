@@ -10,14 +10,16 @@ namespace XBVault.Services;
 public class VersionCheckerService
 {
     private readonly PackageOverrideService _overrideService;
+    private readonly LocalOverrideService? _localOverrideService;
     private readonly UpdateVersionCache _cache;
     private IReadOnlyList<CatalogItem> _catalog = [];
     private string? _justUpdatedItemName;
 
-    public VersionCheckerService(PackageOverrideService overrideService, UpdateVersionCache? cache = null)
+    public VersionCheckerService(PackageOverrideService overrideService, UpdateVersionCache? cache = null, LocalOverrideService? localOverrideService = null)
     {
         _overrideService = overrideService;
         _cache = cache ?? new UpdateVersionCache();
+        _localOverrideService = localOverrideService;
     }
 
     public bool HasCatalog => _catalog.Count > 0;
@@ -101,6 +103,13 @@ public class VersionCheckerService
 
     private CatalogItem? FindOverrideMatch(InstalledPackage pkg)
     {
+        // Local (user-authored) overrides take priority over shipped ones.
+        if (_localOverrideService is not null)
+        {
+            var localMatch = ResolveOverride(pkg.Name, isPfn: false);
+            if (localMatch is not null) return localMatch;
+        }
+
         var pfn = !string.IsNullOrEmpty(pkg.PackageFamilyName) ? StripPackageFamilyName(pkg.PackageFamilyName) : null;
 
         if (pfn is not null && _overrideService.TryGetCatalogId(pfn, out var overrideId))
@@ -112,6 +121,20 @@ public class VersionCheckerService
         if (_overrideService.TryGetCatalogIdByName(pkg.Name, out var overrideIdByName))
         {
             var match = _catalog.FirstOrDefault(c => c.Id.Equals(overrideIdByName, StringComparison.OrdinalIgnoreCase));
+            if (match is not null) return match;
+        }
+
+        return null;
+    }
+
+    private CatalogItem? ResolveOverride(string name, bool isPfn)
+    {
+        if (_localOverrideService is null || string.IsNullOrWhiteSpace(name))
+            return null;
+
+        if (_localOverrideService.TryGetCatalogIdByName(name, out var localId))
+        {
+            var match = _catalog.FirstOrDefault(c => c.Id.Equals(localId, StringComparison.OrdinalIgnoreCase));
             if (match is not null) return match;
         }
 
