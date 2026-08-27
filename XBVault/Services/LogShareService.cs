@@ -79,7 +79,7 @@ public static class LogShareService
         }
         finally
         {
-            try { File.Delete(tempZip); } catch { }
+            try { File.Delete(tempZip); } catch { /* best-effort cleanup */ }
         }
     }
 
@@ -150,7 +150,7 @@ public static class LogShareService
                 return servers[0].GetProperty("name").GetString();
             }
         }
-        catch { }
+        catch (Exception ex) { Logger.Warn($"GoFile server selection failed: {ex.Message}"); }
         return null;
     }
 
@@ -175,7 +175,7 @@ public static class LogShareService
             if (root.TryGetProperty("link", out var link))
                 return link.GetString();
         }
-        catch { }
+        catch (Exception ex) { Logger.Warn($"GoFile response parse failed: {ex.Message}"); }
         return null;
     }
 }

@@ -47,18 +47,23 @@ public static class DialogFadeBehavior
             main.IsModalDimmed = true;
     }
 
-    private static async void OnClosing(object? sender, WindowClosingEventArgs e)
+    private static void OnClosing(object? sender, WindowClosingEventArgs e)
     {
         if (sender is not Window window) return;
 
-        e.Cancel = true;
-        window.Closing -= OnClosing;
-        window.Opacity = 0;
-        // resume on UI thread so clearing visual state runs on dispatcher
-        await Task.Delay(FadeOutDelay);
+        async Task Handler()
+        {
+            e.Cancel = true;
+            window.Closing -= OnClosing;
+            window.Opacity = 0;
+            // resume on UI thread so clearing visual state runs on dispatcher
+            await Task.Delay(FadeOutDelay);
 
-        ClearDim(window);
-        window.Close();
+            ClearDim(window);
+            window.Close();
+        }
+
+        Handler().FireAndForget("DialogFadeBehavior.OnClosing");
     }
 
     private static void OnClosed(object? sender, EventArgs e)

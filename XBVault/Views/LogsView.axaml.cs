@@ -83,33 +83,38 @@ public partial class LogsView : UserControl
         }
     }
 
-    private async void OnShareLogsClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnShareLogsClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        ShareLogsButton.IsEnabled = false;
-        ShareOverlay.IsVisible = true;
-        ShareStatusText.Text = "Preparing logs...";
-        try
+        async Task Handler()
         {
-            var url = await XBVault.Services.LogShareService.ShareAllLogsAsync();
-            if (string.IsNullOrEmpty(url))
+            ShareLogsButton.IsEnabled = false;
+            ShareOverlay.IsVisible = true;
+            ShareStatusText.Text = "Preparing logs...";
+            try
             {
-                ShareStatusText.Text = "No logs to share.";
-                await Task.Delay(2000);
-                ShareOverlay.IsVisible = false;
-                return;
-            }
+                var url = await XBVault.Services.LogShareService.ShareAllLogsAsync();
+                if (string.IsNullOrEmpty(url))
+                {
+                    ShareStatusText.Text = "No logs to share.";
+                    await Task.Delay(2000);
+                    ShareOverlay.IsVisible = false;
+                    return;
+                }
 
-            ShareStatusText.Text = "Generating QR code...";
-            var qrBitmap = XBVault.Services.QRCodeService.GenerateQrBitmap(url);
-            var window = new QrDialogWindow(url, qrBitmap);
-            var parentWindow = TopLevel.GetTopLevel(this) as Window;
-            if (parentWindow is not null)
-                await window.ShowDialog(parentWindow);
+                ShareStatusText.Text = "Generating QR code...";
+                var qrBitmap = XBVault.Services.QRCodeService.GenerateQrBitmap(url);
+                var window = new QrDialogWindow(url, qrBitmap);
+                var parentWindow = TopLevel.GetTopLevel(this) as Window;
+                if (parentWindow is not null)
+                    await window.ShowDialog(parentWindow);
+            }
+            finally
+            {
+                ShareOverlay.IsVisible = false;
+                ShareLogsButton.IsEnabled = true;
+            }
         }
-        finally
-        {
-            ShareOverlay.IsVisible = false;
-            ShareLogsButton.IsEnabled = true;
-        }
+
+        Handler().FireAndForget("LogsView.OnShareLogsClick");
     }
 }

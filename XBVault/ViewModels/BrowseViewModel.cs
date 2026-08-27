@@ -103,22 +103,27 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         Logger.Debug("BrowseViewModel created");
     }
 
-    private async void OnConnectionChanged(bool connected)
+    private void OnConnectionChanged(bool connected)
     {
-        if (connected && _allItems.Count > 0)
+        async Task Work()
         {
-            Logger.Debug("Connection changed — refreshing installed badges");
-            await UpdateInstalledBadgesAsync();
-        }
-        else if (!connected)
-        {
-            foreach (var item in _allItems)
+            if (connected && _allItems.Count > 0)
             {
-                item.IsInstalledOnXbox = false;
-                item.IsOutdatedOnXbox = false;
+                Logger.Debug("Connection changed — refreshing installed badges");
+                await UpdateInstalledBadgesAsync();
             }
-            Logger.Debug("Disconnected — cleared installed badges");
+            else if (!connected)
+            {
+                foreach (var item in _allItems)
+                {
+                    item.IsInstalledOnXbox = false;
+                    item.IsOutdatedOnXbox = false;
+                }
+                Logger.Debug("Disconnected — cleared installed badges");
+            }
         }
+
+        Work().FireAndForget("BrowseViewModel.OnConnectionChanged");
     }
 
     public ObservableCollection<CatalogItem> Items { get; } = [];

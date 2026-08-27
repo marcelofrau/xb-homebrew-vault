@@ -61,7 +61,7 @@ public static class PlatformDialog
             System.Diagnostics.Process.Start("osascript",
                 $"-e \"display dialog \\\"{escaped}\\\" with title \\\"{title}\\\" buttons {{\\\"OK\\\"}} default button \\\"OK\\\"\"");
         }
-        catch { }
+        catch { /* fallback — osascript unavailable, alert silently skipped */ }
     }
 
     private static bool LinuxDialog(string title, string message)
@@ -114,7 +114,7 @@ public static class PlatformDialog
         catch
         {
             try { System.Diagnostics.Process.Start("xmessage", $"-center \"{message}\""); }
-            catch { }
+            catch { /* fallback — xmessage unavailable, alert silently skipped */ }
         }
     }
 

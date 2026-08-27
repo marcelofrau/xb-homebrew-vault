@@ -310,98 +310,123 @@ public partial class FileExplorerView : UserControl
         }
     }
 
-    private async void OnTreeItemExpanded(object? sender, RoutedEventArgs e)
+    private void OnTreeItemExpanded(object? sender, RoutedEventArgs e)
     {
-        if (_vm is null) return;
-        if (e.Source is TreeViewItem tvi && tvi.DataContext is SftpEntry entry)
+        async Task Handler()
         {
-            Logger.Debug($"OnTreeItemExpanded: '{entry.FullPath}'");
-            entry.IsExpanded = true;
-            await _vm.ExpandFolderCommand.ExecuteAsync(entry.FullPath);
-        }
-    }
-
-    private async void OnBrowseFilesClick(object? sender, RoutedEventArgs e)
-    {
-        if (_vm is null) return;
-
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is null) return;
-
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "Select files to upload",
-            AllowMultiple = true
-        });
-        var filePaths = files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToArray();
-        if (filePaths.Length == 0) return;
-
-        await _vm.UploadMixedAsync(filePaths, []);
-    }
-
-    private async void OnUploadFilesClick(object? sender, RoutedEventArgs e)
-    {
-        if (_vm is null) return;
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is null) return;
-
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "Select files to upload",
-            AllowMultiple = true
-        });
-        var filePaths = files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToArray();
-        if (filePaths.Length == 0)
-        {
-            await ShowInfoDialogAsync("No files selected", "You did not select any files to upload.");
-            return;
+            if (_vm is null) return;
+            if (e.Source is TreeViewItem tvi && tvi.DataContext is SftpEntry entry)
+            {
+                Logger.Debug($"OnTreeItemExpanded: '{entry.FullPath}'");
+                entry.IsExpanded = true;
+                await _vm.ExpandFolderCommand.ExecuteAsync(entry.FullPath);
+            }
         }
 
-        await _vm.UploadMixedAsync(filePaths, []);
+        Handler().FireAndForget("FileExplorerView.OnTreeItemExpanded");
     }
 
-    private async void OnUploadFolderClick(object? sender, RoutedEventArgs e)
+    private void OnBrowseFilesClick(object? sender, RoutedEventArgs e)
     {
-        if (_vm is null) return;
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is null) return;
+        async Task Handler()
+        {
+            if (_vm is null) return;
 
-        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-        {
-            Title = "Select folders to upload",
-            AllowMultiple = true
-        });
-        var folderPaths = folders.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToArray();
-        if (folderPaths.Length == 0)
-        {
-            await ShowInfoDialogAsync("No folders selected", "You did not select any folders to upload.");
-            return;
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is null) return;
+
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Select files to upload",
+                AllowMultiple = true
+            });
+            var filePaths = files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToArray();
+            if (filePaths.Length == 0) return;
+
+            await _vm.UploadMixedAsync(filePaths, []);
         }
 
-        await _vm.UploadMixedAsync([], folderPaths);
+        Handler().FireAndForget("FileExplorerView.OnBrowseFilesClick");
     }
 
-    private async void OnUploadZipExtractClick(object? sender, RoutedEventArgs e)
+    private void OnUploadFilesClick(object? sender, RoutedEventArgs e)
     {
-        if (_vm is null) return;
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is null) return;
+        async Task Handler()
+        {
+            if (_vm is null) return;
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is null) return;
 
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "Select ZIP file to extract and upload",
-            AllowMultiple = false,
-            FileTypeFilter = ZipFileTypes
-        });
-        if (files.Count == 0)
-        {
-            await ShowInfoDialogAsync("No file selected", "You did not select a ZIP file to extract and upload.");
-            return;
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Select files to upload",
+                AllowMultiple = true
+            });
+            var filePaths = files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToArray();
+            if (filePaths.Length == 0)
+            {
+                await ShowInfoDialogAsync("No files selected", "You did not select any files to upload.");
+                return;
+            }
+
+            await _vm.UploadMixedAsync(filePaths, []);
         }
-        var zipPath = files[0].TryGetLocalPath();
-        if (zipPath is null) return;
 
-        await _vm.UploadZipExtractAsync(zipPath);
+        Handler().FireAndForget("FileExplorerView.OnUploadFilesClick");
+    }
+
+    private void OnUploadFolderClick(object? sender, RoutedEventArgs e)
+    {
+        async Task Handler()
+        {
+            if (_vm is null) return;
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is null) return;
+
+            var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            {
+                Title = "Select folders to upload",
+                AllowMultiple = true
+            });
+            var folderPaths = folders.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToArray();
+            if (folderPaths.Length == 0)
+            {
+                await ShowInfoDialogAsync("No folders selected", "You did not select any folders to upload.");
+                return;
+            }
+
+            await _vm.UploadMixedAsync([], folderPaths);
+        }
+
+        Handler().FireAndForget("FileExplorerView.OnUploadFolderClick");
+    }
+
+    private void OnUploadZipExtractClick(object? sender, RoutedEventArgs e)
+    {
+        async Task Handler()
+        {
+            if (_vm is null) return;
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is null) return;
+
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Select ZIP file to extract and upload",
+                AllowMultiple = false,
+                FileTypeFilter = ZipFileTypes
+            });
+            if (files.Count == 0)
+            {
+                await ShowInfoDialogAsync("No file selected", "You did not select a ZIP file to extract and upload.");
+                return;
+            }
+            var zipPath = files[0].TryGetLocalPath();
+            if (zipPath is null) return;
+
+            await _vm.UploadZipExtractAsync(zipPath);
+        }
+
+        Handler().FireAndForget("FileExplorerView.OnUploadZipExtractClick");
     }
 
     private async Task ShowInfoDialogAsync(string title, string message)
@@ -697,59 +722,64 @@ public partial class FileExplorerView : UserControl
 
     private static readonly string[] PackageExts = [".appx", ".msix", ".appxbundle", ".msixbundle"];
 
-    private async void OnDropZoneDrop(object? sender, DragEventArgs e)
+    private void OnDropZoneDrop(object? sender, DragEventArgs e)
     {
-        OnDropZoneDragLeave(sender, e);
-
-        if (_vm is null) return;
-        var dropped = e.DataTransfer.TryGetFiles();
-        if (dropped is null) return;
-
-        var filePaths = new List<string>();
-        var folderPaths = new List<string>();
-
-        foreach (var item in dropped)
+        async Task Handler()
         {
-            if (item is IStorageFolder)
-                folderPaths.Add(item.TryGetLocalPath()!);
-            else
-                filePaths.Add(item.TryGetLocalPath()!);
-        }
+            OnDropZoneDragLeave(sender, e);
 
-        Logger.Trace($"OnDropZoneDrop: {filePaths.Count} file(s), {folderPaths.Count} folder(s) dropped");
+            if (_vm is null) return;
+            var dropped = e.DataTransfer.TryGetFiles();
+            if (dropped is null) return;
 
-        // Check if any file looks like an installable package
-        var packageFiles = filePaths
-            .Where(f => PackageExts.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
-            .ToArray();
+            var filePaths = new List<string>();
+            var folderPaths = new List<string>();
 
-        if (packageFiles.Length > 0 && _vm.ShowConfirmAction is not null && _vm.OpenCustomInstallWithFileAction is not null)
-        {
-            var msg = packageFiles.Length == 1
-                ? $"{Path.GetFileName(packageFiles[0])} looks like an installable package."
-                : $"{packageFiles.Length} files look like installable packages.";
-
-            msg += "\n\nInstall or copy?";
-
-            var install = await _vm.ShowConfirmAction("Install package?", msg, "Install", "Copy only");
-            if (install)
+            foreach (var item in dropped)
             {
-                foreach (var pf in packageFiles)
-                    await _vm.OpenCustomInstallWithFileAction(pf);
-
-                // Upload remaining non-package files normally
-                var remaining = filePaths.Except(packageFiles).ToArray();
-                if (remaining.Length > 0 || folderPaths.Count > 0)
-                    await _vm.UploadMixedAsync(remaining, folderPaths.ToArray());
-                return;
+                if (item is IStorageFolder)
+                    folderPaths.Add(item.TryGetLocalPath()!);
+                else
+                    filePaths.Add(item.TryGetLocalPath()!);
             }
+
+            Logger.Trace($"OnDropZoneDrop: {filePaths.Count} file(s), {folderPaths.Count} folder(s) dropped");
+
+            // Check if any file looks like an installable package
+            var packageFiles = filePaths
+                .Where(f => PackageExts.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
+                .ToArray();
+
+            if (packageFiles.Length > 0 && _vm.ShowConfirmAction is not null && _vm.OpenCustomInstallWithFileAction is not null)
+            {
+                var msg = packageFiles.Length == 1
+                    ? $"{Path.GetFileName(packageFiles[0])} looks like an installable package."
+                    : $"{packageFiles.Length} files look like installable packages.";
+
+                msg += "\n\nInstall or copy?";
+
+                var install = await _vm.ShowConfirmAction("Install package?", msg, "Install", "Copy only");
+                if (install)
+                {
+                    foreach (var pf in packageFiles)
+                        await _vm.OpenCustomInstallWithFileAction(pf);
+
+                    // Upload remaining non-package files normally
+                    var remaining = filePaths.Except(packageFiles).ToArray();
+                    if (remaining.Length > 0 || folderPaths.Count > 0)
+                        await _vm.UploadMixedAsync(remaining, folderPaths.ToArray());
+                    return;
+                }
+            }
+
+            // Normal upload (no packages, or user chose copy)
+            if (filePaths.Count > 0 || folderPaths.Count > 0)
+                await _vm.UploadMixedAsync(filePaths.ToArray(), folderPaths.ToArray());
+            else
+                Logger.Trace("OnDropZoneDrop: no local paths resolved");
         }
 
-        // Normal upload (no packages, or user chose copy)
-        if (filePaths.Count > 0 || folderPaths.Count > 0)
-            await _vm.UploadMixedAsync(filePaths.ToArray(), folderPaths.ToArray());
-        else
-            Logger.Trace("OnDropZoneDrop: no local paths resolved");
+        Handler().FireAndForget("FileExplorerView.OnDropZoneDrop");
     }
 
 }

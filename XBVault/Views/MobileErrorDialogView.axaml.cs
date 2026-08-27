@@ -35,7 +35,7 @@ public partial class MobileErrorDialogView : UserControl
             var uri = new Uri($"avares://XBVault/Assets/Views/ErrorDialog/{iconName}");
             DialogIcon.Source = new Avalonia.Media.Imaging.Bitmap(AssetLoader.Open(uri));
         }
-        catch { }
+        catch { /* fallback — icon asset missing, dialog renders without icon */ }
     }
 
     private void OnOkClick(object? sender, RoutedEventArgs e)

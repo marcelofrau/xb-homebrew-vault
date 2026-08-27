@@ -53,7 +53,7 @@ public partial class MobileQrDialogView : UserControl
                 cb.SetDataAsync(transfer).FireAndForget();
             }
         }
-        catch { }
+        catch (Exception ex) { Logger.Warn($"QR dialog clipboard write failed: {ex.Message}"); }
         CopyButtonText.Text = "Copied!";
         Task.Delay(2000).ContinueWith(_ =>
         {

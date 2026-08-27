@@ -112,15 +112,20 @@ public partial class MobileFileExplorerView : UserControl
         }
     }
 
-    private async void OnBrowseDrivesClick(object? sender, RoutedEventArgs e)
+    private void OnBrowseDrivesClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not FileExplorerViewModel vm) return;
-        if (!vm.IsConnected)
+        async Task Handler()
         {
-            await vm.InitializeCommand.ExecuteAsync(null);
-            return;
+            if (DataContext is not FileExplorerViewModel vm) return;
+            if (!vm.IsConnected)
+            {
+                await vm.InitializeCommand.ExecuteAsync(null);
+                return;
+            }
+            vm.RefreshCommand.Execute(null);
         }
-        vm.RefreshCommand.Execute(null);
+
+        Handler().FireAndForget("MobileFileExplorerView.OnBrowseDrivesClick");
     }
 
     private void OnRefreshClick(object? sender, RoutedEventArgs e)
@@ -147,101 +152,111 @@ public partial class MobileFileExplorerView : UserControl
             vm.DeleteSelectedCommand.Execute(null);
     }
 
-    private async void OnUploadFilesClick(object? sender, RoutedEventArgs e)
+    private void OnUploadFilesClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not FileExplorerViewModel vm) return;
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is null) return;
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        async Task Handler()
         {
-            Title = "Select files to upload",
-            AllowMultiple = true
-        });
-        if (files.Count == 0) return;
-
-        var paths = new List<string>();
-        string? tempDir = null;
-        try
-        {
-            foreach (var f in files)
+            if (DataContext is not FileExplorerViewModel vm) return;
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is null) return;
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                var localPath = f.TryGetLocalPath();
-                if (!string.IsNullOrEmpty(localPath))
+                Title = "Select files to upload",
+                AllowMultiple = true
+            });
+            if (files.Count == 0) return;
+
+            var paths = new List<string>();
+            string? tempDir = null;
+            try
+            {
+                foreach (var f in files)
                 {
-                    paths.Add(localPath);
+                    var localPath = f.TryGetLocalPath();
+                    if (!string.IsNullOrEmpty(localPath))
+                    {
+                        paths.Add(localPath);
+                    }
+                    else
+                    {
+                        tempDir ??= Path.Combine(Path.GetTempPath(), $"xbv_upload_{Guid.NewGuid():N}");
+                        Directory.CreateDirectory(tempDir);
+                        var tempPath = Path.Combine(tempDir, f.Name);
+                        await using var srcStream = await f.OpenReadAsync();
+                        await using var dstStream = File.Create(tempPath);
+                        await srcStream.CopyToAsync(dstStream);
+                        paths.Add(tempPath);
+                    }
                 }
-                else
-                {
-                    tempDir ??= Path.Combine(Path.GetTempPath(), $"xbv_upload_{Guid.NewGuid():N}");
-                    Directory.CreateDirectory(tempDir);
-                    var tempPath = Path.Combine(tempDir, f.Name);
-                    await using var srcStream = await f.OpenReadAsync();
-                    await using var dstStream = File.Create(tempPath);
-                    await srcStream.CopyToAsync(dstStream);
-                    paths.Add(tempPath);
-                }
+                if (paths.Count == 0) return;
+                await vm.UploadMixedAsync(paths.ToArray(), []);
             }
-            if (paths.Count == 0) return;
-            await vm.UploadMixedAsync(paths.ToArray(), []);
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Upload files failed");
+                vm.StatusSeverity = ToolbarStatusSeverity.Error;
+                vm.StatusMessage = $"Upload failed: {ex.Message}";
+            }
+            finally
+            {
+                if (tempDir is not null)
+                    try { Directory.Delete(tempDir, recursive: true); } catch { /* best-effort cleanup */ }
+            }
         }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Upload files failed");
-            vm.StatusSeverity = ToolbarStatusSeverity.Error;
-            vm.StatusMessage = $"Upload failed: {ex.Message}";
-        }
-        finally
-        {
-            if (tempDir is not null)
-                try { Directory.Delete(tempDir, recursive: true); } catch { }
-        }
+
+        Handler().FireAndForget("MobileFileExplorerView.OnUploadFilesClick");
     }
 
-    private async void OnUploadFolderClick(object? sender, RoutedEventArgs e)
+    private void OnUploadFolderClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not FileExplorerViewModel vm) return;
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is null) return;
-        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        async Task Handler()
         {
-            Title = "Select folders to upload",
-            AllowMultiple = true
-        });
-        if (folders.Count == 0) return;
-
-        var paths = new List<string>();
-        string? tempDir = null;
-        try
-        {
-            foreach (var f in folders)
+            if (DataContext is not FileExplorerViewModel vm) return;
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is null) return;
+            var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
             {
-                var localPath = f.TryGetLocalPath();
-                if (!string.IsNullOrEmpty(localPath))
+                Title = "Select folders to upload",
+                AllowMultiple = true
+            });
+            if (folders.Count == 0) return;
+
+            var paths = new List<string>();
+            string? tempDir = null;
+            try
+            {
+                foreach (var f in folders)
                 {
-                    paths.Add(localPath);
+                    var localPath = f.TryGetLocalPath();
+                    if (!string.IsNullOrEmpty(localPath))
+                    {
+                        paths.Add(localPath);
+                    }
+                    else
+                    {
+                        tempDir ??= Path.Combine(Path.GetTempPath(), $"xbv_upload_{Guid.NewGuid():N}");
+                        var folderPath = Path.Combine(tempDir, f.Name);
+                        await CopyFolderRecursiveAsync(f, folderPath);
+                        paths.Add(folderPath);
+                    }
                 }
-                else
-                {
-                    tempDir ??= Path.Combine(Path.GetTempPath(), $"xbv_upload_{Guid.NewGuid():N}");
-                    var folderPath = Path.Combine(tempDir, f.Name);
-                    await CopyFolderRecursiveAsync(f, folderPath);
-                    paths.Add(folderPath);
-                }
+                if (paths.Count == 0) return;
+                await vm.UploadMixedAsync([], paths.ToArray());
             }
-            if (paths.Count == 0) return;
-            await vm.UploadMixedAsync([], paths.ToArray());
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Upload folder failed");
+                vm.StatusSeverity = ToolbarStatusSeverity.Error;
+                vm.StatusMessage = $"Upload failed: {ex.Message}";
+            }
+            finally
+            {
+                if (tempDir is not null)
+                    try { Directory.Delete(tempDir, recursive: true); } catch { /* best-effort cleanup */ }
+            }
         }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Upload folder failed");
-            vm.StatusSeverity = ToolbarStatusSeverity.Error;
-            vm.StatusMessage = $"Upload failed: {ex.Message}";
-        }
-        finally
-        {
-            if (tempDir is not null)
-                try { Directory.Delete(tempDir, recursive: true); } catch { }
-        }
+
+        Handler().FireAndForget("MobileFileExplorerView.OnUploadFolderClick");
     }
 
     private static async Task CopyFolderRecursiveAsync(IStorageFolder source, string destDir)
@@ -268,80 +283,90 @@ public partial class MobileFileExplorerView : UserControl
         }
     }
 
-    private async void OnUploadZipClick(object? sender, RoutedEventArgs e)
+    private void OnUploadZipClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not FileExplorerViewModel vm) return;
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is null) return;
-        var zipTypes = new FilePickerFileType[] { new("ZIP Archive") { Patterns = ["*.zip"] } };
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        async Task Handler()
         {
-            Title = "Select ZIP file to extract and upload",
-            AllowMultiple = false,
-            FileTypeFilter = zipTypes
-        });
-        if (files.Count == 0) return;
-        var zipFile = files[0];
-        var zipPath = zipFile.TryGetLocalPath();
-        if (string.IsNullOrEmpty(zipPath))
-        {
-            var tempDir = Path.Combine(Path.GetTempPath(), $"xbv_upload_{Guid.NewGuid():N}");
-            Directory.CreateDirectory(tempDir);
-            zipPath = Path.Combine(tempDir, zipFile.Name);
-            await using var src = await zipFile.OpenReadAsync();
-            await using var dst = File.Create(zipPath);
-            await src.CopyToAsync(dst);
-            try { await vm.UploadZipExtractAsync(zipPath); }
-            catch (Exception ex)
+            if (DataContext is not FileExplorerViewModel vm) return;
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is null) return;
+            var zipTypes = new FilePickerFileType[] { new("ZIP Archive") { Patterns = ["*.zip"] } };
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Logger.Error(ex, "Upload ZIP failed");
-                vm.StatusSeverity = ToolbarStatusSeverity.Error;
-                vm.StatusMessage = $"Upload failed: {ex.Message}";
+                Title = "Select ZIP file to extract and upload",
+                AllowMultiple = false,
+                FileTypeFilter = zipTypes
+            });
+            if (files.Count == 0) return;
+            var zipFile = files[0];
+            var zipPath = zipFile.TryGetLocalPath();
+            if (string.IsNullOrEmpty(zipPath))
+            {
+                var tempDir = Path.Combine(Path.GetTempPath(), $"xbv_upload_{Guid.NewGuid():N}");
+                Directory.CreateDirectory(tempDir);
+                zipPath = Path.Combine(tempDir, zipFile.Name);
+                await using var src = await zipFile.OpenReadAsync();
+                await using var dst = File.Create(zipPath);
+                await src.CopyToAsync(dst);
+                try { await vm.UploadZipExtractAsync(zipPath); }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Upload ZIP failed");
+                    vm.StatusSeverity = ToolbarStatusSeverity.Error;
+                    vm.StatusMessage = $"Upload failed: {ex.Message}";
+                }
+                finally
+                {
+                    try { File.Delete(zipPath); } catch { /* best-effort cleanup */ }
+                    try { Directory.Delete(tempDir); } catch { /* best-effort cleanup */ }
+                }
             }
-            finally
+            else
             {
-                try { File.Delete(zipPath); } catch { }
-                try { Directory.Delete(tempDir); } catch { }
+                try { await vm.UploadZipExtractAsync(zipPath); }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Upload ZIP failed");
+                    vm.StatusSeverity = ToolbarStatusSeverity.Error;
+                    vm.StatusMessage = $"Upload failed: {ex.Message}";
+                }
             }
         }
-        else
-        {
-            try { await vm.UploadZipExtractAsync(zipPath); }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Upload ZIP failed");
-                vm.StatusSeverity = ToolbarStatusSeverity.Error;
-                vm.StatusMessage = $"Upload failed: {ex.Message}";
-            }
-        }
+
+        Handler().FireAndForget("MobileFileExplorerView.OnUploadZipClick");
     }
 
-    private async void OnDownloadConfirmClick(object? sender, RoutedEventArgs e)
+    private void OnDownloadConfirmClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not FileExplorerViewModel vm) return;
-
-        var entries = vm.SelectedEntries.Where(x => !x.IsDrive && !x.IsPlaceholder).ToList();
-        if (entries.Count == 0 && vm.SelectedEntry is not null && !vm.SelectedEntry.IsPlaceholder && !vm.SelectedEntry.IsDrive)
-            entries = [vm.SelectedEntry];
-
-        if (entries.Count == 0) return;
-
-        string fileName;
-        if (entries.Count == 1)
-            fileName = entries[0].Name ?? "file";
-        else
-            fileName = $"{entries.Count} files";
-
-        var message = entries.Count == 1
-            ? $"Download \"{fileName}\" to your device?"
-            : $"Download {entries.Count} files to your device?";
-
-        if (vm.ShowConfirmAction is not null)
+        async Task Handler()
         {
-            var confirmed = await vm.ShowConfirmAction("Download", message, "Download", "Cancel");
-            if (!confirmed) return;
+            if (DataContext is not FileExplorerViewModel vm) return;
+
+            var entries = vm.SelectedEntries.Where(x => !x.IsDrive && !x.IsPlaceholder).ToList();
+            if (entries.Count == 0 && vm.SelectedEntry is not null && !vm.SelectedEntry.IsPlaceholder && !vm.SelectedEntry.IsDrive)
+                entries = [vm.SelectedEntry];
+
+            if (entries.Count == 0) return;
+
+            string fileName;
+            if (entries.Count == 1)
+                fileName = entries[0].Name ?? "file";
+            else
+                fileName = $"{entries.Count} files";
+
+            var message = entries.Count == 1
+                ? $"Download \"{fileName}\" to your device?"
+                : $"Download {entries.Count} files to your device?";
+
+            if (vm.ShowConfirmAction is not null)
+            {
+                var confirmed = await vm.ShowConfirmAction("Download", message, "Download", "Cancel");
+                if (!confirmed) return;
+            }
+
+            await vm.DownloadSelectedCommand.ExecuteAsync(null);
         }
 
-        await vm.DownloadSelectedCommand.ExecuteAsync(null);
+        Handler().FireAndForget("MobileFileExplorerView.OnDownloadConfirmClick");
     }
 }

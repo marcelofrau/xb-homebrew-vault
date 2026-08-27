@@ -145,27 +145,32 @@ public partial class InspectorView : UserControl
         DropOverlay.IsVisible = false;
     }
 
-    private async void OnDrop(object? sender, DragEventArgs e)
+    private void OnDrop(object? sender, DragEventArgs e)
     {
-        DropOverlay.IsVisible = false;
-
-        var files = e.DataTransfer.TryGetFiles();
-        if (files is null || files.Length != 1) return;
-
-        var path = files[0].TryGetLocalPath();
-        if (string.IsNullOrEmpty(path)) return;
-
-        var ext = Path.GetExtension(path).ToLowerInvariant();
-        if (!_packageExts.Contains(ext))
+        async Task Handler()
         {
-            var win = GetWindow();
-            if (win is not null)
-                await ShowUnsupportedDialog(win);
-            return;
+            DropOverlay.IsVisible = false;
+
+            var files = e.DataTransfer.TryGetFiles();
+            if (files is null || files.Length != 1) return;
+
+            var path = files[0].TryGetLocalPath();
+            if (string.IsNullOrEmpty(path)) return;
+
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            if (!_packageExts.Contains(ext))
+            {
+                var win = GetWindow();
+                if (win is not null)
+                    await ShowUnsupportedDialog(win);
+                return;
+            }
+
+            if (_vm is not null && _vm.OpenCustomInstallWithFileAction is not null)
+                await _vm.OpenCustomInstallWithFileAction(path);
         }
 
-        if (_vm is not null && _vm.OpenCustomInstallWithFileAction is not null)
-            await _vm.OpenCustomInstallWithFileAction(path);
+        Handler().FireAndForget("InspectorView.OnDrop");
     }
 
     private Window? GetWindow() =>

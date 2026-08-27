@@ -67,7 +67,7 @@ public static class PreFlightChecker
             catch
             {
                 try { File.Delete(SettingsPath); }
-                catch { }
+                catch { /* best-effort cleanup */ }
             }
         }
     }

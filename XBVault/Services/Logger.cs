@@ -132,7 +132,7 @@ public static class Logger
         {
             // File logging unavailable: keep UI/console logging alive.
             ConfigureWithoutFile();
-            try { System.Diagnostics.Debug.WriteLine($"Logger.Init failed: {ex.Message}"); } catch { }
+            try { System.Diagnostics.Debug.WriteLine($"Logger.Init failed: {ex.Message}"); } catch { /* logger must never throw */ }
         }
     }
 
@@ -182,7 +182,7 @@ public static class Logger
 
     public static void Shutdown()
     {
-        try { Log.CloseAndFlush(); } catch { }
+        try { Log.CloseAndFlush(); } catch { /* logger must never throw */ }
     }
 
     public static void AttachConsole(bool allocNew = false)
@@ -250,12 +250,12 @@ public static class Logger
         if (!_initialized)
         {
             var entry = new LogEntry { Level = level, Message = message, Timestamp = DateTime.Now };
-            try { AddEntry(entry); } catch { }
-            try { WriteConsoleFallback(entry); } catch { }
+            try { AddEntry(entry); } catch { /* logger must never throw */ }
+            try { WriteConsoleFallback(entry); } catch { /* logger must never throw */ }
             return;
         }
 
-        try { _logger.Write(ToSerilogLevel(level), "{LogMessage:l}", message); } catch { }
+        try { _logger.Write(ToSerilogLevel(level), "{LogMessage:l}", message); } catch { /* logger must never throw */ }
     }
 
     private static void Push(LogLevel level, Exception ex, string? context)
@@ -266,12 +266,12 @@ public static class Logger
         if (!_initialized)
         {
             var entry = new LogEntry { Level = level, Message = context is null ? ex.ToString() : $"{context}: {ex}", Timestamp = DateTime.Now };
-            try { AddEntry(entry); } catch { }
-            try { WriteConsoleFallback(entry); } catch { }
+            try { AddEntry(entry); } catch { /* logger must never throw */ }
+            try { WriteConsoleFallback(entry); } catch { /* logger must never throw */ }
             return;
         }
 
-        try { _logger.Write(ToSerilogLevel(level), ex, "{LogMessage:l}", message); } catch { }
+        try { _logger.Write(ToSerilogLevel(level), ex, "{LogMessage:l}", message); } catch { /* logger must never throw */ }
     }
 
     public static void Trace(string msg) => Push(LogLevel.Trace, msg);
@@ -328,13 +328,13 @@ public static class Logger
                     Entries.RemoveAt(0);
                 OnLog?.Invoke(entry);
             }
-            catch { }
+            catch { /* logger must never throw — subscriber exception must not break logging */ }
 
             try
             {
                 System.Diagnostics.Debug.WriteLine($"[XBVault] {entry}");
             }
-            catch { }
+            catch { /* logger must never throw */ }
         }
     }
 

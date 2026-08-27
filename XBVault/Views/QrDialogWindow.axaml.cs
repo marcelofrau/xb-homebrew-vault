@@ -39,7 +39,7 @@ public partial class QrDialogWindow : Window
                 cb.SetDataAsync(transfer).FireAndForget();
             }
         }
-        catch { }
+        catch (Exception ex) { Logger.Warn($"QR window clipboard write failed: {ex.Message}"); }
         CopyButtonText.Text = "Copied!";
         Task.Delay(2000).ContinueWith(_ =>
         {

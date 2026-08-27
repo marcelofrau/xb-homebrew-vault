@@ -124,11 +124,11 @@ namespace XBVault.Services;
         _log.Debug("SftpService.Disconnect: starting...");
         if (_sftp?.IsConnected == true)
         {
-            try { _sftp.Disconnect(); _log.Trace("SFTP client disconnected"); } catch { }
+            try { _sftp.Disconnect(); _log.Trace("SFTP client disconnected"); } catch { /* best-effort teardown */ }
         }
         if (_ssh?.IsConnected == true)
         {
-            try { _ssh.Disconnect(); _log.Trace("SSH client disconnected"); } catch { }
+            try { _ssh.Disconnect(); _log.Trace("SSH client disconnected"); } catch { /* best-effort teardown */ }
         }
 
         _sftp?.Dispose();

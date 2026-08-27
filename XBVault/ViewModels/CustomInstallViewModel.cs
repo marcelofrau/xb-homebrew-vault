@@ -51,9 +51,7 @@ public record SelectableDep
     }
 }
 
-#pragma warning disable CA1001 // CTS managed within AnalyzeAsync lifecycle
-public partial class CustomInstallViewModel : ObservableObject
-#pragma warning restore CA1001
+public partial class CustomInstallViewModel : ObservableObject, IDisposable
 {
     private const int MinProgressMs = 1000;
     // Give the console a beat after uninstall/conflict before resuming install
@@ -76,6 +74,14 @@ public partial class CustomInstallViewModel : ObservableObject
     {
         _packageService = packageService;
         _installService = installService;
+    }
+
+    public void Dispose()
+    {
+        _analyzeCts?.Cancel();
+        _analyzeCts?.Dispose();
+        _analyzeCts = null;
+        GC.SuppressFinalize(this);
     }
 
     [ObservableProperty]

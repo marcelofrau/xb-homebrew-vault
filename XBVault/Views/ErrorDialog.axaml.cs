@@ -94,33 +94,43 @@ public partial class ErrorDialog : Window
         Close();
     }
 
-    private async void OnConnectClick(object? sender, RoutedEventArgs e)
+    private void OnConnectClick(object? sender, RoutedEventArgs e)
     {
-        if (ConnectAction is null) return;
-        Logger.Trace("ErrorDialog connect button clicked");
-        try
+        async Task Handler()
         {
-            await ConnectAction();
-            Close();
+            if (ConnectAction is null) return;
+            Logger.Trace("ErrorDialog connect button clicked");
+            try
+            {
+                await ConnectAction();
+                Close();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "ErrorDialog connect action failed");
+            }
         }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "ErrorDialog connect action failed");
-        }
+
+        Handler().FireAndForget("ErrorDialog.OnConnectClick");
     }
 
-    private async void OnDownloadClick(object? sender, RoutedEventArgs e)
+    private void OnDownloadClick(object? sender, RoutedEventArgs e)
     {
-        if (DownloadAction is null) return;
-        Logger.Info("ErrorDialog download button clicked");
-        try
+        async Task Handler()
         {
-            await DownloadAction();
+            if (DownloadAction is null) return;
+            Logger.Info("ErrorDialog download button clicked");
+            try
+            {
+                await DownloadAction();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "ErrorDialog download action failed");
+            }
         }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "ErrorDialog download action failed");
-        }
+
+        Handler().FireAndForget("ErrorDialog.OnDownloadClick");
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)

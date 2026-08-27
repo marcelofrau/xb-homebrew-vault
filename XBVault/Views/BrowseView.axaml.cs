@@ -107,30 +107,35 @@ public partial class BrowseView : UserControl
         await dlg.ShowDialog(owner);
     }
 
-    private async void OnDrop(object? sender, DragEventArgs e)
+    private void OnDrop(object? sender, DragEventArgs e)
     {
-        DropOverlay.IsVisible = false;
-
-        var files = e.DataTransfer.TryGetFiles();
-        if (files is null || files.Length != 1)
-            return;
-
-        var path = files[0].TryGetLocalPath();
-        if (string.IsNullOrEmpty(path))
-            return;
-
-        var ext = Path.GetExtension(path).ToLowerInvariant();
-        if (!_packageExts.Contains(ext))
+        async Task Handler()
         {
-            var win = GetWindow();
-            if (win is not null)
-                await ShowUnsupportedDialog(win);
-            return;
+            DropOverlay.IsVisible = false;
+
+            var files = e.DataTransfer.TryGetFiles();
+            if (files is null || files.Length != 1)
+                return;
+
+            var path = files[0].TryGetLocalPath();
+            if (string.IsNullOrEmpty(path))
+                return;
+
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            if (!_packageExts.Contains(ext))
+            {
+                var win = GetWindow();
+                if (win is not null)
+                    await ShowUnsupportedDialog(win);
+                return;
+            }
+
+            if (DataContext is BrowseViewModel vm && vm.OpenCustomInstallWithFileAction is not null)
+                // call into VM and let its task run safely
+                await vm.OpenCustomInstallWithFileAction(path);
         }
 
-        if (DataContext is BrowseViewModel vm && vm.OpenCustomInstallWithFileAction is not null)
-            // call into VM and let its task run safely
-            vm.OpenCustomInstallWithFileAction(path).FireAndForget();
+        Handler().FireAndForget("BrowseView.OnDrop");
     }
 
     private void OnItemPointerPressed(object? sender, PointerPressedEventArgs e)
