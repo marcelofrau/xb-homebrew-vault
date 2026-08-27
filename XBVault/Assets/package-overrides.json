@@ -1,12 +1,144 @@
 {
   "packageFamilyNameOverrides": [
     {
+      "packageFamilyName": "2ship2harkinian",
+      "catalogId": "ship2harkinian"
+    },
+    {
+      "packageFamilyName": "BLOOM-powered-by-GZDOOM",
+      "catalogId": "bloom"
+    },
+    {
+      "packageFamilyName": "9764a40a-6f56-46f7-a6fc-03762760f67a",
+      "catalogId": "castlevania"
+    },
+    {
+      "packageFamilyName": "22f98a4d-8f8e-4508-99d9-c4d51e31590b",
+      "catalogId": "chrono"
+    },
+    {
+      "packageFamilyName": "DOOM-powered-by-GZDOOM",
+      "catalogId": "doom"
+    },
+    {
+      "packageFamilyName": "2949UwUOwO.9K95UJ0CA8Z1TYJ2",
+      "catalogId": "durangoftp"
+    },
+    {
+      "packageFamilyName": "Dusklight",
+      "catalogId": "dusklight-uwp"
+    },
+    {
+      "packageFamilyName": "d2x-rebirth",
+      "catalogId": "dxx-rebirth-descent-2"
+    },
+    {
+      "packageFamilyName": "REminiscenceUWP",
+      "catalogId": "flashback-reminiscence"
+    },
+    {
+      "packageFamilyName": "HeXen-powered-by-GZDOOM",
+      "catalogId": "hexen"
+    },
+    {
+      "packageFamilyName": "ioq3-uwp",
+      "catalogId": "ioquake3"
+    },
+    {
+      "packageFamilyName": "nzportable.uwp",
+      "catalogId": "nazi-zombies-portable"
+    },
+    {
+      "packageFamilyName": "zircon",
+      "catalogId": "zircon"
+    },
+    {
+      "packageFamilyName": "7800b501-ec0e-4d85-9d3b-f9499b529e37",
+      "catalogId": "ruffle"
+    },
+    {
+      "packageFamilyName": "SIREN-powered-by-GZDOOM",
+      "catalogId": "siren"
+    },
+    {
+      "packageFamilyName": "SuperMario64HD",
+      "catalogId": "sm64hd"
+    },
+    {
+      "packageFamilyName": "Shipwright",
+      "catalogId": "soh"
+    },
+    {
+      "packageFamilyName": "Sonic1",
+      "catalogId": "sonic1decomp"
+    },
+    {
+      "packageFamilyName": "Sonic2",
+      "catalogId": "sonic2decomp"
+    },
+    {
+      "packageFamilyName": "sab2-uwp",
+      "catalogId": "sab2"
+    },
+    {
+      "packageFamilyName": "SONICCD",
+      "catalogId": "soniccd"
+    },
+    {
+      "packageFamilyName": "5a528e66-e0fc-43fb-b377-ce0b1bb0d3e8",
+      "catalogId": "sonicringracers"
+    },
+    {
+      "packageFamilyName": "115827d0-c6e7-4fcc-befe-a1de5c24c5d1",
+      "catalogId": "srb2"
+    },
+    {
+      "packageFamilyName": "xenon-uwp",
+      "catalogId": "sonicunleashed"
+    },
+    {
+      "packageFamilyName": "sf64",
+      "catalogId": "starfox-64-recompiled"
+    },
+    {
       "packageFamilyName": "SMWRP",
       "catalogId": "super-mario-world-remastered-plus"
     },
     {
+      "packageFamilyName": "tails-adventure-uwp",
+      "catalogId": "tails-adventure-remake"
+    },
+    {
+      "packageFamilyName": "VideoLAN.VLC",
+      "catalogId": "vlc"
+    },
+    {
+      "packageFamilyName": "Microsoft.ZuneMusic",
+      "catalogId": "zune"
+    },
+    {
+      "packageFamilyName": "Wolf3DTC-powered-by-GZDOOM",
+      "catalogId": "wolfenstein3d-tc"
+    },
+    {
+      "packageFamilyName": "51cc950a-9604-4f3a-8ccf-dcd10f4db1f3",
+      "catalogId": "xuwp"
+    },
+    {
+      "packageFamilyName": "recomp",
+      "catalogId": "zelda64"
+    },
+    {
       "packageFamilyName": "SuperMarioBrosRemastered",
       "catalogId": "super-mario-bros-remastered"
+    },
+    {
+      "packageFamilyName": "Doom64EXClassicUWP",
+      "catalogId": "doom64ex-classic"
+    },
+    {
+      "packageFamilyName": "uhexen2.UWP",
+      "catalogId": "uhexen2"
     },
     {
       "packageFamilyName": "57bcfd1f-31c1-4f8e-bf91-958732a81506",
@@ -19,34 +151,9 @@
     {
       "packageFamilyName": "Revive.SpaceCadetPinballUWP",
       "imageUrl": "https://emulationrevival.github.io/xbox-dev-mode/images/game-ports/spacecadetpinball.webp"
-    },
-    {
-      "packageFamilyName": "Doom64EXClassicUWP",
-      "catalogId": "doom64ex-classic"
-    },
-    {
-      "packageFamilyName": "uhexen2.UWP",
-      "catalogId": "uhexen2"
     }
   ],
-  "packageNameOverrides": [
-    {
-      "packageName": "SMBRP",
-      "catalogId": "super-mario-world-remastered-plus"
-    },
-    {
-      "packageName": "FlashBack",
-      "catalogId": "flashback-reminiscence"
-    },
-    {
-      "packageName": "Doom64EX Classic",
-      "catalogId": "doom64ex-classic"
-    },
-    {
-      "packageName": "uHexen2",
-      "catalogId": "uhexen2"
-    }
-  ],
+  "packageNameOverrides": [],
   "versionOverrides": [
     {
       "catalogId": "safeexit",

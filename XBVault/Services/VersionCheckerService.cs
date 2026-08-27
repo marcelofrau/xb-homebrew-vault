@@ -187,11 +187,12 @@ public class VersionCheckerService
         // E1.1p: PFN prefix — bidirectional, PFN is authoritative system identifier
         // "Sonic1" prefix of "Sonic1Decompilation" (catalog has extra "Decompilation")
         // "ScummVMFrontend" startsWith "ScummVM" (catalog is core name)
+        // NOTE: ContainsWithRatio removed — substring containment causes false positives
+        // (e.g. PFN "recomp" inside catalog "gen1recomp"). StartsWithNorm handles all
+        // legitimate prefix cases; E1 handles exact normalized matches.
         if (pfnNorm is not null && catNorm.Length >= 6 && pfnNorm.Length >= 6)
         {
             if (StartsWithNorm(catNorm, pfnNorm) || StartsWithNorm(pfnNorm, catNorm))
-                return true;
-            if (ContainsWithRatio(catNorm, pfnNorm, 0.55))
                 return true;
         }
 

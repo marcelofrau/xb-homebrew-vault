@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Avalonia.Threading;
 using Serilog;
@@ -133,6 +134,29 @@ public static class Logger
             ConfigureWithoutFile();
             try { System.Diagnostics.Debug.WriteLine($"Logger.Init failed: {ex.Message}"); } catch { }
         }
+    }
+
+    /// <summary>
+    /// Writes a session header with version, platform, runtime, and session ID.
+    /// Call once after Init() to enable log differentiation across builds.
+    /// </summary>
+    public static void WriteSessionHeader()
+    {
+        var sessionId = Guid.NewGuid().ToString("N")[..12];
+        var version = typeof(Logger).Assembly.GetName().Version?.ToString() ?? "unknown";
+        var runtime = RuntimeInformation.FrameworkDescription;
+        var os = RuntimeInformation.OSDescription;
+        var arch = RuntimeInformation.ProcessArchitecture.ToString();
+
+        var platform = OperatingSystem.IsAndroid() ? "Android" :
+                       OperatingSystem.IsWindows() ? "Windows" :
+                       OperatingSystem.IsLinux() ? "Linux" :
+                       OperatingSystem.IsMacOS() ? "macOS" :
+                       "Unknown";
+
+        Info($"=== Session {sessionId} ===");
+        Info($"Version: {version} | Platform: {platform} | Runtime: {runtime}");
+        Info($"OS: {os} | Arch: {arch}");
     }
 
     private static void ConfigureWithoutFile()

@@ -658,8 +658,9 @@ public partial class InstalledViewModel : ObservableObject
                 }
             }
 
+            var bannerSnapshot = _allPackages.ToList();
             var bannerOpts = new ParallelOptions { MaxDegreeOfParallelism = 4 };
-            await Parallel.ForEachAsync(_allPackages, bannerOpts, async (pkg, ct) =>
+            await Parallel.ForEachAsync(bannerSnapshot, bannerOpts, async (pkg, ct) =>
             {
                 pkg.BannerImage = ResolveBannerAsync is not null
                     ? await ResolveBannerAsync(pkg) ?? _genericBanner
@@ -670,7 +671,7 @@ public partial class InstalledViewModel : ObservableObject
 
             if (CheckOutdatedAsync is not null)
             {
-                foreach (var pkg in _allPackages)
+                foreach (var pkg in _allPackages.ToList())
                 {
                     try
                     {

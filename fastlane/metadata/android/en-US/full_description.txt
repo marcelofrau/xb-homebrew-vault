@@ -1,0 +1,24 @@
+XB Homebrew Vault is a companion app for your Xbox Dev Mode console. It connects to your console over Wi-Fi (or LAN) and gives you the tools that normally require the Xbox Device Portal web UI - right on your phone.
+
+FEATURES
+
+- Catalog Browser: browse and search the Emulation Revival catalog - emulators, apps, ports and utilities - with category and compatibility filters
+- One-Click Install: automatic download, dependency resolution and wireless upload to your Xbox
+- Custom Installs: install .appx / .msix / .zip packages from local storage or URLs, with analysis and dependency checks
+- Dev Tools: screenshot capture, system info, process manager, network info and real-time CPU/GPU/RAM monitoring
+- File Explorer: browse, upload, download and delete files over SSH/SFTP
+- XRay / Inspector: live Xbox log streaming and Lua REPL for diagnostics
+
+PRIVACY FIRST
+
+- No cloud, no accounts, no telemetry
+- Credentials are stored locally with obfuscation - they never leave your device
+
+REQUIREMENTS
+
+- An Xbox console with Developer Mode enabled (see the Xbox Dev Mode documentation)
+- Console IP address and Dev Mode credentials
+
+XB Homebrew Vault is free and open source software, licensed under GPLv3.
+
+Note: this is an unofficial community tool and is not affiliated with or endorsed by Microsoft.

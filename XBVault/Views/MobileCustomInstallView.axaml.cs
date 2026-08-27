@@ -416,7 +416,7 @@ public partial class MobileCustomInstallView : UserControl
         _depCountText = new TextBlock
         {
             FontSize = 12,
-            Foreground = FindBrush("TextDimBrush")
+            Foreground = FindBrush("TextMutedBrush")
         };
         pkgInfo.Children.Add(_depCountText);
         pkgHeader.Children.Add(pkgInfo);
@@ -431,7 +431,7 @@ public partial class MobileCustomInstallView : UserControl
             FontFamily = TitleFont,
             FontSize = 11,
             FontWeight = FontWeight.Bold,
-            Foreground = FindBrush("TextDimBrush"),
+            Foreground = FindBrush("TextMutedBrush"),
             Margin = new Thickness(4, 8, 0, 0)
         };
         content.Children.Add(depHeader);
@@ -443,7 +443,7 @@ public partial class MobileCustomInstallView : UserControl
         {
             Text = "No dependencies detected.",
             FontSize = 13,
-            Foreground = FindBrush("TextDimBrush"),
+            Foreground = FindBrush("TextMutedBrush"),
             HorizontalAlignment = HorizontalAlignment.Center,
             Margin = new Thickness(0, 8)
         };

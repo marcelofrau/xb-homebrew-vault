@@ -32,6 +32,7 @@ public partial class App : Application
         SetupGlobalExceptionHandling();
 
         Logger.Init();
+        Logger.WriteSessionHeader();
 
         // Log pre-flight repairs from Program.Main
         if (AppBoot.PreFlightReport is { } report)
