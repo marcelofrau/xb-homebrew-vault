@@ -361,23 +361,16 @@ public partial class InstalledViewModel : ObservableObject
         if (ConfirmReinstallAsync is not null && !await ConfirmReinstallAsync(pkg))
             return;
 
-        Logger.Info($"ReinstallPackage fired, uninstalling {pkg.Name}");
-        pkg.IsUninstalling = true;
+        // Reinstall installs over the existing package (no uninstall) to preserve
+        // the app's LocalState. Uninstall+reinstall would wipe local data.
+        Logger.Info($"ReinstallPackage fired, reinstalling over {pkg.Name}");
         try
         {
-            var ok = await _packageService.UninstallPackageAsync(pkg.FullName);
-            Logger.Info($"Uninstall during reinstall: {ok}");
-            await RefreshPackagesAsync();
-            if (ok)
-                ReinstallInstallAction?.Invoke();
+            ReinstallInstallAction?.Invoke();
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, $"Reinstall uninstall failed for {pkg.Name}");
-        }
-        finally
-        {
-            pkg.IsUninstalling = false;
+            Logger.Error(ex, $"Reinstall failed for {pkg.Name}");
         }
     }
 
