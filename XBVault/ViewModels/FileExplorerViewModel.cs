@@ -995,7 +995,10 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
                 foreach (var f in files)
                 {
                     UploadStatusText = $"Uploading {Path.GetFileName(f)}...";
-                    await _portal.UploadFileAsync(CurrentPath, f);
+                    var fileDone = done;
+                    var fileProgress = new Progress<double>(p =>
+                        UploadProgress = (fileDone + p) / total);
+                    await _portal.UploadFileAsync(CurrentPath, f, fileProgress);
                     done++;
                     if (total > 0) UploadProgress = (double)done / total;
                 }
@@ -1008,7 +1011,10 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
                     var folderName = Path.GetFileName(folder.TrimEnd('\\', '/'));
                     UploadStatusText = $"Uploading {folderName}...";
                     await _portal.CreateFolderAsync(CurrentPath, folderName);
-                    await _portal.UploadTreeAsync(CurrentPath.TrimEnd('\\') + "\\" + folderName, folder);
+                    var folderDone = done;
+                    var folderProgress = new Progress<double>(p =>
+                        UploadProgress = (folderDone + p) / total);
+                    await _portal.UploadTreeAsync(CurrentPath.TrimEnd('\\') + "\\" + folderName, folder, folderProgress);
                     done++;
                     if (total > 0) UploadProgress = (double)done / total;
                 }
@@ -1022,7 +1028,7 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
                 try
                 {
                     ZipFile.ExtractToDirectory(zipExtractPath, tempDir);
-                    await _portal.UploadTreeAsync(CurrentPath, tempDir);
+                    await _portal.UploadTreeAsync(CurrentPath, tempDir, new Progress<double>(p => UploadProgress = p * 0.95));
                 }
                 finally
                 {

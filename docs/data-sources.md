@@ -10,7 +10,7 @@ description: How XB Homebrew Vault sources its catalog — Emulation Revival JSO
 
 ## Emulation Revival Catalog API
 
-`CatalogApiService` fetches a single generated JSON document (HTTP GET, 30s timeout):
+`CatalogApiService` fetches a single generated JSON document (HTTP GET, capped at 5 minutes per request so large catalogs never hit an arbitrary 30s wall):
 
 ```
 https://emulationrevival.github.io/api/catalog.json

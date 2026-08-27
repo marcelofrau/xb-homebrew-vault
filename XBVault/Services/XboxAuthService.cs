@@ -26,6 +26,7 @@ public class XboxAuthService : IXboxAuthService
     private string? _username;
     private string? _password;
     private string? _smbPassword;
+    private HttpClient? _transferHttp;
     private readonly int _maxResponseBodyLogLength = 2000;
 
     public event Action<bool>? ConnectionChanged;
@@ -38,6 +39,7 @@ public class XboxAuthService : IXboxAuthService
             CookieContainer = new CookieContainer()
         };
         _http = new HttpClient(_handler) { Timeout = TimeSpan.FromSeconds(30) };
+        _transferHttp = new HttpClient(_handler) { Timeout = Timeout.InfiniteTimeSpan };
     }
 
     public void Configure(string baseUrl, string username, string password)
@@ -74,12 +76,20 @@ public class XboxAuthService : IXboxAuthService
             new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", auth);
         http.BaseAddress = baseUri;
 
+        var transfer = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
+        transfer.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", auth);
+        transfer.BaseAddress = baseUri;
+
         var oldHttp = _http;
         var oldHandler = _handler;
+        var oldTransfer = _transferHttp;
         _http = http;
+        _transferHttp = transfer;
         _handler = handler;
         _csrfToken = null;
         oldHttp.Dispose();
+        oldTransfer?.Dispose();
         oldHandler?.Dispose();
         _configured = true;
         Logger.Debug("XboxAuthService configured");
@@ -89,6 +99,13 @@ public class XboxAuthService : IXboxAuthService
     public bool IsConnected => _connected;
     public string? SmbPassword => _smbPassword;
     public string? Host => _baseUrl is not null ? new Uri(_baseUrl).Host : null;
+
+    /// <summary>
+    /// Client without a blanket <see cref="HttpClient.Timeout"/> cap, for large
+    /// file transfers (portal User Files upload/download, MSIX installs). Every
+    /// caller must bound it with its own per-request CancellationToken.
+    /// </summary>
+    internal HttpClient TransferHttp => _transferHttp ?? _http;
 
     public SshConnectionInfo GetSshCredentials()
     {
@@ -152,6 +169,7 @@ public class XboxAuthService : IXboxAuthService
         ConnectionChanged?.Invoke(false);
         _csrfToken = null;
         _http.Dispose();
+        _transferHttp?.Dispose();
         _handler?.Dispose();
         _handler = new HttpClientHandler
         {
@@ -159,6 +177,7 @@ public class XboxAuthService : IXboxAuthService
             CookieContainer = new CookieContainer()
         };
         _http = new HttpClient(_handler) { Timeout = TimeSpan.FromSeconds(30) };
+        _transferHttp = new HttpClient(_handler) { Timeout = Timeout.InfiniteTimeSpan };
     }
 
     public virtual async Task<ConnectionTestResult> TestConnectionAsync(CancellationToken ct = default)
@@ -307,6 +326,19 @@ public class XboxAuthService : IXboxAuthService
             req.Headers.Add("X-CSRF-Token", _csrfToken);
         req.Options.Set(new HttpRequestOptionsKey<TimeSpan?>("RequestTimeout"), Timeout.InfiniteTimeSpan);
         return await _http.SendAsync(req, ct);
+    }
+
+    /// <summary>
+    /// Posts through a specific client (e.g. <see cref="TransferHttp"/> for large
+    /// file uploads that exceed <see cref="_http"/>'s 30s blanket timeout).
+    /// </summary>
+    internal async Task<HttpResponseMessage> PostWithCsrfAsync(string url, HttpContent? content, HttpClient client, CancellationToken ct)
+    {
+        await EnsureCsrfTokenAsync();
+        var req = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+        if (!string.IsNullOrEmpty(_csrfToken))
+            req.Headers.Add("X-CSRF-Token", _csrfToken);
+        return await client.SendAsync(req, ct);
     }
 
     internal async Task<HttpResponseMessage> DeleteWithCsrfAsync(string url)

@@ -128,7 +128,7 @@ public class PackageInstallService
             PooledConnectionLifetime = TimeSpan.FromMinutes(2),
             AllowAutoRedirect = true
         };
-        _http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+        _http = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
         _http.DefaultRequestHeaders.Add("User-Agent", $"XB Homebrew Vault/{BuildInfo.Version}");
     }
 
@@ -171,22 +171,29 @@ public class PackageInstallService
                 {
                     if (attempt > 1)
                         Logger.Warn($"Retry {attempt - 1}/{maxAttempts - 1} for download of {fileName}");
+
+                    // Per-attempt cap: a genuinely stalled connection dies, but an active
+                    // multi-GB download over a slow link is never killed by a blanket timeout.
+                    using var cap = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    cap.CancelAfter(TimeSpan.FromMinutes(60));
+                    var ct = cap.Token;
+
                     var response = await _http.GetAsync(url,
-                        HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                        HttpCompletionOption.ResponseHeadersRead, ct);
                     response.EnsureSuccessStatusCode();
 
                     var total = response.Content.Headers.ContentLength ?? -1;
                     _log.Info($"Download size: {(total > 0 ? $"{total} bytes" : "unknown")}");
-                    using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    using var stream = await response.Content.ReadAsStreamAsync(ct);
                     using var fileStream = File.Create(localPath);
 
                     var buffer = new byte[81920];
                     long read = 0;
                     int bytesRead;
 
-                    while ((bytesRead = await stream.ReadAsync(buffer, cancellationToken)) > 0)
+                    while ((bytesRead = await stream.ReadAsync(buffer, ct)) > 0)
                     {
-                        await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                        await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
                         read += bytesRead;
                         if (total > 0)
                         {

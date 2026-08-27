@@ -27,6 +27,13 @@ public class PortalAppFilesService : IDisposable
 
     private static readonly string[] FallbackKnownFolders = [DevelopmentFiles, LocalAppData];
 
+    /// <summary>
+    /// Absolute safety cap for a single file transfer over the Dev Portal.
+    /// Transfers use <see cref="XboxAuthService.TransferHttp"/> (no blanket 30s
+    /// timeout); this bounds a stalled transfer without capping active throughput.
+    /// </summary>
+    private static readonly TimeSpan TransferCap = TimeSpan.FromMinutes(60);
+
     private readonly XboxAuthService _auth;
     private readonly IXboxPackageService _packageService;
     private CancellationTokenSource? _cts;
@@ -128,7 +135,11 @@ public class PortalAppFilesService : IDisposable
                   $"&path={Uri.EscapeDataString(portalPath)}";
         Logger.Debug($"PortalAppFiles.Download: {url}");
 
-        using var response = await _auth.Http.GetAsync(url, token);
+        using var cap = CancellationTokenSource.CreateLinkedTokenSource(token);
+        cap.CancelAfter(TransferCap);
+        var ct = cap.Token;
+
+        using var response = await _auth.TransferHttp.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
         if (!response.IsSuccessStatusCode)
         {
             var body = await _auth.ReadResponseBody(response);
@@ -138,15 +149,15 @@ public class PortalAppFilesService : IDisposable
 
         try
         {
-            await using var src = await response.Content.ReadAsStreamAsync(token);
+            await using var src = await response.Content.ReadAsStreamAsync(ct);
             await using var dst = File.Create(destinationPath);
             var total = response.Content.Headers.ContentLength ?? file.Size;
             var buffer = new byte[81920];
             long copied = 0;
             int read;
-            while ((read = await src.ReadAsync(buffer, token)) > 0)
+            while ((read = await src.ReadAsync(buffer, ct)) > 0)
             {
-                await dst.WriteAsync(buffer.AsMemory(0, read), token);
+                await dst.WriteAsync(buffer.AsMemory(0, read), ct);
                 copied += read;
                 if (total > 0)
                     progress?.Report((double)copied / total);
@@ -167,7 +178,7 @@ public class PortalAppFilesService : IDisposable
         }
     }
 
-    public async Task UploadFileAsync(string targetPath, string localFilePath)
+    public async Task UploadFileAsync(string targetPath, string localFilePath, IProgress<double>? progress = null)
     {
         var (knownFolder, package, dirParts) = Parse(targetPath);
         if (knownFolder is null)
@@ -179,37 +190,64 @@ public class PortalAppFilesService : IDisposable
                   $"&path={Uri.EscapeDataString(BuildPortalPath(dirParts))}&extract=false";
         Logger.Debug($"PortalAppFiles.Upload: {url} ({fileName})");
 
+        using var cap = new CancellationTokenSource(TransferCap);
+        var ct = cap.Token;
         using var fileStream = File.OpenRead(localFilePath);
+        using var bodyStream = new ProgressReadStream(fileStream, progress);
         using var content = new MultipartFormDataContent();
-        using var fileContent = new StreamContent(fileStream);
+        using var fileContent = new StreamContent(bodyStream);
         fileContent.Headers.ContentDisposition = ContentDispositionHeaderValue.Parse(
             "form-data; name=\"file\"; filename=\"" + fileName.Replace("\"", "\\\"") + "\"");
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
         content.Add(fileContent);
 
-        using var response = await _auth.PostWithCsrfAsync(url, content);
+        using var response = await _auth.PostWithCsrfAsync(url, content, _auth.TransferHttp, ct);
         if (!response.IsSuccessStatusCode)
         {
             var body = await _auth.ReadResponseBody(response);
             Logger.Warn($"PortalAppFiles.Upload failed: {(int)response.StatusCode} — {body}");
             throw new HttpRequestException($"Portal upload failed: HTTP {(int)response.StatusCode} — {body}");
         }
+
+        progress?.Report(1.0);
     }
 
     /// <summary>
     /// Uploads the contents of a local folder (recursively) into an existing portal
     /// directory. Sub-directories are created through the portal folder endpoint.
     /// </summary>
-    public async Task UploadTreeAsync(string targetPath, string localFolder)
+    public async Task UploadTreeAsync(string targetPath, string localFolder, IProgress<double>? progress = null)
+    {
+        var totalFiles = Directory.EnumerateFiles(localFolder, "*", SearchOption.AllDirectories).Count();
+        if (totalFiles == 0)
+            return;
+
+        var uploaded = 0;
+        await UploadTreeCoreAsync(targetPath, localFolder, totalFiles, () => uploaded, f => uploaded = f, progress);
+        progress?.Report(1.0);
+    }
+
+    private async Task UploadTreeCoreAsync(
+        string targetPath,
+        string localFolder,
+        int totalFiles,
+        Func<int> getUploaded,
+        Action<int> setUploaded,
+        IProgress<double>? progress)
     {
         foreach (var subDir in Directory.EnumerateDirectories(localFolder))
         {
             var dirName = Path.GetFileName(subDir);
             await CreateFolderAsync(targetPath, dirName);
-            await UploadTreeAsync(targetPath.TrimEnd('\\') + "\\" + dirName, subDir);
+            await UploadTreeCoreAsync(targetPath.TrimEnd('\\') + "\\" + dirName, subDir, totalFiles, getUploaded, setUploaded, progress);
         }
         foreach (var file in Directory.EnumerateFiles(localFolder))
-            await UploadFileAsync(targetPath, file);
+        {
+            var fileProgress = new Progress<double>(f =>
+                progress?.Report((getUploaded() + f) / totalFiles));
+            await UploadFileAsync(targetPath, file, fileProgress);
+            setUploaded(getUploaded() + 1);
+        }
     }
 
     public async Task CreateFolderAsync(string folderPath, string folderName)

@@ -52,8 +52,9 @@ public partial class CatalogApiService
     public CatalogApiService(IAppLogger log)
     {
         _log = log ?? throw new ArgumentNullException(nameof(log));
-        _http = new HttpClient() { Timeout = TimeSpan.FromSeconds(30) };
-        _http.DefaultRequestHeaders.Add("User-Agent", $"XB Homebrew Vault/{BuildInfo.Version}");
+        var http = new HttpClient() { Timeout = Timeout.InfiniteTimeSpan };
+        http.DefaultRequestHeaders.Add("User-Agent", $"XB Homebrew Vault/{BuildInfo.Version}");
+        _http = http;
     }
 
     /// <summary>
@@ -111,7 +112,8 @@ public partial class CatalogApiService
             progress?.Report(("Downloading JSON catalog...", 0.2));
             _log.Debug($"Fetching: {JsonApiUrl}");
 
-            var response = await _http.GetAsync(JsonApiUrl);
+            using var cutCs = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+            var response = await _http.GetAsync(JsonApiUrl, cutCs.Token);
             if (!response.IsSuccessStatusCode)
             {
                 _log.Warn($"JSON API returned {response.StatusCode}");
