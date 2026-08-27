@@ -95,15 +95,16 @@ public static partial class UrlResolverService
         Logger.Debug($"UrlResolverService: GoFile contentId={contentId}");
 
         // Step 1: Get available server
-        var serverResponse = await SharedClient.GetStringAsync("https://api.gofile.io/servers", ct);
+        var serverResponse = await SharedClient.GetStringAsync(AppUrls.GoFileServers, ct);
         using var serverDoc = JsonDocument.Parse(serverResponse);
         var servers = serverDoc.RootElement.GetProperty("data").GetProperty("servers");
         if (servers.GetArrayLength() == 0)
             throw new InvalidOperationException("No GoFile servers available");
-        var server = servers[0].GetProperty("name").GetString();
+        var server = servers[0].GetProperty("name").GetString() ??
+            throw new InvalidOperationException("GoFile server has no name");
 
         // Step 2: Get content info
-        var contentUrl = $"https://{server}.gofile.io/contents/{contentId}";
+        var contentUrl = AppUrls.GoFileContents(server, contentId);
         Logger.Debug($"UrlResolverService: GoFile content API — {contentUrl}");
         var contentResponse = await SharedClient.GetStringAsync(contentUrl, ct);
         using var contentDoc = JsonDocument.Parse(contentResponse);
@@ -158,7 +159,7 @@ public static partial class UrlResolverService
         if (string.IsNullOrEmpty(fileId))
             throw new InvalidOperationException("Could not extract Google Drive file ID from URL");
 
-        var directUrl = $"https://drive.google.com/uc?export=download&id={fileId}";
+        var directUrl = AppUrls.DriveDownload(fileId);
         Logger.Info($"UrlResolverService: Google Drive resolved — fileId={fileId}");
         return (directUrl, null);
     }

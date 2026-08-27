@@ -51,6 +51,26 @@ jobs:
     - name: Test
       run: dotnet test tests/XBVault.Tests/XBVault.Tests.csproj -c Release
 
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Verify formatting (shared)
+      run: dotnet format whitespace XBVault/XBVault.csproj --verify-no-changes
+
+    - name: Verify formatting (desktop)
+      run: dotnet format whitespace XBVault.Desktop/XBVault.Desktop.csproj --verify-no-changes
+
+    - name: Verify formatting (tests)
+      run: dotnet format whitespace tests/XBVault.Tests/XBVault.Tests.csproj --verify-no-changes
+
   build-android:
     runs-on: windows-latest
 

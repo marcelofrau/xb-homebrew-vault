@@ -15,6 +15,10 @@ public class XboxSystemService : IXboxSystemService
         _auth = auth;
     }
 
+    internal TimeSpan ScreenshotRetryDelay { get; set; } = TimeSpan.FromSeconds(1);
+
+    internal int ScreenshotMaxRetries { get; set; } = 5;
+
     public async Task<byte[]?> CaptureScreenshotAsync(CancellationToken ct = default)
     {
         if (!_auth.IsConfigured)
@@ -23,16 +27,14 @@ public class XboxSystemService : IXboxSystemService
             return null;
         }
 
-        const int maxRetries = 5;
-        const int retryDelayMs = 1000;
-
-        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        for (int retry = 0; retry <= ScreenshotMaxRetries; retry++)
         {
+            var attempt = retry + 1;
             try
             {
                 var url = $"/ext/screenshot?download=true&hdr=false&time={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
                 if (attempt > 1)
-                    Logger.Info($"GET {url} (attempt {attempt}/{maxRetries})");
+                    Logger.Info($"GET {url} (attempt {attempt}/{ScreenshotMaxRetries})");
                 else
                     Logger.Info($"GET {url}");
                 var response = await _auth.Http.GetAsync(url, ct);
@@ -43,10 +45,10 @@ public class XboxSystemService : IXboxSystemService
                 var body = await _auth.ReadResponseBody(response);
                 Logger.Warn($"Body: {body}");
 
-                if (attempt < maxRetries)
+                if (retry < ScreenshotMaxRetries)
                 {
-                    Logger.Info($"Screenshot returned {(int)response.StatusCode}, retrying in {retryDelayMs}ms...");
-                    await Task.Delay(retryDelayMs, ct);
+                    Logger.Info($"Screenshot returned {(int)response.StatusCode}, retrying in {ScreenshotRetryDelay.TotalMilliseconds}ms...");
+                    await Task.Delay(ScreenshotRetryDelay, ct);
                 }
             }
             catch (OperationCanceledException)
@@ -56,13 +58,13 @@ public class XboxSystemService : IXboxSystemService
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, $"CaptureScreenshot failed (attempt {attempt}/{maxRetries})");
-                if (attempt < maxRetries)
-                    await Task.Delay(retryDelayMs, ct);
+                Logger.Error(ex, $"CaptureScreenshot failed (attempt {attempt}/{ScreenshotMaxRetries})");
+                if (retry < ScreenshotMaxRetries)
+                    await Task.Delay(ScreenshotRetryDelay, ct);
             }
         }
 
-        Logger.Warn($"Screenshot failed after {maxRetries} attempts");
+        Logger.Warn($"Screenshot failed after {ScreenshotMaxRetries} attempts");
         return null;
     }
 

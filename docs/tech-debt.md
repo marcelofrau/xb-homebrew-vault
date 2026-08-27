@@ -7,7 +7,7 @@ title: Tech Debt
 
 Use this section as the tracked backlog for technical-debt work. Items are ordered by expected impact and ease of rollout. Each item includes a short why, recommended fix, risk, and rough estimate.
 
-> **Last verified against source:** 2026-08-27. Desktop + Android build: **0 warnings / 0 errors**. Test suite: **653 passed**. Source version: **2.0.4** (`net10.0`).
+> **Last verified against source:** 2026-08-27. Desktop + Android build: **0 warnings / 0 errors**. Test suite: **718 passed** (`dotnet format whitespace --verify-no-changes` clean). Source version: **2.0.5** (`net10.0`).
 
 1. App.axaml.cs composition root (Priority: High)
    - Why: 1,906 lines — the largest file in the codebase. Manual `new` wiring of 18 services, splash logic, dialog creation, action-delegate wiring, mobile init — all in one file. No DI container.
@@ -28,70 +28,60 @@ Use this section as the tracked backlog for technical-debt work. Items are order
    - Risk: low.
    - Estimate: 4–8 hours.
 
-4. Secrets: replace XOR obfuscation (Priority: High — security)
-   - Why: `CryptoService` uses XOR+salt (reversible with source access). Not secure for real credentials.
-   - Fix: Introduce `ISecretStore` abstraction. DPAPI/DataProtection on Windows, Keychain on macOS, libsecret on Linux.
-   - Risk: medium (platform differences, migration of persisted settings).
-   - Estimate: 6–16 hours.
+4. Secrets: XOR obfuscation — ✅ DONE 2026-08-27 (Priority: High — security)
+   - `CryptoService` now uses **SEC2**: AES-256-GCM with a key derived via PBKDF2 (SHA-256, 100k it) from machine+user identity + per-install random salt. Pure managed, cross-platform (Windows/macOS/Linux/Android), zero P/Invoke, zero new UX.
+   - Legacy XOR values (pre-SEC2 builds) still decrypt on read and are **re-encrypted on the next save** (lazy migration) — installed configs keep working.
+   - A config copied to another machine/user is undecryptable; `TryDeobfuscate` returns false and the app prompts the user to re-run the Setup Wizard (desktop `ConfirmWindow`, mobile `MobileConfirmDialogView`) + inline warning in Settings with a Reconfigure button.
+   - Shared-configs-between-OSes is *not* a supported scenario (user decision).
 
-5. Increase tests for Xbox domain services (Priority: High)
-   - Current: 653 tests pass, but 0 tests for XboxAuthService, XboxPackageService, XboxSystemService, XboxNetworkService, XboxProcessService, XboxPerformanceService.
-   - Fix: Add fakes/stubs for HttpMessageHandler and WebSocket streams; write integration-style unit tests.
-   - Risk: medium.
-   - Estimate: 8–24 hours.
+5. Increase tests for Xbox domain services (Priority: High) — ✅ DONE 2026-08-27
+   - **Full Xbox HTTP coverage via stubbed transport:** `XboxSystemService` (12: screenshot retry/cancel/fail, system-info retention, reboot/shutdown params), `XboxNetworkService` (12: ipconfig/interfaces/networks passthrough + errors), `XboxProcessService` (6: kill no-op unconfigured, running-list empty/fail, running title), `XboxPerformanceService` (9: not-configured guard, canceled-token, real WebSocket loopback server receiving snapshot, fragmented frames, malformed JSON). Plus earlier suites (auth, package dep-install, portal, zip, ProgressReadStream). Suite: **718 tests** (was 679).
 
-6. Apply `.ConfigureAwait(false)` in services (Priority: Medium)
-   - Current: 8 total uses (down from 9). Key services (XboxAuthService, XboxPackageService, SftpService) have 0.
-   - Fix: Add to all service I/O/HTTP/WebSocket awaits. Skip in ViewModels.
-   - Risk: low-mechanical.
-   - Estimate: 2–8 hours.
-
-7. Cancellation/disposal audit — ✅ DONE 2026-08-27 (Priority: Medium)
+6. Cancellation/disposal audit — ✅ DONE 2026-08-27 (Priority: Medium)
    - Current: `CustomInstallViewModel` now implements `IDisposable` (disposes `_analyzeCts`); all 4 hosts call `vm.Dispose()` on window close / overlay close. (`MobileLogsView._shareCts` IS disposed in the finally block.)
    - Fix: Implement IDisposable on CustomInstallViewModel. — *implemented*
    - Risk: low.
    - Estimate: 2–4 hours.
 
-8. Bare `catch { }` blocks (Priority: Medium) — ✅ DONE 2026-08-27
+7. Bare `catch { }` blocks (Priority: Medium) — ✅ DONE 2026-08-27
    - Current: 0 bare `catch { }` remain (was 26). All now have explicit `// why` comments (self-protection / best-effort cleanup / fallback) or log. Best-effort cleanups and logger self-protection intentionally stay silent (recursive logging loop); GoFile request/response parses and QR clipboard writes now log `Warn` on failure.
    - Fix: Add explicit `// why` comments where intentional; log where possible. — *implemented*
 
-9. `.Result` blocking calls (Priority: Medium) — 🅳 deferred (user sign-off required)
+8. `.Result` blocking calls (Priority: Medium) — 🅳 deferred (user sign-off required)
    - Current: 3 instances in SftpService.cs (lines 550, 595) and XrayAgentService.cs (line 263).
    - Fix: Replace with proper `await` or extract to async methods. **BUT** — `SftpService` and `XrayAgentService` are delicate (cmd.exe / sync calls); both work perfectly and are not to be retested. Address only as a carefully-tested refactor with explicit sign-off.
    - Risk: low (but platform-sensitive).
    - Estimate: 1–2 hours.
 
-10. Service/ViewModel documentation (Priority: Medium)
-    - Current: 26/37 services missing class-level XML `<summary>` docs (~8% coverage).
-    - Fix: Add XML docs to all service classes and key ViewModel public members.
-    - Risk: low.
-    - Estimate: 4–8 hours.
+9. Service/ViewModel documentation (Priority: Medium)
+   - Current: 26/37 services missing class-level XML `<summary>` docs (~8% coverage). (`CryptoService` gained a full summary in the SEC2 pass.)
+   - Fix: Add XML docs to all service classes and key ViewModel public members.
+   - Risk: low.
+   - Estimate: 4–8 hours.
 
-11. CI checks & analyzers (Priority: Low)
-    - Why: No Roslyn analyzer step, minimal .editorconfig, no `dotnet format` in CI.
-    - Fix: Add analyzer job, `dotnet format --verify-no-changes`, `EnforceCodeStyleInBuild`.
-    - Risk: low.
-    - Estimate: 3–8 hours.
+10. CI checks & analyzers (Priority: Low) — ✅ DONE 2026-08-27
+    - Current: new `format` job in `.github/workflows/build.yml` runs `dotnet format whitespace --verify-no-changes` on `XBVault.csproj` + tests csproj (ubuntu-latest). `EnforceCodeStyleInBuild` + `AnalysisLevel` already active in `Directory.Build.props`. Whole-repo whitespace sweep applied the same job's rules (46 files, whitespace only).
 
-12. UI clipping workaround (Priority: Low)
+11. UI clipping workaround (Priority: Low) — ✅ resolved
     - Why: Avalonia 12 CornerRadius does not clip inner Image.
-    - Status: Not currently blocking — images render acceptably. Low priority.
+    - Status: Not blocking — images render acceptably.
     - Fix: `RectangleGeometry` clip or `ImageBrush` render path if needed.
     - Risk: low.
     - Estimate: 1–2 hours.
 
-13. Hardcoded URLs (Priority: Low)
-    - Current: 33 hardcoded URL strings (API endpoints, Discord links, Gofile).
-    - Why: API endpoints and Discord links duplicated across files; hard to change without code update.
-    - Fix: Centralize API URLs in a constants class; extract Discord links to a shared config.
+12. Hardcoded URLs (Priority: Low) — ✅ DONE 2026-08-27
+    - Current: 33 hardcoded URL strings → **0 remaining outside the registry**.
+    - Fix: Centralized in `XBVault/Configuration/AppUrls.cs` (root namespace `XBVault`, so no usings needed app-wide). API endpoints (catalog, GitHub release API, overrides raw), Gofile servers/contents/upload, Google Drive export, Discord invites (3), project/docs/legacy sites. Templated hosts via `string.Format` (InvariantCulture) with cached `CompositeFormat`.
     - Risk: low.
-    - Estimate: 1–2 hours.
+    - Estimate: 1–2 hours. — *implemented*
+
+Removed from backlog
+- **ConfigureAwait(false) sweep** — user decision: this is a client app, not a library; the sweep is noise. Removed rather than scheduled.
 
 Quick wins to do immediately
 - ~~Wrap `async void` handlers with `SafeFireAndForget`~~ ✅ DONE 2026-08-27 (see item 3).
-- Add IDisposable to CustomInstallViewModel (CA1001 suppressed).
-- Centralize API URLs in a constants file.
+- ~~Centralize API URLs in a constants file~~ ✅ DONE 2026-08-27 (see item 12).
+- Add IDisposable to CustomInstallViewModel (CA1001 suppressed) — ✅ done 2026-08-27.
 
 How to track progress in this doc
 - Mark item status with emoji: ✅ done, ⚠️ in-progress, ⏳ planned, ❗ blocked.
@@ -101,7 +91,7 @@ How to track progress in this doc
 
 Known issues in the codebase, ordered by severity. This page is updated as items are resolved or discovered.
 
-> **Last verified against code:** 2026-08-27 (main worktree). Line counts and locations below reflect current source. **653 tests green**, desktop + Android build **0 warnings / 0 errors**. Source version: **2.0.4**.
+> **Last verified against code:** 2026-08-27 (main worktree). Line counts and locations below reflect current source. **679 tests green**, desktop + Android build **0 warnings / 0 errors**. Source version: **2.0.5**.
 
 ---
 
@@ -147,42 +137,32 @@ Converted:
 
 **Fix:** Wrap body in `SafeFireAndForget` helper (already exists in `TaskExtensions.cs`). Convert to `async Task` where possible. — *DONE*
 
-### 4. Secrets: replace XOR obfuscation
+### 4. Secrets: replace XOR obfuscation — ✅ DONE (2026-08-27)
 
 **File:** `XBVault/Services/CryptoService.cs`
 
-Still uses XOR+salt (`[0x58, 0x42, 0x56, 0x61, 0x75, 0x6C, 0x74, 0x21]`) + Base64. Reversible with source access. No `ISecretStore`, DPAPI, or DataProtection.
+Replaced XOR+salt with **SEC2**: AES-256-GCM, key derived via PBKDF2 (SHA-256, 100k iterations) from `MachineName|UserName` identity + per-install random salt. Pure managed — cross-platform, no P/Invoke, no OS keychain, no master-password UX.
 
-**Fix:** Introduce `ISecretStore` abstraction. DPAPI/DataProtection on Windows, Keychain on macOS, libsecret on Linux.
+Format: `SEC2:` + base64(`salt(16) ‖ nonce(12) ‖ tag(16) ‖ ciphertext`). Prefix-versioned so a future format migrates cleanly.
+
+- Legacy XOR values still decrypt on read (grandfathered) and re-encrypt to SEC2 on the next save — installed configs keep working.
+- A config file copied to another machine/user is undecryptable; `TryDeobfuscate` distinguishes "no stored secret" from "stored but undecryptable" instead of the old silent `""`.
+- On undecryptable credentials the app prompts the user to re-run the Setup Wizard: desktop `ConfirmWindow` at startup + inline Settings warning with a Reconfigure button; mobile `MobileConfirmDialogView` overlay + Settings reconfigure delegate.
+- Cross-OS config sharing is intentionally unsupported (user decision).
+
+**Tests:** 13 → 21 in `CryptoServiceTests` (round-trip, prefix format, token uniqueness, tamper → fail, legacy migration, cross-machine failure, key derivation stability).
 
 ---
 
 ## 🟡 Medium
 
-### 5. Incomplete `.ConfigureAwait(false)` policy
+### 5. Cancellation/disposal audit — ✅ DONE (2026-08-27)
 
-**8 total uses** (down from 9). Key services have 0:
+`CustomInstallViewModel` now implements `IDisposable` (disposes `_analyzeCts`); all 4 hosts call `vm.Dispose()` on window close / overlay close. (`MobileLogsView._shareCts` IS disposed in the `finally` block — verified not a gap.)
 
-| Service | Awaits | ConfigureAwait(false) |
-|---------|--------|-----------------------|
-| `XboxAuthService` | 19 | 0 |
-| `XboxPackageService` | 37 | 0 |
-| `SftpService` | 7 | 0 |
-| `PackageInstallService` | 1 | 1 |
-| `MainWindow.axaml.cs` | 2 | 2 |
+**Fix:** Implement `IDisposable` on `CustomInstallViewModel`. — *implemented*
 
-Existing uses are ad-hoc in UI-adjacent code.
-
-**Fix:** Add to all service I/O/HTTP/WebSocket awaits. Skip in ViewModels that update UI.
-
-### 6. Cancellation/disposal audit — 1 gap
-
-**Most CTs properly disposed.** Gap:
-- `CustomInstallViewModel`: `_analyzeCts` cancelled but class doesn't implement `IDisposable`; CA1001 suppressed with `#pragma`. (`MobileLogsView._shareCts` IS disposed in the `finally` block — verified not a gap.)
-
-**Fix:** Implement `IDisposable` on `CustomInstallViewModel`.
-
-### 7. Bare `catch { }` blocks — ✅ DONE (2026-08-27, 0 remaining)
+### 6. Bare `catch { }` blocks — ✅ DONE (2026-08-27, 0 remaining)
 
 **0 bare `catch { }` remain** (was 26). Every catch now carries an explicit `// why` comment or logs. Classification:
 
@@ -201,7 +181,7 @@ Existing uses are ad-hoc in UI-adjacent code.
 
 **Intentional silences kept** (logging failures must never crash the app; best-effort cleanup and teardown stays quiet). Parsing and clipboard writes — the two that used to fail silently with user-visible impact — now log `Warn`.
 
-### 8. `.Result` blocking calls — 3 instances (all 🅳 deferred — do not touch)
+### 7. `.Result` blocking calls — 3 instances (all 🅳 deferred — do not touch)
 
 > **⛔ NÃO MEXER sem sign-off explícito.** O usuário determinou que tanto o **SFTP** quanto o **XrayAgentService** são delicados (sync calls / cmd.exe do Xbox). Ambos funcionam perfeitamente e não devem ser retestados. Deixar esses `.Result` como estão.
 
@@ -213,7 +193,7 @@ Existing uses are ad-hoc in UI-adjacent code.
 
 > **⚠️ CUIDADO — SFTP/FileExplorer/Xray (all deferred):** The Xbox SSH/SFTP layer is delicate. It provides a **cmd.exe instead of bash**, so probing and command handling are intentionally kept conservative. The `XrayAgentService` is likewise sensitive about sync calls. Do **not** refactor `SftpService`, `FileExplorerViewModel`, or `XrayAgentService` without explicit sign-off — several code paths there are deliberate (best-effort disconnect cleanup, hardcoded drive fallback, `.Result` after guaranteed-completed tasks, Xray sync-call patterns). Address these only as part of a carefully-tested refactor later, never as a standalone quick fix.
 
-### 9. Service/ViewModel documentation uneven
+### 8. Service/ViewModel documentation uneven
 
 **26/37 services** missing class-level XML `<summary>` docs (~8% coverage). Interfaces generally have docs; implementations do not.
 
@@ -221,7 +201,7 @@ Missing: `CacheService`, `CryptoService`, `GitHubReleaseCheckerService`, `Notifi
 
 **Fix:** Add XML docs to all service classes.
 
-### 10. `BrowseViewModel` — 915 lines
+### 9. `BrowseViewModel` — 915 lines
 
 **File:** `XBVault/ViewModels/BrowseViewModel.cs` · **915 lines** (+18% from 776)
 
@@ -233,23 +213,23 @@ Contains catalog loading, filtering, search, item selection, install orchestrati
 
 ## 🟢 Low
 
-### 11. CI checks & analyzers
+### 10. CI checks & analyzers — ✅ DONE (2026-08-27)
 
-No Roslyn analyzer step, no `dotnet format --verify-no-changes`, minimal `.editorconfig` (7 lines). CI runs `dotnet build` + `dotnet test` only.
+`format` job added to `.github/workflows/build.yml` (ubuntu-latest): runs two `dotnet format whitespace --verify-no-changes` checks (shared+desktop, tests). `EnforceCodeStyleInBuild` + `AnalysisLevel` live in `Directory.Build.props` (already active). Repo swept with the same rule set (whitespace only, 46 files).
 
-**Fix:** Add analyzer job, `EnforceCodeStyleInBuild`, `dotnet format` check.
+> **Last verified against code:** 2026-08-27 (main worktree). Line counts and locations below reflect current source. **718 tests green**, desktop + Android build **0 warnings / 0 errors**, `dotnet format whitespace --verify-no-changes` clean (2/2). Source version: **2.0.5**.
 
-### 12. UI clipping workaround
+### 11. UI clipping workaround — ✅ resolved (2026-08-27)
 
 Avalonia 12 `Border CornerRadius` does not clip inner `Image`. Not currently blocking — images render acceptably.
 
 **Fix:** `RectangleGeometry` clip or `ImageBrush` if needed.
 
-### 13. Hardcoded URLs — 33 instances
+### 12. Hardcoded URLs — ✅ DONE (2026-08-27)
 
-API endpoints, Discord links, Gofile URLs scattered across files. Discord invite links duplicated in `DiscordPopupViewModel.cs` and `MobileAboutView.axaml.cs`.
+API endpoints, Discord links, Gofile URLs — all centralized in `XBVault/Configuration/AppUrls.cs` (root namespace `XBVault`, no usings needed). Templated hosts use `string.Format` (InvariantCulture) with cached `CompositeFormat`.
 
-**Fix:** Centralize API URLs in constants class.
+**Fix:** Centralize API URLs in constants class. — *implemented*
 
 ---
 
@@ -270,9 +250,13 @@ API endpoints, Discord links, Gofile URLs scattered across files. Discord invite
 | — | Orphaned `_Backup` icons | v0.9.1 | Deleted |
 | — | Culture-dependent formatting | Aug 2026 | All 8 formatters use InvariantCulture |
 | — | UI clipping workaround | 2026-08-27 | Not needed — images render acceptably |
-| — | Test coverage (240→653) | 2026-08-27 | +172% growth; 653 tests green |
+| — | Test coverage (240→718) | 2026-08-27 | +199% growth; 718 tests green |
 | — | File Explorer drive list | 2026-08-27 | SSH probe added (fallback still hardcoded) |
 | — | Logging partially adopted | 2026-08-27 | IAppLogger exists, 5 services use it |
+| — | Secrets XOR | 2026-08-27 | SEC2 AES-256-GCM + PBKDF2 machine-bound |
+| — | Hardcoded URLs (33) | 2026-08-27 | Centralized in `AppUrls.cs` |
+| — | Xbox test coverage | 2026-08-27 | Full Xbox domain coverage: auth, package (dep-install), portal, zip, ProgressReadStream, System/Network/Process/Performance (39 new) — 718 total |
+| — | CI format gate | 2026-08-27 | `format` job runs `dotnet format whitespace --verify-no-changes` (2 projects); whole-repo whitespace sweep applied |
 
 ---
 
@@ -280,9 +264,9 @@ API endpoints, Discord links, Gofile URLs scattered across files. Discord invite
 
 ```mermaid
 graph LR
-    H["🔴 High<br/>4 open"]
-    M["🟡 Medium<br/>6 open"]
-    L["🟢 Low<br/>3 open"]
+    H["🔴 High<br/>2 open (1, 2)"]
+    M["🟡 Medium<br/>2 open + 1 deferred (7, 8, 9)"]
+    L["🟢 Low<br/>0 open"]
 
     style H fill:#CC3333,stroke:#9ACA3C,color:#fff
     style M fill:#FF9900,stroke:#9ACA3C,color:#000
@@ -291,22 +275,23 @@ graph LR
 
 | Severity | Open | Resolved | Estimated effort |
 |----------|------|----------|-----------------|
-| 🔴 High | 4 | — | 42–104 hours |
-| 🟡 Medium | 6 | — | 14–30 hours |
-| 🟢 Low | 3 | — | 5–12 hours |
-| **Total** | **13 open** | **16 resolved** | **61–146 hours** |
+| 🔴 High | 2 | — | 28–64 hours |
+| 🟡 Medium | 3 (incl. 1 deferred) | — | 13–34 hours |
+| 🟢 Low | 0 | — | — |
+| **Total** | **5 open** | **20 resolved** | **41–98 hours** |
 
 ### Notable changes since Aug 2026 verification
 
 - **App.axaml.cs** 847 → **1,906 lines** (+125%): composition root now the largest file in the codebase.
 - **async void** 10 → **20** handlers: mobile views added 10 new handlers.
-- **Test coverage** 240 → **653 tests** (+172%): matcher exhaustive tests, service tests, ViewModel tests.
+- **Test coverage** 240 → **718 tests** (+199%): matcher exhaustive tests, service tests, ViewModel tests, Xbox package/auth/portal suites, CryptoService SEC2 suite, full Xbox domain coverage (System/Network/Process/Performance via stub + real WebSocket loopback).
 - **XboxDeviceService** deleted: fully split into 6 domain services behind interfaces.
 - **FileExplorerViewModel** 1,880 → **1,809 lines**: split done but post-split growth; still the largest ViewModel.
 - **Bare `catch { }`** 15 → **26 → 0**: all now commented/logged (2026-08-27).
-- **.ConfigureAwait(false)** 9 → **8**: slightly worse; key services still at 0.
-- **New since last verification:** `GitHubReleaseCheckerService`, `UpdateVersionCache`, `PackageOverrideService`, `PreFlightChecker`, `WindowSettingsService`, `MobileErrorDialogView`, `MobileLogsView`, `MobileFileExplorerView`.
-- **Resolved since last verification:** #9 UI clipping, #21 test coverage, #20 drive list (partial), async void (20→0), CustomInstallViewModel IDisposable, bare `catch { }` (26→0).
+- **ConfigureAwait(false)** backlog item removed (user decision — client app, not a library; sweep was noise).
+- **CI format gate** added (2026-08-27): `format` job — `dotnet format whitespace --verify-no-changes`.
+- **New since last verification:** `GitHubReleaseCheckerService`, `UpdateVersionCache`, `PackageOverrideService`, `PreFlightChecker`, `WindowSettingsService`, `MobileErrorDialogView`, `MobileLogsView`, `MobileFileExplorerView`, `XBVault/Configuration/AppUrls.cs`.
+- **Resolved since last verification:** secrets XOR → SEC2, hardcoded URLs → `AppUrls.cs`, UI clipping, test coverage (653→718), Xbox domain tests all covered, CI format gate.
 
 ---
 
