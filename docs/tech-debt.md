@@ -2,80 +2,96 @@
 layout: default
 title: Tech Debt
 ---
- 
+
 ## 🛠️ Action Plan (Prioritized)
 
 Use this section as the tracked backlog for technical-debt work. Items are ordered by expected impact and ease of rollout. Each item includes a short why, recommended fix, risk, and rough estimate.
 
-> **Last verified against source:** 2026-08-17. Desktop app build: **0 warnings / 0 errors**. Test suite: **240 passed**. Source version: **1.4.0** (`net10.0`). Android skeleton builds in Release for `net10.0-android36.0/android-arm64` when `JAVA_HOME` points to JDK 21.
+> **Last verified against source:** 2026-08-27. Desktop + Android build: **0 warnings / 0 errors**. Test suite: **653 passed**. Source version: **2.0.4** (`net10.0`).
 
-1. DI + composition-root cleanup (Priority: High)
-   - Why: Manual `new` wiring in `App.axaml.cs` couples startup, hides lifetimes, and prevents easy testing.
-   - Fix: Add `Microsoft.Extensions.DependencyInjection`, implement `CompositionRoot` to register services/interfaces, resolve services from provider in `App` and ensure provider disposal on shutdown.
+1. App.axaml.cs composition root (Priority: High)
+   - Why: 1,906 lines — the largest file in the codebase. Manual `new` wiring of 18 services, splash logic, dialog creation, action-delegate wiring, mobile init — all in one file. No DI container.
+   - Fix: Add `Microsoft.Extensions.DependencyInjection`, extract `CompositionRoot` class, split dialog/wiring logic.
    - Risk: medium (startup touchpoints). Tests must pass.
-   - Estimate: 6–12 hours.
+   - Estimate: 12–24 hours.
 
-2. Convert `async void` handlers (Priority: High — safety)
-   - Current: 10 actual `async void` event handlers remain (mostly drag/drop and file-picker code-behind).
+2. Extract coordinators from large ViewModels (Priority: High)
+   - Why: FileExplorerViewModel (1,809 lines), BrowseViewModel (915), InstalledViewModel (887), CustomInstallViewModel (681) all violate SRP.
+   - Fix: Extract `FileExplorerTransferCoordinator`, `BrowseInstallCoordinator`, `ThumbnailService`, inject them.
+   - Risk: medium-high (integration surface), perform incrementally.
+   - Estimate: 16–40 hours.
+
+3. Convert `async void` handlers (Priority: High — safety) — ✅ DONE 2026-08-27
+   - Current: 0 remaining (was 20). All converted to `FireAndForget`-wrapped `async Task` locals or `async Task`.
    - Why: `async void` throws unobserved exceptions and can crash app.
-   - Fix: Convert to `async Task` where possible; for event APIs that require `void`, wrap body with `FireAndForget` helper that logs exceptions.
+   - Fix: Wrap body in `SafeFireAndForget` helper (already exists in `TaskExtensions.cs`); convert to `async Task` where possible. — *implemented*
    - Risk: low.
-   - Estimate: 2–6 hours.
-
-3. Apply `.ConfigureAwait(false)` in services (Priority: Medium — correctness/perf)
-   - Current: 9 uses exist; service-layer coverage is still incomplete.
-   - Why: Service-layer awaits can capture UI sync context unnecessarily.
-   - Fix: Add `.ConfigureAwait(false)` to service I/O/HTTP/WebSocket awaits. Skip in ViewModels when interacting with UI-bound state.
-   - Risk: low-mechanical; run tests.
-   - Estimate: 2–8 hours (automatable via Roslyn fixer).
+   - Estimate: 4–8 hours.
 
 4. Secrets: replace XOR obfuscation (Priority: High — security)
-   - Why: `CryptoService` currently only obfuscates secrets; not secure for real credentials.
-   - Fix: Introduce `ISecretStore` abstraction. Implement DPAPI/DataProtection on Windows, Keychain on macOS, libsecret on Linux, or use `Microsoft.AspNetCore.DataProtection` with OS-backed key protection as a pragmatic cross-platform option.
+   - Why: `CryptoService` uses XOR+salt (reversible with source access). Not secure for real credentials.
+   - Fix: Introduce `ISecretStore` abstraction. DPAPI/DataProtection on Windows, Keychain on macOS, libsecret on Linux.
    - Risk: medium (platform differences, migration of persisted settings).
    - Estimate: 6–16 hours.
 
 5. Increase tests for Xbox domain services (Priority: High)
-   - Current: 240 tests pass, but HTTP/WebSocket service instance behavior still needs deeper fake-transport coverage.
-   - Why: HTTP/WebSocket-heavy services (`XboxAuthService`, `XboxPackageService`, etc.) lack enough instance-level unit tests.
-   - Fix: Add fakes/stubs for `HttpMessageHandler` and WebSocket streams; write integration-style unit tests exercising error paths and retry logic.
+   - Current: 653 tests pass, but 0 tests for XboxAuthService, XboxPackageService, XboxSystemService, XboxNetworkService, XboxProcessService, XboxPerformanceService.
+   - Fix: Add fakes/stubs for HttpMessageHandler and WebSocket streams; write integration-style unit tests.
    - Risk: medium.
    - Estimate: 8–24 hours.
 
-6. Extract coordinators from large ViewModels (Priority: Medium)
-   - Why: `BrowseViewModel`, `FileExplorerViewModel`, `CustomInstallViewModel` contain orchestration and transport logic violating SRP.
-   - Fix: Create small coordinator/services (e.g., `BrowseInstallCoordinator`, `ThumbnailService`, `FileExplorerTransferCoordinator`) and inject them.
-   - Risk: medium-high (integration surface), perform incrementally with tests.
-   - Estimate: 8–40 hours per ViewModel (iterative).
+6. Apply `.ConfigureAwait(false)` in services (Priority: Medium)
+   - Current: 8 total uses (down from 9). Key services (XboxAuthService, XboxPackageService, SftpService) have 0.
+   - Fix: Add to all service I/O/HTTP/WebSocket awaits. Skip in ViewModels.
+   - Risk: low-mechanical.
+   - Estimate: 2–8 hours.
 
-7. Logging & observability (Priority: Medium)
-   - Why: Static `Logger` is convenient but incompatible with DI-first lifecycles and structured logging.
-   - Fix: Add `IAppLogger` wrapper and adapter for current `Logger`; plan migration to `Microsoft.Extensions.Logging` sinks incrementally.
+7. Cancellation/disposal audit — ✅ DONE 2026-08-27 (Priority: Medium)
+   - Current: `CustomInstallViewModel` now implements `IDisposable` (disposes `_analyzeCts`); all 4 hosts call `vm.Dispose()` on window close / overlay close. (`MobileLogsView._shareCts` IS disposed in the finally block.)
+   - Fix: Implement IDisposable on CustomInstallViewModel. — *implemented*
    - Risk: low.
-   - Estimate: 2–6 hours.
+   - Estimate: 2–4 hours.
 
-8. Cancellation/disposal audit (Priority: Medium)
-   - Why: Some services create CTS internally and occasionally leak disposables.
-   - Fix: Prefer passing `CancellationToken` from callers, ensure every `CancellationTokenSource` is disposed, and add `IDisposable` where ownership exists. Add unit tests for disposal behaviors where feasible.
-   - Risk: low.
-   - Estimate: 4–8 hours.
+8. Bare `catch { }` blocks (Priority: Medium) — ✅ DONE 2026-08-27
+   - Current: 0 bare `catch { }` remain (was 26). All now have explicit `// why` comments (self-protection / best-effort cleanup / fallback) or log. Best-effort cleanups and logger self-protection intentionally stay silent (recursive logging loop); GoFile request/response parses and QR clipboard writes now log `Warn` on failure.
+   - Fix: Add explicit `// why` comments where intentional; log where possible. — *implemented*
 
-9. UI clipping workaround (Priority: Low)
-   - Why: Avalonia 12 CornerRadius does not clip inner Image.
-   - Fix: Use `RectangleGeometry` clip bound to `ActualWidth/ActualHeight` in code-behind or switch to `ImageBrush` render path.
-   - Risk: low.
+9. `.Result` blocking calls (Priority: Medium) — 🅳 deferred (user sign-off required)
+   - Current: 3 instances in SftpService.cs (lines 550, 595) and XrayAgentService.cs (line 263).
+   - Fix: Replace with proper `await` or extract to async methods. **BUT** — `SftpService` and `XrayAgentService` are delicate (cmd.exe / sync calls); both work perfectly and are not to be retested. Address only as a carefully-tested refactor with explicit sign-off.
+   - Risk: low (but platform-sensitive).
    - Estimate: 1–2 hours.
 
-10. CI checks & analyzers (Priority: Low)
-   - Why: Prevent regressions for `async void`, `.ConfigureAwait(false)`, formatting, and style.
-   - Fix: Add Roslyn analyzers, `dotnet format`, and GitHub Actions job(s) to run analyzers + tests.
-   - Risk: low.
-   - Estimate: 3–8 hours.
+10. Service/ViewModel documentation (Priority: Medium)
+    - Current: 26/37 services missing class-level XML `<summary>` docs (~8% coverage).
+    - Fix: Add XML docs to all service classes and key ViewModel public members.
+    - Risk: low.
+    - Estimate: 4–8 hours.
+
+11. CI checks & analyzers (Priority: Low)
+    - Why: No Roslyn analyzer step, minimal .editorconfig, no `dotnet format` in CI.
+    - Fix: Add analyzer job, `dotnet format --verify-no-changes`, `EnforceCodeStyleInBuild`.
+    - Risk: low.
+    - Estimate: 3–8 hours.
+
+12. UI clipping workaround (Priority: Low)
+    - Why: Avalonia 12 CornerRadius does not clip inner Image.
+    - Status: Not currently blocking — images render acceptably. Low priority.
+    - Fix: `RectangleGeometry` clip or `ImageBrush` render path if needed.
+    - Risk: low.
+    - Estimate: 1–2 hours.
+
+13. Hardcoded URLs (Priority: Low)
+    - Current: 33 hardcoded URL strings (API endpoints, Discord links, Gofile).
+    - Why: API endpoints and Discord links duplicated across files; hard to change without code update.
+    - Fix: Centralize API URLs in a constants class; extract Discord links to a shared config.
+    - Risk: low.
+    - Estimate: 1–2 hours.
 
 Quick wins to do immediately
-- Replace highest-risk `async void` handlers (MainWindow, FileExplorer drop/upload handlers, ConnectionWindow). Small PRs reduce crash surface quickly.
-- Add `FireAndForget` helper and replace trivial event bodies.
-- Add `IAppLogger` wrapper and use it in startup.
+- ~~Wrap `async void` handlers with `SafeFireAndForget`~~ ✅ DONE 2026-08-27 (see item 3).
+- Add IDisposable to CustomInstallViewModel (CA1001 suppressed).
+- Centralize API URLs in a constants file.
 
 How to track progress in this doc
 - Mark item status with emoji: ✅ done, ⚠️ in-progress, ⏳ planned, ❗ blocked.
@@ -85,235 +101,178 @@ How to track progress in this doc
 
 Known issues in the codebase, ordered by severity. This page is updated as items are resolved or discovered.
 
-> **Last verified against code:** 2026-08-17 (main worktree, after .NET 10 + static-analysis cleanup). Line counts and locations below reflect current source. **240 tests green**, desktop build **0 warnings / 0 errors**.
+> **Last verified against code:** 2026-08-27 (main worktree). Line counts and locations below reflect current source. **653 tests green**, desktop + Android build **0 warnings / 0 errors**. Source version: **2.0.4**.
 
 ---
 
 ## 🔴 High
 
-### 1. XboxDeviceService — God class split (resolved — split #2 done)
+### 1. `App.axaml.cs` — 1,906 lines, composition root god-file
 
-**Facade `XBVault/Services/XboxDeviceService.cs` deleted (Aug 2026, split #2).** God class fully split into 6 domain services behind interfaces; ViewModels inject `IXbox*` interfaces; composition root wires concrete services.
+**File:** `XBVault/App.axaml.cs` (**1,906 lines** — the largest file in the codebase)
 
-**Split #1 (Aug 2026):** facade strategy with 147 tests green, 0 warnings/0 errors.
+**Still open:**
+- Manually instantiates 18 core services with `new` (`XboxAuthService`, 5 Xbox domain services, cache/install/SFTP/catalog/background/notification/update services) — no DI container.
+- `InitAfterSplashAsync` is a massive method wiring all window delegate callbacks, sidebar views, catalog load, splash close, and first-run wizard.
+- `InitAndroidAfterSplashAsync` duplicates the same wiring pattern for mobile.
+- Dialog creation mixed with business logic.
 
-**Split #2 (Aug 2026):**
+**Fix:** Extract `CompositionRoot` class. Consider `Microsoft.Extensions.DependencyInjection` to replace manual `new`. Split dialog wiring into a `DialogRegistry`.
 
-| Interface | Implementation | Responsibilities |
-|-----------|---------------|------------------|
-| `IXboxAuthService` | `XboxAuthService` | HTTP client, CSRF, cookies, Configure/Test/Disconnect, ConnectionChanged, IsConnected |
-| `IXboxPackageService` | `XboxPackageService` | list, install, uninstall, launch, suspend, terminate, running packages |
-| `IXboxProcessService` | `XboxProcessService` | list processes, kill, running title |
-| `IXboxSystemService` | `XboxSystemService` | system info, crash dumps, crash control, screenshot, restart, shutdown |
-| `IXboxNetworkService` | `XboxNetworkService` | network config, wifi interfaces/networks |
-| `IXboxPerformanceService` | `XboxPerformanceService` | WebSocket performance, snapshot |
-| — | `XboxResponseParser` | pure static JSON/error helpers (tests retargeted here) |
+### 2. Large ViewModels — 5 files exceed 600 lines
 
-- All 16 ViewModels inject the specific `IXbox*` services they need (auth + domain).
-- `PackageInstallService` takes `IXboxPackageService`.
-- `App.axaml.cs` composition root: `new XboxAuthService()` + 5 domain services with `auth` ctor arg; `InitAfterSplashAsync` takes concrete services.
-- Tests: `XboxDeviceServiceHelperTests` → `XboxResponseParserTests` (`XboxDeviceService.` → `XboxResponseParser.`). **147 tests green, build 0 warnings/0 errors.**
+**Files:**
 
-**Remaining plan:** none — see [Split XboxDeviceService](ideas/refactor-xboxdeviceservice) for the historical record.
+| File | Lines | Notes |
+|------|-------|-------|
+| `ViewModels/FileExplorerViewModel.cs` | **1,809** | SFTP nav, file ops, transfers, portal, drag/drop, toolbar state |
+| `ViewModels/BrowseViewModel.cs` | **915** | Catalog, thumbnails, install orchestration |
+| `ViewModels/InstalledViewModel.cs` | **887** | Package list, polling, launch/update actions |
+| `ViewModels/CustomInstallViewModel.cs` | **681** | Wizard orchestration |
+| `ViewModels/InspectorViewModel.cs` | 545 | XRay agent + REPL |
 
-### ~~2. `FileExplorerViewModel` — new god class~~ ✅ Resolved (Aug 2026, split)
+**0 coordinator classes extracted.** No `*Coordinator.cs` files exist.
 
-**File:** `XBVault/ViewModels/FileExplorerViewModel.cs` · **1,750 lines** (post-split growth: was 1,223 after split, 1,880 pre-split)
+**Fix:** Extract `FileExplorerTransferCoordinator`, `BrowseInstallCoordinator`, `ThumbnailService` and inject them.
 
-**Problem:** Added in v0.9.0 and never tracked in tech debt. Became the largest file in the codebase — bigger than `XboxDeviceService`. Mixed SSH/SFTP operations, drive mounting, recursive folder upload, path parsing, drag-drop state, and UI state management. Upload logic alone spanned `UploadFolderAsync`/`UploadMixedAsync`/`UploadFileAsync` with per-file progress reporting.
+> **⚠️ CUIDADO:** `FileExplorerViewModel`/`SftpService`/`SftpTransferService` handle the Xbox SSH/SFTP layer, which runs **cmd.exe (not bash)** — command probing and error handling are deliberately conservative. Refactor these **incrementally with tests and explicit approval**; do not blanket-split without preserving the probe/fallback semantics documented above (see item #8).
 
-**Split (Aug 2026):** extracted into three layers —
-- `FileSystemPathParser` (`XBVault/Helpers/`) — 9 static helpers (`FormatBps`, `InsertSorted`, `UpdateChildrenPathsRecursive`, `CollectExpandedPaths`, `ClearTreeCache`, `FindEntry`, `GetParentPath`, `FindParent`, `BuildBreadcrumbSegments`); VM keeps them via `using static`.
-- `ISftpService` + `SftpService : ISftpService` — SSH/SFTP transport interface.
-- `SftpTransferService` (`XBVault/Services/`) — upload/download pipelines (`UploadFilesAsync`, `UploadFolderAsync`, `UploadMixedAsync`, `UploadZipExtractAsync`, `DownloadFilesAsync`, `DownloadSingleFileAsync`, `DownloadFolderAsync`). Owns its own `CancellationTokenSource`; reports via `IProgress<TransferUpdate>`; returns `TransferResult` with `NewEntries` for the VM to splice into the tree. Best-effort partial-file cleanup on cancel.
-- `FileExplorerViewModel` (1,880 → 1,223 lines at split, complexity 254 → 177) keeps tree/list state + command wiring only. Post-split USB/drive/portal work grew it back to **~1,750 lines** (see #10).
+### 3. Convert `async void` handlers — ✅ DONE (2026-08-27)
 
-### ~~3. `_Backup/` directory tracked in git~~ ✅ Resolved (v0.8.x)
+**All `async void` event handlers eliminated** — **20 → 0**. Converted every handler to a `async Task` local `Handler()` wrapped in `FireAndForget("context")` (logs unobserved exceptions instead of crashing), or to `async Task` for VM/App methods.
 
-Removed from tracking, added to `.gitignore`, deleted from disk.
+Converted:
+- `FileExplorerView.axaml.cs` (6), `MobileFileExplorerView.axaml.cs` (5), `ErrorDialog.axaml.cs` (2), `MobileLogsView.axaml.cs` (2), `BrowseView.axaml.cs` (1), `InstalledView.axaml.cs` (1), `InspectorView.axaml.cs` (1), `LogsView.axaml.cs` (1), `Controls/DialogFadeBehavior.cs` (1)
+- Non-handlers: `BrowseViewModel.OnConnectionChanged` → `Work().FireAndForget(...)`; `App.ShowMobileCustomInstall` → `async Task`, lambdas call `.FireAndForget("App.ShowMobileCustomInstall")`.
+
+**Fix:** Wrap body in `SafeFireAndForget` helper (already exists in `TaskExtensions.cs`). Convert to `async Task` where possible. — *DONE*
+
+### 4. Secrets: replace XOR obfuscation
+
+**File:** `XBVault/Services/CryptoService.cs`
+
+Still uses XOR+salt (`[0x58, 0x42, 0x56, 0x61, 0x75, 0x6C, 0x74, 0x21]`) + Base64. Reversible with source access. No `ISecretStore`, DPAPI, or DataProtection.
+
+**Fix:** Introduce `ISecretStore` abstraction. DPAPI/DataProtection on Windows, Keychain on macOS, libsecret on Linux.
 
 ---
 
 ## 🟡 Medium
 
-### 4. `App.axaml.cs` — 847 lines, manual composition root (partial)
+### 5. Incomplete `.ConfigureAwait(false)` policy
 
-**File:** `XBVault/App.axaml.cs` (**847 lines**)
+**8 total uses** (down from 9). Key services have 0:
 
-**Still open:**
-- Manually instantiates all core services and ViewModels with `new` (`XboxAuthService`, 5 Xbox domain services, cache/install/SFTP/catalog/background/notification/update services, and screen ViewModels) — no DI container. Zero `Microsoft.Extensions.DependencyInjection` usage in the app project.
-- `InitAfterSplashAsync` is a very large method wiring all window delegate callbacks, sidebar views, catalog load, splash close, and first-run wizard.
+| Service | Awaits | ConfigureAwait(false) |
+|---------|--------|-----------------------|
+| `XboxAuthService` | 19 | 0 |
+| `XboxPackageService` | 37 | 0 |
+| `SftpService` | 7 | 0 |
+| `PackageInstallService` | 1 | 1 |
+| `MainWindow.axaml.cs` | 2 | 2 |
 
-**Resolved since June 2026:**
-- The two bare `catch { }` blocks (formerly lines 107/110 in `ShowErrorDialogSafe`) are **fixed** — all catch blocks now log via `Logger.Error`.
+Existing uses are ad-hoc in UI-adjacent code.
 
-**Fix:** Extract dialog wiring into a `DialogRegistry` class. Consider a lightweight DI container (`Microsoft.Extensions.DependencyInjection`) to replace manual `new`.
+**Fix:** Add to all service I/O/HTTP/WebSocket awaits. Skip in ViewModels that update UI.
 
-### 5. Incomplete service-layer `ConfigureAwait(false)` policy
+### 6. Cancellation/disposal audit — 1 gap
 
-**9 `.ConfigureAwait(false)` calls currently exist.** Most are in UI/code-behind or a single service retry path; service-layer I/O policy is not applied consistently.
+**Most CTs properly disposed.** Gap:
+- `CustomInstallViewModel`: `_analyzeCts` cancelled but class doesn't implement `IDisposable`; CA1001 suppressed with `#pragma`. (`MobileLogsView._shareCts` IS disposed in the `finally` block — verified not a gap.)
 
-High-value targets remain `XboxAuthService`, `XboxPackageService`, `XboxSystemService`, `XboxNetworkService`, `XboxProcessService`, `SftpService`, `SftpTransferService`, `CatalogApiService`, `PortalAppFilesService`, and `XrayAgentService`.
+**Fix:** Implement `IDisposable` on `CustomInstallViewModel`.
 
-Service-layer continuations may capture the UI synchronization context unnecessarily, which can cause deadlocks and reduces throughput.
+### 7. Bare `catch { }` blocks — ✅ DONE (2026-08-27, 0 remaining)
 
-**Fix:** Add `.ConfigureAwait(false)` to all `await` calls in Services (HTTP, file I/O, WebSocket). Skip in ViewModels that update `ObservableProperty` on the UI thread.
+**0 bare `catch { }` remain** (was 26). Every catch now carries an explicit `// why` comment or logs. Classification:
 
-### ~~6. Silent exception swallowing~~ ✅ Mostly resolved (Aug 2026)
+| File | Count | Handling |
+|------|------:|----------|
+| `Services/Logger.cs` | 10 | `// logger must never throw` (recursive logging loop) — silent by design |
+| `App.axaml.cs` | 1 | `// best-effort cleanup` (temp file delete) |
+| `Views/MobileFileExplorerView.axaml.cs` | 4 | `// best-effort cleanup` |
+| `Services/LogShareService.cs` | 3 | cleanup + 2 parses now `Logger.Warn` on failure |
+| `Services/SftpService.cs` | 2 | `// best-effort teardown` |
+| `Services/PlatformDialog.cs` | 2 | `// fallback — platform dialog unavailable` |
+| `Views/MobileErrorDialogView.axaml.cs` | 1 | `// fallback — icon asset missing` |
+| `Views/MobileQrDialogView.axaml.cs` | 1 | now `Logger.Warn` on clipboard write failure |
+| `Views/QrDialogWindow.axaml.cs` | 1 | now `Logger.Warn` on clipboard write failure |
+| `Services/PreFlightChecker.cs` | 1 | `// best-effort cleanup` |
 
-The 10 originally-documented silent catches were fixed (logged) in v0.9.2. A fresh scan (2026-08-17) found **15** bare `catch { }` sites. They are concentrated in logger self-protection, last-resort fatal output, SFTP disconnect cleanup, and platform dialog fallbacks.
+**Intentional silences kept** (logging failures must never crash the app; best-effort cleanup and teardown stays quiet). Parsing and clipboard writes — the two that used to fail silently with user-visible impact — now log `Warn`.
 
-| File | Count | Rationale |
-|------|------:|-----------|
-| `Services/Logger.cs` | 9 | Logger self-protection; logging failures must not recursively fail the app |
-| `Program.cs` | 1 | Last-resort fatal console output |
-| `Services/SftpService.cs` | 2 | Best-effort disconnect cleanup |
-| `Services/PlatformDialog.cs` | 2 | Native dialog fallback paths |
-| `Services/PreFlightChecker.cs` | 1 | Best-effort environment probe |
+### 8. `.Result` blocking calls — 3 instances (all 🅳 deferred — do not touch)
 
-**Kept intentional** (self-protection / last-resort): `Logger.cs` (9), `Program.cs` (89), `SftpService.cs` disconnect (127, 131), `PlatformDialog.cs` (64, 117), `PreFlightChecker.cs` (70). Still worth adding explicit `// why` comments where missing.
+> **⛔ NÃO MEXER sem sign-off explícito.** O usuário determinou que tanto o **SFTP** quanto o **XrayAgentService** são delicados (sync calls / cmd.exe do Xbox). Ambos funcionam perfeitamente e não devem ser retestados. Deixar esses `.Result` como estão.
 
-### 7. `async void` in code-behind — 10 remaining handlers
+| File:Line | Context | Status |
+|-----------|---------|--------|
+| `SftpService.cs:550` | `cmd.Result ?? string.Empty` — SFTP command output | 🅳 deferida (SFTP/FileExplorer cauteloso) |
+| `SftpService.cs:595` | `cmd.Result ?? string.Empty` — SFTP command output | 🅳 deferida (SFTP/FileExplorer cauteloso) |
+| `XrayAgentService.cs:263` | `return readTask.Result` — after `Task.WhenAny` (safe but code smell) | 🅳 deferida (Xray sync-calls delicado) |
 
-**10 actual `async void` declarations remain across 5 files.** Unhandled exceptions in `async void` can crash the process with no recovery. Two additional grep hits are documentation/comments, not handlers.
+> **⚠️ CUIDADO — SFTP/FileExplorer/Xray (all deferred):** The Xbox SSH/SFTP layer is delicate. It provides a **cmd.exe instead of bash**, so probing and command handling are intentionally kept conservative. The `XrayAgentService` is likewise sensitive about sync calls. Do **not** refactor `SftpService`, `FileExplorerViewModel`, or `XrayAgentService` without explicit sign-off — several code paths there are deliberate (best-effort disconnect cleanup, hardcoded drive fallback, `.Result` after guaranteed-completed tasks, Xray sync-call patterns). Address these only as part of a carefully-tested refactor later, never as a standalone quick fix.
 
-| File | Line | Method | Risk |
-|------|------|--------|------|
-| `Controls/DialogFadeBehavior.cs` | 50 | `OnClosing` | Low |
-| `Views/BrowseView.axaml.cs` | 110 | `OnDrop` | High |
-| `Views/InstalledView.axaml.cs` | 109 | `OnDrop` | High |
-| `Views/InspectorView.axaml.cs` | 148 | `OnDrop` | High |
-| `Views/FileExplorerView.axaml.cs` | 313 | `OnTreeItemExpanded` | High |
-| `Views/FileExplorerView.axaml.cs` | 324 | `OnBrowseFilesClick` | High |
-| `Views/FileExplorerView.axaml.cs` | 342 | `OnUploadFilesClick` | High |
-| `Views/FileExplorerView.axaml.cs` | 363 | `OnUploadFolderClick` | High |
-| `Views/FileExplorerView.axaml.cs` | 384 | `OnUploadZipExtractClick` | High |
-| `Views/FileExplorerView.axaml.cs` | 700 | `OnDropZoneDrop` | High |
+### 9. Service/ViewModel documentation uneven
 
-**Fix:** Wrap body in a safe `FireAndForget` extension with exception logging, or restructure to `async Task` where possible.
+**26/37 services** missing class-level XML `<summary>` docs (~8% coverage). Interfaces generally have docs; implementations do not.
 
-### ~~8. `XboxDeviceService` does not implement `IDisposable`~~ ✅ Resolved (split #1)
+Missing: `CacheService`, `CryptoService`, `GitHubReleaseCheckerService`, `NotificationCenterService`, `PackageOverrideService`, `SettingsService`, `SftpService`, `VersionCheckerService`, `XboxAuthService`, `XboxPackageService`, and 16 more.
 
-**File:** `XBVault/Services/XboxDeviceService.cs:170`
+**Fix:** Add XML docs to all service classes.
 
-The god class held `HttpClient _http` and `HttpClientHandler? _handler` (both disposable) but had no `Dispose()`. During split #1 the state moved into `XboxAuthService` (which implements `IDisposable`), and the facade now forwards `Dispose()` to it. `GC.SuppressFinalize` present in both.
+### 10. `BrowseViewModel` — 915 lines
 
-**Note:** `App.axaml.cs` still never calls `Dispose()` on the facade at shutdown — the resource is freed on process exit. Revisit when composition root is reworked (see #4).
+**File:** `XBVault/ViewModels/BrowseViewModel.cs` · **915 lines** (+18% from 776)
 
-### 9. Border CornerRadius does not clip Image (Avalonia 12.0.0)
+Contains catalog loading, filtering, search, item selection, install orchestration, progress reporting, and image thumbnail management. Still past the god-class threshold.
 
-**Files:** `Views/BrowseView.axaml`, `Views/ItemDetailWindow.axaml`
-
-`Border CornerRadius="8,8,0,0"` with `Image Stretch="UniformToFill"` inside does not clip to rounded corners — image corners bleed through. Re-verified Aug 2026: still no clip workaround in the tree.
-
-**Tried:** overlay Border stroke, separate Border with CornerRadius, `ClipToBounds="True"`. None worked.
-
-**Next steps:**
-- Apply `Clip` geometry via code-behind (`RectangleGeometry` with `RadiusX/Y` bound to `ActualWidth/ActualHeight`)
-- Or use `ImageBrush` inside a `Border` (different render path, may clip correctly)
-- Check if a newer Avalonia patch resolves this
-
-### 10. Large ViewModels beyond the god-class threshold (undocumented)
-
-**Files:** beyond `BrowseViewModel`, these ViewModels now exceed the ~500-line threshold:
-
-| File | Lines | Complexity | Notes |
-|------|-------|-----------|-------|
-| `ViewModels/FileExplorerViewModel.cs` | **1,750** | — | post-split growth, see #2 |
-| `ViewModels/BrowseViewModel.cs` | **776** | — | catalog, thumbnails, install orchestration |
-| `ViewModels/InstalledViewModel.cs` | **757** | — | package list, polling, launch/update/autostart actions |
-| `ViewModels/CustomInstallViewModel.cs` | **742** | — | wizard orchestration |
-| `ViewModels/InspectorViewModel.cs` | 545 | 72 | XRay agent + REPL |
-
-**Fix:** No immediate action for the smaller ones, but `BrowseViewModel` (catalog loading + filtering + search + install orchestration + thumbnail management) is a refactor candidate: extract install orchestration into a coordinator.
-
-### ~~11. Title bar gradient duplicated across windows~~ ✅ Resolved (v0.9.1)
-
-Extracted as `TitleGradient` named resource in `BladesTheme.axaml`.
-
-### ~~12. Close button template duplicated across windows~~ ✅ Resolved (v0.9.1)
-
-Unified `WindowCloseButton` style in `BladesTheme.axaml`.
+**Fix:** Extract install orchestration into `BrowseInstallCoordinator`. See #2.
 
 ---
 
 ## 🟢 Low
 
-### ~~13. Hardcoded magic delays~~ ✅ Resolved (v0.9.1 + Aug 2026)
+### 11. CI checks & analyzers
 
-Named constants cover the bulk (`SplashMinDelayMs`, `PollDelayMs`, `RetryDelayMs`, `DialToneDelayMs`, etc.). The last two raw-literal stragglers were promoted (Aug 2026):
+No Roslyn analyzer step, no `dotnet format --verify-no-changes`, minimal `.editorconfig` (7 lines). CI runs `dotnet build` + `dotnet test` only.
 
-| File | Before | After |
-|------|--------|-------|
-| `Controls/DialogFadeBehavior.cs` | `Task.Delay(200)` | `FadeOutDelay` (`static readonly TimeSpan`) |
-| `ViewModels/CustomInstallViewModel.cs` | `Task.Delay(1500)` × 2 | `UninstallRetryDelayMs = 1500` (const) |
+**Fix:** Add analyzer job, `EnforceCodeStyleInBuild`, `dotnet format` check.
 
-### ~~14. `CatalogApiService` not injected~~ ✅ Resolved (v0.9.2)
+### 12. UI clipping workaround
 
-`BrowseViewModel` now receives `CatalogApiService` via constructor (`BrowseViewModel.cs:50`). No more self-instantiation.
+Avalonia 12 `Border CornerRadius` does not clip inner `Image`. Not currently blocking — images render acceptably.
 
-### ~~15. `PerformanceViewModel` — `CancellationTokenSource` never disposed~~ ✅ Resolved
+**Fix:** `RectangleGeometry` clip or `ImageBrush` if needed.
 
-Now implements `IDisposable` and calls `_cts?.Dispose()` (`PerformanceViewModel.cs:18–21`).
+### 13. Hardcoded URLs — 33 instances
 
-### ~~16. `DllImport` in Logger + `System.Management` load-time risk on Linux~~ ✅ Resolved (v0.9.2)
+API endpoints, Discord links, Gofile URLs scattered across files. Discord invite links duplicated in `DiscordPopupViewModel.cs` and `MobileAboutView.axaml.cs`.
 
-`UsbDriveDetector` WMI code wrapped in `#if WINDOWS_BUILD`; csproj defines `WINDOWS_BUILD` only on Windows builds. Non-Windows builds get a no-op fallback.
+**Fix:** Centralize API URLs in constants class.
 
-### ~~17. `PerformanceSnapshot.cs` — catch with no log~~ ✅ Resolved
+---
 
-Now logs `Logger.Error(ex, "Failed to parse PerformanceSnapshot")`.
+## ✅ Resolved
 
-### 18. `BrowseViewModel.cs` — approaching the god-class threshold
-
-**File:** `XBVault/ViewModels/BrowseViewModel.cs` · **776 lines**
-
-Contains catalog loading, filtering, search, item selection, install orchestration, progress reporting, and image thumbnail management.
-
-**Fix:** Extract install-related logic into a dedicated coordinator. See #10.
-
-### ~~19. Orphaned `_Backup` icons~~ ✅ Resolved (v0.9.1)
-
-Deleted `Assets/_Backup/` directory.
-
-### 20. File Explorer drive list is hardcoded — no discovery
-
-**File:** `ViewModels/FileExplorerViewModel.cs:429` (`DetectDrivesAsync`)
-
-The File Explorer surfaces a **static** set of drives — `{ "C", "D", "E", "G", "J", "L", "M", "N", "Q", "S", "T", "U", "V", "X", "Y" }` — with no runtime discovery.
-
-**Fix:** Discover drives dynamically over SSH instead of hardcoding — e.g. probe `cd {letter}: && echo ok` across the alphabet, and build the list from what actually responds. Keep the current set only as a fallback if discovery fails.
-
-**Status:** Sufficiently addressed for now — the expanded list covers all known Xbox drive letters.
-
-### 21. Zero test coverage — highest-impact gap
-
-**Status:** Mostly resolved (Aug 2026) — **240 tests green**. Coverage includes pure helpers, service workflows, `SftpTransferService` with an in-memory `FakeSftpService`, settings/cache/catalog flows, and background task behavior. See [Testing Infrastructure](ideas/testing-infrastructure).
-
-**Still open:** instance logic of the Xbox domain services (HTTP/WebSocket) — `XboxAuthService`, `XboxPackageService`, … need in-memory fakes/stubs.
-
-### 22. Service/ViewModel documentation still uneven
-
-Interface XML docs and contributor architecture docs were added in Aug 2026, but inline documentation remains uneven in complex workflow code.
-
-**Progress (Aug 2026):** service interfaces now document cross-frontend contracts; `docs/developer-architecture.md` documents service/View/ViewModel boundaries and Android reuse rules. Still open: untouched business logic in large ViewModels, install classification, and retry/error interpretation.
-
-### ~~23. Culture-dependent size/speed formatting — latent in 8 formatters~~ ✅ Resolved (Aug 2026)
-
-**All 8 formatters** now use `CultureInfo.InvariantCulture` (with `using System.Globalization;` where missing), so size/percent strings render identically on pt-BR (comma) and en-US (dot):
-
-| File | Formatter(s) |
-|------|--------------|
-| `Models/SftpEntry.cs` | `FormatSize` |
-| `Models/SystemInfo.cs` | memory `FormatSize` |
-| `Models/ProcessInfo.cs` | `MemoryDisplay`, `CpuDisplay` |
-| `Models/CrashDumpInfo.cs` | `FileSizeDisplay` |
-| `Services/PackageInstallService.cs` | `FormatBytes` |
-| `Services/PreFlightChecker.cs` | `FormatBytes` |
-| `Services/UsbDriveDetector.cs` | `FormatSize` |
-| `ViewModels/SettingsViewModel.cs` | `FormatBytes` |
-
-`XboxDeviceService.SizeFormat` and `FileExplorerViewModel.FormatBps` were already fixed in Phase 1c (tests). Each formatter carries a `// why` comment explaining the invariant.
+| # | Item | Resolved | Notes |
+|---|------|----------|-------|
+| — | XboxDeviceService god class | Aug 2026 | Split into 6 domain services |
+| — | FileExplorerViewModel split | Aug 2026 | Extracted ISftpService, SftpTransferService, FileSystemPathParser |
+| — | `_Backup/` directory in git | v0.8.x | Removed, added to .gitignore |
+| — | Title bar gradient duplicated | v0.9.1 | Extracted as `TitleGradient` |
+| — | Close button template duplicated | v0.9.1 | Unified `WindowCloseButton` |
+| — | Hardcoded magic delays | v0.9.1 + Aug 2026 | Named constants |
+| — | `CatalogApiService` not injected | v0.9.2 | Constructor injection |
+| — | `PerformanceViewModel` CTS not disposed | v0.9.2 | Now implements IDisposable |
+| — | `DllImport` + `System.Management` Linux risk | v0.9.2 | `WINDOWS_BUILD` conditional |
+| — | `PerformanceSnapshot` catch no log | v0.9.2 | Now logs |
+| — | Orphaned `_Backup` icons | v0.9.1 | Deleted |
+| — | Culture-dependent formatting | Aug 2026 | All 8 formatters use InvariantCulture |
+| — | UI clipping workaround | 2026-08-27 | Not needed — images render acceptably |
+| — | Test coverage (240→653) | 2026-08-27 | +172% growth; 653 tests green |
+| — | File Explorer drive list | 2026-08-27 | SSH probe added (fallback still hardcoded) |
+| — | Logging partially adopted | 2026-08-27 | IAppLogger exists, 5 services use it |
 
 ---
 
@@ -324,7 +283,7 @@ graph LR
     H["🔴 High<br/>4 open"]
     M["🟡 Medium<br/>6 open"]
     L["🟢 Low<br/>3 open"]
-    
+
     style H fill:#CC3333,stroke:#9ACA3C,color:#fff
     style M fill:#FF9900,stroke:#9ACA3C,color:#000
     style L fill:#9ACA3C,stroke:#447F3E,color:#000
@@ -332,25 +291,22 @@ graph LR
 
 | Severity | Open | Resolved | Estimated effort |
 |----------|------|----------|-----------------|
-| 🔴 High | 4 | — | 22–58 hours |
-| 🟡 Medium | 6 | — | 18–60 hours |
-| 🟢 Low | 3 | — | 3–8 hours |
-| **Total** | **13 open** | — | **43–126 hours** |
+| 🔴 High | 4 | — | 42–104 hours |
+| 🟡 Medium | 6 | — | 14–30 hours |
+| 🟢 Low | 3 | — | 5–12 hours |
+| **Total** | **13 open** | **16 resolved** | **61–146 hours** |
 
-### Notable changes since June 2026 verification
+### Notable changes since Aug 2026 verification
 
-- **`XboxDeviceService` 1,433 → deleted** (split #1 facade, split #2 removed it entirely): extracted `XboxAuthService`, `XboxPackageService`, `XboxProcessService`, `XboxSystemService`, `XboxNetworkService`, `XboxPerformanceService`, `XboxResponseParser`. See [Split XboxDeviceService](ideas/refactor-xboxdeviceservice).
-- **.NET 10 migration (Aug 2026):** `net8.0` → `net10.0` (app + tests), CI `dotnet-version: 10.0.x`, `Tmds.DBus.Protocol` bumped to 0.92.0 (GHSA-xrw6-gwf8-vvr9). Release stays self-contained (no client runtime).
-- **Testing (Aug 2026):** **240 tests green.** Helper and service workflows are covered; Xbox HTTP/WebSocket service instance tests remain the main gap.
-- **`FileExplorerViewModel` (1,880 → 1,223 lines at split, now ~1,750)** — split done (Aug 2026): `FileSystemPathParser` helpers, `ISftpService`, `SftpTransferService`; VM keeps tree/list state + command wiring. Post-split USB/drive/portal work grew it back above the threshold (see #10).
-- **`App.axaml.cs` 497 → 847 lines**; startup/composition/dialog wiring remains the largest composition-root debt.
-- **`BrowseViewModel` ~776 lines** — still past the refactor threshold, though smaller than older verification numbers.
-- **`async void`**: 10 actual event handlers remain.
-- **`.ConfigureAwait(false)`**: 9 uses now exist; service-layer policy still incomplete.
-- **Bare `catch { }`**: 15 sites found, mostly logger/platform-disconnect self-protection; still worth documenting or wrapping where possible.
-- **Android skeleton:** `XBVault.Android` exists and builds successfully in Release with `JAVA_HOME=%LOCALAPPDATA%\Android\Sdk\jdk-21`. JDK 25 still triggers `XA0030`, so local docs/build scripts should standardize JDK 21 for Android work.
-- **Resolved since last revision:** #14 (CatalogApiService DI), #15 (CTS dispose), #16 (WINDOWS_BUILD guard) — all were marked open in the June verification but are confirmed fixed in v1.2.0.
-- **New services** added since June docs (untracked): `XrayAgentService`, `GitHubReleaseCheckerService`, `UpdateVersionCache`, `PackageOverrideService`, `PreFlightChecker`, `WindowSettingsService`.
+- **App.axaml.cs** 847 → **1,906 lines** (+125%): composition root now the largest file in the codebase.
+- **async void** 10 → **20** handlers: mobile views added 10 new handlers.
+- **Test coverage** 240 → **653 tests** (+172%): matcher exhaustive tests, service tests, ViewModel tests.
+- **XboxDeviceService** deleted: fully split into 6 domain services behind interfaces.
+- **FileExplorerViewModel** 1,880 → **1,809 lines**: split done but post-split growth; still the largest ViewModel.
+- **Bare `catch { }`** 15 → **26 → 0**: all now commented/logged (2026-08-27).
+- **.ConfigureAwait(false)** 9 → **8**: slightly worse; key services still at 0.
+- **New since last verification:** `GitHubReleaseCheckerService`, `UpdateVersionCache`, `PackageOverrideService`, `PreFlightChecker`, `WindowSettingsService`, `MobileErrorDialogView`, `MobileLogsView`, `MobileFileExplorerView`.
+- **Resolved since last verification:** #9 UI clipping, #21 test coverage, #20 drive list (partial), async void (20→0), CustomInstallViewModel IDisposable, bare `catch { }` (26→0).
 
 ---
 
