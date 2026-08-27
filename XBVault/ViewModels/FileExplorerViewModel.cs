@@ -1272,6 +1272,15 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
     private async Task DownloadFolderAsync(SftpEntry entry)
     {
+        // Portal folders download as a single .zip (like the Dev Portal "save folder"
+        // action) through the regular save dialog — this also fixes Android SAF, where
+        // a granted content-URI directory has no filesystem path to write into.
+        if (entry.IsPortal)
+        {
+            await DownloadPortalFolderAsZipAsync(entry);
+            return;
+        }
+
         var localRoot = ShowFolderPickerAsync is not null ? await ShowFolderPickerAsync() : null;
         if (string.IsNullOrEmpty(localRoot)) return;
 
@@ -1279,11 +1288,6 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
         DownloadProgress = 0;
         try
         {
-            if (entry.IsPortal)
-            {
-                ApplyDownloadResult(await DownloadPortalAsync(entry, localRoot));
-                return;
-            }
             var result = await _transfer.DownloadFolderAsync(entry, localRoot,
                 TransferProgress(u => { DownloadProgress = u.Progress; DownloadStatusText = u.StatusText; }));
             ApplyDownloadResult(result);
@@ -1294,6 +1298,47 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
                 "Download failed",
                 $"Could not download folder '{entry.Name}'.",
                 $"Source: {entry.FullPath}\n\nTarget: {localRoot}\n\nError: {ex.Message}");
+        }
+        finally
+        {
+            IsDownloading = false;
+            DownloadProgress = 0;
+            DownloadStatusText = string.Empty;
+        }
+    }
+
+    private async Task DownloadPortalFolderAsZipAsync(SftpEntry folder)
+    {
+        var zipSuggested = new SftpEntry
+        {
+            Name = folder.Name.TrimEnd('/', '\\') + ".zip",
+            FullPath = folder.FullPath,
+            IsDirectory = false
+        };
+        var saveZipPath = ShowSaveFileDialogAsync is not null ? await ShowSaveFileDialogAsync(zipSuggested) : null;
+        if (string.IsNullOrEmpty(saveZipPath)) return;
+
+        IsDownloading = true;
+        DownloadProgress = 0;
+        try
+        {
+            DownloadStatusText = $"Compressing {folder.Name}...";
+            await _portal.DownloadFolderAsZipAsync(folder, saveZipPath, new Progress<double>(p => DownloadProgress = p));
+
+            if (PostDownloadSaveAsync is not null && PendingSaveTempPath is not null)
+                await PostDownloadSaveAsync(saveZipPath);
+
+            ApplyDownloadResult(TransferResult.OkDownload(folder.Name + ".zip", 1));
+            StatusSeverity = ToolbarStatusSeverity.Success;
+            StatusMessage = $"Folder saved as {folder.Name}.zip";
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"Portal folder zip download failed: {folder.FullPath}");
+            ShowErrorDialog?.Invoke(
+                "Download failed",
+                $"Could not zip and download folder '{folder.Name}'.",
+                $"Source: {folder.FullPath}\n\nTarget: {saveZipPath}\n\nError: {ex.Message}");
         }
         finally
         {

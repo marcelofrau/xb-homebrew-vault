@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -121,6 +122,32 @@ public class PortalAppFilesService : IDisposable
 
     public async Task DownloadFileAsync(SftpEntry file, string destinationPath, IProgress<double>? progress = null)
     {
+        try
+        {
+            await using var dst = File.Create(destinationPath);
+            await DownloadFileToStreamAsync(file, dst, progress);
+        }
+        catch (OperationCanceledException)
+        {
+            try
+            {
+                if (File.Exists(destinationPath))
+                    File.Delete(destinationPath);
+            }
+            catch (Exception ex)
+            {
+                Logger.Trace($"PortalAppFiles: partial download cleanup failed — {ex.Message}");
+            }
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Streams a single portal file into an arbitrary stream (zip entry, SAF
+    /// output, ...) chunked, reporting 0..1 byte progress during the transfer.
+    /// </summary>
+    public async Task DownloadFileToStreamAsync(SftpEntry file, Stream destination, IProgress<double>? progress = null)
+    {
         var token = BeginOperation();
         var (knownFolder, package, dirParts) = Parse(file.FullPath);
         if (knownFolder is null)
@@ -147,34 +174,48 @@ public class PortalAppFilesService : IDisposable
             throw new HttpRequestException($"Portal download failed: HTTP {(int)response.StatusCode} — {body}");
         }
 
-        try
+        await using var src = await response.Content.ReadAsStreamAsync(ct);
+        var total = response.Content.Headers.ContentLength ?? file.Size;
+        var buffer = new byte[81920];
+        long copied = 0;
+        int read;
+        while ((read = await src.ReadAsync(buffer, ct)) > 0)
         {
-            await using var src = await response.Content.ReadAsStreamAsync(ct);
-            await using var dst = File.Create(destinationPath);
-            var total = response.Content.Headers.ContentLength ?? file.Size;
-            var buffer = new byte[81920];
-            long copied = 0;
-            int read;
-            while ((read = await src.ReadAsync(buffer, ct)) > 0)
-            {
-                await dst.WriteAsync(buffer.AsMemory(0, read), ct);
-                copied += read;
-                if (total > 0)
-                    progress?.Report((double)copied / total);
-            }
+            await destination.WriteAsync(buffer.AsMemory(0, read), ct);
+            copied += read;
+            if (total > 0)
+                progress?.Report((double)copied / total);
         }
-        catch (OperationCanceledException)
+    }
+
+    /// <summary>
+    /// Downloads a portal folder (recursively) into a single .zip archive, like the
+    /// Dev Portal's "save folder" action. Files stream straight into zip entries, so
+    /// a large folder never buffers in memory.
+    /// </summary>
+    public async Task DownloadFolderAsZipAsync(SftpEntry folder, string destinationZipPath, IProgress<double>? progress = null)
+    {
+        var files = await RecursiveListAsync(folder.FullPath);
+        var fileEntries = files.Where(f => !f.IsDirectory).ToList();
+        var root = folder.FullPath.TrimEnd('\\');
+
+        await using (var fs = File.Create(destinationZipPath))
+        await using (var archive = new ZipArchive(fs, ZipArchiveMode.Create))
         {
-            try
+            var total = Math.Max(1, fileEntries.Count);
+            var done = 0;
+            foreach (var f in fileEntries)
             {
-                if (File.Exists(destinationPath))
-                    File.Delete(destinationPath);
+                var rel = f.FullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase)
+                    ? f.FullPath.Substring(root.Length).TrimStart('\\')
+                    : f.Name;
+                var zipEntry = archive.CreateEntry(rel.Replace('\\', '/'));
+                await using var es = zipEntry.Open();
+                var fileProgress = new Progress<double>(p => progress?.Report((done + p) / total));
+                await DownloadFileToStreamAsync(f, es, fileProgress);
+                done++;
+                progress?.Report((double)done / total);
             }
-            catch (Exception ex)
-            {
-                Logger.Trace($"PortalAppFiles: partial download cleanup failed — {ex.Message}");
-            }
-            throw;
         }
     }
 
