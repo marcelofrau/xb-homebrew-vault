@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.5] — 2026-08-27
+
+> Note: these changes landed after the v2.0.4 tag but the version bump was
+> only applied later, so they were temporarily carried under the 2.0.4 label.
+> They belong to **2.0.5**.
+
+### Added (matcher / overrides)
+
+- **Catalog override table** — `package-overrides.json` matured via a full package sweep (`build/catalog-sweep*.ps1`); `VersionCheckerService` uses the enriched table to resolve catalog–installed identity mismatches across the whole catalog
+- **Local override auto-recorded** — installing a package whose identity differs from the catalog now auto-records a local override (`LocalOverrideService`) so future matches use the real PFN/FullName instead of the stale catalog entry
+- **Item detail from installed card** — clicking an installed card opens the item detail overlay/window with reinstall + uninstall in installed mode (desktop `ItemDetailWindow`, mobile `MobileDetailView`)
+
+### Added (updates)
+
+- **Update check on startup** — `CheckForUpdatesOnStartup` setting is now honored (default on); the Android path runs the update check at startup
+- **Download button on update dialog** — the "update available" dialog (desktop + mobile) now has a **Download** button that opens the release URL to fetch the newest build
+
+### Fixed
+
+- **Reinstall preserves app data** — reinstalling no longer uninstalls first (which wiped the app's `LocalState`); it installs over the existing package and keeps local data. Confirmation messages updated on desktop + mobile
+- **Mobile confirm-dialog icon missing** — the `avares://` string was bound directly to `Image.Source` and never resolved at runtime; icons now load via `AssetLoader.Open` (fixes uninstall/other confirm dialogs)
+- **Mobile uninstall spinner clipped** — the card's 20×20 `CdSpinner` (hardcoded 64×64 CD image) clipped and misaligned; replaced with an indeterminate `ProgressBar`
+
+### Changed
+
+- **Tech-debt quick wins** — all 20 `async void` handlers converted to `FireAndForget` with context logging; `CustomInstallViewModel` implements `IDisposable` (disposes analysis CTS); every bare `catch {}` annotated or logged; skipped the delicate SFTP/Xray sync-call layers by design
+- **655 tests passing**
+
+---
+
 ## [2.0.4] — 2026-08-27
 
 ### Added
