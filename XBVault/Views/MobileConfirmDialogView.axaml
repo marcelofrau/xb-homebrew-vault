@@ -19,7 +19,7 @@
             Padding="24,20" MaxWidth="380" HorizontalAlignment="Stretch">
       <StackPanel Spacing="16">
         <!-- Centered image -->
-        <Image Source="{Binding ImageSource}" Width="64" Height="64"
+        <Image x:Name="DialogIcon" Width="64" Height="64"
                Stretch="Uniform" HorizontalAlignment="Center"
                IsVisible="{Binding ImageSource, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         <!-- Title -->

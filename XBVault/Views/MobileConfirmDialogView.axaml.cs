@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -13,6 +14,25 @@ public partial class MobileConfirmDialogView : UserControl
     public MobileConfirmDialogView()
     {
         InitializeComponent();
+        DataContextChanged += (_, _) => LoadIcon();
+    }
+
+    private void LoadIcon()
+    {
+        if (DataContext is not MobileConfirmDialogViewModel vm || string.IsNullOrEmpty(vm.ImageSource))
+        {
+            DialogIcon.Source = null;
+            return;
+        }
+        try
+        {
+            DialogIcon.Source = new Avalonia.Media.Imaging.Bitmap(AssetLoader.Open(new Uri(vm.ImageSource)));
+        }
+        catch
+        {
+            // fallback — icon asset missing, dialog renders without icon
+            DialogIcon.Source = null;
+        }
     }
 
     public void SetOnBack(Action onBack) => _onBack = onBack;
