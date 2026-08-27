@@ -43,6 +43,23 @@ public partial class MobileErrorDialogView : UserControl
         OkClicked?.Invoke(this, EventArgs.Empty);
     }
 
+    private void OnDownloadClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MobileErrorDialogViewModel vm) return;
+        var url = vm.DownloadUrl;
+        if (string.IsNullOrEmpty(url)) return;
+        Logger.Info("MobileErrorDialog download button clicked");
+        try
+        {
+            PlatformHelper.OpenUrl(url);
+            OkClicked?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "MobileErrorDialog download failed");
+        }
+    }
+
     private void OnCopyClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not MobileErrorDialogViewModel vm) return;
@@ -70,7 +87,9 @@ public partial class MobileErrorDialogViewModel : ObservableObject
     [ObservableProperty] private string _title = "Error";
     [ObservableProperty] private string _description = "";
     [ObservableProperty] private string? _details;
+    [ObservableProperty] private string? _downloadUrl;
     [ObservableProperty] private ErrorDialogType _dialogType = ErrorDialogType.Error;
 
     public bool HasDetails => !string.IsNullOrEmpty(Details);
+    public bool HasDownload => !string.IsNullOrEmpty(DownloadUrl);
 }

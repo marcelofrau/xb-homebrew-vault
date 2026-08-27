@@ -895,17 +895,52 @@ public partial class App : Application
                 "avares://XBVault/Assets/Views/FileExplorerView/fileexplorer-status-success-20.png");
     }
 
-    private static async Task CheckForUpdatesAsync(Window main)
+    private static async Task CheckForUpdatesAsync(Window? main = null)
     {
         try
         {
+            if (!SettingsService.Current.CheckForUpdatesOnStartup)
+            {
+                Logger.Debug("Check for updates on startup disabled — skipping");
+                return;
+            }
+
             using var checker = new GitHubReleaseCheckerService();
             var release = await checker.CheckLatestReleaseAsync();
             if (release is null) return;
             if (!GitHubReleaseCheckerService.IsNewerVersion(release.TagName, BuildInfo.Version))
                 return;
 
+            var releaseUrl = release.HtmlUrl ?? "https://github.com/marcelofrau/xb-homebrew-vault/releases";
             Logger.Info($"Update available: {release.TagName} (current: {BuildInfo.Version})");
+
+            if (Application.Current?.ApplicationLifetime is IActivityApplicationLifetime)
+            {
+                _ = XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
+                {
+                    var mobileDlg = new Views.MobileErrorDialogView
+                    {
+                        DataContext = new Views.MobileErrorDialogViewModel
+                        {
+                            Title = "Update Available",
+                            Description = $"XB Homebrew Vault {release.TagName} is available. You are currently running {BuildInfo.DisplayVersion}.",
+                            Details = "Visit the releases page to download the latest version.",
+                            DialogType = Views.ErrorDialogType.Info,
+                            DownloadUrl = releaseUrl
+                        }
+                    };
+                    mobileDlg.OkClicked += (_, _) =>
+                    {
+                        if (TopLevel.GetTopLevel(mobileDlg)?.Content is Panel panel)
+                            panel.Children.Remove(mobileDlg);
+                    };
+                    if (TopLevel.GetTopLevel(mobileDlg)?.Content is Panel targetPanel)
+                        targetPanel.Children.Add(mobileDlg);
+                    return Task.CompletedTask;
+                });
+                return;
+            }
+
             var dlg = new Views.ErrorDialog(
                 "Update Available",
                 $"XB Homebrew Vault {release.TagName} is available. You are currently running {BuildInfo.DisplayVersion}.",
@@ -913,11 +948,14 @@ public partial class App : Application
                 Views.ErrorDialogType.Info);
             dlg.DownloadAction = () =>
             {
-                Process.Start(new ProcessStartInfo(release.HtmlUrl ?? "https://github.com/marcelofrau/xb-homebrew-vault/releases") { UseShellExecute = true });
+                PlatformHelper.OpenUrl(releaseUrl);
                 dlg.Close();
                 return Task.CompletedTask;
             };
-            await dlg.ShowDialog(main);
+            if (main is not null)
+                await dlg.ShowDialog(main);
+            else
+                dlg.Show();
         }
         catch (Exception ex)
         {
@@ -1649,6 +1687,9 @@ public partial class App : Application
 
             // Auto-load catalog on startup (same as desktop)
             _ = browseViewModel.LoadCatalogCommand.ExecuteAsync(null);
+
+            // Auto-update check (same as desktop)
+            _ = CheckForUpdatesAsync();
 
             // First-run wizard on Android
             if (!SettingsService.Current.WizardCompleted && !SettingsService.Current.XboxConnection.IsConfigured)
