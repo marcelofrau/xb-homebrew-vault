@@ -10,9 +10,9 @@ using static XBVault.Helpers.FileSystemPathParser;
 
 namespace XBVault.Services;
 
-    public class SftpService : ISftpService
-    {
-        private readonly IAppLogger _log;
+public class SftpService : ISftpService
+{
+    private readonly IAppLogger _log;
     private SshClient? _ssh;
     private SftpClient? _sftp;
     private string? _lastHost;

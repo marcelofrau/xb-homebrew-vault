@@ -221,7 +221,7 @@ public class SftpTransferService : IDisposable
         string? lastRemotePath = null;
         var totalFiles = filePaths.Length;
         long totalBytes = 0;
-                _log.Info($"Upload started: {totalFiles} file(s) -> '{targetPath}'");
+        _log.Info($"Upload started: {totalFiles} file(s) -> '{targetPath}'");
         try
         {
             foreach (var filePath in filePaths)
@@ -255,8 +255,8 @@ public class SftpTransferService : IDisposable
                 });
                 Report(progress, 1, $"Uploading {fileName}... (100%)");
             }
-                LogSummary("Upload", totalFiles, totalBytes);
-                return TransferResult.Ok($"{lastFile} uploaded", newEntries);
+            LogSummary("Upload", totalFiles, totalBytes);
+            return TransferResult.Ok($"{lastFile} uploaded", newEntries);
         }
         catch (OperationCanceledException)
         {
@@ -365,7 +365,7 @@ public class SftpTransferService : IDisposable
         var fCount = filePaths?.Length ?? 0;
         var dCount = folderPaths?.Length ?? 0;
         var totalItems = fCount + dCount;
-            _log.Info($"Upload started: {fCount} file(s), {dCount} folder(s) -> '{targetPath}'");
+        _log.Info($"Upload started: {fCount} file(s), {dCount} folder(s) -> '{targetPath}'");
         try
         {
             long totalBytes = 0;
@@ -397,8 +397,11 @@ public class SftpTransferService : IDisposable
                     var fiInfo = new FileInfo(filePath);
                     newEntries.Add(new SftpEntry
                     {
-                        Name = fileName, FullPath = remotePath,
-                        IsDirectory = false, Size = fiInfo.Length, LastModified = fiInfo.LastWriteTimeUtc
+                        Name = fileName,
+                        FullPath = remotePath,
+                        IsDirectory = false,
+                        Size = fiInfo.Length,
+                        LastModified = fiInfo.LastWriteTimeUtc
                     });
                 }
             }
@@ -434,7 +437,7 @@ public class SftpTransferService : IDisposable
                         await using var stream = File.OpenRead(filePath);
                         _transferBytesTotal = stream.Length;
                         totalBytes += stream.Length;
-                    _log.Debug($"Upload: {relative} ({stream.Length}B)");
+                        _log.Debug($"Upload: {relative} ({stream.Length}B)");
                         _currentFileLabel = relative;
                         _currentFraction = 0;
                         _currentFileBytes = 0;
@@ -447,8 +450,10 @@ public class SftpTransferService : IDisposable
                     Report(progress, (double)(index + 1) / totalItems, string.Empty);
                     newEntries.Add(new SftpEntry
                     {
-                        Name = folderName, FullPath = targetPath.TrimEnd('\\') + "\\" + folderName,
-                        IsDirectory = true, Children = { new SftpEntry { Name = "" } }
+                        Name = folderName,
+                        FullPath = targetPath.TrimEnd('\\') + "\\" + folderName,
+                        IsDirectory = true,
+                        Children = { new SftpEntry { Name = "" } }
                     });
                 }
             }
@@ -544,8 +549,10 @@ public class SftpTransferService : IDisposable
                         if (addedDirs.Add(acc))
                             newEntries.Add(new SftpEntry
                             {
-                                Name = part, FullPath = acc,
-                                IsDirectory = true, Children = { new SftpEntry { Name = "" } }
+                                Name = part,
+                                FullPath = acc,
+                                IsDirectory = true,
+                                Children = { new SftpEntry { Name = "" } }
                             });
                     }
                 }
@@ -554,8 +561,10 @@ public class SftpTransferService : IDisposable
                     var fiEntry = new FileInfo(allFiles[i]);
                     newEntries.Add(new SftpEntry
                     {
-                        Name = rel, FullPath = remotePath,
-                        IsDirectory = false, Size = fiEntry.Length,
+                        Name = rel,
+                        FullPath = remotePath,
+                        IsDirectory = false,
+                        Size = fiEntry.Length,
                         LastModified = fiEntry.LastWriteTimeUtc
                     });
                 }
@@ -639,7 +648,7 @@ public class SftpTransferService : IDisposable
                     _transferStartTime = DateTime.UtcNow;
                     _transferBytesTotal = await _sftp.GetFileSizeAsync(file.FullPath);
                     totalBytes += Math.Max(0, _transferBytesTotal);
-                _log.Debug($"Download: [{i + 1}/{totalFiles}] {relative} ({_transferBytesTotal}B)");
+                    _log.Debug($"Download: [{i + 1}/{totalFiles}] {relative} ({_transferBytesTotal}B)");
                     Report(progress, (double)i / totalFiles, $"Downloading {file.Name}...");
 
                     partialPath = Path.Combine(localDir, relative);
@@ -697,7 +706,7 @@ public class SftpTransferService : IDisposable
             _currentFileLabel = entry.Name;
             _currentFraction = 0;
             _currentFileBytes = 0;
-                _log.Info($"Download started: '{entry.Name}' ({_transferBytesTotal}B) -> '{savePath}'");
+            _log.Info($"Download started: '{entry.Name}' ({_transferBytesTotal}B) -> '{savePath}'");
             Report(progress, 0, $"Downloading {entry.Name}... (0%)");
 
             await using var stream = File.Create(savePath);

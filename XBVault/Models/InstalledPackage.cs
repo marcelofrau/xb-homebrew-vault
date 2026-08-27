@@ -41,8 +41,8 @@ public class VersionToStringConverter : JsonConverter<string?>
 public class InstalledPackage : INotifyPropertyChanged
 {
     private bool _isUninstalling;
-   private bool _isRunning;
-   private bool _isOutdated;
+    private bool _isRunning;
+    private bool _isOutdated;
     private bool _isAutostart;
     private bool _ignoreUpdateAlerts;
 

@@ -210,9 +210,9 @@ public partial class UsbPermissionViewModel : ObservableObject
     }
 
     [RelayCommand]
-        private async Task LoadDrivesAsync()
-        {
-            Logger.Info("LoadDrivesAsync: starting drive detection");
+    private async Task LoadDrivesAsync()
+    {
+        Logger.Info("LoadDrivesAsync: starting drive detection");
         var drives = await Task.Run(() => UsbDriveDetector.ListUsbDrives());
         Logger.Info($"LoadDrivesAsync: found {drives.Count} drives");
 

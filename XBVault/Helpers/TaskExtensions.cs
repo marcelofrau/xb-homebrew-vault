@@ -21,15 +21,15 @@ public static class TaskExtensions
             var ex = t.Exception?.Flatten().InnerException;
             if (ex is not null)
             {
-                    // Use centralized UI helper to post to UI thread safely
-                    try
-                    {
-                        XBVault.Helpers.UIHelpers.RunOnUI(() => Logger.Error(ex, context ?? "FireAndForget"));
-                    }
-                    catch
-                    {
-                        Logger.Error(ex, context ?? "FireAndForget");
-                    }
+                // Use centralized UI helper to post to UI thread safely
+                try
+                {
+                    XBVault.Helpers.UIHelpers.RunOnUI(() => Logger.Error(ex, context ?? "FireAndForget"));
+                }
+                catch
+                {
+                    Logger.Error(ex, context ?? "FireAndForget");
+                }
             }
         }, TaskContinuationOptions.OnlyOnFaulted);
     }

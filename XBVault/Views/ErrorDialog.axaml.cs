@@ -52,10 +52,10 @@ public partial class ErrorDialog : Window
 
         var iconName = type switch
         {
-            ErrorDialogType.Info  => "errordialog-info-48.png",
-            ErrorDialogType.Warn  => "errordialog-warn-48.png",
+            ErrorDialogType.Info => "errordialog-info-48.png",
+            ErrorDialogType.Warn => "errordialog-warn-48.png",
             ErrorDialogType.Error => "errordialog-error-48.png",
-            _                     => "errordialog-error-48.png"
+            _ => "errordialog-error-48.png"
         };
 
         try

@@ -604,17 +604,17 @@ public partial class CustomInstallViewModel : ObservableObject, IDisposable
                         Logger.Debug($"InstallAsync: no existing version of {identityName} found");
                     }
                 }
-        catch (OperationCanceledException)
-        {
-            Logger.Info("AnalyzeAsync: analysis cancelled by user");
-            await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
-            {
-                AnalysisResultText = null;
-                CurrentStep = 0;
-                return Task.CompletedTask;
-            });
-        }
-        catch (Exception ex)
+                catch (OperationCanceledException)
+                {
+                    Logger.Info("AnalyzeAsync: analysis cancelled by user");
+                    await XBVault.Helpers.UIHelpers.RunOnUIAsync(() =>
+                    {
+                        AnalysisResultText = null;
+                        CurrentStep = 0;
+                        return Task.CompletedTask;
+                    });
+                }
+                catch (Exception ex)
                 {
                     Logger.Error(ex, "Clean install: failed to check/uninstall existing package");
                     InstallStatus = "Warning: could not check for existing version...";

@@ -57,7 +57,7 @@ public partial class FileExplorerView : UserControl
         }
 
         _vm = DataContext as FileExplorerViewModel;
-        Logger.Trace($"OnDataContextChanged: vm={( _vm is not null ? "set" : "null" )}");
+        Logger.Trace($"OnDataContextChanged: vm={(_vm is not null ? "set" : "null")}");
 
         if (_vm is null) return;
 

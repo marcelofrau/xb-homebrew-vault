@@ -23,22 +23,22 @@ public class LogEntry
     {
         LogLevel.Trace => "\U0001f50d ",  // 🔍
         LogLevel.Debug => "\U0001f41b ",  // 🐛
-        LogLevel.Info  => "\u2713 ",      // ✓
-        LogLevel.Warn  => "\u26a0 ",      // ⚠
+        LogLevel.Info => "\u2713 ",      // ✓
+        LogLevel.Warn => "\u26a0 ",      // ⚠
         LogLevel.Error => "\u2716 ",      // ✖
         LogLevel.Fatal => "\U0001f480 ",  // 💀
-        _              => "? "
+        _ => "? "
     };
 
     public string Color => Level switch
     {
         LogLevel.Trace => "#8AE234",
         LogLevel.Debug => "#729FCF",
-        LogLevel.Info  => "#EEEEEC",
-        LogLevel.Warn  => "#FCE94F",
+        LogLevel.Info => "#EEEEEC",
+        LogLevel.Warn => "#FCE94F",
         LogLevel.Error => "#EF2929",
         LogLevel.Fatal => "#F57900",
-        _              => "#F0F0F0"
+        _ => "#F0F0F0"
     };
 
     public override string ToString()
@@ -47,11 +47,11 @@ public class LogEntry
         {
             LogLevel.Trace => "TRCE",
             LogLevel.Debug => "DBUG",
-            LogLevel.Info  => "INFO",
-            LogLevel.Warn  => "WARN",
+            LogLevel.Info => "INFO",
+            LogLevel.Warn => "WARN",
             LogLevel.Error => "ERR ",
             LogLevel.Fatal => "FATL",
-            _              => "????"
+            _ => "????"
         };
         return $"[{Timestamp:HH:mm:ss.fff}] [{lvl}] {Message}";
     }
@@ -214,11 +214,11 @@ public static class Logger
             {
                 "TRACE" => LogLevel.Trace,
                 "DEBUG" => LogLevel.Debug,
-                "INFO"  => LogLevel.Info,
-                "WARN"  => LogLevel.Warn,
+                "INFO" => LogLevel.Info,
+                "WARN" => LogLevel.Warn,
                 "ERROR" => LogLevel.Error,
                 "FATAL" => LogLevel.Fatal,
-                _       => _minLevel
+                _ => _minLevel
             };
             _levelSwitch.MinimumLevel = ToSerilogLevel(_minLevel);
         }

@@ -414,7 +414,7 @@ public class PortalAppFilesService : IDisposable
             throw new HttpRequestException($"Portal file list failed: HTTP {(int)response.StatusCode} — {body}");
         }
 
-            var json = await response.Content.ReadAsStringAsync(token);
+        var json = await response.Content.ReadAsStringAsync(token);
         var parsed = JsonSerializer.Deserialize<FilesResponse>(json);
         var parent = treePath.TrimEnd('\\');
         var entries = (parsed?.Items ?? [])
@@ -432,7 +432,7 @@ public class PortalAppFilesService : IDisposable
             if (!response.IsSuccessStatusCode)
                 return FallbackKnownFolders.ToList();
 
-        var json = await response.Content.ReadAsStringAsync(token);
+            var json = await response.Content.ReadAsStringAsync(token);
             var parsed = JsonSerializer.Deserialize<KnownFoldersResponse>(json);
             var ids = parsed?.KnownFolders ?? [];
             return ids.Count > 0 ? ids : FallbackKnownFolders.ToList();

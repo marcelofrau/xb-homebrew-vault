@@ -25,10 +25,10 @@ public partial class MobileErrorDialogView : UserControl
         if (DataContext is not MobileErrorDialogViewModel vm) return;
         var iconName = vm.DialogType switch
         {
-            ErrorDialogType.Info  => "errordialog-info-48.png",
-            ErrorDialogType.Warn  => "errordialog-warn-48.png",
+            ErrorDialogType.Info => "errordialog-info-48.png",
+            ErrorDialogType.Warn => "errordialog-warn-48.png",
             ErrorDialogType.Error => "errordialog-error-48.png",
-            _                     => "errordialog-error-48.png"
+            _ => "errordialog-error-48.png"
         };
         try
         {

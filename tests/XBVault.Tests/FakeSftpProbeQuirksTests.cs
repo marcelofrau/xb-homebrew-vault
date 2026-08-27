@@ -69,7 +69,8 @@ public class FakeSftpProbeQuirksTests
         var rx = new System.Text.RegularExpressions.Regex("([A-Za-z])\\s*[:\\\\]");
         var letters = result.Output.Split('\n', System.StringSplitOptions.RemoveEmptyEntries)
             .Select(l => l.Trim('\r', ' ', '\t'))
-            .Select(l => {
+            .Select(l =>
+            {
                 var m = rx.Match(l);
                 return m.Success ? m.Groups[1].Value.ToUpperInvariant() : null;
             })

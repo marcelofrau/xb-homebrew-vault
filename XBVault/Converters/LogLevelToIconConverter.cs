@@ -32,11 +32,11 @@ namespace XBVault.Converters
                 {
                     LogLevel.Trace => TraceIcon,
                     LogLevel.Debug => DebugIcon,
-                    LogLevel.Info  => InfoIcon,
-                    LogLevel.Warn  => WarnIcon,
+                    LogLevel.Info => InfoIcon,
+                    LogLevel.Warn => WarnIcon,
                     LogLevel.Error => ErrorIcon,
                     LogLevel.Fatal => FatalIcon,
-                    _              => InfoIcon
+                    _ => InfoIcon
                 };
             }
             return InfoIcon;

@@ -29,7 +29,8 @@ public partial class ItemDetailWindow : Window
             Logger.Error(ex, "ItemDetailWindow InitializeComponent FAILED");
             throw;
         }
-        Loaded += (_, _) => {
+        Loaded += (_, _) =>
+        {
             Logger.Info("ItemDetailWindow Loaded");
             StartSpin();
         };
@@ -153,7 +154,8 @@ public partial class ItemDetailWindow : Window
                 {
                     Source = new Avalonia.Media.Imaging.Bitmap(
                         Avalonia.Platform.AssetLoader.Open(new Uri("avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-github-20.png"))),
-                    Width = 16, Height = 16
+                    Width = 16,
+                    Height = 16
                 }
             };
             item.Click += (_, _) => OpenUrl(url);

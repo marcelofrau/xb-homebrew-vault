@@ -85,21 +85,21 @@ public partial class SystemInfoViewModel : ObservableObject
                 sb.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"{label,-22}{val}");
         }
 
-        Add("Console Type:",         info.ConsoleType);
-        Add("OS Version:",           info.OsVersion);
-        Add("OS Edition:",           info.OsEdition);
-        Add("Device Name:",          info.DeviceName);
-        Add("Platform:",             info.Platform);
-        Add("Region:",               info.Region);
-        Add("Language:",             info.Language);
-        Add("Serial Number:",        info.SerialNumber);
-        Add("Xbox Live Key:",        info.XboxLiveDeviceKey);
-        Add("Total Memory:",         info.TotalMemoryDisplay);
-        Add("CPU:",                  info.Cpu);
-        Add("System Uptime:",        info.SystemUptimeDisplay);
-        Add("MAC Address:",          info.MacAddress);
-        Add("Firmware Version:",     info.FirmwareVersion);
-        Add("Hardware Version:",     info.XboxHardwareVersion);
+        Add("Console Type:", info.ConsoleType);
+        Add("OS Version:", info.OsVersion);
+        Add("OS Edition:", info.OsEdition);
+        Add("Device Name:", info.DeviceName);
+        Add("Platform:", info.Platform);
+        Add("Region:", info.Region);
+        Add("Language:", info.Language);
+        Add("Serial Number:", info.SerialNumber);
+        Add("Xbox Live Key:", info.XboxLiveDeviceKey);
+        Add("Total Memory:", info.TotalMemoryDisplay);
+        Add("CPU:", info.Cpu);
+        Add("System Uptime:", info.SystemUptimeDisplay);
+        Add("MAC Address:", info.MacAddress);
+        Add("Firmware Version:", info.FirmwareVersion);
+        Add("Hardware Version:", info.XboxHardwareVersion);
 
         return sb.Length > 0 ? sb.ToString().TrimEnd() : "No system info available";
     }

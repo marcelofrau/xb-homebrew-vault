@@ -117,7 +117,8 @@ public partial class MobileDetailView : UserControl
                 {
                     Source = new Avalonia.Media.Imaging.Bitmap(
                         AssetLoader.Open(new Uri("avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-github-20.png"))),
-                    Width = 16, Height = 16
+                    Width = 16,
+                    Height = 16
                 }
             };
             item.Click += (_, _) => OpenUrl(url);

@@ -1555,7 +1555,8 @@ public partial class FileExplorerViewModel : ObservableObject, IDisposable
 
             var newFolder = new SftpEntry
             {
-                Name = name, FullPath = dir,
+                Name = name,
+                FullPath = dir,
                 IsDirectory = true,
                 IsPortal = isPortal,
                 Children = { new SftpEntry { Name = "" } }

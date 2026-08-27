@@ -390,13 +390,15 @@ public partial class MobileCustomInstallView : UserControl
         var pkgHeader = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
         var pkgIcon = new Border
         {
-            Width = 40, Height = 40,
+            Width = 40,
+            Height = 40,
             CornerRadius = new CornerRadius(8),
             Background = FindBrush("AccentDimBrush"),
             Child = new Image
             {
                 Source = LoadImage("custominstall-package-20.png"),
-                Width = 24, Height = 24,
+                Width = 24,
+                Height = 24,
                 Stretch = Stretch.Uniform,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
@@ -493,12 +495,15 @@ public partial class MobileCustomInstallView : UserControl
         var summaryStack = new StackPanel { Spacing = 8 };
         summaryStack.Children.Add(MakeSummaryRow("Package:", _summaryPackage = new TextBlock
         {
-            FontFamily = TitleFont, FontSize = 13, FontWeight = FontWeight.Bold,
+            FontFamily = TitleFont,
+            FontSize = 13,
+            FontWeight = FontWeight.Bold,
             Foreground = FindBrush("TextBrush")
         }));
         summaryStack.Children.Add(MakeSummaryRow("Dependencies:", _summaryDeps = new TextBlock
         {
-            FontSize = 13, Foreground = FindBrush("TextMutedBrush")
+            FontSize = 13,
+            Foreground = FindBrush("TextMutedBrush")
         }));
         summaryCard.Child = summaryStack;
         _summaryPanel.Children.Add(summaryCard);
@@ -520,7 +525,8 @@ public partial class MobileCustomInstallView : UserControl
         _installingPanel = new StackPanel { Spacing = 10, VerticalAlignment = VerticalAlignment.Center };
         _installingPanel.Children.Add(new CdSpinner
         {
-            Width = 56, Height = 56,
+            Width = 56,
+            Height = 56,
             ShowText = false,
             HorizontalAlignment = HorizontalAlignment.Center
         });
@@ -557,7 +563,8 @@ public partial class MobileCustomInstallView : UserControl
         _resultSuccess.Children.Add(new Image
         {
             Source = LoadImage("custominstall-success-100.png"),
-            Width = 80, Height = 80,
+            Width = 80,
+            Height = 80,
             Stretch = Stretch.Uniform,
             HorizontalAlignment = HorizontalAlignment.Center
         });
@@ -575,7 +582,8 @@ public partial class MobileCustomInstallView : UserControl
         _resultFailure.Children.Add(new Image
         {
             Source = LoadImage("custominstall-failure-100.png"),
-            Width = 80, Height = 80,
+            Width = 80,
+            Height = 80,
             Stretch = Stretch.Uniform,
             HorizontalAlignment = HorizontalAlignment.Center
         });
@@ -723,7 +731,8 @@ public partial class MobileCustomInstallView : UserControl
         row.Children.Add(new Image
         {
             Source = LoadImage(iconName),
-            Width = 18, Height = 18,
+            Width = 18,
+            Height = 18,
             Stretch = Stretch.Uniform,
             VerticalAlignment = VerticalAlignment.Center
         });
