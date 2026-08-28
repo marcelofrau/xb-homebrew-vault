@@ -7,13 +7,13 @@ title: Tech Debt
 
 Use this section as the tracked backlog for technical-debt work. Items are ordered by expected impact and ease of rollout. Each item includes a short why, recommended fix, risk, and rough estimate.
 
-> **Last verified against source:** 2026-08-27. Desktop + Android build: **0 warnings / 0 errors**. Test suite: **718 passed** (`dotnet format whitespace --verify-no-changes` clean). Source version: **2.0.5** (`net10.0`).
+> **Last verified against source:** 2026-08-29. Desktop + Android build: **0 warnings / 0 errors**. Test suite: **733 passed** (`dotnet format whitespace --verify-no-changes` clean). Source version: **2.0.5** (`net10.0`).
 
-1. App.axaml.cs composition root (Priority: High)
+1. App.axaml.cs composition root (Priority: High) — ✅ DONE 2026-08-28
    - Why: 1,906 lines — the largest file in the codebase. Manual `new` wiring of 18 services, splash logic, dialog creation, action-delegate wiring, mobile init — all in one file. No DI container.
-   - Fix: Add `Microsoft.Extensions.DependencyInjection`, extract `CompositionRoot` class, split dialog/wiring logic.
-   - Risk: medium (startup touchpoints). Tests must pass.
-   - Estimate: 12–24 hours.
+   - Fix: `AppServices` composition root + `DesktopUiActions`/`MobileUiActions` per-platform wiring. — *implemented*
+   - Result: `App.axaml.cs` 1,978 → **376 lines** (boot + dispatch + error-handling + update-check). `AppServices.cs` (~163 lines) builds 20 services + 8 VMs; desktop≡mobile duplication killed. Logging anchors added on both platforms.
+   - Verify: build 0/0, suite green; manual smoke on desktop (wizard→connect→tools→custom install) and Android (overlay tools→wizard→SAF).
 
 2. Extract coordinators from large ViewModels (Priority: High)
    - Why: FileExplorerViewModel (1,809 lines), BrowseViewModel (915), InstalledViewModel (887), CustomInstallViewModel (681) all violate SRP.
@@ -35,7 +35,7 @@ Use this section as the tracked backlog for technical-debt work. Items are order
    - Shared-configs-between-OSes is *not* a supported scenario (user decision).
 
 5. Increase tests for Xbox domain services (Priority: High) — ✅ DONE 2026-08-27
-   - **Full Xbox HTTP coverage via stubbed transport:** `XboxSystemService` (12: screenshot retry/cancel/fail, system-info retention, reboot/shutdown params), `XboxNetworkService` (12: ipconfig/interfaces/networks passthrough + errors), `XboxProcessService` (6: kill no-op unconfigured, running-list empty/fail, running title), `XboxPerformanceService` (9: not-configured guard, canceled-token, real WebSocket loopback server receiving snapshot, fragmented frames, malformed JSON). Plus earlier suites (auth, package dep-install, portal, zip, ProgressReadStream). Suite: **718 tests** (was 679).
+   - **Full Xbox HTTP coverage via stubbed transport:** `XboxSystemService` (12: screenshot retry/cancel/fail, system-info retention, reboot/shutdown params), `XboxNetworkService` (12: ipconfig/interfaces/networks passthrough + errors), `XboxProcessService` (6: kill no-op unconfigured, running-list empty/fail, running title), `XboxPerformanceService` (9: not-configured guard, canceled-token, real WebSocket loopback server receiving snapshot, fragmented frames, malformed JSON). Plus earlier suites (auth, package dep-install, portal, zip, ProgressReadStream). Latest: +3 dep-settle tests (`XboxPackageInstallFlowTests`): dep-wait idle-then-D02 skip w/o kill, dep-wait-never-settles fallback, final-settle non-target early-break. Suite: **733 tests** (was 679).
 
 6. Cancellation/disposal audit — ✅ DONE 2026-08-27 (Priority: Medium)
    - Current: `CustomInstallViewModel` now implements `IDisposable` (disposes `_analyzeCts`); all 4 hosts call `vm.Dispose()` on window close / overlay close. (`MobileLogsView._shareCts` IS disposed in the finally block.)
@@ -91,23 +91,23 @@ How to track progress in this doc
 
 Known issues in the codebase, ordered by severity. This page is updated as items are resolved or discovered.
 
-> **Last verified against code:** 2026-08-27 (main worktree). Line counts and locations below reflect current source. **679 tests green**, desktop + Android build **0 warnings / 0 errors**. Source version: **2.0.5**.
+> **Last verified against code:** 2026-08-29 (main worktree). Line counts and locations below reflect current source. **733 tests green**, desktop + Android build **0 warnings / 0 errors**. Source version: **2.0.5**.
 
 ---
 
 ## 🔴 High
 
-### 1. `App.axaml.cs` — 1,906 lines, composition root god-file
+### 1. `App.axaml.cs` composition root — ✅ RESOLVED 2026-08-28
 
-**File:** `XBVault/App.axaml.cs` (**1,906 lines** — the largest file in the codebase)
+**File:** `XBVault/App.axaml.cs` (**376 lines**, was 1,978)
 
-**Still open:**
-- Manually instantiates 18 core services with `new` (`XboxAuthService`, 5 Xbox domain services, cache/install/SFTP/catalog/background/notification/update services) — no DI container.
-- `InitAfterSplashAsync` is a massive method wiring all window delegate callbacks, sidebar views, catalog load, splash close, and first-run wizard.
-- `InitAndroidAfterSplashAsync` duplicates the same wiring pattern for mobile.
-- Dialog creation mixed with business logic.
+**Resolved by the composition-root refactor:**
+- Services + VMs built in `AppServices.Create()`/`Initialize()` (20 services + 8 VMs) — no DI container, no duplicated desktop≡mobile wiring.
+- Per-platform startup now delegates to `DesktopUiActions`/`MobileUiActions` (named methods for dialogs, connect flows, per-platform behaviors).
+- `InitAfterSplashAsync`/`InitAndroidAfterSplashAsync` duplicate wiring eliminated; `App.axaml.cs` holds only boot, dispatch, error handling, and the update check.
+- Logging audit closed the coverage gap with startup-completion anchors on both platforms.
 
-**Fix:** Extract `CompositionRoot` class. Consider `Microsoft.Extensions.DependencyInjection` to replace manual `new`. Split dialog wiring into a `DialogRegistry`.
+**Fix approach (documented for reference):** the original plan called for `Microsoft.Extensions.DependencyInjection` + a `CompositionRoot` class. The implemented pass used manual `AppServices` composition instead — consistent with the project's explicit no-DI-container choice (#461), smaller diff, and no reflection/AOT risk on Android.
 
 ### 2. Large ViewModels — 5 files exceed 600 lines
 
@@ -257,6 +257,10 @@ API endpoints, Discord links, Gofile URLs — all centralized in `XBVault/Config
 | — | Hardcoded URLs (33) | 2026-08-27 | Centralized in `AppUrls.cs` |
 | — | Xbox test coverage | 2026-08-27 | Full Xbox domain coverage: auth, package (dep-install), portal, zip, ProgressReadStream, System/Network/Process/Performance (39 new) — 718 total |
 | — | CI format gate | 2026-08-27 | `format` job runs `dotnet format whitespace --verify-no-changes` (2 projects); whole-repo whitespace sweep applied |
+| — | `App.axaml.cs` composition root | 2026-08-28 | `AppServices` + `DesktopUiActions`/`MobileUiActions`; 1,978 → 376 lines |
+| — | System Info redesign (desktop + mobile) | 2026-08-28 | WDP `/ext/settings` + `/api/os/machinename` contract; hero/stat/pills; mobile overlay screen |
+| — | Mobile v2.0.5 QA batch | 2026-08-28 | Tab-switch hardening, install-abort token chain, overlay stacking, dep-card fix, keyboard BringIntoView, log auto-scroll, dialog icon upscale |
+| — | Dep-settle D02 hang fix | 2026-08-29 | Dep-wait requires explicit terminal state (idle ≠ ready); non-target D02 settles early; +3 tests → 733 |
 
 ---
 
@@ -264,7 +268,7 @@ API endpoints, Discord links, Gofile URLs — all centralized in `XBVault/Config
 
 ```mermaid
 graph LR
-    H["🔴 High<br/>2 open (1, 2)"]
+    H["🔴 High<br/>1 open (2)"]
     M["🟡 Medium<br/>2 open + 1 deferred (7, 8, 9)"]
     L["🟢 Low<br/>0 open"]
 
@@ -275,23 +279,23 @@ graph LR
 
 | Severity | Open | Resolved | Estimated effort |
 |----------|------|----------|-----------------|
-| 🔴 High | 2 | — | 28–64 hours |
+| 🔴 High | 1 | — | 16–40 hours |
 | 🟡 Medium | 3 (incl. 1 deferred) | — | 13–34 hours |
 | 🟢 Low | 0 | — | — |
-| **Total** | **5 open** | **20 resolved** | **41–98 hours** |
+| **Total** | **4 open** | **21 resolved** | **29–74 hours** |
 
 ### Notable changes since Aug 2026 verification
 
-- **App.axaml.cs** 847 → **1,906 lines** (+125%): composition root now the largest file in the codebase.
-- **async void** 10 → **20** handlers: mobile views added 10 new handlers.
-- **Test coverage** 240 → **718 tests** (+199%): matcher exhaustive tests, service tests, ViewModel tests, Xbox package/auth/portal suites, CryptoService SEC2 suite, full Xbox domain coverage (System/Network/Process/Performance via stub + real WebSocket loopback).
+- **App.axaml.cs** 847 → 1,978 → **376 lines**: the composition-root refactor (2026-08-28) shipped `AppServices` + `DesktopUiActions`/`MobileUiActions` — it is no longer the largest file.
+- **async void** 10 → **20** → **0** handlers: mobile views added 10 new handlers; full conversion to `async Task`/`SafeFireAndForget` (2026-08-27).
+- **Test coverage** 240 → **733 tests**: matcher exhaustive tests, service tests, ViewModel tests, Xbox package/auth/portal suites, CryptoService SEC2 suite, full Xbox domain coverage (System/Network/Process/Performance via stub + real WebSocket loopback), +3 dep-settle tests (`XboxPackageInstallFlowTests`).
 - **XboxDeviceService** deleted: fully split into 6 domain services behind interfaces.
 - **FileExplorerViewModel** 1,880 → **1,809 lines**: split done but post-split growth; still the largest ViewModel.
 - **Bare `catch { }`** 15 → **26 → 0**: all now commented/logged (2026-08-27).
 - **ConfigureAwait(false)** backlog item removed (user decision — client app, not a library; sweep was noise).
 - **CI format gate** added (2026-08-27): `format` job — `dotnet format whitespace --verify-no-changes`.
-- **New since last verification:** `GitHubReleaseCheckerService`, `UpdateVersionCache`, `PackageOverrideService`, `PreFlightChecker`, `WindowSettingsService`, `MobileErrorDialogView`, `MobileLogsView`, `MobileFileExplorerView`, `XBVault/Configuration/AppUrls.cs`.
-- **Resolved since last verification:** secrets XOR → SEC2, hardcoded URLs → `AppUrls.cs`, UI clipping, test coverage (653→718), Xbox domain tests all covered, CI format gate.
+- **New since last verification:** `AppServices`, `DesktopUiActions`, `MobileUiActions`, `GitHubReleaseCheckerService`, `UpdateVersionCache`, `PackageOverrideService`, `PreFlightChecker`, `WindowSettingsService`, `MobileErrorDialogView`, `MobileLogsView`, `MobileSystemInfoView`, `MobileFileExplorerView`, `XBVault/Configuration/AppUrls.cs`.
+- **Resolved since last verification:** secrets XOR → SEC2, hardcoded URLs → `AppUrls.cs`, UI clipping, test coverage (653→733), Xbox domain tests all covered, CI format gate, App.axaml.cs composition root, System Info redesign, mobile v2.0.5 QA batch, dep-settle D02 hang.
 
 ---
 

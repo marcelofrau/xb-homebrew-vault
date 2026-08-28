@@ -351,28 +351,33 @@ We poll `GET /api/app/packagemanager/state` and branch on what the portal answer
 flowchart TD
     START["Poll /state<br/>every ~2s"] --> BODY{"Response"}
 
-    BODY -- "204 / idle twice" --> READY["✅ Ready<br/>safe to continue"]
-    BODY -- "Success JSON" --> READY
-    BODY -- "TRUST_E_NOSIGNATURE" --> READY
-    BODY -- "higher version already installed" --> READY["✅ Ready<br/>skip deploy"]
+    BODY -- "204 / idle twice" --> IDLE{"Context?"}
+    IDLE -- "idle before next upload (AwaitIdle)<br/>or main settle" --> READY["✅ Ready<br/>safe to continue"]
+    IDLE -- "dependency deploy<br/>(AwaitDeployDep)" --> DEPIDLE["idle ≠ ready — the deploy<br/>may not have registered yet;<br/>keep polling, require an explicit<br/>terminal state"]
+
+    BODY -- "Success JSON / signature<br/>/ higher version present" --> READY
     BODY -- "0x80073D02<br/>resources in use" --> INUSE
+    BODY -- "deployment error (fatal)" --> FAIL["❌ deploy failed —<br/>final check decides"]
+    BODY -- "anything else" --> POLLMORE["not ready — keep polling"]
 
     INUSE --> TYPE{"What is being deployed?"}
-    TYPE -- "main package" --> FILTER["Filter blockers to the target identity only"]
+    TYPE -- "main package (AwaitDeployMain)" --> FILTER["Filter blockers to the target identity only"]
     FILTER --> TARGET{"Blocker is the<br/>installed app itself?"}
     TARGET -- "yes" --> KILL["Terminate ONLY the target<br/>app being updated"]
-    TARGET -- "no" --> WAIT["DevHome / IdleScreen / game running:<br/>NEVER terminate — keep polling<br/>until the deadline"]
+    TARGET -- "no" --> SETTLE["Settle early — DevHome / IdleScreen /<br/>game running can never self-resolve<br/>(framework already in use);<br/>stop polling, final check decides"]
+    TYPE -- "dependency (AwaitDeployDep)" --> D02SKIP["Skip as already installed —<br/>framework in use by the shell;<br/>never kill"]
     KILL --> READY
-    WAIT --> TIMEOUT
+    SETTLE --> VERIFY
+    D02SKIP --> READY
+    DEPIDLE --> POLLMORE
 
-    BODY -- "deployment error (fatal)" --> FAIL["❌ FAILED"]
-    BODY -- "anything else" --> POLLMORE["not ready — keep polling"]
     POLLMORE --> TIMEOUT["⌛ Deadline reached"]
-
+    FAIL --> VERIFY
     TIMEOUT --> VERIFY["Verify via installed-packages API<br/>→ final verdict"]
 
     style KILL fill:#447F3E,stroke:#9ACA3C,color:#fff
-    style WAIT fill:#FF9900,stroke:#9ACA3C,color:#000
+    style SETTLE fill:#FF9900,stroke:#9ACA3C,color:#000
+    style D02SKIP fill:#FF9900,stroke:#9ACA3C,color:#000
     style FAIL fill:#CC3333,stroke:#9ACA3C,color:#fff
     style VERIFY fill:#447F3E,stroke:#9ACA3C,color:#fff
 ```
@@ -389,14 +394,14 @@ The poll is **bounded** — no infinite wait. Different operations get different
 | Upload `409` conflict retries | 3 × (5/10/15s) | backoff    |
 | Final installed-packages verification | 20s | authoritative verdict (own token) |
 
-Worst realistic case ends around ~70s; the common path (deps already present) finishes in ~10-20s with no screen flicker.
+Worst realistic case ends around ~70s; the common path (deps already present) finishes in ~10-20s with no screen flicker. Since 2026-08-29 a `0x80073D02` naming only non-target apps no longer burns the 40s settle budget — it settles early (see below) and goes straight to verification.
 
 ### The Termination Rule (Critical)
 
 When `0x80073D02` (resources in use) lists a running app:
 
 1. **Never terminate a non-target app.** The Dev Mode shell `Microsoft.Xbox.DevHome`, `Xbox.IdleScreen`, the dashboard, and any game the user is running must not be killed — killing them black-flickers the screen and the shell just restarts.
-2. **Only the app being installed/updated may be terminated** — matched by `FullName.StartsWith(targetIdentity + "_")` (`FilterBlockingTargets`). A blocked **main package** that is not the target simply ⏳ waits out its deadline and fails cleanly.
+2. **Only the app being installed/updated may be terminated** — matched by `FullName.StartsWith(targetIdentity + "_")` (`FilterBlockingTargets`). A blocked **main package** that is not the target **settles early** (2026-08-29): the D02 names only DevHome/IdleScreen/games — processes holding a framework that is *already installed* — so it can never self-resolve; the code stops polling and lets the final installed-packages check decide.
 3. For **dependencies**, `0x80073D02` never triggers a kill at all — see the next section.
 
 ---
@@ -409,19 +414,19 @@ When `0x80073D02` (resources in use) lists a running app:
 flowchart TD
     MAIN["Upload main package"] --> MW{"Main wait<br/>address state"}
     MW -- "ready" --> DEPLOOP["Dependencies loop"]
-    MW -- "blocked by non-target<br/>deadline → verify" --> VF
+    MW -- "blocked by non-target<br/>→ settle early, verify" --> VF
     MW -- "fatal deploy error" --> VF
 
     DEPLOOP --> DEPUP["Upload dep (409 backoff)"]
-    DEPUP --> DW{"Dep wait<br/>address state"}
-    DW -- "ready" --> DEPOK["Dep installed"]
+    DEPUP --> DW{"Dep wait<br/>explicit terminal state<br/>(idle alone ≠ done)"}
+    DW -- "success JSON / signature" --> DEPOK["Dep installed"]
     DW -- "0x80073D02 → skip<br/>like present, no kill" --> DEPSKIP["⚠ Dep already<br/>system-wide, skip"]
     DW -- "timeout / fatal" --> DEPFAIL["⚠ Log + continue<br/>dep marked failed"]
     DEPSKIP --> NEXT["more deps?"]
     DEPOK --> NEXT
     DEPFAIL --> NEXT
     NEXT -- "yes" --> DEPLOOP
-    NEXT -- "no" --> FINAL["Final settle wait<br/>(bounded)"]
+    NEXT -- "no" --> FINAL["Final settle wait<br/>(bounded, early-break on<br/>non-target D02)"]
 
     FINAL --> VF["AUTHORITATIVE VERIFY<br/>GET /packagemanager/packages<br/>own 20s token (never user's)"]
     VF --> PRESENT{"target present?"}
@@ -453,6 +458,15 @@ This is the heart of the hang fix. It was the reason the Gen1Recomp **update** h
 > **WARN + skip. Never kill. Move on.**
 
 The framework is re-verified indirectly by the final authoritative check: if the main app is present after the flow, the install succeeded — and if it launches (Dev Mode shell boots every time), the framework it needs was present all along.
+
+### The Idle Race (2026-08-29 harden)
+
+`0x80073D02` usually surfaces *late* — the deploy is accepted (`202`), then `/state` returns `204` (idle) for a couple of polls because the deployment is still registering. Two behaviors were hardened against this:
+
+- **`AwaitDeployDep` — idle is no longer "installed".** Earlier code accepted two consecutive `204`s as "dependency installed" right after the upload (`idle twice → Ready`). That was a premature verdict: the deploy had not registered yet, so the real outcome (`0x80073D02` from a framework the shell already holds) landed afterwards and fell into the slow final-settle path — the classic 40s dead tail. The dep wait now keeps polling until an **explicit terminal state** (success JSON, `TRUST_E_NOSIGNATURE`, `0x80073D02 → skip`, higher-version, or fatal), capped by its own 10s `DepPollTimeout` (timed-out → "continuing; final check decides"). Bare idle‑twice *does* remain valid for `AwaitIdle` (before the next upload) and the main settle.
+- **`AwaitDeployMain` — non-target D02 settles early.** When the final settle gets `0x80073D02` naming only non-target apps (`targets.Count == 0`), the framework is already installed and held by the Dev Mode shell — it can never self-resolve. The code now returns `Ready` immediately ("settling early, final check decides") instead of polling `MainPollTimeout`. Applies to both the post-main settle and the final settle.
+
+Neither change touches the kill logic (never kill a non-target) nor the verdict — the authoritative installed-packages check still decides SUCCESS/FAILED.
 
 ### Final Authoritative Verification
 
@@ -729,14 +743,18 @@ The API never lists frameworks, so the skip trusts the error-code semantics. If 
 - ✓ Main blocked by its own running instance → target-only kill, success
 - ✓ User cancel during wait → still reports the true (installed) state via fresh-token verification
 - ✓ `FilterBlockingTargets` keeps only the install target
+- ✓ Dep wait: idle, idle then `0x80073D02` → skipped without kill (idle no longer counts as installed)
+- ✓ Dep wait never settles (infinite idle) → 10s timeout fallback → still succeeds when app present
+- ✓ Final settle with non-target-only D02 → breaks out early (state polls < 50; old behavior ~1000)
 
 **Manual (console, real hardware):**
+- [x] XFiles 1.6.0 fresh install w/ 3 bundled deps (2026-08-29): dep [3/3] VCLibs hit `0x80073D02` (blocker `Xbox.IdleScreen…`) after 2 idle polls → "already installed, skipped"; final settle saw the same D02 → "settling early"; SUCCESS in ~21s. Log: idle-race skip path confirmed live.
 - [ ] Gen1Recomp update → ~20s success, no flicker/black screen, version updates, LocalState intact
 - [ ] Fresh install of an app bundling VCLibs on a console that lacks it → dependency really installs
 - [ ] Update while the target app itself is running → only the target is terminated
 
 ---
 
-**Document version:** 2.0  
+**Document version:** 2.1  
 **Based on:** PackageInstallService.cs + XboxPackageService.cs analysis  
-**Last updated:** 2026-08-27
+**Last updated:** 2026-08-29
