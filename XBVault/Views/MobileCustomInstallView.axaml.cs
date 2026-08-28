@@ -26,8 +26,9 @@ public partial class MobileCustomInstallView : UserControl
     private TextBlock _depCountText = null!;
     private StackPanel _depListPanel = null!;
     private CheckBox _cleanInstallCheck = null!;
-    private TextBlock _summaryPackage = null!;
+private TextBlock _summaryPackage = null!;
     private TextBlock _summaryDeps = null!;
+    private TextBlock _pkgErrorText = null!;
     private ProgressBar _installProgress = null!;
     private TextBlock _installStatus = null!;
     private TextBlock _installFile = null!;
@@ -100,10 +101,14 @@ public partial class MobileCustomInstallView : UserControl
                 _installFile.Text = vm.CurrentFile ?? "";
             else if (e.PropertyName == nameof(CustomInstallViewModel.StatusText))
                 _statusLabel.Text = vm.StatusText ?? "";
-            else if (e.PropertyName == nameof(CustomInstallViewModel.AnalysisResultText))
+else if (e.PropertyName == nameof(CustomInstallViewModel.AnalysisResultText))
+            {
                 _analysisText.Text = vm.AnalysisResultText ?? "";
+                if (vm.CurrentStep == 2)
+                    UpdateReviewInfo();
+            }
             else if (e.PropertyName == nameof(CustomInstallViewModel.MainPackageName))
-                _summaryPackage.Text = vm.MainPackageName ?? "";
+                UpdateReviewInfo();
             else if (e.PropertyName == nameof(CustomInstallViewModel.DependencyText))
                 _summaryDeps.Text = vm.DependencyText;
             else if (e.PropertyName == nameof(CustomInstallViewModel.InstallSuccess))
@@ -138,11 +143,12 @@ public partial class MobileCustomInstallView : UserControl
                 Wizard.SetNextButtonEnabled(false);
                 UpdateAnalysisState();
                 break;
-            case 2:
+case 2:
                 Wizard.SetStepHero("custominstall-packages-100.png", "Review Packages",
                     "Review the main package and dependencies before installing", "CustomInstallWindow");
                 Wizard.SetStepContent(2, _step2Content);
                 Wizard.SetFinishMode(false);
+                UpdateReviewInfo();
                 UpdateDependencyList();
                 Wizard.SetNextButtonEnabled(_vm.CanGoNext);
                 break;
@@ -162,10 +168,24 @@ public partial class MobileCustomInstallView : UserControl
         }
     }
 
-    private void UpdateNextEnabled()
+private void UpdateNextEnabled()
     {
         if (_vm is null) return;
         Wizard.SetNextButtonEnabled(_vm.CanGoNext);
+    }
+
+    private void UpdateReviewInfo()
+    {
+        if (_vm is null) return;
+        _summaryPackage.Text = _vm.MainPackageName ?? "";
+        _depCountText.Text = _vm.DependencyText;
+        var hasMain = !string.IsNullOrWhiteSpace(_vm.MainPackageName);
+        _pkgErrorText.Text = hasMain
+            ? ""
+            : string.IsNullOrWhiteSpace(_vm.AnalysisResultText)
+                ? "Analysis could not identify a main package."
+                : _vm.AnalysisResultText;
+        _pkgErrorText.IsVisible = !hasMain;
     }
 
     private void UpdateAnalysisState()
@@ -222,11 +242,24 @@ public partial class MobileCustomInstallView : UserControl
         _resultMessage.Text = _vm.InstallResultMessage ?? "";
     }
 
-    private void UpdateDependencyList()
+private void UpdateDependencyList()
     {
         if (_vm is null) return;
         _depCountText.Text = _vm.DependencyText;
         _depListPanel.Children.Clear();
+        if (_vm.DepItems.Count == 0)
+        {
+            _depListPanel.Children.Add(new TextBlock
+            {
+                Text = "No dependencies added. Use the button below to add dependency files.",
+                FontSize = 13,
+                Foreground = FindBrush("TextMutedBrush"),
+                TextWrapping = TextWrapping.Wrap,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 8)
+            });
+            return;
+        }
         foreach (var dep in _vm.DepItems)
         {
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 4) };
@@ -405,7 +438,7 @@ public partial class MobileCustomInstallView : UserControl
             }
         };
         pkgHeader.Children.Add(pkgIcon);
-        var pkgInfo = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+var pkgInfo = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
         _summaryPackage = new TextBlock
         {
             FontFamily = TitleFont,
@@ -421,6 +454,15 @@ public partial class MobileCustomInstallView : UserControl
             Foreground = FindBrush("TextMutedBrush")
         };
         pkgInfo.Children.Add(_depCountText);
+        _pkgErrorText = new TextBlock
+        {
+            FontSize = 12,
+            Foreground = FindBrush("DangerBrush"),
+            TextWrapping = TextWrapping.Wrap,
+            IsVisible = false,
+            MaxWidth = 240
+        };
+        pkgInfo.Children.Add(_pkgErrorText);
         pkgHeader.Children.Add(pkgInfo);
         pkgStack.Children.Add(pkgHeader);
         pkgCard.Child = pkgStack;
@@ -441,11 +483,12 @@ public partial class MobileCustomInstallView : UserControl
         // Dependencies list
         var depCard = MakeCard();
         _depListPanel = new StackPanel { Spacing = 4 };
-        var depEmpty = new TextBlock
+var depEmpty = new TextBlock
         {
-            Text = "No dependencies detected.",
+            Text = "No dependencies added. Use the button below to add dependency files.",
             FontSize = 13,
             Foreground = FindBrush("TextMutedBrush"),
+            TextWrapping = TextWrapping.Wrap,
             HorizontalAlignment = HorizontalAlignment.Center,
             Margin = new Thickness(0, 8)
         };

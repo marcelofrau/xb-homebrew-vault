@@ -83,13 +83,16 @@
                   <TextBlock Grid.Column="1" Text="System Info" VerticalAlignment="Center"/>
                 </Grid>
               </Button>
-              <Button Grid.Column="2" Command="{Binding OpenCrashDataCommand}" Padding="14,8">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Image Source="avares://XBVault/Assets/Views/ConfirmWindow/fluentui-collision-20.png"
-                         Width="20" Height="20" Stretch="Uniform"/>
-                  <TextBlock Grid.Column="1" Text="Crash Data" VerticalAlignment="Center"/>
-                </Grid>
-              </Button>
+              <Grid Grid.Column="2"
+                  ToolTip.Tip="Crash Data is being reimplemented. Temporarily disabled.">
+                <Button Grid.Column="2" Command="{Binding OpenCrashDataCommand}" Padding="14,8" IsEnabled="False">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    <Image Source="avares://XBVault/Assets/Views/ConfirmWindow/fluentui-collision-20.png"
+                           Width="20" Height="20" Stretch="Uniform"/>
+                    <TextBlock Grid.Column="1" Text="Crash Data" VerticalAlignment="Center"/>
+                  </Grid>
+                </Button>
+              </Grid>
               <Button Grid.Column="3" Command="{Binding OpenDevPortalCommand}" Padding="14,8">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
                   <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-globe-20.png"

@@ -301,7 +301,7 @@ public class XboxSystemServiceTests
         Assert.False(ok);
     }
 
-    [Fact]
+[Fact]
     public async Task Controls_ReturnFalse_WhenNotConfigured()
     {
         var svc = new XboxSystemService(CreateUnconfiguredAuth());
@@ -313,5 +313,77 @@ public class XboxSystemServiceTests
         Assert.Null(await svc.GetCrashControlAsync());
         Assert.Null(await svc.GetCrashDumpsAsync());
         Assert.Null(await svc.GetSystemInfoAsync());
+        Assert.Null(await svc.GetConsoleInfoAsync());
+        Assert.Null(await svc.GetMachineNameAsync());
+        Assert.Empty(await svc.GetXboxSettingsAsync());
+    }
+
+    [Fact]
+    public async Task GetConsoleInfo_ParsesIdentity_OnSuccess()
+    {
+        var body = """
+            {"OsVersion":"10.0.26100.2662","DevMode":"Universal Windows App Devkit",
+             "OsEdition":"EDITION_XBOX_ONE_DEVKIT","ConsoleType":"Scarlett",
+             "ConsoleId":"SC01-0000000000000000","DeviceId":"{C8A7D8A5-1234-1234-1234-123456789012}",
+             "SerialNumber":"012345678906","DevkitCertificateExpirationTime":1893456000}
+            """;
+        var svc = new XboxSystemService(CreateAuth(OkFor(r => r.RequestUri!.AbsolutePath == "/ext/xbox/info", body)));
+
+        var info = await svc.GetConsoleInfoAsync();
+
+        Assert.NotNull(info);
+        Assert.Equal("10.0.26100.2662", info!.OsVersion);
+        Assert.Equal("Scarlett", info.ConsoleType);
+        Assert.Equal("SC01-0000000000000000", info.ConsoleId);
+        Assert.Equal("012345678906", info.SerialNumber);
+        Assert.NotNull(info.DevkitCertExpiration);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1893456000), info.DevkitCertExpiration);
+    }
+
+    [Fact]
+    public async Task GetConsoleInfo_ReturnsNull_OnMissingIdentity()
+    {
+        var svc = new XboxSystemService(CreateAuth(OkFor(r => r.RequestUri!.AbsolutePath == "/ext/xbox/info", "{}")));
+
+        Assert.Null(await svc.GetConsoleInfoAsync());
+    }
+
+    [Fact]
+    public async Task GetMachineName_ReturnsHostname_OnSuccess()
+    {
+        var svc = new XboxSystemService(CreateAuth(OkFor(r => r.RequestUri!.AbsolutePath == "/api/os/machinename", """{"ComputerName":"XBOXLIVEDEVKIT"}""")));
+
+        Assert.Equal("XBOXLIVEDEVKIT", await svc.GetMachineNameAsync());
+    }
+
+    [Fact]
+    public async Task GetXboxSettings_ParsesSettings_OnSuccess()
+    {
+        var body = """
+            {"Settings":[
+              {"Name":"AllowHDR","Value":"true","Category":"Display","Type":"Boolean"},
+              {"Name":"TvResolution","Value":"2160p","Category":"Display","Type":"Selection"},
+              {"Name":"PowerMode","Value":" InstantOn ","Category":"Power","Type":"Selection"}
+            ]}
+            """;
+        var svc = new XboxSystemService(CreateAuth(OkFor(r => r.RequestUri!.AbsolutePath == "/ext/settings", body)));
+
+        var settings = await svc.GetXboxSettingsAsync();
+
+        Assert.Collection(settings,
+            s => Assert.Equal("AllowHDR", s.Name),
+            s => Assert.Equal("2160p", s.Value),
+            s => Assert.Equal("PowerMode", s.Name));
+    }
+
+    [Fact]
+    public async Task GetXboxSettings_ReturnsEmpty_OnFailure()
+    {
+        var handler = new StubHttpMessageHandler(request => request.RequestUri!.AbsolutePath == "/ext/settings"
+            ? new HttpResponseMessage(HttpStatusCode.InternalServerError)
+            : new HttpResponseMessage(HttpStatusCode.OK));
+        var svc = new XboxSystemService(CreateAuth(handler));
+
+        Assert.Empty(await svc.GetXboxSettingsAsync());
     }
 }

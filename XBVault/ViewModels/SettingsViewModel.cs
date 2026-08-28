@@ -139,7 +139,23 @@ public partial class SettingsViewModel : ObservableObject
     private string _password = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ConnectionStatusChipText))]
+    [NotifyPropertyChangedFor(nameof(IsConnectionOk))]
+    [NotifyPropertyChangedFor(nameof(IsConnectionWarn))]
+    [NotifyPropertyChangedFor(nameof(IsConnectionIdle))]
     private bool _passwordDecryptFailed;
+
+    public string ConnectionStatusChipText =>
+        IsConnected ? "Connected"
+        : PasswordDecryptFailed ? "Password needs reconfiguration"
+        : string.IsNullOrEmpty(ConnectionStatus) ? "Not connected"
+        : ConnectionStatus;
+
+    public bool IsConnectionOk => IsConnected;
+
+    public bool IsConnectionWarn => !IsConnected && (PasswordDecryptFailed || !string.IsNullOrEmpty(ConnectionStatus));
+
+    public bool IsConnectionIdle => !IsConnectionOk && !IsConnectionWarn;
 
     [ObservableProperty]
     private bool _useHttps = true;
@@ -149,9 +165,17 @@ public partial class SettingsViewModel : ObservableObject
     private bool _isTestingConnection;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ConnectionStatusChipText))]
+    [NotifyPropertyChangedFor(nameof(IsConnectionOk))]
+    [NotifyPropertyChangedFor(nameof(IsConnectionWarn))]
+    [NotifyPropertyChangedFor(nameof(IsConnectionIdle))]
     private string _connectionStatus = "Not configured";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ConnectionStatusChipText))]
+    [NotifyPropertyChangedFor(nameof(IsConnectionOk))]
+    [NotifyPropertyChangedFor(nameof(IsConnectionWarn))]
+    [NotifyPropertyChangedFor(nameof(IsConnectionIdle))]
     private bool _isConnected;
 
     [ObservableProperty]

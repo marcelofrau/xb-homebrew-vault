@@ -709,12 +709,20 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
             Logger.Debug("Calling DownloadAndInstallAsync");
             var result = await _installService.DownloadAndInstallAsync(SelectedItem!, downloadUrl, progress, _installCts?.Token ?? CancellationToken.None);
 
-            if (result.Success)
+            if (_installCts is { IsCancellationRequested: true })
+            {
+                // User aborted — never overwrite the aborted UI state even when the
+                // console-side install happened to complete before the cancel landed.
+                Logger.Info($"Install abort confirmed after flow end: {itemName}");
+                InstallProgress = 0;
+            }
+            else if (result.Success)
             {
                 InstallStatus = "✓ Complete!";
                 InstallComplete = true;
                 InstallSuccess = true;
                 InstallResultMessage = null;
+                InstallProgress = 1.0;
                 Logger.Info($"Install complete: {itemName}");
             }
             else
@@ -723,10 +731,9 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
                 InstallComplete = true;
                 InstallSuccess = false;
                 InstallResultMessage = result.Message ?? "Install failed";
+                InstallProgress = 0;
                 Logger.Error($"Install failed: {itemName} (stage={result.Stage})");
             }
-
-            InstallProgress = result.Success ? 1.0 : 0;
         }
         catch (OperationCanceledException)
         {

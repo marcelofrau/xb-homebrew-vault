@@ -156,7 +156,7 @@
     <!-- Content Area -->
     <Grid Grid.Row="1" Background="{StaticResource BgBrush}">
       <Carousel x:Name="TabCarousel"
-                SelectedIndex="{Binding SelectedTab}"
+                SelectedIndex="{Binding SelectedTab, Mode=OneWay}"
                 Background="{StaticResource BgBrush}">
         <!-- Tab 0: Browse -->
         <views:MobileBrowseView x:Name="BrowseContent"/>

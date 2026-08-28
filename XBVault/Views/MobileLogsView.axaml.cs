@@ -60,14 +60,19 @@ public partial class MobileLogsView : UserControl, IDisposable
     private void OnLogEntriesChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
         if (DataContext is ViewModels.LogsViewModel vm && vm.AutoScroll)
-            Dispatcher.UIThread.Post(ScrollToBottom);
+            Dispatcher.UIThread.Post(ScrollToBottom, DispatcherPriority.Loaded);
     }
 
     private void ScrollToBottom()
     {
+        // Scroll the last entry into view instead of computing Offsets off a stale Extent —
+        // ScrollIntoView handles virtualization and measures the freshly-added item first.
+        if (LogListBox.ItemCount > 0 && LogListBox.Items[LogListBox.ItemCount - 1] is { } lastItem)
+            LogListBox.ScrollIntoView(lastItem);
+
         var sv = GetScrollViewer();
         if (sv is not null && sv.Extent.Height > 0)
-            sv.Offset = new Vector(0, sv.Extent.Height - sv.Viewport.Height);
+            sv.Offset = new Vector(0, Math.Max(sv.Offset.Y, sv.Extent.Height - sv.Viewport.Height));
     }
 
     private static MobileMainWindow? WalkToMainWindow(Avalonia.Visual child)

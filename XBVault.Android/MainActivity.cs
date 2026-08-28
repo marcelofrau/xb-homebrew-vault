@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Android.App;
 using Android.Content;
 using Android.Content.PM;
+using Android.OS;
 using Android.Util;
 using Android.Views;
 using Avalonia.Android;
@@ -85,6 +86,24 @@ public class MainActivity : AvaloniaMainActivity
             }
             e.SetObserved();
         };
+    }
+
+    protected override void OnCreate(Bundle? savedInstanceState)
+    {
+        base.OnCreate(savedInstanceState);
+        // Let the system resize the window when the virtual keyboard opens so
+        // focused fields (sideload URL, setup-wizard password) stay reachable.
+        // On API 35+ edge-to-edge this is ignored; the focus BringIntoView in
+        // MobileUiActions covers those devices.
+        try
+        {
+            Window?.SetSoftInputMode(SoftInput.AdjustResize);
+            Log.Info(TAG, "SoftInputMode set to AdjustResize");
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(TAG, $"Failed to set SoftInputMode: {ex.Message}");
+        }
     }
 
     private static bool IsTopLevelNre(Exception ex)

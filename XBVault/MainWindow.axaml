@@ -125,7 +125,7 @@
     </Style>
 
     <Style Selector="Border.toast-card">
-      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+      <Setter Property="Background" Value="#EB1A1D23"/>
       <Setter Property="Transitions">
         <Setter.Value>
           <Transitions>

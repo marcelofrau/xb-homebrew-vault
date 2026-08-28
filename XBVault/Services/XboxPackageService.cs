@@ -490,13 +490,26 @@ public class XboxPackageService : IXboxPackageService
 
             // Use per-request timeout for uploads — HttpClient 30s default is far too short
             // for large packages. 10 minutes covers ~1 GB at 2 MB/s; still finite enough
-            // to detect genuinely stuck connections.
+            // to detect genuinely stuck connections. Linked to the caller's token so a
+            // user abort actually cancels the in-flight upload instead of letting it run.
             var uploadTimeout = TimeSpan.FromMinutes(10);
-            using var uploadCts = new CancellationTokenSource(uploadTimeout);
+            using var uploadCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            uploadCts.CancelAfter(uploadTimeout);
             HttpResponseMessage response;
             try
             {
                 response = await _auth.PostWithCsrfAsync(url, content, uploadCts.Token);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                Logger.Info($"Upload cancelled by user: {fileName}");
+                progress?.Report(new InstallProgressInfo
+                {
+                    Status = "Install cancelled",
+                    CurrentFile = fileName,
+                    File = 0
+                });
+                throw;
             }
             catch (OperationCanceledException) when (uploadCts.IsCancellationRequested)
             {

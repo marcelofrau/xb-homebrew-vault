@@ -42,24 +42,26 @@
       <StackPanel Spacing="16" Margin="16" HorizontalAlignment="Center">
         <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="8">
           <Image Source="{Binding ScreenshotImage}"
-                 Stretch="Uniform" HorizontalAlignment="Center" MaxHeight="500"/>
+                 Stretch="Uniform" HorizontalAlignment="Center" MaxHeight="460"/>
         </Border>
-        <Button Command="{Binding SaveScreenshotCommand}"
-                Padding="16,14" HorizontalAlignment="Stretch">
-          <Grid ColumnDefinitions="22,Auto" ColumnSpacing="8">
-            <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-screenshot-20.png"
-                   Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="1" Text="Save Screenshot" FontSize="15" VerticalAlignment="Center"/>
-          </Grid>
-        </Button>
-        <Button Command="{Binding CaptureScreenshotCommand}"
-                Padding="16,14" HorizontalAlignment="Stretch">
-          <Grid ColumnDefinitions="22,Auto" ColumnSpacing="8">
-            <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-screenshot-20.png"
-                   Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center"/>
-            <TextBlock Grid.Column="1" Text="Capture New" FontSize="15" VerticalAlignment="Center"/>
-          </Grid>
-        </Button>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="10" HorizontalAlignment="Stretch">
+          <Button Grid.Column="0" Command="{Binding SaveScreenshotCommand}"
+                  Padding="16,14">
+            <Grid ColumnDefinitions="22,Auto" ColumnSpacing="8">
+              <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-save-20.png"
+                     Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="Save Screenshot" FontSize="15" VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+          <Button Grid.Column="1" Command="{Binding CaptureScreenshotCommand}"
+                  Padding="16,14">
+            <Grid ColumnDefinitions="22,Auto" ColumnSpacing="8">
+              <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-screenshot-20.png"
+                     Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="Capture New" FontSize="15" VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
+        </Grid>
       </StackPanel>
     </ScrollViewer>
 
@@ -67,7 +69,7 @@
     <StackPanel Grid.Row="1"
                 IsVisible="{Binding ShowCaptureButton}"
                 HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
-      <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-screenshot-20.png"
+      <Image Source="avares://XBVault/Assets/Views/ToolsView/tools-screenshot-100.png"
              Width="64" Height="64" Stretch="Uniform" Opacity="0.4"/>
       <TextBlock Text="No screenshot captured yet" FontSize="14"
                  Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>

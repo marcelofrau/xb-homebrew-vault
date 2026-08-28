@@ -4,9 +4,43 @@
               x:Class="XBVault.Views.SettingsView"
                x:DataType="vm:SettingsViewModel" Cursor="{Binding Cursor}">
 
-  <Grid RowDefinitions="Auto,*" Margin="32">
+  <UserControl.Styles>
+    <Style Selector="Border.conn-idle">
+      <Setter Property="Background" Value="#22FFFFFF"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="10,4"/>
+    </Style>
+    <Style Selector="Border.conn-good">
+      <Setter Property="Background" Value="#1F2ECC71"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="10,4"/>
+    </Style>
+    <Style Selector="Border.conn-warn">
+      <Setter Property="Background" Value="#26F39C12"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="10,4"/>
+    </Style>
+    <Style Selector="Ellipse.conn-dot-idle">
+      <Setter Property="Fill" Value="{StaticResource TextDimBrush}"/>
+    </Style>
+    <Style Selector="Ellipse.conn-dot-good">
+      <Setter Property="Fill" Value="#2ECC71"/>
+    </Style>
+    <Style Selector="Ellipse.conn-dot-warn">
+      <Setter Property="Fill" Value="{StaticResource WarningBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.conn-txt-idle">
+      <Setter Property="Foreground" Value="{StaticResource TextDimBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.conn-txt-good">
+      <Setter Property="Foreground" Value="#2ECC71"/>
+    </Style>
+    <Style Selector="TextBlock.conn-txt-warn">
+      <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+    </Style>
+  </UserControl.Styles>
 
-    <!-- Header -->
+  <Grid RowDefinitions="Auto,*" Margin="32">
     <Grid Grid.Row="0" RowDefinitions="Auto,Auto" Margin="0,14,0,16">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel>
@@ -110,8 +144,36 @@
         <Border Classes="Card" Padding="24">
           <StackPanel Spacing="12">
 
-            <TextBlock Text="XBOX CONNECTION"
-                       Classes="SectionHeader"/>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Background="#149ACA3C" CornerRadius="7" Width="28" Height="28">
+                  <Image Source="avares://XBVault/Assets/Views/ConnectionWindow/connection-connect-20.png"
+                         Width="16" Height="16" Stretch="Uniform"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <TextBlock Text="XBOX CONNECTION"
+                           Classes="SectionHeader" VerticalAlignment="Center"/>
+              </StackPanel>
+              <Border Grid.Column="1"
+                      Classes.conn-good="{Binding IsConnectionOk}"
+                      Classes.conn-warn="{Binding IsConnectionWarn}"
+                      Classes.conn-idle="{Binding IsConnectionIdle}"
+                      VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Ellipse Width="7" Height="7"
+                           Classes.conn-dot-good="{Binding IsConnectionOk}"
+                           Classes.conn-dot-warn="{Binding IsConnectionWarn}"
+                           Classes.conn-dot-idle="{Binding IsConnectionIdle}"
+                           VerticalAlignment="Center"/>
+                  <TextBlock Text="{Binding ConnectionStatusChipText}"
+                             FontSize="12" FontWeight="SemiBold"
+                             Classes.conn-txt-good="{Binding IsConnectionOk}"
+                             Classes.conn-txt-warn="{Binding IsConnectionWarn}"
+                             Classes.conn-txt-idle="{Binding IsConnectionIdle}"
+                             VerticalAlignment="Center"/>
+                </StackPanel>
+              </Border>
+            </Grid>
 
             <!-- Address / Port -->
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
@@ -210,8 +272,15 @@
         <!-- Maintenance Section -->
         <Border Classes="Card" Padding="16">
           <StackPanel Spacing="10">
-            <TextBlock Text="MAINTENANCE"
-                       Classes="SectionHeader"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Background="#149ACA3C" CornerRadius="7" Width="28" Height="28">
+                <Image Source="avares://XBVault/Assets/Views/UsbPermissionWindow/usbperm-gear-20.png"
+                       Width="16" Height="16" Stretch="Uniform"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <TextBlock Text="MAINTENANCE"
+                         Classes="SectionHeader" VerticalAlignment="Center"/>
+            </StackPanel>
 
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Spacing="4">
@@ -283,75 +352,6 @@
                 </Grid>
               </Button>
             </Grid>
-
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Spacing="4">
-                <TextBlock Text="Restart application"
-                           FontSize="13"/>
-                <TextBlock Text="Restart to apply changes or resolve issues"
-                           FontSize="12"
-                           Foreground="{StaticResource TextMutedBrush}"/>
-              </StackPanel>
-              <Button Grid.Column="1"
-                      Command="{Binding RestartAppCommand}"
-                      Padding="12,6"
-                      VerticalAlignment="Center">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-restart-20.png"
-                         Width="20" Height="20"
-                         Stretch="Uniform"/>
-                  <TextBlock Grid.Column="1" Text="Restart"
-                             FontSize="12"
-                             VerticalAlignment="Center"/>
-                </Grid>
-              </Button>
-            </Grid>
-
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Spacing="4">
-                <TextBlock Text="Reset all settings"
-                           FontSize="13"/>
-                <TextBlock Text="Clear saved connection and preferences to defaults"
-                           FontSize="12"
-                           Foreground="{StaticResource TextMutedBrush}"/>
-              </StackPanel>
-              <Button Grid.Column="1"
-                      Command="{Binding ResetSettingsCommand}"
-                      Padding="12,6"
-                      VerticalAlignment="Center">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-reset-20.png"
-                         Width="20" Height="20"
-                         Stretch="Uniform"/>
-                  <TextBlock Grid.Column="1" Text="Reset"
-                             FontSize="12"
-                             VerticalAlignment="Center"/>
-                </Grid>
-              </Button>
-            </Grid>
-
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Spacing="4">
-                <TextBlock Text="Open settings folder"
-                           FontSize="13"/>
-                <TextBlock Text="View or edit the settings file directly"
-                           FontSize="12"
-                           Foreground="{StaticResource TextMutedBrush}"/>
-              </StackPanel>
-              <Button Grid.Column="1"
-                      Command="{Binding OpenSettingsFolderCommand}"
-                      Padding="12,6"
-                      VerticalAlignment="Center">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-folder-20.png"
-                         Width="20" Height="20"
-                         Stretch="Uniform"/>
-                  <TextBlock Grid.Column="1" Text="Open"
-                             FontSize="12"
-                             VerticalAlignment="Center"/>
-                </Grid>
-              </Button>
-            </Grid>
           </StackPanel>
         </Border>
 
@@ -360,8 +360,15 @@
         <!-- Application Section (cache, logging, app management) -->
         <Border Classes="Card" Padding="24" Grid.Column="1" VerticalAlignment="Top">
           <StackPanel Spacing="12">
-            <TextBlock Text="APPLICATION"
-                       Classes="SectionHeader"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Background="#149ACA3C" CornerRadius="7" Width="28" Height="28">
+                <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-settings-32.png"
+                       Width="16" Height="16" Stretch="Uniform"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <TextBlock Text="APPLICATION"
+                         Classes="SectionHeader" VerticalAlignment="Center"/>
+            </StackPanel>
 
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Spacing="4">
@@ -459,8 +466,79 @@
               <ComboBox Grid.Column="1"
                         ItemsSource="{Binding UpdateCheckIntervals}"
                         SelectedValue="{Binding UpdateCheckIntervalMinutes}"
-                        MinWidth="72"
+                        Width="160"
                         VerticalAlignment="Center"/>
+            </Grid>
+
+            <Separator Background="{StaticResource BorderBrush}" Height="1"/>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Restart application"
+                           FontSize="13"/>
+                <TextBlock Text="Restart to apply changes or resolve issues"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding RestartAppCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-restart-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Restart"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Reset all settings"
+                           FontSize="13"/>
+                <TextBlock Text="Clear saved connection and preferences to defaults"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding ResetSettingsCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-reset-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Reset"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Open settings folder"
+                           FontSize="13"/>
+                <TextBlock Text="View or edit the settings file directly"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Command="{Binding OpenSettingsFolderCommand}"
+                      Padding="12,6"
+                      VerticalAlignment="Center">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <Image Source="avares://XBVault/Assets/Views/SettingsView/settings-folder-20.png"
+                         Width="20" Height="20"
+                         Stretch="Uniform"/>
+                  <TextBlock Grid.Column="1" Text="Open"
+                             FontSize="12"
+                             VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
             </Grid>
           </StackPanel>
         </Border>

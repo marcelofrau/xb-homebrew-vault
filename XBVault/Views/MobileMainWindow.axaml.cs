@@ -24,7 +24,7 @@ public partial class MobileMainWindow : UserControl
     public NotificationCenterService? NotificationCenter { get; set; }
     public BackgroundTaskService? BackgroundTasks { get; set; }
     public IXboxAuthService? AuthService { get; set; }
-    private Action? _currentOverlayBackAction;
+    private readonly Stack<(UserControl View, Action? OnBack)> _overlayStack = new();
     private readonly List<int> _tabHistory = new();
     private int _currentTab;
 
@@ -56,13 +56,10 @@ public partial class MobileMainWindow : UserControl
 
     private bool HandleBackRequest()
     {
-        if (NavigationPanel.IsVisible)
+        if (_overlayStack.Count > 0)
         {
-            XBVault.Services.Logger.Info("Android: Back button → run overlay back action + close");
-            _currentOverlayBackAction?.Invoke();
-            _currentOverlayBackAction = null;
-            NavigationPanel.Children.Clear();
-            NavigationPanel.IsVisible = false;
+            XBVault.Services.Logger.Info($"Android: Back button → close overlay (stack depth={_overlayStack.Count})");
+            CloseOverlay();
             return true;
         }
         if (_tabHistory.Count > 0)
@@ -141,18 +138,25 @@ public partial class MobileMainWindow : UserControl
 
     public void ShowOverlay(UserControl view, Action? onBack = null)
     {
-        _currentOverlayBackAction = onBack;
-        NavigationPanel.Children.Clear();
+        _overlayStack.Push((view, onBack));
         NavigationPanel.Children.Add(view);
         NavigationPanel.IsVisible = true;
     }
 
+    public void SwitchToInstalledTab()
+    {
+        SwitchToTab(1, pushHistory: false);
+    }
+
     public void CloseOverlay()
     {
-        _currentOverlayBackAction?.Invoke();
-        _currentOverlayBackAction = null;
-        NavigationPanel.Children.Clear();
-        NavigationPanel.IsVisible = false;
+        if (!_overlayStack.TryPop(out var top))
+            return;
+        top.OnBack?.Invoke();
+        NavigationPanel.Children.Remove(top.View);
+        if (_overlayStack.Count == 0)
+            NavigationPanel.IsVisible = false;
+        XBVault.Services.Logger.Info($"Android: Overlay closed (stack depth={_overlayStack.Count})");
     }
 
     public void SetDataContext(MainViewModel vm)
@@ -208,7 +212,19 @@ public partial class MobileMainWindow : UserControl
             _tabHistory.Add(_currentTab);
 
         _currentTab = index;
-        if (DataContext is MainViewModel vm) vm.SelectedTab = index;
+        if (DataContext is MainViewModel vm)
+        {
+            try
+            {
+                vm.SelectedTab = index;
+            }
+            catch (Exception ex)
+            {
+                XBVault.Services.Logger.Error(ex, "Android: SelectedTab setter failed, falling back to direct carousel switch");
+                vm.OnTabChanged?.Invoke(index);
+            }
+            TabCarousel.SelectedIndex = index;
+        }
         UpdateIndicators(index);
         XBVault.Services.Logger.Info($"Android: Tab switch → {index} (history depth={_tabHistory.Count})");
     }
