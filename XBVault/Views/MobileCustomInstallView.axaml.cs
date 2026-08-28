@@ -27,7 +27,7 @@ public partial class MobileCustomInstallView : UserControl
     private TextBlock _depCountText = null!;
     private StackPanel _depListPanel = null!;
     private CheckBox _cleanInstallCheck = null!;
-private TextBlock _summaryPackage = null!;
+    private TextBlock _summaryPackage = null!;
     private TextBlock _depPkgNameText = null!;
     private TextBlock _summaryDeps = null!;
     private TextBlock _pkgErrorText = null!;
@@ -103,7 +103,7 @@ private TextBlock _summaryPackage = null!;
                 _installFile.Text = vm.CurrentFile ?? "";
             else if (e.PropertyName == nameof(CustomInstallViewModel.StatusText))
                 _statusLabel.Text = vm.StatusText ?? "";
-else if (e.PropertyName == nameof(CustomInstallViewModel.AnalysisResultText))
+            else if (e.PropertyName == nameof(CustomInstallViewModel.AnalysisResultText))
             {
                 _analysisText.Text = vm.AnalysisResultText ?? "";
                 if (vm.CurrentStep == 2)
@@ -145,7 +145,7 @@ else if (e.PropertyName == nameof(CustomInstallViewModel.AnalysisResultText))
                 Wizard.SetNextButtonEnabled(false);
                 UpdateAnalysisState();
                 break;
-case 2:
+            case 2:
                 Wizard.SetStepHero("custominstall-packages-100.png", "Review Packages",
                     "Review the main package and dependencies before installing", "CustomInstallWindow");
                 Wizard.SetStepContent(2, _step2Content);
@@ -164,7 +164,7 @@ case 2:
                 Wizard.SetStepContent(3, _step3Content);
                 UpdateInstallState();
                 UpdateInstallResult();
-_summaryPackage.Text = _vm.MainPackageName ?? "";
+                _summaryPackage.Text = _vm.MainPackageName ?? "";
                 _summaryDeps.Text = _vm.DependencyText;
                 break;
         }
@@ -180,7 +180,7 @@ _summaryPackage.Text = _vm.MainPackageName ?? "";
             Logger.Debug($"MobileCustomInstall dep: DisplayName='{dep.DisplayName}' FileName='{dep.FileName}' RelativePath='{dep.RelativePath}' FilePath='{dep.FilePath}'");
     }
 
-private void UpdateNextEnabled()
+    private void UpdateNextEnabled()
     {
         if (_vm is null) return;
         Wizard.SetNextButtonEnabled(_vm.CanGoNext);
@@ -255,7 +255,7 @@ private void UpdateNextEnabled()
         _resultMessage.Text = _vm.InstallResultMessage ?? "";
     }
 
-private void UpdateDependencyList()
+    private void UpdateDependencyList()
     {
         if (_vm is null) return;
         _depCountText.Text = _vm.DependencyText;
@@ -273,7 +273,7 @@ private void UpdateDependencyList()
             });
             return;
         }
-foreach (var dep in _vm.DepItems)
+        foreach (var dep in _vm.DepItems)
         {
             if (string.IsNullOrWhiteSpace(dep.DisplayName))
                 Logger.Debug($"UpdateDependencyList: dep '{dep.FilePath}' empty DisplayName (FileName='{dep.FileName}', RelativePath='{dep.RelativePath}')");
@@ -453,7 +453,7 @@ foreach (var dep in _vm.DepItems)
             }
         };
         pkgHeader.Children.Add(pkgIcon);
-var pkgInfo = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+        var pkgInfo = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
         _depPkgNameText = new TextBlock
         {
             FontFamily = TitleFont,
@@ -462,7 +462,7 @@ var pkgInfo = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignmen
             Foreground = FindBrush("TextBrush"),
             TextWrapping = TextWrapping.Wrap
         };
-        pkgInfo.Children.Add(_summaryPackage);
+        pkgInfo.Children.Add(_depPkgNameText);
         _depCountText = new TextBlock
         {
             FontSize = 12,
@@ -498,7 +498,7 @@ var pkgInfo = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignmen
         // Dependencies list
         var depCard = MakeCard();
         _depListPanel = new StackPanel { Spacing = 4 };
-var depEmpty = new TextBlock
+        var depEmpty = new TextBlock
         {
             Text = "No dependencies added. Use the button below to add dependency files.",
             FontSize = 13,

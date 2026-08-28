@@ -43,7 +43,7 @@ public sealed class MobileUiActions
     private IXboxPackageService Package => _s.Package;
     private XboxNetworkService Network => _s.Network;
 
-/// <summary>Assigns every mobile view-model delegate (runs on the UI thread).</summary>
+    /// <summary>Assigns every mobile view-model delegate (runs on the UI thread).</summary>
     public void Wire()
     {
         // ── Virtual keyboard: keep the focused text field visible. The Android
@@ -59,7 +59,7 @@ public sealed class MobileUiActions
         _main.BackgroundTasks = _s.BackgroundTasks;
         _main.AuthService = Auth;
 
-WireShell();
+        WireShell();
         WireSettingsActions();
         WireBrowseDetail();
         WireInstalledActions();
@@ -169,7 +169,7 @@ WireShell();
         }
     }
 
-private void WireTools()
+    private void WireTools()
     {
         _s.Tools.ShowConnectAction = ShowConnectDialogAsync;
         _s.Tools.ShowScreenshotAction = ShowScreenshot;
@@ -441,7 +441,7 @@ private void WireTools()
         _main.CloseOverlay();
     }
 
-private void WireBrowseDetail()
+    private void WireBrowseDetail()
     {
         _s.Browse.ShowDetailAction = item =>
         {
@@ -467,32 +467,32 @@ private void WireBrowseDetail()
             _main.ShowOverlay(detail);
         };
 
-_s.Main.OnTabChanged = tab =>
-        {
-            try
-            {
-                Logger.Info($"Android: OnTabChanged → tab {tab}");
-                if (tab == 1)
+        _s.Main.OnTabChanged = tab =>
                 {
-                    if (_s.Installed.IsConnected != Auth.IsConnected)
+                    try
                     {
-                        Logger.Debug($"Android: InstalledView IsConnected desync fix — was {_s.Installed.IsConnected}, correcting to {Auth.IsConnected}");
-                        _s.Installed.IsConnected = Auth.IsConnected;
+                        Logger.Info($"Android: OnTabChanged → tab {tab}");
+                        if (tab == 1)
+                        {
+                            if (_s.Installed.IsConnected != Auth.IsConnected)
+                            {
+                                Logger.Debug($"Android: InstalledView IsConnected desync fix — was {_s.Installed.IsConnected}, correcting to {Auth.IsConnected}");
+                                _s.Installed.IsConnected = Auth.IsConnected;
+                            }
+                            _s.Installed.StartPolling();
+                            if (Auth.IsConnected)
+                                _ = _s.Installed.RefreshPackagesCommand.ExecuteAsync(null);
+                        }
+                        else
+                        {
+                            _s.Installed.StopPolling();
+                        }
                     }
-                    _s.Installed.StartPolling();
-                    if (Auth.IsConnected)
-                        _ = _s.Installed.RefreshPackagesCommand.ExecuteAsync(null);
-                }
-                else
-                {
-                    _s.Installed.StopPolling();
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Android: OnTabChanged handler failed for tab {tab}");
-            }
-        };
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, $"Android: OnTabChanged handler failed for tab {tab}");
+                    }
+                };
     }
 
     private void WireInstalledActions()
@@ -534,9 +534,9 @@ _s.Main.OnTabChanged = tab =>
             var message = string.IsNullOrEmpty(previousName)
                 ? $"Launch {pkg.Name} automatically when XBVault connects to the Xbox?"
                 : $"Replace {previousName} with {pkg.Name} as the app that launches automatically on connect?";
-return await ShowConfirmDialogAsync(
-                "Autostart on Connect", message, "Enable", "Cancel",
-                "avares://XBVault/Assets/Views/InstalledView/installed-autostart-100.png", null);
+            return await ShowConfirmDialogAsync(
+                            "Autostart on Connect", message, "Enable", "Cancel",
+                            "avares://XBVault/Assets/Views/InstalledView/installed-autostart-100.png", null);
         };
 
         _s.Installed.ConfirmUninstallAsync = async pkg =>
@@ -581,16 +581,16 @@ return await ShowConfirmDialogAsync(
             _s.Browse.IsUpdateMode = false;
             _s.Browse.InstallSelectedCommand.Execute(null);
         };
-_s.Installed.ConfirmReinstallAsync = async pkg =>
-            await ShowConfirmDialogAsync(
-                "Confirm Reinstall", $"Reinstall \"{pkg.Name}\"? This will reinstall over the existing installation and keep your app data.", "Reinstall", "Cancel",
-                "avares://XBVault/Assets/Views/InstalledView/installed-update-100.png", null);
+        _s.Installed.ConfirmReinstallAsync = async pkg =>
+                    await ShowConfirmDialogAsync(
+                        "Confirm Reinstall", $"Reinstall \"{pkg.Name}\"? This will reinstall over the existing installation and keep your app data.", "Reinstall", "Cancel",
+                        "avares://XBVault/Assets/Views/InstalledView/installed-update-100.png", null);
 
-_s.Browse.UninstallFromDetailAction = pkg =>
-        {
-            _s.Browse.CloseDetailAction?.Invoke();
-            _ = _s.Installed.UninstallPackageCommand.ExecuteAsync(pkg);
-        };
+        _s.Browse.UninstallFromDetailAction = pkg =>
+                {
+                    _s.Browse.CloseDetailAction?.Invoke();
+                    _ = _s.Installed.UninstallPackageCommand.ExecuteAsync(pkg);
+                };
         // Uninstall is handled by the Installed tab: surface its "uninstalling"
         // progress by switching the main window there as soon as it starts.
         _s.Installed.PropertyChanged += (_, e) =>
@@ -609,7 +609,7 @@ _s.Browse.UninstallFromDetailAction = pkg =>
         };
     }
 
-private void OpenBrowseDetail()
+    private void OpenBrowseDetail()
     {
         if (_detailOpen)
         {

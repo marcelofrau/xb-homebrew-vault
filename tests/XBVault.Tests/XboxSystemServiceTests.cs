@@ -301,7 +301,7 @@ public class XboxSystemServiceTests
         Assert.False(ok);
     }
 
-[Fact]
+    [Fact]
     public async Task Controls_ReturnFalse_WhenNotConfigured()
     {
         var svc = new XboxSystemService(CreateUnconfiguredAuth());

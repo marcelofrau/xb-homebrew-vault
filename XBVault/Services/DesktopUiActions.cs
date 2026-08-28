@@ -410,13 +410,13 @@ public sealed class DesktopUiActions
         };
         _s.Installed.ConfirmReinstallAsync = async pkg =>
         {
-var confirmVm = new ConfirmViewModel(
-                "Confirm Reinstall",
-                $"Reinstall \"{pkg.Name}\"? This will reinstall over the existing installation and keep your app data.",
-                "Reinstall", "Cancel",
-                "avares://XBVault/Assets/Views/InstalledView/installed-update-20.png",
-                "avares://XBVault/Assets/Views/InstalledView/installed-update-100.png",
-                isDestructive: true);
+            var confirmVm = new ConfirmViewModel(
+                            "Confirm Reinstall",
+                            $"Reinstall \"{pkg.Name}\"? This will reinstall over the existing installation and keep your app data.",
+                            "Reinstall", "Cancel",
+                            "avares://XBVault/Assets/Views/InstalledView/installed-update-20.png",
+                            "avares://XBVault/Assets/Views/InstalledView/installed-update-100.png",
+                            isDestructive: true);
             var confirmWindow = new ConfirmWindow { DataContext = confirmVm };
             await confirmWindow.ShowDialog(_main);
             return confirmVm.Confirmed;
