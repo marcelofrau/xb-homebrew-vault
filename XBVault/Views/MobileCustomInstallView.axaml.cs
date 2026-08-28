@@ -6,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform;
 using XBVault.Controls;
+using XBVault.Services;
 using XBVault.ViewModels;
 
 namespace XBVault.Views;
@@ -27,6 +28,7 @@ public partial class MobileCustomInstallView : UserControl
     private StackPanel _depListPanel = null!;
     private CheckBox _cleanInstallCheck = null!;
 private TextBlock _summaryPackage = null!;
+    private TextBlock _depPkgNameText = null!;
     private TextBlock _summaryDeps = null!;
     private TextBlock _pkgErrorText = null!;
     private ProgressBar _installProgress = null!;
@@ -162,10 +164,20 @@ case 2:
                 Wizard.SetStepContent(3, _step3Content);
                 UpdateInstallState();
                 UpdateInstallResult();
-                _summaryPackage.Text = _vm.MainPackageName ?? "";
+_summaryPackage.Text = _vm.MainPackageName ?? "";
                 _summaryDeps.Text = _vm.DependencyText;
                 break;
         }
+
+        LogStepData(step);
+    }
+
+    private void LogStepData(int step)
+    {
+        if (_vm is null) return;
+        Logger.Debug($"MobileCustomInstall step {step}: MainPackageName='{_vm.MainPackageName}' DependencyText='{_vm.DependencyText}' CanGoNext={_vm.CanGoNext} DepItems={_vm.DepItems.Count}");
+        foreach (var dep in _vm.DepItems)
+            Logger.Debug($"MobileCustomInstall dep: DisplayName='{dep.DisplayName}' FileName='{dep.FileName}' RelativePath='{dep.RelativePath}' FilePath='{dep.FilePath}'");
     }
 
 private void UpdateNextEnabled()
@@ -177,6 +189,7 @@ private void UpdateNextEnabled()
     private void UpdateReviewInfo()
     {
         if (_vm is null) return;
+        _depPkgNameText.Text = _vm.MainPackageName ?? "";
         _summaryPackage.Text = _vm.MainPackageName ?? "";
         _depCountText.Text = _vm.DependencyText;
         var hasMain = !string.IsNullOrWhiteSpace(_vm.MainPackageName);
@@ -260,8 +273,10 @@ private void UpdateDependencyList()
             });
             return;
         }
-        foreach (var dep in _vm.DepItems)
+foreach (var dep in _vm.DepItems)
         {
+            if (string.IsNullOrWhiteSpace(dep.DisplayName))
+                Logger.Debug($"UpdateDependencyList: dep '{dep.FilePath}' empty DisplayName (FileName='{dep.FileName}', RelativePath='{dep.RelativePath}')");
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 4) };
             row.Children.Add(new TextBlock
             {
@@ -439,7 +454,7 @@ private void UpdateDependencyList()
         };
         pkgHeader.Children.Add(pkgIcon);
 var pkgInfo = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
-        _summaryPackage = new TextBlock
+        _depPkgNameText = new TextBlock
         {
             FontFamily = TitleFont,
             FontSize = 15,
