@@ -810,9 +810,11 @@ public sealed class MobileUiActions
             var connVm = new ConnectionViewModel(Auth, null!);
             var connView = new MobileConnectionView { DataContext = connVm };
             connVm.Completed += success => tcs.SetResult(success);
+            var wizardTookOver = false;
             connView.SetOnBack(() =>
             {
                 if (connVm.IsRunning) connVm.CancelCommand.Execute(null);
+                if (wizardTookOver) return;
                 _main.CloseOverlay();
                 if (!tcs.Task.IsCompleted) tcs.SetResult(false);
             });
@@ -823,6 +825,13 @@ public sealed class MobileUiActions
                 Logger.Info("ShowMobileCustomInstall: user cancelled connection");
                 return;
             }
+
+            // Connection succeeded: pop the connection view NOW (it is the top layer,
+            // the wizard is not on the stack yet) and mute its delayed success-close so
+            // it cannot pop the wizard when it fires ~2s later.
+            wizardTookOver = true;
+            _main.CloseOverlay();
+            Logger.Debug("ShowMobileCustomInstall: connection view closed, opening wizard");
         }
 
         Logger.Debug("ShowMobileCustomInstall: creating view and VM");

@@ -156,8 +156,8 @@ public partial class MobileCustomInstallView : UserControl
                 break;
             case 3:
                 Wizard.SetStepHero(_vm.IsInstalling ? "custominstall-download-100.png" :
-                    _vm.InstallComplete ? (_vm.InstallSuccess ? "custominstall-success-100.png" : "custominstall-failure-100.png") :
-                    "custominstall-install-20.png", "Install",
+                    _vm.InstallComplete ? (_vm.InstallSuccess ? "custominstall-analyze-100.png" : "custominstall-failure-100.png") :
+                    "custominstall-install-100.png", "Install",
                     _vm.IsInstalling ? "Installing packages..." :
                     _vm.InstallComplete ? (_vm.InstallSuccess ? "Installation successful!" : "Installation failed") :
                     "Ready to install", "CustomInstallWindow");
@@ -236,9 +236,9 @@ public partial class MobileCustomInstallView : UserControl
             UpdateInstallResult();
             _resultPanel.IsVisible = true;
             Wizard.SetFinishMode(true, "Done");
-            Wizard.SetStepHero(_vm.InstallSuccess ? "custominstall-success-100.png" : "custominstall-failure-100.png",
-                _vm.InstallSuccess ? "Success!" : "Failed",
-                _vm.InstallResultMessage ?? "", "CustomInstallWindow");
+            Wizard.SetStepHero(_vm.InstallSuccess ? "custominstall-analyze-100.png" : "custominstall-failure-100.png",
+                            _vm.InstallSuccess ? "Success!" : "Failed",
+                            _vm.InstallResultMessage ?? "", "CustomInstallWindow");
         }
         else
         {
