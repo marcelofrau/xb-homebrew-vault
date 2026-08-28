@@ -27,6 +27,8 @@ public sealed class MobileUiActions
 {
     private readonly AppServices _s;
     private readonly MobileMainWindow _main;
+    private bool _detailOpen;
+    private int _detailOverlayDepth;
 
     private static readonly string[] ScreenshotPatterns = ["*.png"];
     private static readonly string[] PackagePatterns = ["*.appx", "*.msix", "*.appxbundle", "*.msixbundle", "*.zip"];
@@ -439,21 +441,29 @@ private void WireTools()
         _main.CloseOverlay();
     }
 
-    private void WireBrowseDetail()
+private void WireBrowseDetail()
     {
         _s.Browse.ShowDetailAction = item =>
         {
+            if (_detailOpen)
+            {
+                Logger.Debug($"Android: ShowDetailAction ignored — a detail is already open ({item.Name})");
+                return;
+            }
+            _detailOpen = true;
+            _detailOverlayDepth = _main.OverlayDepth;
             Logger.Info($"Android: ShowDetailAction for {item.Name}");
             var detail = new MobileDetailView { DataContext = _s.Browse };
             detail.SetOnBack(() =>
             {
+                _detailOpen = false;
                 _main.CloseOverlay();
                 if (_s.Browse.IsUpdateComplete)
                     _ = _s.Installed.RefreshPackagesCommand.ExecuteAsync(null);
                 _s.Browse.IsUpdateMode = false;
                 _s.Browse.SelectedItem = null;
             });
-            _s.Browse.CloseDetailAction = () => _main.CloseOverlay();
+            _s.Browse.CloseDetailAction = () => CloseDetailOverlays();
             _main.ShowOverlay(detail);
         };
 
@@ -599,11 +609,19 @@ _s.Browse.UninstallFromDetailAction = pkg =>
         };
     }
 
-    private void OpenBrowseDetail()
+private void OpenBrowseDetail()
     {
+        if (_detailOpen)
+        {
+            Logger.Debug("Android: OpenBrowseDetail ignored — a detail is already open");
+            return;
+        }
+        _detailOpen = true;
+        _detailOverlayDepth = _main.OverlayDepth;
         var detail = new MobileDetailView { DataContext = _s.Browse };
         detail.SetOnBack(() =>
         {
+            _detailOpen = false;
             _main.CloseOverlay();
             if (_s.Browse.IsUpdateComplete)
                 _ = _s.Installed.RefreshPackagesCommand.ExecuteAsync(null);
@@ -612,8 +630,19 @@ _s.Browse.UninstallFromDetailAction = pkg =>
             _s.Browse.SelectedInstalledPackage = null;
             _s.Browse.SelectedItem = null;
         });
-        _s.Browse.CloseDetailAction = () => _main.CloseOverlay();
+        _s.Browse.CloseDetailAction = CloseDetailOverlays;
         _main.ShowOverlay(detail);
+    }
+
+    // Closes every overlay stacked at or above the depth the detail was opened
+    // at. A single CloseOverlay() only pops the top layer, so a detail opened on
+    // top of another leftover (double-tap on the card) would otherwise survive
+    // the uninstall/close and look like a modal that never closes.
+    private void CloseDetailOverlays()
+    {
+        while (_main.OverlayDepth > _detailOverlayDepth)
+            _main.CloseOverlay();
+        _detailOpen = false;
     }
 
     private void WireFileExplorerActions()

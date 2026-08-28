@@ -143,6 +143,8 @@ public partial class MobileMainWindow : UserControl
         NavigationPanel.IsVisible = true;
     }
 
+    public int OverlayDepth => _overlayStack.Count;
+
     public void SwitchToInstalledTab()
     {
         SwitchToTab(1, pushHistory: false);
