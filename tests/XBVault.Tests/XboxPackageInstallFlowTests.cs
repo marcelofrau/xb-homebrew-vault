@@ -71,13 +71,18 @@ public class XboxPackageInstallFlowTests : IDisposable
         return (svc, handler, portal);
     }
 
-    private sealed class Portal
+private sealed class Portal
     {
         public string BlockMode = "off"; // off | devhome | target | deploying
         public bool SkipBlockerOnceAfterDepUpload;
+        public bool IdleTwiceThenBlockerAfterDepUpload;
+        public bool AlwaysIdleAfterDepUpload;
+        public int StateIdleQuota = -1; // respond 204 for this many /state calls, then BlockerBody forever
         public bool DepUploaded;
         public int UploadCount;
         private bool _blockerConsumed;
+        private int _stateIdleCount;
+        private int _postDepIdles;
 
         public string PackagesJson { get; set; } =
             "{\"HolographicAvailable\":false,\"InstalledPackages\":[{\"PackageFullName\":\"Gen1RecompUWP_0.2.29.0_x64__hbddzpzx5cgwg\",\"Name\":\"Gen1Recomp\",\"PackageFamilyName\":\"Gen1RecompUWP\"}]}";
@@ -99,8 +104,23 @@ public class XboxPackageInstallFlowTests : IDisposable
             return new HttpResponseMessage(HttpStatusCode.NotFound);
         }
 
-        private HttpResponseMessage StateResponse()
+private HttpResponseMessage StateResponse()
         {
+            if (StateIdleQuota >= 0)
+            {
+                if (_stateIdleCount++ < StateIdleQuota)
+                    return new HttpResponseMessage(HttpStatusCode.NoContent);
+                return Json(BlockerBody, HttpStatusCode.OK);
+            }
+            if (IdleTwiceThenBlockerAfterDepUpload && DepUploaded && !_blockerConsumed)
+            {
+                if (_postDepIdles++ < 2)
+                    return new HttpResponseMessage(HttpStatusCode.NoContent);
+                _blockerConsumed = true;
+                return Json(BlockerBody, HttpStatusCode.OK);
+            }
+            if (AlwaysIdleAfterDepUpload && DepUploaded)
+                return new HttpResponseMessage(HttpStatusCode.NoContent);
             if (SkipBlockerOnceAfterDepUpload && DepUploaded && !_blockerConsumed)
             {
                 _blockerConsumed = true;
@@ -212,7 +232,7 @@ public class XboxPackageInstallFlowTests : IDisposable
         Assert.Contains(handler.Requests, r => r.RequestUri?.AbsolutePath == "/api/app/packagemanager/packages");
     }
 
-    [Fact]
+[Fact]
     public void FilterBlockingTargets_OnlyKeepsTheInstallTarget()
     {
         var all = new List<string> { DevHomePfn, TargetPfn, "Xbox.IdleScreen_2607.0.0.0_x64__8wekyb3d8bbwe" };
@@ -220,5 +240,78 @@ public class XboxPackageInstallFlowTests : IDisposable
 
         Assert.Single(targets);
         Assert.Equal(TargetPfn, targets[0]);
+    }
+
+    [Fact]
+    public async Task Install_DepWaitIdleTwiceThenD02_SkipsDepWithoutKill()
+    {
+        // Dep deploy was accepted (202) but the first /state polls still see idle
+        // (op not registered yet), then 0x80073D02 arrives. Fix A: a dep wait must
+        // NOT accept bare idle-twice as "installed" — it keeps polling until the
+        // terminal D02 and skips the already-present framework.
+        var portal = new Portal
+        {
+            BlockMode = "off",
+            IdleTwiceThenBlockerAfterDepUpload = true
+        };
+        var (svc, handler, _) = CreateService(portal);
+        var main = CreateAppx("Gen1RecompUWP.appx", "Gen1RecompUWP");
+        var dep = CreateText("Microsoft.NET.CoreRuntime.2.2.appx");
+
+        var ok = await svc.InstallPackageAsync(main, [dep]);
+
+        Assert.True(ok);
+        var kills = handler.Requests
+            .Where(r => r.Method == HttpMethod.Delete && r.RequestUri?.AbsolutePath == "/api/taskmanager/app")
+            .ToList();
+        Assert.Empty(kills);
+    }
+
+    [Fact]
+    public async Task Install_DepWaitNeverSettles_StillSucceedsWhenAppPresent()
+    {
+        // Dep wait sees idle forever after the upload (deploy outcome unobservable).
+        // Fix A suppresses only the bare-idle-twice shortcut; the 10s timeout fallback
+        // ("continuing; final check decides") must still land a SUCCESS verdict.
+        var portal = new Portal
+        {
+            BlockMode = "off",
+            AlwaysIdleAfterDepUpload = true
+        };
+        var (svc, handler, _) = CreateService(portal);
+        var main = CreateAppx("Gen1RecompUWP.appx", "Gen1RecompUWP");
+        var dep = CreateText("SomeDependency.appx");
+
+        var ok = await svc.InstallPackageAsync(main, [dep]);
+
+        Assert.True(ok);
+    }
+
+    [Fact]
+    public async Task Install_FinalSettleNonTargetBlocker_SettlesEarly_WithoutWaitingFullTimeout()
+    {
+        // 0x80073D02 arrives at the FINAL settle (post-main deploy) naming only
+        // non-target apps (Dev Mode shell pattern). Fix B: AwaitDeployMain breaks
+        // out of the poll immediately — the installed-packages check is authoritative
+        // — instead of hammering /state until MainPollTimeout. Old code would issue
+        // ~1000 state polls with test timings; assert a bounded count to prove it.
+        var portal = new Portal
+        {
+            BlockMode = "off",
+            StateIdleQuota = 2
+        };
+        var (svc, handler, _) = CreateService(portal);
+        var main = CreateAppx("Gen1RecompUWP.appx", "Gen1RecompUWP");
+
+        var ok = await svc.InstallPackageAsync(main, []);
+
+        Assert.True(ok);
+        var statePolls = handler.Requests
+            .Count(r => r.RequestUri?.AbsolutePath == "/api/app/packagemanager/state");
+        Assert.True(statePolls < 50, $"expected early settle break, {statePolls} state polls");
+        var kills = handler.Requests
+            .Where(r => r.Method == HttpMethod.Delete && r.RequestUri?.AbsolutePath == "/api/taskmanager/app")
+            .ToList();
+        Assert.Empty(kills);
     }
 }

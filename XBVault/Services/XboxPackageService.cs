@@ -597,6 +597,15 @@ public class XboxPackageService : IXboxPackageService
 
                     if (XboxResponseParser.IsIdleCode(resp2.StatusCode))
                     {
+                        if (mode == PmWaitMode.AwaitDeployDep)
+                        {
+                            // A dependency deploy was just accepted (202) — the first /state
+                            // poll can still hit idle before the manager registers the op. A dep
+                            // is only "ready" on an explicit terminal state (success JSON, D02,
+                            // signature, fatal); a bare idle-twice would mislabel it installed.
+                            Logger.Info("Package manager idle (dependency deploy not yet recognized)");
+                            continue;
+                        }
                         Logger.Info("Package manager ready (got idle status twice)");
                         return PackageManagerWaitResult.Ready;
                     }
@@ -654,6 +663,16 @@ public class XboxPackageService : IXboxPackageService
                         }
                         else
                         {
+                            if (mode == PmWaitMode.AwaitDeployMain)
+                            {
+                                // D02 naming only non-target blockers = a framework already
+                                // installed and held in use (e.g. the Dev Mode shell). It can
+                                // never self-resolve while that app runs, so polling the full
+                                // MainPollTimeout only burns ~40s ahead of the authoritative
+                                // verdict from ResolveFinalResultAsync (installed-packages check).
+                                Logger.Warn($"Package manager blocked by non-target app(s) — settling early, final check decides: {busyApps}");
+                                return PackageManagerWaitResult.Ready;
+                            }
                             Logger.Warn($"Blocked by app(s) not targeted by this install: {busyApps}");
                             if (mode == PmWaitMode.AwaitIdle)
                                 Logger.Info("  (waiting — no termination attempted)");
