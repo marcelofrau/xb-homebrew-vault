@@ -1,0 +1,190 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:XBVault.ViewModels"
+             xmlns:models="using:XBVault.Models"
+             x:Class="XBVault.Views.MobileSystemInfoView"
+             x:DataType="vm:SystemInfoViewModel"
+             Background="{StaticResource BgBrush}">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    </Style>
+    <Style Selector="Border.si-pill-pos">
+      <Setter Property="Background" Value="#1F2ECC71"/>
+      <Setter Property="CornerRadius" Value="5"/>
+      <Setter Property="Padding" Value="9,2"/>
+    </Style>
+    <Style Selector="Border.si-pill-neg">
+      <Setter Property="Background" Value="#1FE74C3C"/>
+      <Setter Property="CornerRadius" Value="5"/>
+      <Setter Property="Padding" Value="9,2"/>
+    </Style>
+    <Style Selector="TextBlock.pos">
+      <Setter Property="Foreground" Value="#2ECC71"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="TextBlock.neg">
+      <Setter Property="Foreground" Value="#E74C3C"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="TextBlock.hl">
+      <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+  </UserControl.Styles>
+
+  <UserControl.Resources>
+    <DataTemplate x:Key="SystemInfoRowTemplate" x:DataType="models:SystemInfoRow">
+      <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+        <TextBlock Text="{Binding Label}"
+                   Foreground="{StaticResource TextMutedBrush}" FontSize="13"
+                   VerticalAlignment="Center" TextWrapping="Wrap"/>
+        <Border Grid.Column="1"
+                Classes.si-pill-pos="{Binding IsPositive}"
+                Classes.si-pill-neg="{Binding IsNegative}"
+                VerticalAlignment="Center" Margin="12,0,0,0">
+          <TextBlock Text="{Binding Value}"
+                     Foreground="{StaticResource TextBrush}" FontSize="13" FontWeight="SemiBold"
+                     VerticalAlignment="Center" MaxWidth="150"
+                     TextAlignment="Right" TextWrapping="Wrap"
+                     Classes.pos="{Binding IsPositive}"
+                     Classes.neg="{Binding IsNegative}"
+                     Classes.hl="{Binding IsHighlight}"/>
+        </Border>
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate x:Key="SystemInfoCardTemplate" x:DataType="models:SystemInfoCard">
+      <Border Background="{StaticResource SurfaceBrush}"
+              BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+              CornerRadius="10" Padding="14,12" Margin="0,0,0,12">
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="42,*,Auto" ColumnSpacing="10">
+            <Border Background="#1A9ACA3C"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    CornerRadius="8" Width="42" Height="42">
+              <Image Source="{Binding Icon}" Width="28" Height="28" Stretch="Uniform"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <TextBlock Grid.Column="1" Text="{Binding Title}"
+                       FontSize="15" FontWeight="SemiBold"
+                       Foreground="{StaticResource TextBrush}"
+                       VerticalAlignment="Center"/>
+            <Border Grid.Column="2" Width="6" Height="6" CornerRadius="3"
+                    Background="{StaticResource AccentBrush}" Opacity="0.55"
+                    VerticalAlignment="Center"/>
+          </Grid>
+          <Border Height="1" Background="{StaticResource BorderBrush}" Opacity="0.6"/>
+          <ItemsControl ItemsSource="{Binding Rows}"
+                        ItemTemplate="{StaticResource SystemInfoRowTemplate}"/>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <Grid>
+    <ScrollViewer IsVisible="True">
+      <StackPanel Spacing="12" Margin="16,12" HorizontalAlignment="Stretch">
+
+        <!-- Hero -->
+        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="16,14">
+          <StackPanel Spacing="6">
+            <TextBlock Text="XBOX DEV KIT CONSOLE" FontSize="11" FontWeight="Bold"
+                       Foreground="{StaticResource AccentBrush}" LetterSpacing="1.5"/>
+            <TextBlock Text="{Binding MachineName}" FontSize="24" FontWeight="Bold"
+                       FontFamily="{StaticResource MonoFont}"
+                       Foreground="{StaticResource TextBrush}"/>
+            <WrapPanel Margin="0,2,0,0">
+              <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="6"
+                      Padding="10,4" Margin="0,0,8,6">
+                <TextBlock Text="{Binding ConsoleType}" FontSize="12"
+                           Foreground="{StaticResource TextBrush}"/>
+              </Border>
+              <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="6"
+                      Padding="10,4" Margin="0,0,8,6">
+                <TextBlock Text="{Binding OsEdition}" FontSize="12"
+                           Foreground="{StaticResource TextBrush}"/>
+              </Border>
+              <Border Background="#149ACA3C" CornerRadius="6" Padding="10,4"
+                      Margin="0,0,8,6"
+                      IsVisible="{Binding DevMode, Converter={StaticResource StringNotEmpty}}">
+                <TextBlock Text="{Binding DevMode}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource AccentBrush}"/>
+              </Border>
+            </WrapPanel>
+            <TextBlock Text="{Binding OsVersion}" FontSize="16" FontWeight="Bold"
+                       Foreground="{StaticResource AccentBrush}" Margin="0,4,0,0"/>
+            <TextBlock Text="{Binding DevkitCertText}" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{StaticResource AccentGlowBrush}"/>
+          </StackPanel>
+        </Border>
+
+        <!-- Stat strip -->
+        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="16,12">
+          <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+            <StackPanel Spacing="2">
+              <TextBlock Text="CONSOLE ID" FontSize="10" FontWeight="Bold"
+                         Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
+              <TextBlock Text="{Binding ConsoleId}" FontSize="13" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="2">
+              <TextBlock Text="SERIAL NUMBER" FontSize="10" FontWeight="Bold"
+                         Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
+              <TextBlock Text="{Binding SerialNumber}" FontSize="13" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Spacing="2" Margin="0,8,0,0">
+              <TextBlock Text="DEVICE ID" FontSize="10" FontWeight="Bold"
+                         Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
+              <TextBlock Text="{Binding DeviceId}" FontSize="13" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2" Margin="0,8,0,0">
+              <TextBlock Text="LAST UPDATED" FontSize="10" FontWeight="Bold"
+                         Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
+              <TextBlock Text="{Binding LastUpdated}" FontSize="13" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextBrush}"/>
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- Cards -->
+        <ItemsControl ItemsSource="{Binding Cards}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="12"/>
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <StaticResource ResourceKey="SystemInfoCardTemplate"/>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Error banner -->
+        <Border IsVisible="{Binding HasError}"
+                Background="#1AE74C3C" BorderBrush="{StaticResource DangerBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="16,12">
+          <TextBlock Text="{Binding StatusMessage}"
+                     Foreground="{StaticResource DangerBrush}"
+                     FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- Refresh -->
+        <Button Command="{Binding RefreshCommand}"
+                Padding="16,12" FontSize="15" HorizontalAlignment="Stretch">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <Image Source="avares://XBVault/Assets/Views/SystemInfoWindow/systeminfo-refresh-20.png"
+                   Width="20" Height="20" Stretch="Uniform"/>
+            <TextBlock Text="Refresh" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+        <Rectangle Height="16"/>
+      </StackPanel>
+    </ScrollViewer>
+
+    <ProgressBar IsIndeterminate="True" Height="3" VerticalAlignment="Top"
+                 IsVisible="{Binding IsLoading}"/>
+  </Grid>
+</UserControl>

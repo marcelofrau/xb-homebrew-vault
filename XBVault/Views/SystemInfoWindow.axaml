@@ -1,25 +1,84 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:XBVault.ViewModels"
+        xmlns:models="using:XBVault.Models"
         x:Class="XBVault.Views.SystemInfoWindow"
         Classes="dialogWindow"
         x:DataType="vm:SystemInfoViewModel"
         Title="XBVault - System Info"
         Icon="avares://XBVault/Assets/Views/MainWindow/mainwindow-app.png"
         WindowStartupLocation="CenterOwner"
-        Width="520" Height="480"
-        CanResize="False"
+        Width="1000" Height="880" MinWidth="720" MinHeight="640"
+        CanResize="True"
         ShowInTaskbar="False"
         WindowDecorations="None"
         Background="{StaticResource SurfaceBrush}"
         Cursor="{Binding Cursor}">
+
   <Window.Styles>
     <Style Selector="Window">
       <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
     </Style>
+    <Style Selector="Border.si-pill-pos">
+      <Setter Property="Background" Value="#1F2ECC71"/>
+      <Setter Property="CornerRadius" Value="5"/>
+      <Setter Property="Padding" Value="9,2"/>
+    </Style>
+    <Style Selector="Border.si-pill-neg">
+      <Setter Property="Background" Value="#1FE74C3C"/>
+      <Setter Property="CornerRadius" Value="5"/>
+      <Setter Property="Padding" Value="9,2"/>
+    </Style>
+    <Style Selector="TextBlock.pos">
+      <Setter Property="Foreground" Value="#2ECC71"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="TextBlock.neg">
+      <Setter Property="Foreground" Value="#E74C3C"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="TextBlock.hl">
+      <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+    <Style Selector="Button.si-copy">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="4"/>
+      <Setter Property="CornerRadius" Value="5"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="Button.si-copy:pointerover">
+      <Setter Property="Background" Value="#229ACA3C"/>
+    </Style>
   </Window.Styles>
+
+  <Window.Resources>
+    <DataTemplate x:Key="SystemInfoRowTemplate" x:DataType="models:SystemInfoRow">
+      <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+        <TextBlock Text="{Binding Label}"
+                   Foreground="{StaticResource TextMutedBrush}" FontSize="12"
+                   VerticalAlignment="Center" TextWrapping="Wrap"/>
+        <Border Grid.Column="1"
+                Classes.si-pill-pos="{Binding IsPositive}"
+                Classes.si-pill-neg="{Binding IsNegative}"
+                VerticalAlignment="Center" Margin="12,0,0,0">
+          <TextBlock Text="{Binding Value}"
+                     Foreground="{StaticResource TextBrush}" FontSize="12" FontWeight="SemiBold"
+                     VerticalAlignment="Center" MaxWidth="420"
+                     TextAlignment="Right" TextWrapping="Wrap"
+                     Classes.pos="{Binding IsPositive}"
+                     Classes.neg="{Binding IsNegative}"
+                     Classes.hl="{Binding IsHighlight}"/>
+        </Border>
+      </Grid>
+    </DataTemplate>
+  </Window.Resources>
+
   <Border BorderBrush="#447F3E" BorderThickness="2" Margin="1">
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+
+      <!-- Title Bar -->
       <Grid Height="32" PointerPressed="OnTitleBarPointerPressed"
             Background="{StaticResource TitleGradient}">
         <Grid.ColumnDefinitions>*,Auto</Grid.ColumnDefinitions>
@@ -29,42 +88,185 @@
         <Button Grid.Column="1" Classes="WindowClose"
                 Click="OnCloseClick" ToolTip.Tip="Close"/>
       </Grid>
-      <Border Grid.Row="1" Padding="20">
-        <StackPanel Spacing="16">
-          <Button x:Name="SysInfoRefreshBtn"
+
+      <!-- Hero band -->
+      <Border Grid.Row="1" Background="{StaticResource SurfaceAltBrush}"
+              BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
+              Padding="24,18">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
+          <StackPanel Spacing="5">
+            <TextBlock Text="XBOX DEV KIT CONSOLE" FontSize="11" FontWeight="Bold"
+                       Foreground="{StaticResource AccentBrush}" LetterSpacing="1.5"/>
+            <TextBlock Text="{Binding MachineName}" FontSize="30" FontWeight="Bold"
+                       FontFamily="{StaticResource MonoFont}"
+                       Foreground="{StaticResource TextBrush}"/>
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,2,0,0">
+              <StackPanel Spacing="1">
+                <TextBlock Text="CONSOLE" FontSize="8" FontWeight="Bold"
+                           Foreground="{StaticResource TextMutedBrush}" LetterSpacing="0.8"/>
+                <TextBlock Text="{Binding ConsoleType}" FontSize="12"
+                           Foreground="{StaticResource TextBrush}"/>
+              </StackPanel>
+              <StackPanel Spacing="1">
+                <TextBlock Text="OS BUILD" FontSize="8" FontWeight="Bold"
+                           Foreground="{StaticResource TextMutedBrush}" LetterSpacing="0.8"/>
+                <TextBlock Text="{Binding OsEdition}" FontSize="12"
+                           Foreground="{StaticResource TextBrush}"/>
+              </StackPanel>
+              <StackPanel Spacing="1" IsVisible="{Binding DevMode, Converter={StaticResource StringNotEmpty}}">
+                <TextBlock Text="DEV MODE" FontSize="8" FontWeight="Bold"
+                           Foreground="{StaticResource AccentBrush}" LetterSpacing="0.8"/>
+                <TextBlock Text="{Binding DevMode}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource AccentBrush}"/>
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="8" HorizontalAlignment="Right"
+                      VerticalAlignment="Center">
+            <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,10">
+              <StackPanel Spacing="1">
+                <TextBlock Text="OS VERSION" FontSize="10" FontWeight="Bold"
+                           Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
+                <TextBlock Text="{Binding OsVersion}" FontSize="16" FontWeight="Bold"
+                           Foreground="{StaticResource AccentBrush}"/>
+              </StackPanel>
+            </Border>
+            <Border Background="#149ACA3C" CornerRadius="8" Padding="14,8">
+              <TextBlock Text="{Binding DevkitCertText}" FontSize="12" FontWeight="SemiBold"
+                         Foreground="{StaticResource AccentGlowBrush}"/>
+            </Border>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Stat strip -->
+      <Border Grid.Row="2" Background="{StaticResource SurfaceBrush}"
+              BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
+              Padding="24,12">
+        <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="12">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+            <StackPanel Spacing="2">
+              <TextBlock Text="CONSOLE ID" FontSize="10" FontWeight="Bold"
+                         Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
+              <TextBlock Text="{Binding ConsoleId}" FontSize="13" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"/>
+            </StackPanel>
+            <Button Grid.Column="1" Classes="si-copy" Click="OnCopyClick"
+                    Tag="{Binding ConsoleId}" ToolTip.Tip="Copy console ID"
+                    VerticalAlignment="Center">
+              <Image Source="avares://XBVault/Assets/Views/SystemInfoWindow/systeminfo-copy-20.png"
+                     Width="14" Height="14" Stretch="Uniform"/>
+            </Button>
+          </Grid>
+          <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+            <StackPanel Spacing="2">
+              <TextBlock Text="SERIAL NUMBER" FontSize="10" FontWeight="Bold"
+                         Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
+              <TextBlock Text="{Binding SerialNumber}" FontSize="13" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"/>
+            </StackPanel>
+            <Button Grid.Column="1" Classes="si-copy" Click="OnCopyClick"
+                    Tag="{Binding SerialNumber}" ToolTip.Tip="Copy serial number"
+                    VerticalAlignment="Center">
+              <Image Source="avares://XBVault/Assets/Views/SystemInfoWindow/systeminfo-copy-20.png"
+                     Width="14" Height="14" Stretch="Uniform"/>
+            </Button>
+          </Grid>
+          <Grid Grid.Column="2" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+            <StackPanel Spacing="2">
+              <TextBlock Text="DEVICE ID" FontSize="10" FontWeight="Bold"
+                         Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"/>
+              <TextBlock Text="{Binding DeviceId}" FontSize="13" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"/>
+            </StackPanel>
+            <Button Grid.Column="1" Classes="si-copy" Click="OnCopyClick"
+                    Tag="{Binding DeviceId}" ToolTip.Tip="Copy device ID"
+                    VerticalAlignment="Center">
+              <Image Source="avares://XBVault/Assets/Views/SystemInfoWindow/systeminfo-copy-20.png"
+                     Width="14" Height="14" Stretch="Uniform"/>
+            </Button>
+          </Grid>
+          <StackPanel Grid.Column="3" VerticalAlignment="Bottom" Spacing="2">
+            <TextBlock x:Name="CopiedTip" Text="Copied ✓" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{StaticResource AccentBrush}"
+                       VerticalAlignment="Center" IsVisible="False"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Cards -->
+      <Grid Grid.Row="3">
+        <ScrollViewer Padding="24,18,10,6" BorderThickness="0"
+                      HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding Cards}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <UniformGrid Columns="2" HorizontalAlignment="Stretch"/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:SystemInfoCard">
+                <Border Background="{StaticResource CardBgBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="10" Padding="14,12" Margin="0,0,14,14"
+                        HorizontalAlignment="Stretch">
+                  <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="42,*,Auto" ColumnSpacing="10">
+                      <Border Background="#1A9ACA3C"
+                              BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                              CornerRadius="8" Width="42" Height="42">
+                        <Image Source="{Binding Icon}" Width="28" Height="28" Stretch="Uniform"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      </Border>
+                      <TextBlock Grid.Column="1" Text="{Binding Title}"
+                                 FontSize="14" FontWeight="SemiBold"
+                                 Foreground="{StaticResource TextBrush}"
+                                 VerticalAlignment="Center"/>
+                      <Border Grid.Column="2" Width="6" Height="6" CornerRadius="3"
+                              Background="{StaticResource AccentBrush}" Opacity="0.55"
+                              VerticalAlignment="Center"/>
+                    </Grid>
+                    <Border Height="1" Background="{StaticResource BorderBrush}" Opacity="0.6"/>
+                    <ItemsControl ItemsSource="{Binding Rows}"
+                                  ItemTemplate="{StaticResource SystemInfoRowTemplate}"/>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <ProgressBar IsIndeterminate="True" Height="3" VerticalAlignment="Top"
+                     IsVisible="{Binding IsLoading}"/>
+      </Grid>
+
+      <!-- Footer -->
+      <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="24,0,24,16">
+        <TextBlock Grid.Column="0" Text="{Binding StatusMessage}"
+                   Foreground="{StaticResource DangerBrush}" FontSize="13" FontWeight="SemiBold"
+                   TextWrapping="Wrap" VerticalAlignment="Center"
+                   IsVisible="{Binding HasError}"/>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+          <Button Click="OnCloseClick" Padding="12,8" VerticalAlignment="Center">
+            <TextBlock Text="Close" VerticalAlignment="Center"/>
+          </Button>
+          <Button x:Name="RefreshBtn"
                   Command="{Binding RefreshCommand}"
                   IsEnabled="{Binding IsLoading, Converter={StaticResource BoolInverse}}"
-                  Padding="14,8" HorizontalAlignment="Left">
+                  Padding="14,8" VerticalAlignment="Center">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
               <Grid>
                 <Image Source="avares://XBVault/Assets/Views/SystemInfoWindow/systeminfo-refresh-20.png"
-                       IsVisible="{Binding #SysInfoRefreshBtn.IsEnabled}"
+                       IsVisible="{Binding #RefreshBtn.IsEnabled}"
                        Width="20" Height="20" Stretch="Uniform"/>
                 <Image Source="avares://XBVault/Assets/Views/SystemInfoWindow/systeminfo-refresh-20-disabled.png"
-                       IsVisible="{Binding #SysInfoRefreshBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                       IsVisible="{Binding #RefreshBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
                        Width="20" Height="20" Stretch="Uniform"/>
               </Grid>
               <TextBlock Grid.Column="1" Text="Refresh" VerticalAlignment="Center"/>
             </Grid>
           </Button>
-          <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="6"
-                  Padding="12,10"
-                  IsVisible="{Binding SystemInfoText, Converter={StaticResource StringNotEmpty}}">
-            <ScrollViewer>
-              <TextBlock Text="{Binding SystemInfoText}"
-                         FontFamily="{StaticResource MonoFont}"
-                         FontSize="14" LineHeight="22"/>
-            </ScrollViewer>
-          </Border>
-          <Border IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmpty}}"
-                  Background="#1AE74C3C" BorderBrush="{StaticResource DangerBrush}"
-                  BorderThickness="1" CornerRadius="6" Padding="14,10">
-            <TextBlock Text="{Binding StatusMessage}"
-                       Foreground="{StaticResource DangerBrush}"
-                       FontSize="13" FontWeight="SemiBold"/>
-          </Border>
         </StackPanel>
-      </Border>
+      </Grid>
     </Grid>
   </Border>
 </Window>

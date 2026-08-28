@@ -1,8 +1,10 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using XBVault.Models;
 
 namespace XBVault.Services;
 
@@ -99,6 +101,99 @@ public class XboxSystemService : IXboxSystemService
         {
             Logger.Error(ex, "GetSystemInfo failed");
             return null;
+        }
+    }
+
+    public async Task<ConsoleInfo?> GetConsoleInfoAsync()
+    {
+        if (!_auth.IsConfigured)
+        {
+            Logger.Warn("GetConsoleInfo called but not configured");
+            return null;
+        }
+
+        try
+        {
+            Logger.Info("GET /ext/xbox/info");
+            var response = await _auth.Http.GetAsync("/ext/xbox/info");
+            Logger.Info($"GET /ext/xbox/info => {(int)response.StatusCode}");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var info = JsonSerializer.Deserialize<ConsoleInfo>(json);
+                if (info is not null && !string.IsNullOrEmpty(info.OsVersion))
+                    return info;
+            }
+
+            Logger.Warn($"GET /ext/xbox/info failed: {await _auth.ReadResponseBody(response)}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetConsoleInfo failed");
+            return null;
+        }
+    }
+
+    public async Task<string?> GetMachineNameAsync()
+    {
+        if (!_auth.IsConfigured)
+        {
+            Logger.Warn("GetMachineName called but not configured");
+            return null;
+        }
+
+        try
+        {
+            Logger.Info("GET /api/os/machinename");
+            var response = await _auth.Http.GetAsync("/api/os/machinename");
+            Logger.Info($"GET /api/os/machinename => {(int)response.StatusCode}");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var parsed = JsonSerializer.Deserialize<MachineNameInfo>(json);
+                if (!string.IsNullOrWhiteSpace(parsed?.ComputerName))
+                    return parsed.ComputerName;
+            }
+
+            Logger.Warn($"GET /api/os/machinename failed: {await _auth.ReadResponseBody(response)}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetMachineName failed");
+            return null;
+        }
+    }
+
+    public async Task<IReadOnlyList<XboxSetting>> GetXboxSettingsAsync()
+    {
+        if (!_auth.IsConfigured)
+        {
+            Logger.Warn("GetXboxSettings called but not configured");
+            return [];
+        }
+
+        try
+        {
+            Logger.Info("GET /ext/settings");
+            var response = await _auth.Http.GetAsync("/ext/settings");
+            Logger.Info($"GET /ext/settings => {(int)response.StatusCode}");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var parsed = JsonSerializer.Deserialize<XboxSettingsResponse>(json);
+                if (parsed is not null)
+                    return parsed.Settings ?? [];
+            }
+
+            Logger.Warn($"GET /ext/settings failed: {await _auth.ReadResponseBody(response)}");
+            return [];
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "GetXboxSettings failed");
+            return [];
         }
     }
 
