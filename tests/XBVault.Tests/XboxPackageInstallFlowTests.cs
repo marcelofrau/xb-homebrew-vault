@@ -49,6 +49,27 @@ public class XboxPackageInstallFlowTests : IDisposable
         return path;
     }
 
+    private string CreateBundle(string name, string identityName, string version = "3.8.0.1681")
+    {
+        var path = Path.Combine(_dir, name);
+        using (var fs = File.Create(path))
+        using (var zip = new ZipArchive(fs, ZipArchiveMode.Create))
+        {
+            var fragment = zip.CreateEntry("jazz2_3.8.0.1681_x64.msix", CompressionLevel.NoCompression);
+            using (var es = fragment.Open())
+            {
+                var payload = "bundle fragment payload";
+                es.Write(Encoding.UTF8.GetBytes(payload), 0, payload.Length);
+            }
+
+            var manifest = zip.CreateEntry("AppxMetadata/AppxBundleManifest.xml", CompressionLevel.NoCompression);
+            using var ms = manifest.Open();
+            var xml = $"<Bundle xmlns=\"http://schemas.microsoft.com/appx/2013/bundle\"><Identity Name=\"{identityName}\" Publisher=\"CN=Dan R.\" Version=\"{version}\"/></Bundle>";
+            ms.Write(Encoding.UTF8.GetBytes(xml), 0, xml.Length);
+        }
+        return path;
+    }
+
     private static (XboxPackageService svc, StubHttpMessageHandler handler, Portal portal) CreateService(Portal portal)
     {
         var auth = new XboxAuthService();
@@ -215,6 +236,27 @@ public class XboxPackageInstallFlowTests : IDisposable
 
         Assert.True(ok);
     }
+
+    [Fact]
+    public async Task Install_BundlePicksUpBundleManifestIdentity_VerifiesSuccess()
+    {
+        // A *.msixbundle has no root AppxManifest.xml — its identity lives in
+        // AppxMetadata/AppxBundleManifest.xml. Regression: the final verify used the
+        // fallback filename-derived identity (Jazz2) instead of the real manifest identity
+        // (jazz2.resurrection), so a successful bundle install reported FAILED.
+        var portal = new Portal
+        {
+            PackagesJson = "{\"HolographicAvailable\":false,\"InstalledPackages\":[{\"PackageFullName\":\"jazz2.resurrection_3.8.0.1681_x64__wp2xvcy2vvrjq\",\"Name\":\"Jazz2 Resurrection\",\"PackageFamilyName\":\"jazz2.resurrection\"}]}"
+        };
+        var (svc, _, _) = CreateService(portal);
+        var main = CreateBundle("Jazz2.msixbundle", "jazz2.resurrection");
+
+        var ok = await svc.InstallPackageAsync(main, []);
+
+        Assert.True(ok);
+    }
+
+
 
     [Fact]
     public async Task Install_UserCancelDuringWait_StillReportsTrueWhenInstalled()

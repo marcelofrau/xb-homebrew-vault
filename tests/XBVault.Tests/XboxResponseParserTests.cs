@@ -105,6 +105,44 @@ public class XboxResponseParserTests : IDisposable
         Assert.Null(XboxResponseParser.ParseMsixPackageName(Path.Combine(_dir, "nope.msix")));
     }
 
+    [Fact]
+    public void ParseMsixPackageName_BundleManifest_ExtractsIdentity()
+    {
+        var path = Path.Combine(_dir, $"{Guid.NewGuid():N}.msixbundle");
+        using (var fs = File.Create(path))
+        using (var zip = new ZipArchive(fs, ZipArchiveMode.Create))
+        {
+            var fragment = zip.CreateEntry("jazz2_3.8.0.1681_x64.msix");
+            using (var sw = new StreamWriter(fragment.Open()))
+            {
+                sw.Write("fragment package payload");
+            }
+
+            var manifest = zip.CreateEntry("AppxMetadata/AppxBundleManifest.xml");
+            using (var mw = new StreamWriter(manifest.Open()))
+            {
+                mw.Write("""<Bundle><Identity Name="jazz2.resurrection" Publisher="CN=Dan R." Version="3.8.0.1681"/></Bundle>""");
+            }
+        }
+
+        Assert.Equal("jazz2.resurrection", XboxResponseParser.ParseMsixPackageName(path));
+    }
+
+    [Fact]
+    public void ParseMsixPackageName_NoRootOrBundleManifest_ReturnsNull()
+    {
+        var path = Path.Combine(_dir, $"{Guid.NewGuid():N}.msixbundle");
+        using (var fs = File.Create(path))
+        using (var zip = new ZipArchive(fs, ZipArchiveMode.Create))
+        {
+            var entry = zip.CreateEntry("OtherFile.txt");
+            using var sw = new StreamWriter(entry.Open());
+            sw.Write("x");
+        }
+
+        Assert.Null(XboxResponseParser.ParseMsixPackageName(path));
+    }
+
     // ---- IsIdleCode ----
 
     [Theory]

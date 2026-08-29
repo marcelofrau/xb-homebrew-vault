@@ -30,20 +30,30 @@ public static class XboxResponseParser
         try
         {
             using var archive = ZipFile.OpenRead(msixPath);
-            var entry = archive.GetEntry("AppxManifest.xml");
-            if (entry is null) return null;
 
-            using var reader = new StreamReader(entry.Open());
-            var xml = reader.ReadToEnd();
-
-            var match = Regex.Match(xml, @"<Identity\s[^>]*\bName\s*=\s*""([^""]+)""");
-            return match.Success ? match.Groups[1].Value : null;
+            // A package (or bundle-internal fragment) carries its identity in the root
+            // AppxManifest.xml. Bundles (*.msixbundle / *.appxbundle) instead have no root
+            // manifest — their identity lives in AppxMetadata/AppxBundleManifest.xml.
+            var identity = ReadIdentityEntry(archive, "AppxManifest.xml");
+            return identity ?? ReadIdentityEntry(archive, "AppxMetadata/AppxBundleManifest.xml");
         }
         catch (Exception ex)
         {
             Logger.Warn($"Failed to parse MSIX manifest: {ex.Message}");
             return null;
         }
+    }
+
+    private static string? ReadIdentityEntry(ZipArchive archive, string entryPath)
+    {
+        var entry = archive.GetEntry(entryPath);
+        if (entry is null) return null;
+
+        using var reader = new StreamReader(entry.Open());
+        var xml = reader.ReadToEnd();
+
+        var match = Regex.Match(xml, @"<Identity\s[^>]*\bName\s*=\s*""([^""]+)""");
+        return match.Success ? match.Groups[1].Value : null;
     }
 
     public static bool IsIdleCode(HttpStatusCode code) =>
