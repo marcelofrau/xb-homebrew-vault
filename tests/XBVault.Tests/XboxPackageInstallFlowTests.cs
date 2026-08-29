@@ -71,7 +71,7 @@ public class XboxPackageInstallFlowTests : IDisposable
         return (svc, handler, portal);
     }
 
-private sealed class Portal
+    private sealed class Portal
     {
         public string BlockMode = "off"; // off | devhome | target | deploying
         public bool SkipBlockerOnceAfterDepUpload;
@@ -104,7 +104,7 @@ private sealed class Portal
             return new HttpResponseMessage(HttpStatusCode.NotFound);
         }
 
-private HttpResponseMessage StateResponse()
+        private HttpResponseMessage StateResponse()
         {
             if (StateIdleQuota >= 0)
             {
@@ -232,7 +232,7 @@ private HttpResponseMessage StateResponse()
         Assert.Contains(handler.Requests, r => r.RequestUri?.AbsolutePath == "/api/app/packagemanager/packages");
     }
 
-[Fact]
+    [Fact]
     public void FilterBlockingTargets_OnlyKeepsTheInstallTarget()
     {
         var all = new List<string> { DevHomePfn, TargetPfn, "Xbox.IdleScreen_2607.0.0.0_x64__8wekyb3d8bbwe" };
