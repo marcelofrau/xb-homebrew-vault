@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.5] — 2026-08-27
+## [2.0.5] — 2026-08-29
 
 > Note: these changes landed after the v2.0.4 tag but the version bump was
 > only applied later, so they were temporarily carried under the 2.0.4 label.
@@ -24,16 +24,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Update check on startup** — `CheckForUpdatesOnStartup` setting is now honored (default on); the Android path runs the update check at startup
 - **Download button on update dialog** — the "update available" dialog (desktop + mobile) now has a **Download** button that opens the release URL to fetch the newest build
 
-### Fixed
+### Added (System Info)
 
+- **Redesigned against the WDP contract** — System, Network, Process and Performance panels rebuilt for the real Device Portal API (desktop + mobile), backed by full domain tests
+
+### Fixed (install / sideload)
+
+- **Bundle installs verified correctly** — `.msixbundle` installs no longer report a false `FAILED` verdict; the verify step reads the bundle identity from `AppxMetadata/AppxBundleManifest.xml` instead of falling back to the filename
+- **Dep install no longer hangs** — a dependency deploy returning `0x80073D02` ("apps need to be closed") no longer polls forever; it's treated as already-present and skipped, and only the package being installed is killed (target-identity filter, no blanket kills)
+- **Dep install stops polling never-resolving D02** — the dep-install state poll gives up on a never-resolving `0x80073D02` instead of spinning forever
 - **Reinstall preserves app data** — reinstalling no longer uninstalls first (which wiped the app's `LocalState`); it installs over the existing package and keeps local data. Confirmation messages updated on desktop + mobile
-- **Mobile confirm-dialog icon missing** — the `avares://` string was bound directly to `Image.Source` and never resolved at runtime; icons now load via `AssetLoader.Open` (fixes uninstall/other confirm dialogs)
-- **Mobile uninstall spinner clipped** — the card's 20×20 `CdSpinner` (hardcoded 64×64 CD image) clipped and misaligned; replaced with an indeterminate `ProgressBar`
+
+### Fixed (mobile)
+
+- **Sideload wizard success hero de-duplicated** — success hero no longer renders twice
+- **Sideload wizard install hero oversized** — the 100px install hero no longer clips or misaligns
+- **"Close all" overlay double-pop** — uninstall/close-all detail overlay layers no longer stack (double-tap leak)
+- **Wizard step-3 diagnostics** — main package name + dependency diagnostics now correctly logged
+- **Confirm-dialog icon missing** — the `avares://` string was bound directly to `Image.Source` and never resolved at runtime; icons now load via `AssetLoader.Open`
+- **Uninstall spinner clipped** — the card's 20×20 `CdSpinner` (hardcoded 64×64 CD image) clipped and misaligned; replaced with an indeterminate `ProgressBar`
+
+### Fixed (transfers / downloads)
+
+- **Large transfer no longer times out** — uploads/downloads use a dedicated infinite-timeout client (`TransferHttp`) with per-request cancellation caps instead of dying on the blanket 30s HTTP timeout
+- **Portal folder download as ZIP** — downloading a portal folder now bundles it as a ZIP, fixing Android SAF multi-file transfer
+
+### Added (security)
+
+- **SEC2 AES-256-GCM secrets** — credentials encrypted with managed AES-256-GCM (machine-bound key, no P/Invoke) replacing legacy XOR; identical behavior on Windows/macOS/Linux/Android; `AppUrls` centralizes app/service URLs
 
 ### Changed
 
-- **Tech-debt quick wins** — all 20 `async void` handlers converted to `FireAndForget` with context logging; `CustomInstallViewModel` implements `IDisposable` (disposes analysis CTS); every bare `catch {}` annotated or logged; skipped the delicate SFTP/Xray sync-call layers by design
-- **655 tests passing**
+- **Composition root extraction** — app wiring moved into `AppServices`, split per-platform into `DesktopUiActions` / `MobileUiActions` (App.axaml.cs went from ~1,693 to ~376 lines). No DI container; property-passing throughout
+- **Source file validation** — custom install rejects unsupported file types (e.g. `.iso`) at browse/analyze time; **Analyze Package** and **Next** stay disabled until a valid package (`.appx`/`.msix`/`.appxbundle`/`.msixbundle`/`.zip`) or folder is picked
+- **Tech-debt quick wins** — `async void` handlers converted to `FireAndForget` with context logging; `CustomInstallViewModel` implements `IDisposable`; every bare `catch {}` annotated or logged
+- **751 tests passing** (desktop + Android build clean)
 
 ---
 
