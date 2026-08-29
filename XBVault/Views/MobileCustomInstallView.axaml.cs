@@ -184,6 +184,8 @@ public partial class MobileCustomInstallView : UserControl
     {
         if (_vm is null) return;
         Wizard.SetNextButtonEnabled(_vm.CanGoNext);
+        if (_analyzeBtn is not null)
+            _analyzeBtn.IsEnabled = _vm.CanGoNext;
     }
 
     private void UpdateReviewInfo()

@@ -162,11 +162,16 @@ public partial class CustomInstallViewModel : ObservableObject, IDisposable
 
     public bool CanGoNext => CurrentStep switch
     {
-        0 => !string.IsNullOrEmpty(SourcePath) || !string.IsNullOrEmpty(SourceUrl),
+        0 => HasValidSource || !string.IsNullOrEmpty(SourceUrl),
         1 => _analysis is not null,
         2 => _analysis?.MainPackage is not null,
         _ => false
     };
+
+    /// <summary>True when the picked local source is a real installable package (.appx/.msix/.appxbundle/.msixbundle/.zip) or a folder.</summary>
+    public bool HasValidSource =>
+        !string.IsNullOrEmpty(SourcePath) &&
+        (Directory.Exists(SourcePath) || PackageInstallService.IsSupportedSourceFile(SourcePath));
 
     public bool CanGoBack => CurrentStep > 0 && !IsAnalyzing && !IsInstalling;
     public bool CanCancel => !IsAnalyzing && !IsInstalling && !InstallComplete;
@@ -215,6 +220,7 @@ public partial class CustomInstallViewModel : ObservableObject, IDisposable
     partial void OnSourcePathChanged(string? value)
     {
         OnPropertyChanged(nameof(CanGoNext));
+        OnPropertyChanged(nameof(HasValidSource));
     }
 
     partial void OnSourceUrlChanged(string? value)
