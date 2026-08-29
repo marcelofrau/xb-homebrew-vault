@@ -239,6 +239,14 @@ public partial class CustomInstallViewModel : ObservableObject, IDisposable
                 return;
             }
             Logger.Info($"BrowseFileAsync: selected file — {path}");
+            if (!PackageInstallService.IsSupportedSourceFile(path))
+            {
+                Logger.Warn($"BrowseFileAsync: unsupported file type — {path}");
+                SourcePath = null;
+                StatusText = $"Unsupported file type: {Path.GetExtension(path) ?? "(none)"}. " +
+                              "Supported: .appx, .msix, .appxbundle, .msixbundle, .zip, or a folder.";
+                return;
+            }
             SourcePath = path;
             var fi = new FileInfo(path);
             StatusText = fi.Exists
@@ -288,6 +296,15 @@ public partial class CustomInstallViewModel : ObservableObject, IDisposable
                     Logger.Warn("AnalyzeAsync: no file path provided");
                     AnalysisResultText = "No file selected.";
                     Logger.Debug($"AnalyzeAsync: step 1 → 2 (empty path, no analysis)");
+                    CurrentStep = 2;
+                    return;
+                }
+                if (!PackageInstallService.IsSupportedSourceFile(SourcePath))
+                {
+                    Logger.Warn($"AnalyzeAsync: unsupported source file type — {SourcePath}");
+                    AnalysisResultText = $"Unsupported file type: {Path.GetExtension(SourcePath) ?? "(none)"}. " +
+                                         "Supported: .appx, .msix, .appxbundle, .msixbundle, .zip.";
+                    Logger.Debug($"AnalyzeAsync: step 1 → 2 (unsupported file, no analysis)");
                     CurrentStep = 2;
                     return;
                 }

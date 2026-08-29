@@ -193,6 +193,53 @@ public class PackageInstallServiceTests : IDisposable
         Assert.DoesNotContain("notes.txt", names);
     }
 
+    [Theory]
+    [InlineData("Game.appx")]
+    [InlineData("Game.msix")]
+    [InlineData("Game.appxbundle")]
+    [InlineData("Game.msixbundle")]
+    [InlineData("Game.zip")]
+    [InlineData("Game.ZIP")]
+    public void IsSupportedSourceFile_AcceptsSupportedExtensions(string name)
+    {
+        var path = Path.Combine(_dir, name);
+        File.WriteAllBytes(path, [0x01]);
+
+        Assert.True(PackageInstallService.IsSupportedSourceFile(path));
+    }
+
+    [Theory]
+    [InlineData("Game.iso")]
+    [InlineData("Game.bin")]
+    [InlineData("Game")]
+    [InlineData("notes.txt")]
+    [InlineData("Game.exe")]
+    public void IsSupportedSourceFile_RejectsUnsupportedFiles(string name)
+    {
+        var path = Path.Combine(_dir, name);
+        File.WriteAllBytes(path, [0x01]);
+
+        Assert.False(PackageInstallService.IsSupportedSourceFile(path));
+    }
+
+    [Fact]
+    public void IsSupportedSourceFile_AcceptsDirectory()
+    {
+        var dir = Path.Combine(_dir, "containing");
+        Directory.CreateDirectory(dir);
+
+        Assert.True(PackageInstallService.IsSupportedSourceFile(dir));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void IsSupportedSourceFile_EmptyPath_ReturnsFalse(string? path)
+    {
+        Assert.False(PackageInstallService.IsSupportedSourceFile(path!));
+    }
+
     [Fact]
     public void AnalyzeDirectory_Classifies()
     {

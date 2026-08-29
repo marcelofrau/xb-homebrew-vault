@@ -50,6 +50,21 @@ public class PackageInstallService
     private static readonly HashSet<string> InstallerExts = new(
         StringComparer.OrdinalIgnoreCase) { ".appx", ".msix", ".appxbundle", ".msixbundle" };
 
+    /// <summary>
+    /// File extensions a user may pick as the custom-install source. Bundles + flat
+    /// packages install directly; a .zip is a container that may hold installable files.
+    /// Directories are also accepted (a folder scanned for installable packages).
+    /// </summary>
+    public static readonly string[] SupportedSourceExtensions = [".appx", ".msix", ".appxbundle", ".msixbundle", ".zip"];
+
+    public static bool IsSupportedSourceFile(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return false;
+        if (Directory.Exists(path)) return true;
+        var ext = Path.GetExtension(path);
+        return SupportedSourceExtensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
+    }
+
     private static bool IsDep(string fileName) => DepPattern.IsMatch(fileName);
     private static bool IsJunk(string fileName) => JunkPattern.IsMatch(fileName);
     private static bool IsInstallable(string fileName) => InstallerExts.Contains(Path.GetExtension(fileName));
