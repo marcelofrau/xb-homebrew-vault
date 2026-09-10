@@ -458,9 +458,9 @@ public sealed class MobileUiActions
             {
                 _detailOpen = false;
                 _main.CloseOverlay();
-                if (_s.Browse.IsUpdateComplete)
+                if (_s.Browse.InstallComplete && _s.Browse.InstallSuccess)
                     _ = _s.Installed.RefreshPackagesCommand.ExecuteAsync(null);
-                _s.Browse.IsUpdateMode = false;
+                _s.Browse.SelectedInstalledPackage = null;
                 _s.Browse.SelectedItem = null;
             });
             _s.Browse.CloseDetailAction = () => CloseDetailOverlays();
@@ -559,26 +559,25 @@ public sealed class MobileUiActions
             return result;
         };
 
-        _s.Installed.ShowCatalogDetailAction = catalogItem =>
-        {
-            _s.Browse.IsUpdateMode = true;
-            _s.Browse.SelectedItem = catalogItem;
-            OpenBrowseDetail();
-        };
+        _s.Installed.ShowCatalogDetailAction = (pkg, catalogItem) =>
+                {
+                    _s.Browse.SelectedInstalledPackage = pkg;
+                    _s.Browse.SelectedItem = catalogItem;
+                    OpenBrowseDetail();
+                };
         _s.Installed.ShowInstalledDetailAction = (pkg, match, isOutdated) =>
         {
             _s.Browse.SelectedInstalledPackage = pkg;
-            _s.Browse.IsInstalledMode = !isOutdated;
-            _s.Browse.IsUpdateMode = isOutdated;
             _s.Browse.SelectedItem = match;
             OpenBrowseDetail();
         };
 
-        _s.Installed.ReinstallInstallAction = () =>
+        _s.Installed.ReinstallInstallAction = pkg =>
         {
-            _s.Browse.IsInstalledMode = false;
-            _s.Browse.SelectedInstalledPackage = null;
-            _s.Browse.IsUpdateMode = false;
+            var (match, _) = _s.Browse.FindCatalogMatch(pkg);
+            if (match is not null)
+                _s.Browse.SelectedItem = match;
+            _s.Browse.SelectedInstalledPackage = pkg;
             _s.Browse.InstallSelectedCommand.Execute(null);
         };
         _s.Installed.ConfirmReinstallAsync = async pkg =>
@@ -586,20 +585,14 @@ public sealed class MobileUiActions
                         "Confirm Reinstall", $"Reinstall \"{pkg.Name}\"? This will reinstall over the existing installation and keep your app data.", "Reinstall", "Cancel",
                         "avares://XBVault/Assets/Views/InstalledView/installed-update-100.png", null);
 
-        _s.Browse.UninstallFromDetailAction = pkg =>
-                {
-                    _s.Browse.CloseDetailAction?.Invoke();
-                    _ = _s.Installed.UninstallPackageCommand.ExecuteAsync(pkg);
-                };
-        // Uninstall is handled by the Installed tab: surface its "uninstalling"
-        // progress by switching the main window there as soon as it starts.
-        _s.Installed.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(_s.Installed.IsUninstalling) && _s.Installed.IsUninstalling)
-                _main.SwitchToInstalledTab();
-        };
+        _s.Browse.ConfirmUninstallAsync = pkg =>
+                    ShowConfirmDialogAsync(
+                        "Confirm Uninstall", $"Uninstall \"{pkg.Name}\"? This will remove the app from your Xbox.", "Uninstall", "Cancel",
+                        "avares://XBVault/Assets/Views/InstalledView/installed-uninstall-100.png", null);
         _s.Browse.ReinstallFromDetailAction = pkg =>
-            _s.Installed.ReinstallPackageCommand.ExecuteAsync(pkg);
+                    _s.Installed.ReinstallPackageCommand.ExecuteAsync(pkg);
+
+        _s.Browse.ShowConnectAction = ShowConnectDialogAsync;
 
         _s.Installed.ShowCustomInstallAction = () => ShowMobileCustomInstall().FireAndForget("App.ShowMobileCustomInstall");
         _s.Installed.OpenCustomInstallWithFileAction = filePath =>
@@ -623,10 +616,8 @@ public sealed class MobileUiActions
         {
             _detailOpen = false;
             _main.CloseOverlay();
-            if (_s.Browse.IsUpdateComplete)
+            if (_s.Browse.InstallComplete && _s.Browse.InstallSuccess)
                 _ = _s.Installed.RefreshPackagesCommand.ExecuteAsync(null);
-            _s.Browse.IsUpdateMode = false;
-            _s.Browse.IsInstalledMode = false;
             _s.Browse.SelectedInstalledPackage = null;
             _s.Browse.SelectedItem = null;
         });

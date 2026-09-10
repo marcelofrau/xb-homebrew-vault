@@ -45,25 +45,63 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     public Action? ShowCustomInstallAction { get; set; }
     public Func<string, Task>? OpenCustomInstallWithFileAction { get; set; }
     public Action? OnCatalogLoaded { get; set; }
-    public Action<InstalledPackage>? UninstallFromDetailAction { get; set; }
+    public Func<InstalledPackage, Task<bool>>? ConfirmUninstallAsync { get; set; }
     public Func<InstalledPackage, Task>? ReinstallFromDetailAction { get; set; }
     public Func<InstalledPackage, Task<(CatalogItem? match, bool isOutdated)>>? ResolveInstalledCatalogItem { get; set; }
+    public Func<Task<bool>>? ShowConnectAction { get; set; }
 
     [RelayCommand]
     private void CloseDetail() => CloseDetailAction?.Invoke();
 
     [RelayCommand]
-    private void UninstallFromDetail()
+    private async Task UninstallFromDetail()
     {
-        if (SelectedInstalledPackage is not null)
-            UninstallFromDetailAction?.Invoke(SelectedInstalledPackage);
+        var pkg = SelectedInstalledPackage ?? SelectedItem?.MatchedInstalledPackage;
+        if (pkg is null)
+            return;
+
+        if (ConfirmUninstallAsync is not null && !await ConfirmUninstallAsync(pkg))
+            return;
+
+        IsUninstallingDetail = true;
+        UninstallDetailFailed = false;
+        UninstallResultMessage = null;
+
+        bool success = false;
+        try
+        {
+            Logger.Info($"Uninstall from detail: {pkg.Name}");
+            success = await _packageService.UninstallPackageAsync(pkg.FullName);
+            if (success)
+                await UpdateInstalledBadgesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"Uninstall from detail failed: {pkg.Name}");
+            success = false;
+        }
+        finally
+        {
+            IsUninstallingDetail = false;
+        }
+
+        if (success)
+        {
+            CloseDetailAction?.Invoke();
+        }
+        else
+        {
+            UninstallDetailFailed = true;
+            UninstallResultMessage = $"Failed to uninstall \"{pkg.Name}\". Check the connection and try again.";
+        }
     }
 
     [RelayCommand]
     private Task ReinstallFromDetail()
     {
-        return SelectedInstalledPackage is not null && ReinstallFromDetailAction is not null
-            ? ReinstallFromDetailAction(SelectedInstalledPackage)
+        var pkg = SelectedInstalledPackage ?? SelectedItem?.MatchedInstalledPackage;
+        return pkg is not null && ReinstallFromDetailAction is not null
+            ? ReinstallFromDetailAction(pkg)
             : Task.CompletedTask;
     }
 
@@ -100,17 +138,21 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         _overrideService = overrideService;
         _versionChecker = versionChecker;
         _authService.ConnectionChanged += OnConnectionChanged;
+        IsConnected = _authService.IsConnected;
         Logger.Debug("BrowseViewModel created");
     }
 
     private void OnConnectionChanged(bool connected)
     {
+        IsConnected = connected;
         async Task Work()
         {
             if (connected && _allItems.Count > 0)
             {
                 Logger.Debug("Connection changed — refreshing installed badges");
                 await UpdateInstalledBadgesAsync();
+                if (SelectedItem?.MatchedInstalledPackage is not null && SelectedInstalledPackage is null)
+                    SelectedInstalledPackage = SelectedItem.MatchedInstalledPackage;
             }
             else if (!connected)
             {
@@ -121,6 +163,7 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
                 }
                 Logger.Debug("Disconnected — cleared installed badges");
             }
+            RaiseDetailDerived();
         }
 
         Work().FireAndForget("BrowseViewModel.OnConnectionChanged");
@@ -166,6 +209,19 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     private bool _installSuccess;
 
     [ObservableProperty]
+    private string? _installResultMessage;
+
+    [ObservableProperty]
+    private bool _isUninstallingDetail;
+
+    [ObservableProperty]
+    private bool _uninstallDetailFailed;
+
+    [ObservableProperty]
+    private string? _uninstallResultMessage;
+
+
+    [ObservableProperty]
     private bool _showExperimental = true;
 
     [ObservableProperty]
@@ -178,154 +234,204 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
     private CatalogItem? _selectedItem;
 
     [ObservableProperty]
-    private bool _isUpdateMode;
-
-    [ObservableProperty]
-    private bool _isInstalledMode;
-
-    [ObservableProperty]
     private InstalledPackage? _selectedInstalledPackage;
 
-    public bool ShowCheckButton => !IsUpdateMode && !IsInstalledMode && !CheckComplete;
-    public bool ShowRecheckButton => !IsUpdateMode && !IsInstalledMode && CheckComplete;
-    public bool IsUpdateComplete => IsUpdateMode && InstallComplete && InstallSuccess;
-    public bool ShowUpdateButton => IsUpdateMode && !IsUpdateComplete;
-    public bool ShowReinstallButton => IsInstalledMode && !IsInstalling;
-    public bool ShowUninstallButton => IsInstalledMode && !IsInstalling;
-
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Cursor))]
-    private bool _isCheckingInstalled;
+    private bool _isConnected;
 
-    public Cursor? Cursor => (IsLoading || IsInstalling || IsCheckingInstalled) ? AppStartingCursor : null;
+    // Derived detail state: the item-detail actions always follow the live
+    // Xbox connection + installed state instead of explicit mode flags. The
+    // installed-tab path provides the InstalledPackage directly; the browse
+    // path resolves it through the badge refresh (MatchedInstalledPackage).
+    public bool DetailNeedsConnect => SelectedItem is not null && !IsConnected && !IsInstalling && !InstallComplete && !IsUninstallingDetail;
+    public bool ShowConnectButton => SelectedItem is not null && !IsConnected && !IsInstalling && !InstallComplete && !IsUninstallingDetail;
+    public bool ShowDetailInstallButton => IsConnected && !IsInstalling && !InstallComplete && !IsUninstallingDetail && !ShowWindowsToolBanner && !DetailInstalled;
+    public bool ShowDetailUpdateButton => IsConnected && !IsInstalling && !InstallComplete && !IsUninstallingDetail && !ShowWindowsToolBanner && DetailInstalled && DetailOutdated;
+    public bool ShowDetailReinstallButton => IsConnected && !IsInstalling && !InstallComplete && !IsUninstallingDetail && !ShowWindowsToolBanner && DetailInstalled && !DetailOutdated;
+    public bool ShowDetailUninstallButton => IsConnected && !IsInstalling && !InstallComplete && !IsUninstallingDetail && !ShowWindowsToolBanner && DetailInstalled;
+    public bool ShowFinishButton => InstallComplete && InstallSuccess;
+
+    private bool DetailInstalled => SelectedInstalledPackage is not null || SelectedItem?.IsInstalledOnXbox == true;
+
+    private bool DetailOutdated
+    {
+        get
+        {
+            if (SelectedInstalledPackage is not null &&
+                Version.TryParse(SelectedInstalledPackage.Version, out var installedV) &&
+                SelectedItem is not null &&
+                Version.TryParse(SelectedItem.Version, out var catalogV))
+                return catalogV > installedV;
+            return SelectedItem?.IsOutdatedOnXbox == true;
+        }
+    }
+
+    public string? DetailStatusText
+    {
+        get
+        {
+            if (!IsConnected || SelectedItem is not { } item) return null;
+            if (!DetailInstalled) return null;
+            var installedVersion = SelectedInstalledPackage?.Version ?? item.MatchedInstalledPackage?.Version;
+            installedVersion = string.IsNullOrWhiteSpace(installedVersion) ? null : installedVersion;
+            if (DetailOutdated)
+                return $"Update available — {installedVersion ?? "?"} → {FirstWord(item.Version)}";
+            return installedVersion is null
+                ? "Installed"
+                : $"Installed — v{installedVersion}";
+        }
+    }
+
+    private static string FirstWord(string? value)
+        => string.IsNullOrWhiteSpace(value) ? "?" : value!.Split(' ', StringSplitOptions.TrimEntries)[0];
+
+    public Cursor? Cursor => (IsLoading || IsInstalling) ? AppStartingCursor : null;
 
     private static readonly Cursor AppStartingCursor = new(StandardCursorType.AppStarting);
 
-    [ObservableProperty]
-    private bool _checkComplete;
-
-    [ObservableProperty]
-    private bool _checkInstalled;
-
-    [ObservableProperty]
-    private bool _checkError;
-
-    [ObservableProperty]
-    private string? _checkResultMessage;
-
-    [ObservableProperty]
-    private string? _installResultMessage;
-
     public bool IsNotInstalling => !IsInstalling;
-    public bool CanCheckInstalled => !IsInstalling && !IsCheckingInstalled;
     public bool ShowWindowsToolBanner => SelectedItem?.IsWindowsTool == true;
-    public bool CanInstallXboxItem => IsNotInstalling && !ShowWindowsToolBanner;
-    public bool CanCheckXboxItem => CanCheckInstalled && !ShowWindowsToolBanner;
-    public bool CanRecheckXboxItem => CanRecheck && !ShowWindowsToolBanner;
-    public bool ShowInstallFinishButton => !IsUpdateMode && InstallComplete && InstallSuccess;
-    public bool ShowInstallActionButton => !IsUpdateMode && !IsInstalledMode && !ShowInstallFinishButton;
+    public bool CanInstallXboxItem => IsConnected && !IsInstalling && !InstallComplete && !ShowWindowsToolBanner;
     public bool ShowInstallSuccessResult => InstallComplete && InstallSuccess;
     public bool ShowInstallFailureResult => InstallComplete && !InstallSuccess;
-    public bool IsBusy => IsCheckingInstalled || IsInstalling;
-    public bool ShowDescriptionPanel => !IsInstalling && !InstallComplete && !IsCheckingInstalled && !CheckComplete;
+    public bool IsBusy => IsInstalling;
+    public bool ShowDescriptionPanel => !IsInstalling && !InstallComplete;
     public bool ShowInstallOverlay => IsInstalling || InstallComplete;
-    public bool ShowCheckOverlay => IsCheckingInstalled || CheckComplete;
-    public bool CanRecheck => CheckComplete && !IsCheckingInstalled;
-    public bool ShowCheckNotInstalled => CheckComplete && !CheckInstalled && !CheckError;
-    public bool ShowCheckNotDetectedHint => ShowCheckNotInstalled;
-    public bool ShowCheckNotConnectedHint => CheckComplete && CheckError && CheckResultMessage == "Not connected";
-    public string? CheckVersionHint => CheckInstalled ? $"Available: {SelectedItem?.Version}" : null;
 
     partial void OnIsInstallingChanged(bool value)
     {
         OnPropertyChanged(nameof(IsNotInstalling));
-        OnPropertyChanged(nameof(CanCheckInstalled));
         OnPropertyChanged(nameof(CanInstallXboxItem));
-        OnPropertyChanged(nameof(CanCheckXboxItem));
-        OnPropertyChanged(nameof(CanRecheckXboxItem));
         OnPropertyChanged(nameof(ShowDescriptionPanel));
         OnPropertyChanged(nameof(ShowInstallOverlay));
         OnPropertyChanged(nameof(IsBusy));
+        RaiseDetailDerived();
     }
 
     partial void OnInstallCompleteChanged(bool value)
     {
         OnPropertyChanged(nameof(ShowDescriptionPanel));
         OnPropertyChanged(nameof(ShowInstallOverlay));
-        OnPropertyChanged(nameof(IsUpdateComplete));
-        OnPropertyChanged(nameof(ShowUpdateButton));
-        OnPropertyChanged(nameof(ShowInstallFinishButton));
-        OnPropertyChanged(nameof(ShowInstallActionButton));
         OnPropertyChanged(nameof(ShowInstallSuccessResult));
         OnPropertyChanged(nameof(ShowInstallFailureResult));
+        RaiseDetailDerived();
     }
 
     partial void OnInstallSuccessChanged(bool value)
     {
         if (value && SelectedItem is not null)
             _versionChecker.MarkJustUpdated(SelectedItem.Name);
-        OnPropertyChanged(nameof(IsUpdateComplete));
-        OnPropertyChanged(nameof(ShowUpdateButton));
-        OnPropertyChanged(nameof(ShowInstallFinishButton));
-        OnPropertyChanged(nameof(ShowInstallActionButton));
         OnPropertyChanged(nameof(ShowInstallSuccessResult));
         OnPropertyChanged(nameof(ShowInstallFailureResult));
+        RaiseDetailDerived();
 
         // Refresh installed badges after install completes
         if (value)
             _ = UpdateInstalledBadgesAsync();
     }
 
-    partial void OnCheckCompleteChanged(bool value)
+    partial void OnIsConnectedChanged(bool value) => RaiseDetailDerived();
+
+    partial void OnIsUninstallingDetailChanged(bool value)
     {
-        OnPropertyChanged(nameof(ShowDescriptionPanel));
-        OnPropertyChanged(nameof(ShowCheckOverlay));
-        OnPropertyChanged(nameof(CanRecheck));
-        OnPropertyChanged(nameof(CanRecheckXboxItem));
-        OnPropertyChanged(nameof(ShowCheckNotInstalled));
-        OnPropertyChanged(nameof(ShowCheckNotDetectedHint));
-        OnPropertyChanged(nameof(ShowCheckNotConnectedHint));
-        OnPropertyChanged(nameof(CheckVersionHint));
-        OnPropertyChanged(nameof(ShowCheckButton));
-        OnPropertyChanged(nameof(ShowRecheckButton));
+        OnPropertyChanged(nameof(ShowUninstallOverlay));
+        OnPropertyChanged(nameof(CanInstallXboxItem));
+        RaiseDetailDerived();
     }
 
-    partial void OnCheckInstalledChanged(bool value)
+    partial void OnUninstallDetailFailedChanged(bool value)
     {
-        OnPropertyChanged(nameof(CheckVersionHint));
+        OnPropertyChanged(nameof(ShowUninstallOverlay));
+        RaiseDetailDerived();
     }
 
-    partial void OnIsCheckingInstalledChanged(bool value)
+    partial void OnSelectedInstalledPackageChanged(InstalledPackage? value) => RaiseDetailDerived();
+
+    partial void OnSelectedItemChanged(CatalogItem? value)
     {
-        OnPropertyChanged(nameof(CanCheckInstalled));
-        OnPropertyChanged(nameof(CanCheckXboxItem));
-        OnPropertyChanged(nameof(CanRecheckXboxItem));
-        OnPropertyChanged(nameof(ShowCheckOverlay));
-        OnPropertyChanged(nameof(ShowDescriptionPanel));
-        OnPropertyChanged(nameof(CanRecheck));
-        OnPropertyChanged(nameof(ShowCheckNotInstalled));
-        OnPropertyChanged(nameof(ShowCheckNotDetectedHint));
-        OnPropertyChanged(nameof(ShowCheckNotConnectedHint));
-        OnPropertyChanged(nameof(IsBusy));
+        if (_prevSelectedItem is not null)
+            _prevSelectedItem.IsSelected = false;
+        _prevSelectedItem = value;
+        if (value is null)
+        {
+            UnsubscribeSelectedItemBadges();
+            return;
+        }
+
+        value.IsSelected = true;
+        IsInstalling = false;
+        InstallComplete = false;
+        InstallSuccess = false;
+        InstallProgress = 0;
+        InstallStatus = null;
+        InstallResultMessage = null;
+        SelectedInstalledPackage = null;
+        SubscribeSelectedItemBadges(value);
+        OnPropertyChanged(nameof(ShowWindowsToolBanner));
+        OnPropertyChanged(nameof(CanInstallXboxItem));
+        RaiseDetailDerived();
+        Logger.Info($"Item selected: [{value.Category}] {value.Name} v{value.Version}");
+        if (ShowDetailAction is null)
+            Logger.Info("ShowDetailAction is NULL — detail window will not open");
+        ShowDetailAction?.Invoke(value);
     }
 
-    partial void OnIsUpdateModeChanged(bool value)
+    private void SubscribeSelectedItemBadges(CatalogItem item)
     {
-        OnPropertyChanged(nameof(ShowCheckButton));
-        OnPropertyChanged(nameof(ShowRecheckButton));
-        OnPropertyChanged(nameof(IsUpdateComplete));
-        OnPropertyChanged(nameof(ShowUpdateButton));
-        OnPropertyChanged(nameof(ShowInstallFinishButton));
-        OnPropertyChanged(nameof(ShowInstallActionButton));
+        UnsubscribeSelectedItemBadges();
+        _badgeSubscribedItem = item;
+        _selectedItemBadgesHandler ??= OnSelectedItemBadgeChanged;
+        item.PropertyChanged += _selectedItemBadgesHandler;
     }
 
-    partial void OnIsInstalledModeChanged(bool value)
+    private void UnsubscribeSelectedItemBadges()
     {
-        OnPropertyChanged(nameof(ShowCheckButton));
-        OnPropertyChanged(nameof(ShowRecheckButton));
-        OnPropertyChanged(nameof(ShowReinstallButton));
-        OnPropertyChanged(nameof(ShowUninstallButton));
-        OnPropertyChanged(nameof(ShowInstallActionButton));
+        if (_badgeSubscribedItem is not null && _selectedItemBadgesHandler is not null)
+        {
+            _badgeSubscribedItem.PropertyChanged -= _selectedItemBadgesHandler;
+            _badgeSubscribedItem = null;
+        }
+    }
+
+    private void OnSelectedItemBadgeChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(CatalogItem.IsInstalledOnXbox) or nameof(CatalogItem.IsOutdatedOnXbox) or nameof(CatalogItem.MatchedInstalledPackage))
+            RaiseDetailDerived();
+    }
+
+    private void RaiseDetailDerived()
+    {
+        OnPropertyChanged(nameof(DetailNeedsConnect));
+        OnPropertyChanged(nameof(ShowConnectButton));
+        OnPropertyChanged(nameof(ShowDetailInstallButton));
+        OnPropertyChanged(nameof(ShowDetailUpdateButton));
+        OnPropertyChanged(nameof(ShowDetailReinstallButton));
+        OnPropertyChanged(nameof(ShowDetailUninstallButton));
+        OnPropertyChanged(nameof(ShowFinishButton));
+        OnPropertyChanged(nameof(DetailStatusText));
+        OnPropertyChanged(nameof(CanInstallXboxItem));
+        OnPropertyChanged(nameof(ShowUninstallOverlay));
+    }
+
+    public bool ShowUninstallOverlay => IsUninstallingDetail || UninstallDetailFailed;
+
+    [RelayCommand]
+    private async Task ConnectFromDetailAsync()
+    {
+        if (ShowConnectAction is null)
+        {
+            Logger.Warn("ConnectFromDetail called but ShowConnectAction is null");
+            return;
+        }
+        Logger.Info("ConnectFromDetail — opening connection");
+        var ok = await ShowConnectAction();
+        if (ok)
+        {
+            Logger.Info("ConnectFromDetail — connected, refreshing detail state");
+            if (SelectedItem?.MatchedInstalledPackage is not null && SelectedInstalledPackage is null)
+                SelectedInstalledPackage = SelectedItem.MatchedInstalledPackage;
+        }
+        RaiseDetailDerived();
     }
 
     /// <summary>
@@ -363,11 +469,13 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
                     {
                         item.IsOutdatedOnXbox = false;
                     }
+                    item.MatchedInstalledPackage = match;
                 }
                 else
                 {
                     item.IsInstalledOnXbox = false;
                     item.IsOutdatedOnXbox = false;
+                    item.MatchedInstalledPackage = null;
                 }
             }
 
@@ -379,123 +487,13 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         }
     }
 
-    [RelayCommand]
-    private async Task CheckInstalledAsync()
-    {
-        var item = SelectedItem;
-        if (item is null)
-        {
-            Logger.Warn("CheckInstalled called with no selected item");
-            return;
-        }
-
-        IsCheckingInstalled = true;
-        CheckComplete = false;
-        CheckInstalled = false;
-        CheckError = false;
-        CheckResultMessage = null;
-        InstallComplete = false;
-        Logger.Debug($"Checking install status for [{item.Category}] {item.Name}");
-
-        if (item.IsWindowsTool)
-        {
-            CheckComplete = true;
-            CheckResultMessage = "Windows tool — not an Xbox package";
-            Logger.Debug("Skipping check for Windows tool");
-            IsCheckingInstalled = false;
-            return;
-        }
-
-        if (!_authService.IsConfigured)
-        {
-            CheckComplete = true;
-            CheckError = true;
-            CheckResultMessage = "Not configured";
-            Logger.Debug("Xbox not configured — skipping installed check");
-            IsCheckingInstalled = false;
-            return;
-        }
-        if (!await _authService.EnsureConnectedAsync())
-        {
-            CheckComplete = true;
-            CheckError = true;
-            CheckResultMessage = "Not connected";
-            Logger.Debug("Xbox not connected — skipping installed check");
-            IsCheckingInstalled = false;
-            return;
-        }
-
-        try
-        {
-            Logger.Debug("Fetching installed packages from Xbox...");
-            var packages = await _packageService.GetInstalledPackagesAsync();
-            Logger.Debug($"Got {packages.Count} installed packages from Xbox");
-
-            var match = packages.FirstOrDefault(p => _versionChecker.IsPackageMatch(item, p));
-            CheckComplete = true;
-
-            if (match is not null)
-            {
-                CheckInstalled = true;
-                CheckResultMessage = match.Version;
-                Logger.Trace($"Found installed: {item.Name} v{match.Version}");
-            }
-            else
-            {
-                CheckResultMessage = "Not installed";
-                Logger.Trace($"Not installed: {item.Name}");
-            }
-        }
-        catch (Exception ex)
-        {
-            CheckComplete = true;
-            CheckError = true;
-            CheckResultMessage = "Check failed";
-            Logger.Error(ex, $"Check installed failed for {item.Name}");
-        }
-        finally
-        {
-            IsCheckingInstalled = false;
-            Logger.Debug("CheckInstalled completed");
-        }
-    }
-
     partial void OnSearchTextChanged(string value) => ApplyFilters();
     partial void OnSelectedCategoryChanged(string value) => ApplyFilters();
     partial void OnShowExperimentalChanged(bool value) => ApplyFilters();
 
     private CatalogItem? _prevSelectedItem;
-
-    partial void OnSelectedItemChanged(CatalogItem? value)
-    {
-        if (_prevSelectedItem is not null)
-            _prevSelectedItem.IsSelected = false;
-        _prevSelectedItem = value;
-
-        if (value is not null)
-        {
-            value.IsSelected = true;
-            IsInstalling = false;
-            IsCheckingInstalled = false;
-            InstallComplete = false;
-            InstallSuccess = false;
-            InstallProgress = 0;
-            InstallStatus = null;
-            InstallResultMessage = null;
-            CheckComplete = false;
-            CheckInstalled = false;
-            CheckError = false;
-            CheckResultMessage = null;
-            OnPropertyChanged(nameof(ShowWindowsToolBanner));
-            OnPropertyChanged(nameof(CanInstallXboxItem));
-            OnPropertyChanged(nameof(CanCheckXboxItem));
-            OnPropertyChanged(nameof(CanRecheckXboxItem));
-            Logger.Info($"Item selected: [{value.Category}] {value.Name} v{value.Version}");
-            if (ShowDetailAction is null)
-                Logger.Info("ShowDetailAction is NULL — detail window will not open");
-            ShowDetailAction?.Invoke(value);
-        }
-    }
+    private CatalogItem? _badgeSubscribedItem;
+    private System.ComponentModel.PropertyChangedEventHandler? _selectedItemBadgesHandler;
 
     [RelayCommand]
     private async Task LoadCatalogAsync()
@@ -664,10 +662,6 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         if (!await _authService.EnsureConnectedAsync())
         {
             Logger.Info("Xbox not connected — cannot install");
-            CheckComplete = false;
-            CheckInstalled = false;
-            CheckError = false;
-            CheckResultMessage = null;
             InstallComplete = true;
             InstallSuccess = false;
             InstallResultMessage = "Not connected. Connect via sidebar first.";
@@ -680,10 +674,6 @@ public partial class BrowseViewModel : ObservableObject, IDisposable
         _installCts?.Dispose();
         _installCts = new CancellationTokenSource();
 
-        CheckComplete = false;
-        CheckInstalled = false;
-        CheckError = false;
-        CheckResultMessage = null;
         IsInstalling = true;
         InstallComplete = false;
         InstallResultMessage = null;

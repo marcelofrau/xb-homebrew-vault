@@ -61,11 +61,10 @@ public sealed class DesktopUiActions
         WireBrowseDetailActions();
 
         _s.Update.OpenUpdateDialogAsync = catalogItem =>
-        {
-            _s.Browse.IsUpdateMode = true;
-            _s.Browse.SelectedItem = catalogItem;
-            return Task.CompletedTask;
-        };
+                {
+                    _s.Browse.SelectedItem = catalogItem;
+                    return Task.CompletedTask;
+                };
         _s.Update.Start();
         _s.Browse.OnCatalogLoaded = () =>
         {
@@ -218,15 +217,13 @@ public sealed class DesktopUiActions
                 var detail = new ItemDetailWindow { DataContext = _s.Browse };
                 Logger.Debug("ItemDetailWindow created");
                 detail.Closed += (_, _) =>
-                {
-                    Logger.Debug("ItemDetailWindow closed — resetting SelectedItem");
-                    if (_s.Browse.IsUpdateComplete)
-                        _ = _s.Installed.RefreshPackagesCommand.ExecuteAsync(null);
-                    _s.Browse.IsUpdateMode = false;
-                    _s.Browse.IsInstalledMode = false;
-                    _s.Browse.SelectedInstalledPackage = null;
-                    _s.Browse.SelectedItem = null;
-                };
+                                {
+                                    Logger.Debug("ItemDetailWindow closed — resetting SelectedItem");
+                                    if (_s.Browse.InstallComplete && _s.Browse.InstallSuccess)
+                                        _ = _s.Installed.RefreshPackagesCommand.ExecuteAsync(null);
+                                    _s.Browse.SelectedInstalledPackage = null;
+                                    _s.Browse.SelectedItem = null;
+                                };
                 _s.Browse.CloseDetailAction = () => detail.Close();
                 Logger.Debug("Calling ShowDialog on ItemDetailWindow");
                 detail.ShowDialog(_main);
@@ -389,24 +386,35 @@ public sealed class DesktopUiActions
             return result;
         };
         _s.Installed.RescanUpdatesAction = () => _s.Update.ScanAsync();
-        _s.Installed.ShowCatalogDetailAction = catalogItem =>
-        {
-            _s.Browse.IsUpdateMode = true;
-            _s.Browse.SelectedItem = catalogItem;
-        };
+        _s.Installed.ShowCatalogDetailAction = (pkg, catalogItem) =>
+                {
+                    _s.Browse.SelectedInstalledPackage = pkg;
+                    _s.Browse.SelectedItem = catalogItem;
+                };
         _s.Installed.ShowInstalledDetailAction = (pkg, match, isOutdated) =>
         {
             _s.Browse.SelectedInstalledPackage = pkg;
-            _s.Browse.IsInstalledMode = !isOutdated;
-            _s.Browse.IsUpdateMode = isOutdated;
             _s.Browse.SelectedItem = match;
         };
-        _s.Installed.ReinstallInstallAction = () =>
+        _s.Installed.ReinstallInstallAction = pkg =>
         {
-            _s.Browse.IsInstalledMode = false;
-            _s.Browse.SelectedInstalledPackage = null;
-            _s.Browse.IsUpdateMode = false;
+            var (match, _) = _s.Browse.FindCatalogMatch(pkg);
+            if (match is not null)
+                _s.Browse.SelectedItem = match;
+            _s.Browse.SelectedInstalledPackage = pkg;
             _s.Browse.InstallSelectedCommand.Execute(null);
+        };
+
+        _s.Browse.ShowConnectAction = async () =>
+        {
+            if (!SettingsService.Current.XboxConnection.IsConfigured)
+            {
+                if (_s.Settings.ReconfigureCredentialsRequested is not null)
+                    await _s.Settings.ReconfigureCredentialsRequested();
+                if (!Auth.IsConfigured)
+                    return false;
+            }
+            return await (_s.Main.ShowConnectAction?.Invoke() ?? Task.FromResult(false));
         };
         _s.Installed.ConfirmReinstallAsync = async pkg =>
         {
@@ -421,10 +429,18 @@ public sealed class DesktopUiActions
             await confirmWindow.ShowDialog(_main);
             return confirmVm.Confirmed;
         };
-        _s.Browse.UninstallFromDetailAction = pkg =>
+        _s.Browse.ConfirmUninstallAsync = async pkg =>
         {
-            _s.Browse.CloseDetailAction?.Invoke();
-            _ = _s.Installed.UninstallPackageCommand.ExecuteAsync(pkg);
+            var confirmVm = new ConfirmViewModel(
+                            "Confirm Uninstall",
+                            $"Uninstall \"{pkg.Name}\"? This will remove the app from your Xbox.",
+                            "Uninstall", "Cancel",
+                            "avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png",
+                            "avares://XBVault/Assets/Views/InstalledView/installed-uninstall-100.png",
+                            isDestructive: true);
+            var confirmWindow = new ConfirmWindow { DataContext = confirmVm };
+            await confirmWindow.ShowDialog(_main);
+            return confirmVm.Confirmed;
         };
         _s.Browse.ReinstallFromDetailAction = pkg =>
             _s.Installed.ReinstallPackageCommand.ExecuteAsync(pkg);

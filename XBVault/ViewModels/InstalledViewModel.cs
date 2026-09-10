@@ -282,9 +282,9 @@ public partial class InstalledViewModel : ObservableObject
     public Func<string, string, string, Func<Task>?, Task>? ShowErrorWithConnectAction { get; set; }
     public Func<InstalledPackage, Task<Bitmap?>>? ResolveBannerAsync { get; set; }
     public Func<InstalledPackage, Task<(CatalogItem? match, bool isOutdated)>>? CheckOutdatedAsync { get; set; }
-    public Action<CatalogItem>? ShowCatalogDetailAction { get; set; }
+    public Action<InstalledPackage?, CatalogItem>? ShowCatalogDetailAction { get; set; }
     public Action<InstalledPackage, CatalogItem, bool>? ShowInstalledDetailAction { get; set; }
-    public Action? ReinstallInstallAction { get; set; }
+    public Action<InstalledPackage>? ReinstallInstallAction { get; set; }
     public Func<InstalledPackage, Task<bool>>? ConfirmReinstallAsync { get; set; }
     public Action? OnCatalogReady { get; set; }
     public Func<InstalledPackage, string?, Task<bool>>? ConfirmAutostartAction { get; set; }
@@ -319,7 +319,7 @@ public partial class InstalledViewModel : ObservableObject
         {
             var (match, _) = await CheckOutdatedAsync(SelectedPackage);
             if (match is not null)
-                ShowCatalogDetailAction(match);
+                ShowCatalogDetailAction(SelectedPackage, match);
         }
         catch (Exception ex)
         {
@@ -366,7 +366,7 @@ public partial class InstalledViewModel : ObservableObject
         Logger.Info($"ReinstallPackage fired, reinstalling over {pkg.Name}");
         try
         {
-            ReinstallInstallAction?.Invoke();
+            ReinstallInstallAction?.Invoke(pkg);
         }
         catch (Exception ex)
         {
@@ -804,7 +804,7 @@ public partial class InstalledViewModel : ObservableObject
         {
             var (match, _) = await CheckOutdatedAsync(pkg);
             if (match is not null)
-                ShowCatalogDetailAction(match);
+                ShowCatalogDetailAction(pkg, match);
         }
         catch (Exception ex)
         {

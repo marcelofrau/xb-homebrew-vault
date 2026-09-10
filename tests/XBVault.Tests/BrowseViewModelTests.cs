@@ -21,6 +21,7 @@ public class BrowseViewModelTests : IDisposable
 
     private sealed class FakeAuth : IXboxAuthService
     {
+        public FakeAuth(bool connected) => IsConnected = connected;
         public bool IsConnected { get; set; }
         public event Action<bool>? ConnectionChanged;
         public bool IsConfigured => true;
@@ -30,8 +31,8 @@ public class BrowseViewModelTests : IDisposable
         public SshConnectionInfo GetSshCredentials() => new("localhost", 22, "user", "pass");
         public Task<string?> FetchSmbPasswordAsync() => Task.FromResult<string?>(null);
         public string? GetDevPortalUrl() => null;
-        public void MarkConnected() { }
-        public void Disconnect() { }
+        public void MarkConnected() => ConnectionChanged?.Invoke(true);
+        public void Disconnect() => ConnectionChanged?.Invoke(false);
         public Task<bool> EnsureConnectedAsync(CancellationToken ct = default) => Task.FromResult(true);
         public Task<ConnectionTestResult> TestConnectionAsync(CancellationToken ct = default)
             => Task.FromResult(new ConnectionTestResult(true, 200, null));
@@ -53,90 +54,218 @@ public class BrowseViewModelTests : IDisposable
             => Task.FromResult(true);
     }
 
-    private BrowseViewModel Build()
+    private (BrowseViewModel Vm, FakeAuth Auth) Build(bool connected = false)
     {
-        var auth = new FakeAuth();
+        var auth = new FakeAuth(connected);
         var pkg = new FakePackages();
         var cache = new CacheService(Path.Combine(_dir, "cache"));
         var installService = new PackageInstallService(cache, pkg);
         var catalogService = new CatalogApiService();
         var overrideService = new PackageOverrideService();
         var checker = new VersionCheckerService(overrideService, new UpdateVersionCache(Path.Combine(_dir, "cache2.json")));
-        return new BrowseViewModel(installService, auth, pkg, catalogService, overrideService, checker);
+        return (new BrowseViewModel(installService, auth, pkg, catalogService, overrideService, checker), auth);
+    }
+
+    private static CatalogItem Item(bool installed = false, bool outdated = false, string? installedVersion = null)
+    {
+        var item = new CatalogItem { Name = "Zelda 64: Recompiled", Version = "2.9.2" };
+        item.IsInstalledOnXbox = installed;
+        item.IsOutdatedOnXbox = outdated;
+        if (installed && installedVersion is not null)
+            item.MatchedInstalledPackage = new InstalledPackage { Name = item.Name, Version = installedVersion };
+        return item;
     }
 
     [Fact]
-    public void Default_NotInstalledMode_ReinstallAndUninstallHidden()
+    public void NotConnected_ShowsConnectButton_HidesAllActions()
     {
-        var vm = Build();
-        Assert.False(vm.IsInstalledMode);
-        Assert.False(vm.ShowReinstallButton);
-        Assert.False(vm.ShowUninstallButton);
-        Assert.True(vm.ShowCheckButton);
-        Assert.True(vm.ShowInstallActionButton);
+        var (vm, _) = Build();
+        vm.SelectedItem = Item();
+        Assert.False(vm.IsConnected);
+        Assert.True(vm.DetailNeedsConnect);
+        Assert.True(vm.ShowConnectButton);
+        Assert.False(vm.ShowDetailInstallButton);
+        Assert.False(vm.ShowDetailUpdateButton);
+        Assert.False(vm.ShowDetailReinstallButton);
+        Assert.False(vm.ShowDetailUninstallButton);
+        Assert.Null(vm.DetailStatusText);
     }
 
     [Fact]
-    public void InstalledMode_ShowsReinstallAndUninstall_HidesCheckAndInstall()
+    public void NoSelection_HidesAllActionsAndConnect()
     {
-        var vm = Build();
-        vm.IsInstalledMode = true;
-        Assert.True(vm.ShowReinstallButton);
-        Assert.True(vm.ShowUninstallButton);
-        Assert.False(vm.ShowCheckButton);
-        Assert.False(vm.ShowInstallActionButton);
+        var (vm, _) = Build();
+        Assert.False(vm.DetailNeedsConnect);
+        Assert.False(vm.ShowConnectButton);
+        Assert.False(vm.ShowDetailInstallButton);
+        Assert.False(vm.ShowDetailUpdateButton);
+        Assert.False(vm.ShowDetailReinstallButton);
+        Assert.False(vm.ShowDetailUninstallButton);
     }
 
     [Fact]
-    public void UpdatingMode_DoesNotShowReinstallOrUninstall()
+    public void Connected_NotInstalled_ShowsInstallOnly()
     {
-        var vm = Build();
-        vm.IsInstalledMode = true;
-        vm.IsUpdateMode = true;
-        vm.IsInstalledMode = false;
-        Assert.False(vm.ShowReinstallButton);
-        Assert.False(vm.ShowUninstallButton);
+        var (vm, _) = Build(connected: true);
+        vm.SelectedItem = Item();
+        Assert.False(vm.ShowConnectButton);
+        Assert.True(vm.ShowDetailInstallButton);
+        Assert.False(vm.ShowDetailUpdateButton);
+        Assert.False(vm.ShowDetailReinstallButton);
+        Assert.False(vm.ShowDetailUninstallButton);
+        Assert.Null(vm.DetailStatusText);
     }
 
     [Fact]
-    public void InstalledMode_WhileInstalling_HidesReinstallAndUninstall()
+    public void Connected_InstalledUpToDate_ShowsReinstallAndUninstall()
     {
-        var vm = Build();
-        vm.IsInstalledMode = true;
-        Assert.True(vm.ShowReinstallButton);
+        var (vm, _) = Build(connected: true);
+        vm.SelectedItem = Item(installed: true, installedVersion: "2.9.2");
+        Assert.False(vm.ShowConnectButton);
+        Assert.False(vm.ShowDetailInstallButton);
+        Assert.False(vm.ShowDetailUpdateButton);
+        Assert.True(vm.ShowDetailReinstallButton);
+        Assert.True(vm.ShowDetailUninstallButton);
+        Assert.Contains("2.9.2", vm.DetailStatusText);
+    }
+
+    [Fact]
+    public void Connected_InstalledOutdated_ShowsUpdateAndUninstall_NotReinstall()
+    {
+        var (vm, _) = Build(connected: true);
+        vm.SelectedItem = Item(installed: true, outdated: true, installedVersion: "2.9.0");
+        Assert.False(vm.ShowDetailInstallButton);
+        Assert.True(vm.ShowDetailUpdateButton);
+        Assert.False(vm.ShowDetailReinstallButton);
+        Assert.True(vm.ShowDetailUninstallButton);
+        Assert.Contains("Update available", vm.DetailStatusText);
+        Assert.Contains("2.9.0", vm.DetailStatusText);
+    }
+
+    [Fact]
+    public void Connected_InstalledNotOutdated_WithSelectedPackage_UsesPackageForStatus()
+    {
+        var (vm, _) = Build(connected: true);
+        vm.SelectedItem = Item(installed: true, installedVersion: "2.9.1");
+        Assert.True(vm.ShowDetailReinstallButton);
+        Assert.Contains("2.9.1", vm.DetailStatusText);
+    }
+
+    [Fact]
+    public void Installed_WhileInstalling_HidesReinstallAndUninstall()
+    {
+        var (vm, _) = Build(connected: true);
+        vm.SelectedItem = Item(installed: true, installedVersion: "2.9.2");
         vm.IsInstalling = true;
-        Assert.False(vm.ShowReinstallButton);
-        Assert.False(vm.ShowUninstallButton);
+        Assert.False(vm.ShowConnectButton);
+        Assert.False(vm.ShowDetailInstallButton);
+        Assert.False(vm.ShowDetailUpdateButton);
+        Assert.False(vm.ShowDetailReinstallButton);
+        Assert.False(vm.ShowDetailUninstallButton);
     }
 
     [Fact]
-    public void UninstallFromDetail_FiresDelegateWithSelectedInstalledPackage()
+    public void InstallComplete_Success_ShowsFinishButton()
     {
-        var vm = Build();
+        var (vm, _) = Build(connected: true);
+        vm.SelectedItem = Item();
+        vm.InstallComplete = true;
+        vm.InstallSuccess = true;
+        Assert.True(vm.ShowFinishButton);
+        Assert.False(vm.ShowDetailInstallButton);
+        Assert.False(vm.ShowDetailUninstallButton);
+    }
+
+    [Fact]
+    public void ConnectFromDetail_FiresDelegate()
+    {
+        var (vm, _) = Build();
+        vm.SelectedItem = Item();
+        var fired = false;
+        vm.ShowConnectAction = () => { fired = true; return Task.FromResult(true); };
+        Assert.True(vm.ConnectFromDetailCommand.CanExecute(null));
+        vm.ConnectFromDetailCommand.Execute(null);
+        Assert.True(fired);
+    }
+
+    [Fact]
+    public async Task ConnectFromDetail_AfterConnected_HydratesSelectedPackageFromMatched()
+    {
+        var (vm, auth) = Build();
+        var item = Item(installed: true, installedVersion: "2.9.2");
+        vm.SelectedItem = item;
+        vm.ShowConnectAction = () =>
+        {
+            auth.MarkConnected();
+            return Task.FromResult(true);
+        };
+        await vm.ConnectFromDetailCommand.ExecuteAsync(null);
+        Assert.Same(item.MatchedInstalledPackage, vm.SelectedInstalledPackage);
+        Assert.True(vm.ShowDetailReinstallButton);
+    }
+
+    [Fact]
+    public async Task UninstallFromDetail_ConfirmedUninstallsAndClosesDetail()
+    {
+        var (vm, _) = Build(connected: true);
         var pkg = new InstalledPackage { Name = "Zelda 64: Recompiled" };
-        InstalledPackage? received = null;
-        vm.UninstallFromDetailAction = p => received = p;
+        var closed = false;
+        vm.CloseDetailAction = () => closed = true;
+        vm.ConfirmUninstallAsync = _ => Task.FromResult(true);
         vm.SelectedInstalledPackage = pkg;
         Assert.True(vm.UninstallFromDetailCommand.CanExecute(null));
-        vm.UninstallFromDetailCommand.Execute(null);
-        Assert.Same(pkg, received);
+        await vm.UninstallFromDetailCommand.ExecuteAsync(null);
+        Assert.False(vm.IsUninstallingDetail);
+        Assert.False(vm.UninstallDetailFailed);
+        Assert.True(closed);
     }
 
     [Fact]
-    public void UninstallFromDetail_NoSelectedPackage_DoesNotFire()
+    public async Task UninstallFromDetail_Declined_DoesNotUninstallNorClose()
     {
-        var vm = Build();
-        var fired = false;
-        vm.UninstallFromDetailAction = _ => fired = true;
+        var (vm, _) = Build(connected: true);
+        var pkg = new InstalledPackage { Name = "Zelda 64: Recompiled" };
+        var closed = false;
+        vm.CloseDetailAction = () => closed = true;
+        vm.ConfirmUninstallAsync = _ => Task.FromResult(false);
+        vm.SelectedInstalledPackage = pkg;
+        await vm.UninstallFromDetailCommand.ExecuteAsync(null);
+        Assert.False(vm.IsUninstallingDetail);
+        Assert.False(closed);
+    }
+
+    [Fact]
+    public async Task UninstallFromDetail_NoSelectedPackage_DoesNotFire()
+    {
+        var (vm, _) = Build(connected: true);
+        var closed = false;
+        vm.CloseDetailAction = () => closed = true;
         vm.SelectedInstalledPackage = null;
-        vm.UninstallFromDetailCommand.Execute(null);
-        Assert.False(fired);
+        vm.SelectedItem = null;
+        await vm.UninstallFromDetailCommand.ExecuteAsync(null);
+        Assert.False(vm.IsUninstallingDetail);
+        Assert.False(closed);
+    }
+
+    [Fact]
+    public async Task UninstallFromDetail_UsesMatchedInstalledPackage_FromBrowse()
+    {
+        var (vm, _) = Build(connected: true);
+        var item = new CatalogItem { Name = "Zelda 64: Recompiled" };
+        item.MatchedInstalledPackage = new InstalledPackage { Name = "Zelda 64: Recompiled" };
+        vm.SelectedItem = item;
+        var closed = false;
+        vm.CloseDetailAction = () => closed = true;
+        vm.ConfirmUninstallAsync = _ => Task.FromResult(true);
+        await vm.UninstallFromDetailCommand.ExecuteAsync(null);
+        Assert.False(vm.IsUninstallingDetail);
+        Assert.True(closed);
     }
 
     [Fact]
     public async Task ReinstallFromDetail_FiresDelegateWithSelectedInstalledPackage()
     {
-        var vm = Build();
+        var (vm, _) = Build(connected: true);
         var pkg = new InstalledPackage { Name = "Zelda 64: Recompiled" };
         InstalledPackage? received = null;
         vm.ReinstallFromDetailAction = p => { received = p; return Task.CompletedTask; };

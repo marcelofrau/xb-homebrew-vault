@@ -89,6 +89,12 @@ public partial class CatalogItem : ObservableObject
     [NotifyPropertyChangedFor(nameof(BadgeBrush))]
     private bool _isOutdatedOnXbox;
 
+    // Matched from the connected Xbox during the badge refresh; drives the
+    // reinstall/uninstall actions on the browse item detail.
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private InstalledPackage? _matchedInstalledPackage;
+
     [JsonIgnore]
     public bool IsThumbnailLoading => Thumbnail is null;
 

@@ -262,6 +262,7 @@ public partial class ConnectionViewModel : ObservableObject, IDisposable
                 AddLine("Link established at " + baseUrl);
                 Progress = 1.0;
                 IsSuccess = true;
+                _authService.MarkConnected();
             }
             else
             {

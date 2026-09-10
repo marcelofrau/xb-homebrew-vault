@@ -95,6 +95,61 @@
                      VerticalAlignment="Center"/>
         </Grid>
 
+        <!-- Not connected banner -->
+        <Border IsVisible="{Binding ShowConnectButton}"
+                Background="#2A7F8C8D"
+                BorderBrush="#557F8C8D"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="12,10"
+                Margin="0,12,0,0">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-status-disconnected-16.png"
+                   Width="26" Height="26" Stretch="Uniform"
+                   VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Not connected to Xbox"
+                         FontSize="14" FontWeight="SemiBold" Foreground="White"/>
+              <TextBlock Text="Install status appears after you connect."
+                         FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                         TextWrapping="Wrap"/>
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- Installed status chip -->
+        <Border IsVisible="{Binding ShowDetailReinstallButton}"
+                Background="#2A2ECC71"
+                BorderBrush="#552ECC71"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="12,10"
+                Margin="0,12,0,0">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-status-connected-16.png"
+                   Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="{Binding DetailStatusText}"
+                       FontSize="13" FontWeight="SemiBold"
+                       Foreground="#2ECC71" VerticalAlignment="Center" TextWrapping="Wrap"/>
+          </Grid>
+        </Border>
+        <!-- Update available chip -->
+        <Border IsVisible="{Binding ShowDetailUpdateButton}"
+                Background="#2A2ECC71"
+                BorderBrush="#552ECC71"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="12,10"
+                Margin="0,12,0,0">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-status-connected-16.png"
+                   Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="{Binding DetailStatusText}"
+                       FontSize="13" FontWeight="SemiBold"
+                       Foreground="#2ECC71" VerticalAlignment="Center" TextWrapping="Wrap"/>
+          </Grid>
+        </Border>
+
         <!-- Description -->
         <TextBlock Text="{Binding SelectedItem.Description}"
                    FontSize="14" Foreground="{StaticResource TextMutedBrush}"
@@ -327,67 +382,36 @@
                      IsVisible="{Binding CurrentFile, Converter={StaticResource StringNotEmpty}}"/>
         </StackPanel>
 
-        <!-- Check overlay: spinner + results (only when active or complete) -->
-        <StackPanel IsVisible="{Binding ShowCheckOverlay}"
+        <!-- Uninstall overlay: spinner while removing, failure result -->
+        <StackPanel IsVisible="{Binding ShowUninstallOverlay}"
                     VerticalAlignment="Center"
                     Spacing="8">
           <controls:CdSpinner HorizontalAlignment="Center"
-                              IsVisible="{Binding CheckComplete, Converter={StaticResource BoolInverse}}"/>
-          <TextBlock Text="Checking version on console..."
-                     FontSize="13"
-                     Foreground="{StaticResource TextMutedBrush}"
-                     TextAlignment="Center"
-                     IsVisible="{Binding CheckComplete, Converter={StaticResource BoolInverse}}"/>
-          <!-- Check complete: results -->
-          <StackPanel Spacing="6" IsVisible="{Binding CheckComplete}">
-            <!-- Installed -->
-            <StackPanel Spacing="6" IsVisible="{Binding CheckInstalled}">
-              <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-checkinstalled-100.png"
-                     Width="80" Height="80" Stretch="Uniform"
-                     HorizontalAlignment="Center"/>
-              <TextBlock FontSize="18" FontWeight="Bold"
-                         Foreground="{StaticResource SuccessBrush}"
-                         TextAlignment="Center"
-                         Text="{Binding CheckResultMessage, StringFormat='Installed: {0}'}"/>
-              <TextBlock Text="{Binding CheckVersionHint}"
-                         FontSize="12"
-                         Foreground="{StaticResource TextMutedBrush}"
-                         TextAlignment="Center"
-                         IsVisible="{Binding CheckVersionHint, Converter={StaticResource StringNotEmpty}}"/>
-            </StackPanel>
-            <!-- Not detected -->
-            <StackPanel Spacing="6" IsVisible="{Binding ShowCheckNotInstalled}">
-              <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-checknotinstalled-100.png"
-                     Width="80" Height="80" Stretch="Uniform"
-                     HorizontalAlignment="Center"/>
-              <TextBlock Text="Not detected"
-                         FontSize="18" FontWeight="Bold"
-                         Foreground="{StaticResource YellowBrush}"
-                         TextAlignment="Center"/>
-              <TextBlock Text="Package name on your console may differ from catalog. It could be installed under a different name."
-                         FontSize="11"
-                         Foreground="{StaticResource TextDimBrush}"
-                         TextAlignment="Center"
-                         TextWrapping="Wrap"
-                         IsVisible="{Binding ShowCheckNotDetectedHint}"/>
-            </StackPanel>
-            <!-- Error -->
-            <StackPanel Spacing="6" IsVisible="{Binding CheckError}">
-              <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-checkerror-100.png"
-                     Width="80" Height="80" Stretch="Uniform"
-                     HorizontalAlignment="Center"/>
-              <TextBlock Text="{Binding CheckResultMessage}"
-                         FontSize="18" FontWeight="Bold"
-                         Foreground="{StaticResource DangerBrush}"
-                         TextAlignment="Center"/>
-              <TextBlock Text="Connect via the sidebar to enable remote checking"
-                         FontSize="12"
-                         Foreground="{StaticResource TextMutedBrush}"
-                         TextAlignment="Center"
-                         TextWrapping="Wrap"
-                         IsVisible="{Binding ShowCheckNotConnectedHint}"/>
-            </StackPanel>
+                              IsVisible="{Binding UninstallDetailFailed, Converter={StaticResource BoolInverse}}"/>
+          <StackPanel Spacing="6"
+                      VerticalAlignment="Center"
+                      IsVisible="{Binding UninstallDetailFailed}"
+                      IsHitTestVisible="False">
+            <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-failure-100.png"
+                   Width="80" Height="80" Stretch="Uniform"
+                   HorizontalAlignment="Center"/>
+            <TextBlock Text="Uninstall failed"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{StaticResource DangerBrush}"
+                       TextAlignment="Center"/>
+            <TextBlock Text="{Binding UninstallResultMessage}"
+                       FontSize="12"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       MaxWidth="320"
+                       TextAlignment="Center"/>
           </StackPanel>
+          <TextBlock Text="Uninstalling..."
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource SuccessBrush}"
+                     TextAlignment="Center"
+                     IsVisible="{Binding UninstallDetailFailed, Converter={StaticResource BoolInverse}}"/>
         </StackPanel>
 
         <!-- Buttons: always visible, disabled during operations -->
@@ -420,144 +444,117 @@
                        VerticalAlignment="Center"/>
           </Button>
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
-            <Button x:Name="CheckBtn"
+            <!-- Connect (not connected) -->
+            <Button x:Name="ConnectBtn"
+                    Classes="Accent"
                     Padding="16,12"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
-                    Command="{Binding CheckInstalledCommand}"
-                    IsEnabled="{Binding CanCheckXboxItem}"
-                    IsVisible="{Binding ShowCheckButton}">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <Grid>
-                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
-                       IsVisible="{Binding #CheckBtn.IsEnabled}"
+                    Command="{Binding ConnectFromDetailCommand}"
+                    IsVisible="{Binding ShowConnectButton}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <Image Source="avares://XBVault/Assets/Views/MainWindow/mainwindow-connect-32.png"
                        Width="20" Height="20" Stretch="Uniform"/>
-                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20-disabled.png"
-                       IsVisible="{Binding #CheckBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
-                       Width="20" Height="20" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Connect"
+                           FontFamily="{StaticResource TitleFont}"
+                           FontSize="14" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
               </Grid>
-              <TextBlock Grid.Column="1" Text="Check"
-                         FontFamily="{StaticResource TitleFont}"
-                         FontSize="14" FontWeight="SemiBold"
-                         VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
-          <Button x:Name="RecheckBtn"
-                  Padding="16,12"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Command="{Binding CheckInstalledCommand}"
-                  IsEnabled="{Binding CanRecheckXboxItem}"
-                  IsVisible="{Binding ShowRecheckButton}">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <Grid>
-                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20.png"
-                       IsVisible="{Binding #RecheckBtn.IsEnabled}"
-                       Width="20" Height="20" Stretch="Uniform"/>
-                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-check-20-disabled.png"
-                       IsVisible="{Binding #RecheckBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
-                       Width="20" Height="20" Stretch="Uniform"/>
+            </Button>
+            <!-- Install button with dropdown for multiple downloads -->
+            <Button x:Name="InstallBtn"
+                    Classes="Accent"
+                    Padding="16,12"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Click="OnInstallClick"
+                    IsEnabled="{Binding CanInstallXboxItem}"
+                    IsVisible="{Binding ShowDetailInstallButton}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <Grid>
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
+                         IsVisible="{Binding #InstallBtn.IsEnabled}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                  <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20-disabled.png"
+                         IsVisible="{Binding #InstallBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
+                         Width="20" Height="20" Stretch="Uniform"/>
+                </Grid>
+                <TextBlock Grid.Column="1" Text="Install"
+                           FontFamily="{StaticResource TitleFont}"
+                           FontSize="14" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
               </Grid>
-              <TextBlock Grid.Column="1" Text="Re-check"
-                         FontFamily="{StaticResource TitleFont}"
-                         FontSize="14" FontWeight="SemiBold"
-                         VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
-          <!-- Install button with dropdown for multiple downloads -->
-          <Button x:Name="InstallBtn"
-                  Classes="Accent"
-                  Padding="16,12"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Click="OnInstallClick"
-                  IsEnabled="{Binding CanInstallXboxItem}"
-                  IsVisible="{Binding ShowInstallActionButton}">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <Grid>
-                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20.png"
-                       IsVisible="{Binding #InstallBtn.IsEnabled}"
+            </Button>
+            <!-- Finish button (install/update complete) -->
+            <Button x:Name="FinishBtn"
+                    Classes="Accent"
+                    Padding="16,12"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Click="OnFinishClick"
+                    IsVisible="{Binding ShowFinishButton}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-success-16.png"
                        Width="20" Height="20" Stretch="Uniform"/>
-                <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-install-20-disabled.png"
-                       IsVisible="{Binding #InstallBtn.IsEnabled, Converter={StaticResource BoolInverse}}"
-                       Width="20" Height="20" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Finish"
+                           FontFamily="{StaticResource TitleFont}"
+                           FontSize="14" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
               </Grid>
-              <TextBlock Grid.Column="1" Text="Install"
-                         FontFamily="{StaticResource TitleFont}"
-                         FontSize="14" FontWeight="SemiBold"
-                         VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
-          <!-- Finish button (install complete, normal mode) -->
-          <Button x:Name="InstallFinishBtn"
-                  Classes="Accent"
-                  Padding="16,12"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Click="OnFinishClick"
-                  IsVisible="{Binding ShowInstallFinishButton}">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <Image Source="avares://XBVault/Assets/Views/ItemDetailWindow/itemdetail-success-16.png"
-                     Width="20" Height="20" Stretch="Uniform"/>
-              <TextBlock Grid.Column="1" Text="Finish"
-                         FontFamily="{StaticResource TitleFont}"
-                         FontSize="14" FontWeight="SemiBold"
-                         VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
-          <!-- Update button (update mode) -->
-          <Button x:Name="UpdateDetailBtn"
-                  Classes="Accent"
-                  Padding="16,12"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Click="OnInstallClick"
-                  IsEnabled="{Binding CanInstallXboxItem}"
-                  IsVisible="{Binding ShowUpdateButton}">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
-                     Width="20" Height="20" Stretch="Uniform"/>
-              <TextBlock Grid.Column="1" Text="Update"
-                         FontFamily="{StaticResource TitleFont}"
-                         FontSize="14" FontWeight="SemiBold"
-                         VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
-          <!-- Reinstall button (installed mode only) -->
-          <Button x:Name="ReinstallBtn"
-                  Classes="Accent"
-                  Padding="16,12"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Command="{Binding ReinstallFromDetailCommand}"
-                  IsVisible="{Binding ShowReinstallButton}">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
-                     Width="20" Height="20" Stretch="Uniform"/>
-              <TextBlock Grid.Column="1" Text="Reinstall"
-                         FontFamily="{StaticResource TitleFont}"
-                         FontSize="14" FontWeight="SemiBold"
-                         VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
-          <!-- Uninstall button (installed mode only) -->
-          <Button x:Name="UninstallDetailBtn"
-                  Classes="Danger"
-                  Padding="16,12"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Command="{Binding UninstallFromDetailCommand}"
-                  IsVisible="{Binding ShowUninstallButton}">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
-                     Width="20" Height="20" Stretch="Uniform"/>
-              <TextBlock Grid.Column="1" Text="Uninstall"
-                         FontFamily="{StaticResource TitleFont}"
-                         FontSize="14" FontWeight="SemiBold"
-                         VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
-        </StackPanel>
+            </Button>
+            <!-- Update button -->
+            <Button x:Name="UpdateDetailBtn"
+                    Classes="Accent"
+                    Padding="16,12"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Click="OnInstallClick"
+                    IsEnabled="{Binding CanInstallXboxItem}"
+                    IsVisible="{Binding ShowDetailUpdateButton}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
+                       Width="20" Height="20" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Update"
+                           FontFamily="{StaticResource TitleFont}"
+                           FontSize="14" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+            <!-- Reinstall button (installed, up to date) -->
+            <Button x:Name="ReinstallBtn"
+                    Classes="Accent"
+                    Padding="16,12"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Command="{Binding ReinstallFromDetailCommand}"
+                    IsVisible="{Binding ShowDetailReinstallButton}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-update-20.png"
+                       Width="20" Height="20" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Reinstall"
+                           FontFamily="{StaticResource TitleFont}"
+                           FontSize="14" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+            <!-- Uninstall button -->
+            <Button x:Name="UninstallDetailBtn"
+                    Classes="Danger"
+                    Padding="16,12"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Command="{Binding UninstallFromDetailCommand}"
+                    IsVisible="{Binding ShowDetailUninstallButton}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <Image Source="avares://XBVault/Assets/Views/InstalledView/installed-uninstall-20.png"
+                       Width="20" Height="20" Stretch="Uniform"/>
+                <TextBlock Grid.Column="1" Text="Uninstall"
+                           FontFamily="{StaticResource TitleFont}"
+                           FontSize="14" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+              </Grid>
+            </Button>
+          </StackPanel>
         </Grid>
 
       </StackPanel>

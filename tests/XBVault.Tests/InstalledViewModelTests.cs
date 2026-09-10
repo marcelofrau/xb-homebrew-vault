@@ -67,7 +67,7 @@ public class InstalledViewModelTests
 
         var reinstallActionCalls = 0;
         vm.ConfirmReinstallAsync = _ => Task.FromResult(true);
-        vm.ReinstallInstallAction = () => reinstallActionCalls++;
+        vm.ReinstallInstallAction = _ => reinstallActionCalls++;
 
         await vm.ReinstallPackageCommand.ExecuteAsync(pkg);
 
@@ -85,7 +85,7 @@ public class InstalledViewModelTests
 
         var reinstallActionCalls = 0;
         vm.ConfirmReinstallAsync = _ => Task.FromResult(false);
-        vm.ReinstallInstallAction = () => reinstallActionCalls++;
+        vm.ReinstallInstallAction = _ => reinstallActionCalls++;
 
         await vm.ReinstallPackageCommand.ExecuteAsync(pkg);
 
