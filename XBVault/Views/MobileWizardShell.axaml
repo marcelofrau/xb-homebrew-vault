@@ -28,11 +28,12 @@
       <StackPanel Spacing="0">
 
         <!-- Step title area with bokeh hero background -->
-        <Border Padding="0,0,0,12">
+        <Border x:Name="HeroRoot" Padding="0,0,0,12">
           <Panel>
             <Image Source="avares://XBVault/Assets/Themes/wizard-hero-bg.png"
                    Stretch="UniformToFill" Opacity="0.9"/>
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Margin="0,0">
+            <StackPanel x:Name="HeroHeader"
+                        HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Margin="0,0">
               <Image x:Name="WizardStepIcon"
                      Width="64" Height="64"
                      Stretch="Uniform"
@@ -52,12 +53,19 @@
           </Panel>
         </Border>
 
-        <!-- Step indicator pills -->
-        <Border Padding="16,10">
-          <StackPanel x:Name="StepIndicatorPanel"
-                      Orientation="Horizontal"
-                      Spacing="0"
-                      HorizontalAlignment="Center"/>
+        <!-- Step indicator pills + compact step summary (keyboard-open) -->
+        <Border x:Name="StepIndicatorBorder" Padding="16,10">
+          <StackPanel>
+            <StackPanel x:Name="StepIndicatorPanel"
+                        Orientation="Horizontal"
+                        Spacing="0"
+                        HorizontalAlignment="Center"/>
+            <TextBlock x:Name="StepCompactText"
+                       FontSize="12" FontWeight="Bold"
+                       Foreground="{StaticResource AccentBrush}"
+                       HorizontalAlignment="Center"
+                       IsVisible="False"/>
+          </StackPanel>
         </Border>
 
         <!-- Progress bar -->
@@ -76,7 +84,7 @@
     </Border>
 
     <!-- Row 2: Step content -->
-      <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+      <ScrollViewer x:Name="StepScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto">
       <TransitioningContentControl x:Name="StepContent" Margin="16,24">
         <TransitioningContentControl.PageTransition>
           <CompositePageTransition>

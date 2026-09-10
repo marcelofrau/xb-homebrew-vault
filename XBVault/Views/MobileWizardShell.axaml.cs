@@ -7,6 +7,8 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform;
+using Avalonia.Controls.Platform;
+using XBVault.Services;
 
 namespace XBVault.Views;
 
@@ -22,6 +24,8 @@ public partial class MobileWizardShell : UserControl
     private int _totalSteps;
     private int _maxVisitedStep;
     private bool _isFinishMode;
+    private IInputPane? _inputPane;
+    private bool _keyboardOpen;
 
     private static readonly FontFamily BodyFont = FontFamily.Parse("avares://XBVault/Assets/Fonts/Oxanium-400.ttf#Oxanium");
     private static readonly Uri AssetsBase = new("avares://XBVault/Assets/Views/SetupWizardWindow/");
@@ -40,6 +44,100 @@ public partial class MobileWizardShell : UserControl
             if (e.Source is Control ctrl)
                 Avalonia.Threading.Dispatcher.UIThread.Post(() => ctrl.BringIntoView());
         };
+    }
+
+    protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        // Avalonia's IInputPane (backed by the platform IME observer) reports the soft
+        // keyboard state and its occluded rect in DIPs — no custom platform code needed.
+        _inputPane = TopLevel.GetTopLevel(this)?.InputPane;
+        if (_inputPane is not null)
+        {
+            _inputPane.StateChanged += OnInputPaneStateChanged;
+            ApplyKeyboardState(_inputPane.State == InputPaneState.Open, _inputPane.OccludedRect.Height);
+        }
+    }
+
+    protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        if (_inputPane is not null)
+        {
+            _inputPane.StateChanged -= OnInputPaneStateChanged;
+            _inputPane = null;
+        }
+        RestoreChrome();
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void OnInputPaneStateChanged(object? sender, InputPaneStateEventArgs e)
+    {
+        ApplyKeyboardState(e.NewState == InputPaneState.Open, e.EndRect.Height);
+    }
+
+    /// <summary>
+    /// Soft keyboard came up: collapse the hero banner to a one-line title bar, shrink the
+    /// title bar, and replace the breadcrumb pills with a compact "Step n of m" summary —
+    /// freeing vertical space. The occluded keyboard height is reserved as extra scroll room
+    /// and the focused field is pushed back into view so it never hides behind the IME.
+    /// </summary>
+    private void ApplyKeyboardState(bool isOpen, double keyboardHeight)
+    {
+        if (isOpen != _keyboardOpen)
+        {
+            _keyboardOpen = isOpen;
+            if (isOpen)
+            {
+                HeroRoot.Height = 40;
+                WizardStepIcon.IsVisible = false;
+                WizardStepSubtitle.IsVisible = false;
+                WizardStepTitle.FontSize = 12;
+                WizardStepTitle.Margin = new Thickness(16, 0);
+                HeroHeader.Spacing = 0;
+
+                StepIndicatorPanel.IsVisible = false;
+                StepCompactText.IsVisible = true;
+                StepIndicatorBorder.Padding = new Thickness(16, 6);
+                ProgressBorder.IsVisible = false;
+
+                TitleBar.MinHeight = 36;
+            }
+            else
+            {
+                RestoreChrome();
+            }
+        }
+
+        if (_keyboardOpen)
+        {
+            StepContent.Margin = new Thickness(16, 16, 16, 16 + keyboardHeight);
+        }
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
+            if (focused is Control ctrl)
+                ctrl.BringIntoView();
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    private void RestoreChrome()
+    {
+        HeroRoot.Height = double.NaN;
+        WizardStepIcon.IsVisible = true;
+        WizardStepSubtitle.IsVisible = true;
+        WizardStepTitle.FontSize = 18;
+        WizardStepTitle.Margin = new Thickness(0);
+        HeroHeader.Spacing = 8;
+
+        StepIndicatorPanel.IsVisible = true;
+        StepCompactText.IsVisible = false;
+        StepIndicatorBorder.Padding = new Thickness(16, 10);
+        ProgressBorder.IsVisible = true;
+
+        TitleBar.MinHeight = 48;
+
+        StepContent.Margin = new Thickness(16, 24, 16, 24);
     }
 
     private static Avalonia.Media.Imaging.Bitmap LoadImage(string fileName, string folder)
@@ -200,6 +298,14 @@ public partial class MobileWizardShell : UserControl
         }
 
         UpdateProgress();
+        UpdateCompactStepText();
+    }
+
+    private void UpdateCompactStepText()
+    {
+        if (_stepIndicators.Count == 0) return;
+        var label = _stepIndicators[_currentStep].Label.Text;
+        StepCompactText.Text = $"Step {_currentStep + 1} of {_totalSteps} — {label}";
     }
 
     private void OnPrevClick(object? sender, RoutedEventArgs e)

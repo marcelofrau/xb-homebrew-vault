@@ -93,8 +93,8 @@ public class MainActivity : AvaloniaMainActivity
         base.OnCreate(savedInstanceState);
         // Let the system resize the window when the virtual keyboard opens so
         // focused fields (sideload URL, setup-wizard password) stay reachable.
-        // On API 35+ edge-to-edge this is ignored; the focus BringIntoView in
-        // MobileUiActions covers those devices.
+        // On API 35+ edge-to-edge this is ignored; the wizard's InputPane
+        // subscription (TopLevel.InputPane) covers those devices.
         try
         {
             Window?.SetSoftInputMode(SoftInput.AdjustResize);
