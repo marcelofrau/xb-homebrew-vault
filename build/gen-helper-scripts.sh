@@ -15,6 +15,9 @@ gen() {
     local path="$PUBLISH_DIR/$name"
     cat > "$path" << SCRIPT
 #!/bin/sh
+if [ "\$(uname)" = "Darwin" ]; then
+    xattr -cr "\$(dirname "\$0")"
+fi
 "\$(dirname "\$0")/$EXE" $flag
 echo "Press Enter to close..."
 read _
@@ -27,6 +30,18 @@ gen "xbv-reset-data.sh" "--reset-data"
 gen "xbv-console.sh" "--console"
 gen "xbv-check.sh" "--check"
 gen "xbv-run.sh" ""
+
+# Primary launcher (named after the app; exec keeps any console attached to the app)
+cat > "$PUBLISH_DIR/XBVault.sh" << 'SCRIPT'
+#!/bin/sh
+cd "$(dirname "$0")"
+if [ "$(uname)" = "Darwin" ]; then
+    xattr -cr "$(pwd)"
+fi
+exec ./XBVault.Desktop "$@"
+SCRIPT
+chmod +x "$PUBLISH_DIR/XBVault.sh"
+echo "  Generated: $PUBLISH_DIR/XBVault.sh"
 
 # macOS Gatekeeper fix script
 FIX_PATH="$PUBLISH_DIR/xbv-fix-macos.sh"

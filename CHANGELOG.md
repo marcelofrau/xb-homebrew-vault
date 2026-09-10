@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.7] — 2026-09-10
+
+### Added
+
+- **Android soft-keyboard awareness for wizard screens** — `MobileWizardShell` subscribes to Avalonia's platform `IInputPane` (`TopLevel.InputPane`) and reacts when the virtual keyboard opens: the hero banner collapses to a one-line title bar, the title bar shrinks, the breadcrumb compacts to a "Step n of m" summary line, scroll room is reserved for the occluded keyboard height, and the focused field is brought back into view — so more form fields fit and stay reachable while typing. Pure documented cross-platform API (no per-platform insets code).
+
+### Changed
+
+- **Unified item detail flow** — the detail view (desktop `ItemDetailWindow`, mobile `MobileDetailView`) now derives its actions from the Xbox connection state + installed badges instead of manual mode flags:
+  - Not connected → inline "Not connected" notice with a **Connect** button; connecting refreshes the detail in place
+  - Not installed → **Install**
+  - Installed, up to date → "Installed" status + **Reinstall** / **Uninstall**
+  - Installed, outdated → "Update available" status + **Update** / **Uninstall**
+  - Manual "Check Installed"/"Re-check" buttons removed — install state is always resolved from the connected Xbox
+
+
+### Fixed
+
+- **Connecting now actually marks the app connected** — `ConnectionViewModel.ConnectAsync` tested the connection but never called `MarkConnected()`, so every connect path (sidebar, detail, mobile) left the app "not connected" and a still-open detail window stayed stale. Connect now flips the state and the detail refreshes its buttons/badges in place
+- **Detail Update/Install buttons stayed disabled after connecting** — button enablement (`CanInstallXboxItem`) was derived but never re-notified when the connection state changed; it's now raised with the derived detail state
+- **Reinstall/Uninstall from the browse detail did nothing** — they relied on `SelectedInstalledPackage`, which is null when the detail opens from Browse; they now fall back to `CatalogItem.MatchedInstalledPackage` (resolved during badge refresh)
+- **Uninstall from the detail view lacked feedback** — full flow added on desktop + mobile: confirm dialog, spinner overlay ("Uninstalling..." + indeterminate progress), badge refresh, then close on success or inline error on failure
+- **Post-install verification race (false FAILED)** — the installed-packages API could report stale data right after the package manager settled, and the fragile `identity_` prefix match rejected legitimate installs. A genuine settle (202 + Ready) is now trusted as success; only premature settles fall back to package-list verification (`NeedsVerification`)
+- **Uninstall confirm dialog crashed (missing asset)** — the confirm used a nonexistent `installed-trash-20.png`; the correct `installed-uninstall-20.png` is now referenced (desktop + mobile)
+
 ## [2.0.5] — 2026-08-29
 
 > Note: these changes landed after the v2.0.4 tag but the version bump was

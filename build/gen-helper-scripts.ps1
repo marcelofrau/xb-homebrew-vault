@@ -41,4 +41,10 @@ New-Script "xbv-run.cmd" @"
 pause
 "@
 
+# Primary launcher - no lingering console
+New-Script "XBVault.cmd" @"
+@echo off
+start "" "%~dp0$exeName"
+"@
+
 Write-Host "Helper scripts generated in $PublishDir" -ForegroundColor Cyan
