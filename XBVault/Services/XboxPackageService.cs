@@ -376,6 +376,14 @@ public class XboxPackageService : IXboxPackageService
                 ? "Package manager settled"
                 : $"Package manager final state: {finalWait}. Checking installed packages...");
 
+            // Genuine settle (idle-twice, success JSON, higher-version) + 202 accepted = success.
+            // The packages API can lag behind settle (race on Xbox) and the bundle/filename
+            // identity rarely matches the installed FullName, so don't let the soft list check
+            // turn a real install into a false failure. Early settlements (blocked by non-target,
+            // TRUST_E_NOSIGNATURE) still go through the authoritative installed-packages verdict.
+            if (finalWait == PackageManagerWaitResult.Ready)
+                return ReportSuccess(mainName, skippedDependencies, failedDependencies, await TryLogInstalledIdentityAsync(targetIdentity));
+
             return await ResolveFinalResultAsync(mainName, targetIdentity, skippedDependencies, failedDependencies);
         }
         catch (OperationCanceledException)
@@ -410,6 +418,19 @@ public class XboxPackageService : IXboxPackageService
             present = found is not null;
             if (found is not null)
                 Logger.Info($"Install verified via installed-packages API: {found.FullName}");
+
+            // Xbox package list can lag behind the settle signal — retry once after a brief delay
+            if (!present)
+            {
+                Logger.Warn("Package not found in installed list, retrying in 5 s (Xbox package list may lag)...");
+                await Task.Delay(5000);
+                installed = await GetInstalledPackagesAsync();
+                found = installed.FirstOrDefault(p =>
+                    p.FullName?.StartsWith(targetIdentity + "_", StringComparison.OrdinalIgnoreCase) == true);
+                present = found is not null;
+                if (found is not null)
+                    Logger.Info($"Install verified on retry: {found.FullName}");
+            }
         }
         catch (Exception verifyEx)
         {
@@ -429,6 +450,36 @@ public class XboxPackageService : IXboxPackageService
 
         Logger.Error($"Install result: FAILED — {mainName} not present in installed packages");
         return false;
+    }
+
+    private static bool ReportSuccess(string mainName, int skippedDependencies, int failedDependencies, string? resolvedIdentity)
+    {
+        var identityNote = resolvedIdentity is not null ? $" (identity: {resolvedIdentity})" : "";
+        if (skippedDependencies > 0)
+            Logger.Info($"Install result: SUCCESS ({mainName} installed{identityNote}). {skippedDependencies} dependenc(ies) already present on console, skipped{SuccessSuffix(failedDependencies)}");
+        else if (failedDependencies > 0)
+            Logger.Info($"Install result: SUCCESS ({mainName} installed{identityNote}) despite {failedDependencies} failed dependenc(ies)");
+        else
+            Logger.Info($"Install result: SUCCESS ({mainName} installed{identityNote})");
+        return true;
+    }
+
+    private async Task<string?> TryLogInstalledIdentityAsync(string targetIdentity)
+    {
+        try
+        {
+            var installed = await GetInstalledPackagesAsync();
+            var found = installed.FirstOrDefault(p =>
+                p.FullName?.StartsWith(targetIdentity + "_", StringComparison.OrdinalIgnoreCase) == true);
+            if (found is not null)
+                Logger.Info($"Install verified via installed-packages API: {found.FullName}");
+            return found?.FullName;
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"Soft identity check failed (non-fatal): {ex.Message}");
+            return null;
+        }
     }
 
     private static string SuccessSuffix(int failedDependencies)
@@ -557,7 +608,8 @@ public class XboxPackageService : IXboxPackageService
         ResourceInUse,
         Cancelled,
         Failed,
-        TimedOut
+        TimedOut,
+        NeedsVerification
     }
 
     private enum PmWaitMode
@@ -634,7 +686,7 @@ public class XboxPackageService : IXboxPackageService
                     if (XboxResponseParser.IsSignatureError(body))
                     {
                         Logger.Info("Package manager ready (TRUST_E_NOSIGNATURE — no operation in progress)");
-                        return PackageManagerWaitResult.Ready;
+                        return PackageManagerWaitResult.NeedsVerification;
                     }
 
                     if (XboxResponseParser.IsResourceInUseError(body, out var busyApps))
@@ -671,7 +723,7 @@ public class XboxPackageService : IXboxPackageService
                                 // MainPollTimeout only burns ~40s ahead of the authoritative
                                 // verdict from ResolveFinalResultAsync (installed-packages check).
                                 Logger.Warn($"Package manager blocked by non-target app(s) — settling early, final check decides: {busyApps}");
-                                return PackageManagerWaitResult.Ready;
+                                return PackageManagerWaitResult.NeedsVerification;
                             }
                             Logger.Warn($"Blocked by app(s) not targeted by this install: {busyApps}");
                             if (mode == PmWaitMode.AwaitIdle)
