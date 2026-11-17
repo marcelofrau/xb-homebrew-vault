@@ -184,21 +184,50 @@ jobs:
         fi
         zip="${zips[0]}"
         echo "Verifying: $(basename "$zip")"
+        # Exact paths per platform — no "any dll/exe will do" fallback, so a
+        # package without its launcher can never be published.
         case "${{ matrix.rid }}" in
           win-*)     expected="XBVault.Desktop.exe" ;;
-          android-*) expected="XBVault.Android-Signed.apk" ;;
+          osx-*)     expected="XBVault.app/Contents/MacOS/XBVault.Desktop XBVault.app/Contents/Info.plist XBVault.app/Contents/Resources/XBVault.icns" ;;
+          android-*) expected="" ;;  # APK is named after the ApplicationId, matched by suffix below
           *)         expected="XBVault.Desktop" ;;
         esac
-        if unzip -Z1 "$zip" 2>/dev/null | grep -qxF "$expected"; then
-          echo "✅ '$expected' present"
-        elif unzip -Z1 "$zip" 2>/dev/null | grep -qi "apk\|dll\|exe"; then
-          echo "✅ Package contains executables"
-        else
-          echo "::error::Missing '$expected' in $(basename "$zip")"
+        entries="$(unzip -Z1 "$zip")"
+        missing=0
+        for path in $expected; do
+          if grep -qxF "$path" <<< "$entries"; then
+            echo "✅ '$path' present"
+          else
+            echo "::error::Missing '$path' in $(basename "$zip")"
+            missing=1
+          fi
+        done
+        if [[ "${{ matrix.rid }}" == android-* ]]; then
+          if grep -qE -- '-Signed\.apk$' <<< "$entries"; then
+            echo "✅ Signed APK present"
+          else
+            echo "::error::No *-Signed.apk in $(basename "$zip")"
+            missing=1
+          fi
+        fi
+        if [ "$missing" -ne 0 ]; then
           echo "ZIP contents:"
-          unzip -Z1 "$zip"
+          echo "$entries"
           exit 1
         fi
+
+    - name: Verify macOS app bundle
+      if: startsWith(matrix.rid, 'osx-')
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Extract the way Finder does and make sure the bundle is still intact
+        ditto -x -k dist/XBVault-*.zip "$RUNNER_TEMP/xbvault-app"
+        app="$RUNNER_TEMP/xbvault-app/XBVault.app"
+        test -x "$app/Contents/MacOS/XBVault.Desktop"
+        plutil -lint "$app/Contents/Info.plist"
+        codesign --verify --deep --strict "$app"
+        echo "✅ XBVault.app is executable and its signature is valid"
 
     - uses: actions/upload-artifact@v4
       with:

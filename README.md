@@ -94,6 +94,7 @@ Browse and install from the full [Emulation Revival](https://emulationrevival.gi
 
 1. Download the latest ZIP from the [Releases page](https://github.com/marcelofrau/xb-homebrew-vault/releases)
 2. Extract and run `XBVault` — no install needed, fully self-contained
+   - **macOS:** the ZIP contains `XBVault.app` — drag it to Applications and open it. The app is not notarized, so the first launch has to be approved once under **System Settings → Privacy & Security → Open Anyway** (or run the bundled `xbv-fix-macos.sh`)
 3. On first launch, the setup wizard guides you through connecting to your Xbox
 
 **Releases available for:**

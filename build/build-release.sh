@@ -40,11 +40,33 @@ dotnet publish "$PROJ_DIR" \
     -p:Version="$VERSION" \
     -o "$PUBLISH_DIR"
 
-echo "Generating helper scripts..."
-bash "$ROOT/build/gen-helper-scripts.sh" "$PUBLISH_DIR"
+rm -f "$ZIP_PATH"
 
-echo "Packaging $ZIP_NAME..."
-cd "$PUBLISH_DIR" && zip -r "$ZIP_PATH" . && cd "$ROOT"
+if [ "$OS" = "osx" ]; then
+    # macOS: ship a double-clickable XBVault.app with the helper scripts beside it,
+    # instead of the raw publish folder.
+    APP_NAME="XBVault.app"
+    STAGE_DIR="$DIST_DIR/stage"
+    rm -rf "$STAGE_DIR"
+    mkdir -p "$STAGE_DIR"
+
+    echo "Creating $APP_NAME..."
+    bash "$ROOT/build/package-macos-app.sh" "$PUBLISH_DIR" "$VERSION" "$STAGE_DIR/$APP_NAME"
+
+    echo "Generating helper scripts..."
+    bash "$ROOT/build/gen-helper-scripts.sh" "$STAGE_DIR" "$APP_NAME/Contents/MacOS/XBVault.Desktop"
+
+    echo "Packaging $ZIP_NAME..."
+    # ditto (not zip) so the bundle's code signature survives the round trip
+    ditto -c -k --sequesterRsrc "$STAGE_DIR" "$ZIP_PATH"
+    rm -rf "$STAGE_DIR"
+else
+    echo "Generating helper scripts..."
+    bash "$ROOT/build/gen-helper-scripts.sh" "$PUBLISH_DIR"
+
+    echo "Packaging $ZIP_NAME..."
+    cd "$PUBLISH_DIR" && zip -r "$ZIP_PATH" . && cd "$ROOT"
+fi
 
 echo "Release created: $ZIP_PATH"
 rm -rf "$PUBLISH_DIR"

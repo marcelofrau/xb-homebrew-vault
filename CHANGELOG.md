@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- **macOS releases ship a real `XBVault.app`** — the `osx-x64` / `osx-arm64` ZIPs used to be the raw `dotnet publish` folder (hundreds of loose DLLs with an extension-less executable buried among them). `build/build-release.sh` now wraps the publish output in an application bundle (`Info.plist`, `.icns` icon generated from the app icon, ad-hoc code signature) via the new `build/package-macos-app.sh`, and zips it with `ditto` so the signature survives. The helper scripts (`xbv-*.sh`, `XBVault.sh`) sit next to the bundle and launch the executable inside it
+- **macOS menu bar shows "XB Homebrew Vault"** instead of "Avalonia Application" (`Application.Name`)
+
+### Fixed
+
+- **macOS helper scripts no longer wipe every extended attribute** — `xattr -cr` is replaced by `xattr -dr com.apple.quarantine`, which lifts the Gatekeeper quarantine without stripping the bundle's code signature
+- **Release CI can no longer publish a package without its launcher** — the "Verify native executable" step accepted any ZIP containing a `.dll`/`.exe`/`.apk`; it now requires the exact launcher path per platform and, on macOS, extracts the ZIP and validates the bundle's signature
+
+---
+
 ## [2.0.7] — 2026-09-10
 
 ### Added

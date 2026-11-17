@@ -35,7 +35,9 @@ Complete guide to using XB Homebrew Vault — from first launch to advanced feat
    - `linux-arm64.zip` — Linux ARM (Raspberry Pi, ARM servers)
    - `android-arm64.apk` — Android ARM64 (see [Mobile Guide](mobile))
 3. Extract the ZIP to any folder
-4. Run `XBVault.exe` (Windows) or `XBVault` (macOS/Linux)
+4. Run `XBVault.exe` (Windows), open `XBVault.app` (macOS) or run `XBVault.sh` (Linux)
+
+**macOS first launch:** the app is not notarized by Apple, so macOS blocks it the first time. Either open **System Settings → Privacy & Security** and click **Open Anyway**, or run the bundled `xbv-fix-macos.sh` once. After that `XBVault.app` opens like any other app and can be moved to `/Applications`. See [Troubleshooting](troubleshooting) if it still refuses to start.
 
 **Optional:** Use the helper scripts included in the ZIP:
 - `xbv-run.cmd` / `xbv-run.sh` — launch the app normally
