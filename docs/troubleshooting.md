@@ -37,26 +37,33 @@ This is a fatal boot error. The dialog tells you which exception occurred. Commo
 3. Run with `--console` to see log output in real-time
 4. Check `%APPDATA%/XBVault/logs/` for error messages
 
-### macOS: "Unable to load shared library 'libAvaloniaNative'" or "code signature not valid"
+### macOS: "XBVault.app" can't be opened / "Apple could not verify…" / "Unable to load shared library 'libAvaloniaNative'"
 
-This is a **macOS Gatekeeper** issue. When you download the ZIP, macOS marks all files with a quarantine attribute. The Avalonia native library (`libAvaloniaNative.dylib`) is then blocked from loading.
+This is a **macOS Gatekeeper** issue. When you download the ZIP, macOS marks all files with a quarantine attribute, and because `XBVault.app` is not notarized by Apple it is blocked on first launch.
 
-**Fix — run this in Terminal:**
+**Fix — approve it once in System Settings:**
+
+1. Double-click `XBVault.app` and dismiss the warning
+2. Open **System Settings → Privacy & Security**, scroll to *Security* and click **Open Anyway**
+
+**Or remove the quarantine flag in Terminal:**
 
 ```bash
-xattr -cr /path/to/xbvault
+xattr -dr com.apple.quarantine /path/to/XBVault.app
 ```
 
-Replace `/path/to/xbvault` with the actual folder path. For example, if you extracted to Desktop:
+For example, if you moved the app to Applications:
 
 ```bash
-xattr -cr ~/Desktop/XBVault
+xattr -dr com.apple.quarantine /Applications/XBVault.app
 ```
+
+> Use `-d com.apple.quarantine`, not `xattr -c`: clearing *all* attributes also strips the app's code signature.
 
 **Or use the included helper script:**
 
 ```bash
-cd /path/to/xbvault
+cd /path/to/extracted-zip   # the folder that contains XBVault.app
 ./xbv-fix-macos.sh
 ```
 

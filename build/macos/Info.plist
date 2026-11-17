@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Template for XBVault.app — __VERSION__ / __MIN_MACOS__ are filled in by build/package-macos-app.sh -->
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>XBVault</string>
+    <key>CFBundleDisplayName</key>
+    <string>XB Homebrew Vault</string>
+    <key>CFBundleIdentifier</key>
+    <string>io.github.marcelofrau.xbvault</string>
+    <key>CFBundleExecutable</key>
+    <string>XBVault.Desktop</string>
+    <key>CFBundleIconFile</key>
+    <string>XBVault</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>__VERSION__</string>
+    <key>CFBundleVersion</key>
+    <string>__VERSION__</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>__MIN_MACOS__</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>XB Homebrew Vault connects to your Xbox on the local network to install and manage homebrew.</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright (c) 2026 Marcelo Frau. Licensed under GPL-3.0.</string>
+</dict>
+</plist>
